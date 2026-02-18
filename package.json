@@ -19,10 +19,11 @@
   "dependencies": {
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.5",
-    "@mui/material": "^6.4.6",
     "@mui/icons-material": "^6.4.6",
+    "@mui/material": "^6.4.6",
     "@netlify/neon": "^0.1.2",
     "clsx": "^2.1.1",
+    "csv-parse": "^6.1.0",
     "drizzle-orm": "^0.41.0",
     "lucide-react": "^0.475.0",
     "papaparse": "^5.4.1",

@@ -33,7 +33,7 @@ export function useCourses(): CoursesHook {
   const loadCSV = async (csvContent: string): Promise<void> => {
     try {
       const { parseCSV } = await import('../utils/csv');
-      const result = parseCSV(csvContent);
+      const result = await parseCSV(csvContent);
 
       setState({
         courses: result.courses,

@@ -1,4 +1,11 @@
-import type { Schedule, Preferences, OptimizationResult } from '../types';
+import type {
+  Schedule,
+  Preferences,
+  OptimizationResult,
+  ScheduleParseResult,
+  HeaderMappingSuggestion
+} from '../types';
+import { getHeaderAliases, getScheduleCorrections, getAIRules } from './feedback';
 
 const DEFAULT_LLM_ENDPOINT = 'http://localhost:11434/api/chat';
 
@@ -53,6 +60,185 @@ export async function isLLMAvailable(): Promise<boolean> {
     return response.ok;
   } catch {
     return false;
+  }
+}
+
+export async function suggestMappingsWithLLM(
+  headers: string[],
+  sampleRows: Record<string, string>[],
+  userInstructions?: string
+): Promise<Record<string, string>> {
+  const isAvailable = await isLLMAvailable();
+  if (!isAvailable) return {};
+
+  const learnedAliases = getHeaderAliases();
+  const fewShotContext = Object.entries(learnedAliases)
+    .slice(0, 5)
+    .map(([alias, data]) => `"${alias}" -> "${data.canonicalHeader}"`)
+    .join('\n');
+
+  const aiRules = getAIRules()
+    .filter(r => r.type === 'mapping')
+    .map(r => `- ${r.instruction}`)
+    .join('\n');
+
+  const prompt = `You are a data engineer helping to map CSV headers to a standard course schema.
+The standard fields are:
+- courseCode (e.g., CS 101, CRN 12345)
+- courseName (e.g., Intro to Programming)
+- subject (e.g., CS, MATH)
+- sectionNumber (e.g., 001, A)
+- instructor (e.g., Dr. Smith)
+- days (e.g., MWF, TTh)
+- startTime (e.g., 09:00, 1:00 PM)
+- endTime (e.g., 10:00, 2:15 PM)
+- schedule (combined days and times, e.g., "MWF 9:00-9:50")
+- location (e.g., Room 101)
+- credits (e.g., 3, 4.0)
+- term (e.g., Fall 2024)
+
+Detected CSV Headers: ${headers.join(', ')}
+
+Sample Data (first 3 rows):
+${JSON.stringify(sampleRows.slice(0, 3), null, 2)}
+
+${fewShotContext ? `Previous learned mappings for context:\n${fewShotContext}\n` : ''}
+${aiRules ? `Learned Rules:\n${aiRules}\n` : ''}
+${userInstructions ? `User Instructions: ${userInstructions}\n` : ''}
+
+Respond ONLY with a JSON object mapping the CSV headers to the standard fields.
+Example: {"CRN": "courseCode", "Title": "courseName"}
+Unmapped headers should be omitted.`;
+
+  try {
+    const response = await fetch(llmConfig.endpoint!, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: llmConfig.model,
+        messages: [{ role: 'user', content: prompt }],
+        stream: false,
+        format: 'json'
+      }),
+      signal: AbortSignal.timeout(llmConfig.timeout || 30000)
+    });
+
+    if (!response.ok) throw new Error('LLM request failed');
+    const data = await response.json();
+    const content = data.message?.content || data.response || '{}';
+    return JSON.parse(content);
+  } catch (error) {
+    console.error('AI mapping failed:', error);
+    return {};
+  }
+}
+
+export async function parseScheduleWithLLM(
+  scheduleString: string,
+  userInstructions?: string
+): Promise<ScheduleParseResult> {
+  const isAvailable = await isLLMAvailable();
+  if (!isAvailable) return { timeSlots: [], isValid: false, error: 'LLM not available' };
+
+  const learnedCorrections = getScheduleCorrections();
+  const fewShotContext = Object.entries(learnedCorrections)
+    .filter(([_, data]) => data.successCount > 0)
+    .slice(0, 3)
+    .map(([raw, data]) => `"${raw}" -> ${data.days.join('')} ${data.startTime}-${data.endTime}`)
+    .join('\n');
+
+  const aiRules = getAIRules()
+    .filter(r => r.type === 'parsing')
+    .map(r => `- ${r.instruction}`)
+    .join('\n');
+
+  const prompt = `Extract schedule information from this string: "${scheduleString}"
+
+${fewShotContext ? `Examples of previous correct extractions:\n${fewShotContext}\n` : ''}
+${aiRules ? `Learned Rules:\n${aiRules}\n` : ''}
+${userInstructions ? `User Context/Instructions: ${userInstructions}\n` : ''}
+
+Standard days are: M, T, W, Th, F, Sa, Su.
+Times should be in 24-hour HH:mm format.
+
+Respond ONLY with a JSON object:
+{
+  "timeSlots": [{"day": "M", "startTime": "09:00", "endTime": "09:50"}],
+  "isValid": true
+}
+If it cannot be parsed, set isValid to false and provide an error message.`;
+
+  try {
+    const response = await fetch(llmConfig.endpoint!, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: llmConfig.model,
+        messages: [{ role: 'user', content: prompt }],
+        stream: false,
+        format: 'json'
+      }),
+      signal: AbortSignal.timeout(llmConfig.timeout || 30000)
+    });
+
+    if (!response.ok) throw new Error('LLM request failed');
+    const data = await response.json();
+    const content = data.message?.content || data.response || '{}';
+    const result = JSON.parse(content);
+    return {
+      timeSlots: result.timeSlots || [],
+      isValid: !!result.isValid,
+      error: result.error,
+      formatUsed: 'AI'
+    };
+  } catch (error) {
+    return { timeSlots: [], isValid: false, error: (error as Error).message };
+  }
+}
+
+export async function induceParsingRuleWithLLM(
+  instruction: string,
+  sampleValue?: string
+): Promise<{ pattern: string; separator: string; description: string } | null> {
+  const isAvailable = await isLLMAvailable();
+  if (!isAvailable) return null;
+
+  const prompt = `You are a regex expert. Convert the following natural language instruction into a regex pattern and a separator for parsing schedule strings.
+Instruction: "${instruction}"
+${sampleValue ? `Sample Value: "${sampleValue}"` : ''}
+
+The regex should have 3 capture groups:
+1. Days (e.g. MWF, Mon)
+2. Start Time
+3. End Time
+
+Respond ONLY with a JSON object:
+{
+  "pattern": "regex_pattern_here",
+  "separator": "separator_here_if_any",
+  "description": "short_description"
+}`;
+
+  try {
+    const response = await fetch(llmConfig.endpoint!, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: llmConfig.model,
+        messages: [{ role: 'user', content: prompt }],
+        stream: false,
+        format: 'json'
+      }),
+      signal: AbortSignal.timeout(llmConfig.timeout || 30000)
+    });
+
+    if (!response.ok) return null;
+    const data = await response.json();
+    const content = data.message?.content || data.response || '{}';
+    return JSON.parse(content);
+  } catch (error) {
+    console.error('AI rule induction failed:', error);
+    return null;
   }
 }
 
