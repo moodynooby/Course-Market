@@ -1,9 +1,10 @@
 import Papa from 'papaparse';
-import type { Course, Section, CSVParseResult, TimeSlot } from '../types';
+import type { Course, Section, CSVParseResult, TimeSlot, CSVPreviewResult, PreviewRow, HeaderMappingSuggestion, MappingConfidence } from '../types';
 import { 
   REQUIRED_HEADERS_LOWERCASE,
   TIME_HEADERS_LOWERCASE, 
   HEADER_MAPPING,
+  REQUIRED_CSV_HEADERS,
   parseDays, 
   parseTime,
   parseScheduleField,
@@ -11,7 +12,7 @@ import {
   findScheduleCorrection,
   saveScheduleCorrection
 } from '../constants/csvHeaders';
-import { getLearnedHeaderMappings, saveHeaderAlias, saveFeedbackEntry } from '../services/feedback';
+import { getLearnedHeaderMappings, getHeaderAliases, saveHeaderAlias, saveFeedbackEntry } from '../services/feedback';
 
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
@@ -457,6 +458,274 @@ function calculateStringSimilarity(str1: string, str2: string): number {
   const maxLen = Math.max(len1, len2);
   return maxLen === 0 ? 1 : 1 - distance / maxLen;
 }
+
+// Get detailed header mapping suggestions with semantic reasons
+export function getHeaderMappingSuggestions(detectedHeaders: string[]): HeaderMappingSuggestion[] {
+  const learnedAliases = getHeaderAliases();
+  const suggestions: HeaderMappingSuggestion[] = [];
+  
+  const canonicalFields = [
+    { field: 'courseCode', labels: ['course code', 'coursecode', 'course id', 'crn', 'catalog', 'class number'], required: true },
+    { field: 'courseName', labels: ['course name', 'title', 'course title', 'class title', 'description'], required: true },
+    { field: 'subject', labels: ['subject', 'department', 'dept', 'discipline'], required: true },
+    { field: 'sectionNumber', labels: ['section', 'sec', 'class section'], required: true },
+    { field: 'instructor', labels: ['instructor', 'professor', 'faculty', 'teacher', 'prof'], required: true },
+    { field: 'days', labels: ['days', 'day', 'meeting days'], required: false },
+    { field: 'startTime', labels: ['start time', 'start', 'begin'], required: false },
+    { field: 'endTime', labels: ['end time', 'end', 'finish'], required: false },
+    { field: 'schedule', labels: ['schedule', 'meeting time', 'when'], required: false },
+    { field: 'location', labels: ['location', 'room', 'building', 'classroom'], required: true },
+    { field: 'credits', labels: ['credits', 'hours', 'units', 'credit hours'], required: true },
+    { field: 'term', labels: ['term', 'semester', 'quarter', 'session'], required: false },
+  ];
+  
+  for (const header of detectedHeaders) {
+    const normalized = header.toLowerCase().trim();
+    let bestMatch: HeaderMappingSuggestion | null = null;
+    
+    // Check learned aliases first (highest confidence)
+    if (learnedAliases[normalized]) {
+      const learned = learnedAliases[normalized];
+      let confidence: MappingConfidence = 'medium';
+      if (learned.confidence >= 0.8) confidence = 'high';
+      else if (learned.confidence >= 0.5) confidence = 'medium';
+      else confidence = 'low';
+      
+      bestMatch = {
+        header,
+        suggestedField: learned.canonicalHeader,
+        confidence,
+        confidenceScore: learned.confidence,
+        reason: `Learned from ${learned.usageCount} previous import${learned.usageCount > 1 ? 's' : ''}`,
+        alternatives: []
+      };
+    }
+    
+    // Check static mappings
+    if (!bestMatch && HEADER_MAPPING[normalized]) {
+      const canonicalField = HEADER_MAPPING[normalized];
+      bestMatch = {
+        header,
+        suggestedField: canonicalField,
+        confidence: 'high',
+        confidenceScore: 1.0,
+        reason: 'Exact match with known header',
+        alternatives: []
+      };
+    }
+    
+    // Fuzzy matching for similar headers
+    if (!bestMatch) {
+      let bestScore = 0;
+      let bestField = '';
+      const alternatives: string[] = [];
+      
+      for (const { field, labels } of canonicalFields) {
+        for (const label of labels) {
+          const similarity = calculateStringSimilarity(normalized, label);
+          if (similarity > bestScore) {
+            if (bestScore > 0.5) {
+              alternatives.push(bestField);
+            }
+            bestScore = similarity;
+            bestField = field;
+          } else if (similarity > 0.5 && similarity < bestScore) {
+            alternatives.push(field);
+          }
+        }
+      }
+      
+      if (bestScore >= 0.6) {
+        let confidence: MappingConfidence = 'low';
+        if (bestScore >= 0.85) confidence = 'high';
+        else if (bestScore >= 0.7) confidence = 'medium';
+        
+        bestMatch = {
+          header,
+          suggestedField: bestField,
+          confidence,
+          confidenceScore: bestScore,
+          reason: `Similar to "${canonicalFields.find(c => c.field === bestField)?.labels[0] || bestField}"`,
+          alternatives: alternatives.slice(0, 2)
+        };
+      }
+    }
+    
+    // No match found
+    if (!bestMatch) {
+      bestMatch = {
+        header,
+        suggestedField: '',
+        confidence: 'none',
+        confidenceScore: 0,
+        reason: 'Unknown header - please map manually',
+        alternatives: []
+      };
+    }
+    
+    suggestions.push(bestMatch);
+  }
+  
+  return suggestions;
+}
+
+// Generate live preview of CSV parsing
+export function generateCSVPreview(
+  csvContent: string, 
+  customMappings: Record<string, string> = {},
+  maxRows: number = 5
+): CSVPreviewResult {
+  // Parse just the preview rows
+  const parseResult = Papa.parse<Record<string, string>>(csvContent, {
+    header: true,
+    skipEmptyLines: true,
+    preview: maxRows,
+    transformHeader: (header) => header.trim(),
+    transform: (value) => value.trim()
+  });
+  
+  const headers = parseResult.meta.fields || [];
+  const suggestions = getHeaderMappingSuggestions(headers);
+  
+  // Build final mappings (custom overrides suggestions)
+  const mappings: Record<string, string> = {};
+  for (const suggestion of suggestions) {
+    if (customMappings[suggestion.header] !== undefined) {
+      mappings[suggestion.header] = customMappings[suggestion.header];
+    } else if (suggestion.confidenceScore >= 0.5) {
+      mappings[suggestion.header] = suggestion.suggestedField;
+    }
+  }
+  
+  // Check which required fields are present
+  const mappedFields = new Set(Object.values(mappings).filter(Boolean));
+  const requiredFieldsPresent: Record<string, boolean> = {
+    courseCode: mappedFields.has('courseCode'),
+    courseName: mappedFields.has('courseName'),
+    subject: mappedFields.has('subject'),
+    sectionNumber: mappedFields.has('sectionNumber'),
+    instructor: mappedFields.has('instructor'),
+    location: mappedFields.has('location'),
+    credits: mappedFields.has('credits'),
+  };
+  
+  // Check time fields
+  const hasSeparateTime = mappedFields.has('days') && mappedFields.has('startTime') && mappedFields.has('endTime');
+  const hasCombinedTime = mappedFields.has('schedule');
+  requiredFieldsPresent['timeInfo'] = hasSeparateTime || hasCombinedTime;
+  
+  // Generate preview rows
+  const rows: PreviewRow[] = [];
+  for (let i = 0; i < parseResult.data.length; i++) {
+    const rawRow = parseResult.data[i];
+    const rowNum = i + 2; // +2 for header row
+    
+    const parsedData: PreviewRow['parsedData'] = {};
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    
+    // Extract mapped values
+    for (const [header, value] of Object.entries(rawRow)) {
+      const mappedField = mappings[header];
+      if (!mappedField || !value) continue;
+      
+      switch (mappedField) {
+        case 'courseCode':
+          parsedData.courseCode = value;
+          break;
+        case 'courseName':
+          parsedData.courseName = value;
+          break;
+        case 'subject':
+          parsedData.subject = value;
+          break;
+        case 'sectionNumber':
+          parsedData.sectionNumber = value;
+          break;
+        case 'instructor':
+          parsedData.instructor = value;
+          break;
+        case 'location':
+          parsedData.location = value;
+          break;
+        case 'credits':
+          parsedData.credits = parseInt(value, 10) || undefined;
+          break;
+        case 'days':
+          parsedData.days = parseDays(value);
+          if (parsedData.days.length === 0) {
+            warnings.push(`Could not parse days: "${value}"`);
+          }
+          break;
+        case 'startTime':
+          try {
+            parsedData.startTime = parseTime(value);
+          } catch (e) {
+            errors.push(`Invalid start time: "${value}"`);
+          }
+          break;
+        case 'endTime':
+          try {
+            parsedData.endTime = parseTime(value);
+          } catch (e) {
+            errors.push(`Invalid end time: "${value}"`);
+          }
+          break;
+        case 'schedule':
+          parsedData.schedule = value;
+          const scheduleResult = parseScheduleField(value);
+          if (scheduleResult.isValid) {
+            parsedData.days = scheduleResult.days;
+            parsedData.startTime = scheduleResult.startTime;
+            parsedData.endTime = scheduleResult.endTime;
+          } else {
+            warnings.push(`Schedule: ${scheduleResult.error}`);
+          }
+          break;
+        case 'term':
+          parsedData.term = value;
+          break;
+      }
+    }
+    
+    // Validate required fields
+    if (!parsedData.courseCode) errors.push('Missing course code');
+    if (!parsedData.courseName) errors.push('Missing course name');
+    if (!parsedData.sectionNumber) errors.push('Missing section number');
+    
+    rows.push({
+      rowNumber: rowNum,
+      rawData: rawRow,
+      parsedData,
+      isValid: errors.length === 0,
+      errors,
+      warnings
+    });
+  }
+  
+  // Determine if we can import
+  const allRequiredPresent = Object.entries(requiredFieldsPresent)
+    .filter(([key]) => key !== 'timeInfo')
+    .every(([, present]) => present);
+  const canImport = allRequiredPresent && requiredFieldsPresent.timeInfo && rows.length > 0 && rows.some(r => r.isValid);
+  
+  return {
+    headers,
+    rows,
+    mappings,
+    suggestedMappings: suggestions
+      .filter(s => s.confidenceScore >= 0.5)
+      .map(s => ({ detected: s.header, suggested: s.suggestedField, confidence: s.confidenceScore })),
+    unmappedHeaders: suggestions
+      .filter(s => s.confidence === 'none' || !mappings[s.header])
+      .map(s => s.header),
+    requiredFieldsPresent,
+    canImport
+  };
+}
+
+// Export for feedback service
+export { getHeaderAliases };
 
 export function generateSampleCSV(): string {
   return `Course Code,Course Name,Subject,Section,Instructor,Days,Start Time,End Time,Location,Credits

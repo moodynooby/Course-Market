@@ -142,6 +142,54 @@ export interface HeaderMappingCorrection {
   suggestedMapping?: string;
 }
 
+// Live preview types for CSV import
+export interface PreviewRow {
+  rowNumber: number;
+  rawData: Record<string, string>;
+  parsedData: {
+    courseCode?: string;
+    courseName?: string;
+    subject?: string;
+    sectionNumber?: string;
+    instructor?: string;
+    location?: string;
+    credits?: number;
+    days?: string[];
+    startTime?: string;
+    endTime?: string;
+    schedule?: string;
+    term?: string;
+  };
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface CSVPreviewResult {
+  headers: string[];
+  rows: PreviewRow[];
+  mappings: Record<string, string>;
+  suggestedMappings: Array<{
+    detected: string;
+    suggested: string;
+    confidence: number;
+  }>;
+  unmappedHeaders: string[];
+  requiredFieldsPresent: Record<string, boolean>;
+  canImport: boolean;
+}
+
+export type MappingConfidence = 'high' | 'medium' | 'low' | 'none';
+
+export interface HeaderMappingSuggestion {
+  header: string;
+  suggestedField: string;
+  confidence: MappingConfidence;
+  confidenceScore: number;
+  reason: string;
+  alternatives: string[];
+}
+
 export interface OptimizationResult {
   schedules: Schedule[];
   bestSchedule: Schedule | null;

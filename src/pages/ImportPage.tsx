@@ -1,4 +1,4 @@
-import { useCallback, useState, useMemo } from 'react';
+import { useCallback, useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -26,10 +26,22 @@ import {
   TextField,
   Grid,
   Divider,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Tooltip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Badge,
+  Avatar,
+  Stepper,
+  Step,
+  StepLabel,
+  StepContent,
+  Fade,
+  Collapse,
 } from '@mui/material';
 import {
   Upload,
@@ -38,49 +50,85 @@ import {
   CheckCircle,
   Warning,
   CloudUpload,
-  ExpandMore,
   Lightbulb,
   Save,
   Map,
   Schedule,
+  Preview,
+  Check,
+  Error,
+  ArrowForward,
+  ArrowBack,
+  Visibility,
 } from '@mui/icons-material';
-import { parseCSV, generateSampleCSV, detectCSVHeaders, getSuggestedHeaderMappings } from '../utils/csv';
+import { parseCSV, generateSampleCSV, generateCSVPreview, getHeaderMappingSuggestions, getHeaderAliases } from '../utils/csv';
 import { parseScheduleField } from '../constants/csvHeaders';
 import { saveCourses, getCourses } from '../services/database';
-import { saveHeaderAlias, saveScheduleCorrection, getHeaderAliases } from '../services/feedback';
+import { saveHeaderAlias, saveScheduleCorrection } from '../services/feedback';
 import { useNavigate } from 'react-router-dom';
-import type { Course, Section } from '../types';
+import type { Course, Section, CSVPreviewResult, HeaderMappingSuggestion, PreviewRow } from '../types';
 
-interface FileParseState {
+interface FileAnalysisState {
   file: File;
   content: string;
-  detectedHeaders: string[];
-  suggestedMappings: Array<{ detected: string; suggested: string; confidence: number }>;
-  missingHeaders: string[];
-  headerCorrections: Record<string, string>;
-  scheduleCorrections: Array<{ rowIndex: number; originalSchedule: string; days: string; startTime: string; endTime: string }>;
-  needsCorrection: boolean;
-  parseErrors: string[];
+  preview: CSVPreviewResult | null;
+  suggestions: HeaderMappingSuggestion[];
+  customMappings: Record<string, string>;
+  isAnalyzing: boolean;
 }
 
 const CANONICAL_FIELDS = [
-  { value: 'courseCode', label: 'Course Code', required: true },
-  { value: 'courseName', label: 'Course Name', required: true },
-  { value: 'subject', label: 'Subject', required: true },
-  { value: 'sectionNumber', label: 'Section', required: true },
-  { value: 'instructor', label: 'Instructor', required: true },
-  { value: 'days', label: 'Days', required: false },
-  { value: 'startTime', label: 'Start Time', required: false },
-  { value: 'endTime', label: 'End Time', required: false },
-  { value: 'schedule', label: 'Schedule (Combined)', required: false },
-  { value: 'location', label: 'Location', required: true },
-  { value: 'credits', label: 'Credits', required: true },
-  { value: 'term', label: 'Term', required: false },
+  { value: 'courseCode', label: 'Course Code', required: true, icon: '🔢' },
+  { value: 'courseName', label: 'Course Name', required: true, icon: '📚' },
+  { value: 'subject', label: 'Subject', required: true, icon: '📖' },
+  { value: 'sectionNumber', label: 'Section', required: true, icon: '🔢' },
+  { value: 'instructor', label: 'Instructor', required: true, icon: '👨‍🏫' },
+  { value: 'days', label: 'Days', required: false, icon: '📅' },
+  { value: 'startTime', label: 'Start Time', required: false, icon: '🕐' },
+  { value: 'endTime', label: 'End Time', required: false, icon: '🕐' },
+  { value: 'schedule', label: 'Schedule (Combined)', required: false, icon: '📅' },
+  { value: 'location', label: 'Location', required: true, icon: '📍' },
+  { value: 'credits', label: 'Credits', required: true, icon: '⭐' },
+  { value: 'term', label: 'Term', required: false, icon: '📆' },
 ];
+
+const FIELD_COLORS: Record<string, string> = {
+  courseCode: '#1976d2',
+  courseName: '#388e3c',
+  subject: '#7b1fa2',
+  sectionNumber: '#d32f2f',
+  instructor: '#ed6c02',
+  days: '#0288d1',
+  startTime: '#689f38',
+  endTime: '#f57c00',
+  schedule: '#00796b',
+  location: '#5d4037',
+  credits: '#c62828',
+  term: '#455a64',
+};
+
+function getConfidenceColor(confidence: string): 'success' | 'warning' | 'error' | 'default' {
+  switch (confidence) {
+    case 'high': return 'success';
+    case 'medium': return 'warning';
+    case 'low': return 'error';
+    default: return 'default';
+  }
+}
+
+function getConfidenceLabel(confidence: string): string {
+  switch (confidence) {
+    case 'high': return 'High';
+    case 'medium': return 'Medium';
+    case 'low': return 'Low';
+    default: return 'None';
+  }
+}
 
 export default function ImportPage() {
   const [files, setFiles] = useState<File[]>([]);
-  const [fileStates, setFileStates] = useState<Record<string, FileParseState>>({});
+  const [fileAnalyses, setFileAnalyses] = useState<Record<string, FileAnalysisState>>({});
+  const [activeFileIndex, setActiveFileIndex] = useState<number>(0);
   const [parseResults, setParseResults] = useState<{
     courses: Course[];
     sections: Section[];
@@ -90,95 +138,105 @@ export default function ImportPage() {
   }[]>([]);
   const [loading, setLoading] = useState(false);
   const [imported, setImported] = useState(false);
-  const [correctionDialogOpen, setCorrectionDialogOpen] = useState(false);
-  const [currentFileIndex, setCurrentFileIndex] = useState(0);
+  const [showPreview, setShowPreview] = useState(false);
   const [scheduleTestValue, setScheduleTestValue] = useState('');
   const [scheduleTestResult, setScheduleTestResult] = useState<ReturnType<typeof parseScheduleField> | null>(null);
   const navigate = useNavigate();
 
-  const currentFileState = useMemo(() => {
-    const file = files[currentFileIndex];
-    return file ? fileStates[file.name] : null;
-  }, [files, fileStates, currentFileIndex]);
+  const activeFile = files[activeFileIndex];
+  const activeAnalysis = activeFile ? fileAnalyses[activeFile.name] : null;
+
+  // Analyze file when selected
+  const analyzeFile = useCallback(async (file: File) => {
+    setFileAnalyses(prev => ({
+      ...prev,
+      [file.name]: { ...prev[file.name], isAnalyzing: true }
+    }));
+
+    try {
+      const content = await file.text();
+      const suggestions = getHeaderMappingSuggestions(detectCSVHeaders(content));
+      
+      // Build initial custom mappings from high-confidence suggestions
+      const initialMappings: Record<string, string> = {};
+      suggestions.forEach(s => {
+        if (s.confidence === 'high') {
+          initialMappings[s.header] = s.suggestedField;
+        }
+      });
+
+      const preview = generateCSVPreview(content, initialMappings);
+
+      setFileAnalyses(prev => ({
+        ...prev,
+        [file.name]: {
+          file,
+          content,
+          preview,
+          suggestions,
+          customMappings: initialMappings,
+          isAnalyzing: false,
+        }
+      }));
+    } catch (error) {
+      console.error(`Failed to analyze ${file.name}:`, error);
+      setFileAnalyses(prev => ({
+        ...prev,
+        [file.name]: { ...prev[file.name], isAnalyzing: false }
+      }));
+    }
+  }, []);
 
   const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const newFiles = Array.from(event.target.files);
       setFiles(prev => [...prev, ...newFiles]);
       
-      // Pre-analyze each new file
+      // Analyze each new file
       for (const file of newFiles) {
-        try {
-          const content = await file.text();
-          const headers = detectCSVHeaders(content);
-          const suggestions = getSuggestedHeaderMappings(headers);
-          
-          // Check which required fields are missing
-          const mappedFields = new Set(suggestions.map(s => s.suggested));
-          const requiredFields = ['courseCode', 'courseName', 'subject', 'sectionNumber', 'instructor', 'location', 'credits'];
-          const missingHeaders = requiredFields.filter(f => !mappedFields.has(f));
-          
-          // Check time fields
-          const hasTimeFields = mappedFields.has('days') && mappedFields.has('startTime') && mappedFields.has('endTime');
-          const hasScheduleField = mappedFields.has('schedule');
-          const missingTimeFields = !hasTimeFields && !hasScheduleField;
-          
-          const fileState: FileParseState = {
-            file,
-            content,
-            detectedHeaders: headers,
-            suggestedMappings: suggestions,
-            missingHeaders: missingTimeFields ? [...missingHeaders, 'timeFields'] : missingHeaders,
-            headerCorrections: {},
-            scheduleCorrections: [],
-            needsCorrection: missingHeaders.length > 0 || missingTimeFields || suggestions.some(s => s.confidence < 0.8),
-            parseErrors: []
-          };
-          
-          setFileStates(prev => ({ ...prev, [file.name]: fileState }));
-        } catch (error) {
-          console.error(`Failed to analyze ${file.name}:`, error);
-        }
+        await analyzeFile(file);
       }
     }
-  }, []);
+  }, [analyzeFile]);
 
   const handleRemoveFile = (index: number) => {
     const file = files[index];
     setFiles(prev => prev.filter((_, i) => i !== index));
-    setFileStates(prev => {
+    setFileAnalyses(prev => {
       const { [file.name]: _, ...rest } = prev;
       return rest;
     });
-  };
-
-  const handleStartCorrection = () => {
-    setCurrentFileIndex(0);
-    setCorrectionDialogOpen(true);
-  };
-
-  const handleHeaderCorrectionChange = (detectedHeader: string, canonicalField: string) => {
-    if (!currentFileState) return;
-    
-    const updatedCorrections = { ...currentFileState.headerCorrections };
-    if (canonicalField) {
-      updatedCorrections[detectedHeader] = canonicalField;
-    } else {
-      delete updatedCorrections[detectedHeader];
+    if (activeFileIndex >= index && activeFileIndex > 0) {
+      setActiveFileIndex(prev => prev - 1);
     }
-    
-    setFileStates(prev => ({
+  };
+
+  const handleMappingChange = (header: string, field: string) => {
+    if (!activeAnalysis) return;
+
+    const newMappings = { ...activeAnalysis.customMappings };
+    if (field) {
+      newMappings[header] = field;
+    } else {
+      delete newMappings[header];
+    }
+
+    // Regenerate preview with new mappings
+    const newPreview = generateCSVPreview(activeAnalysis.content, newMappings);
+
+    setFileAnalyses(prev => ({
       ...prev,
-      [currentFileState.file.name]: {
-        ...prev[currentFileState.file.name],
-        headerCorrections: updatedCorrections
+      [activeFile.name]: {
+        ...prev[activeFile.name],
+        customMappings: newMappings,
+        preview: newPreview,
       }
     }));
-  };
 
-  const handleSaveHeaderMapping = (detectedHeader: string, canonicalField: string) => {
-    saveHeaderAlias(detectedHeader, canonicalField, 1.0);
-    handleHeaderCorrectionChange(detectedHeader, canonicalField);
+    // Save to feedback store
+    if (field) {
+      saveHeaderAlias(header, field, 1.0);
+    }
   };
 
   const handleTestSchedule = () => {
@@ -188,7 +246,7 @@ export default function ImportPage() {
   };
 
   const handleSaveScheduleCorrection = () => {
-    if (!scheduleTestResult?.isValid || !currentFileState || !scheduleTestValue) return;
+    if (!scheduleTestResult?.isValid || !scheduleTestValue) return;
     
     saveScheduleCorrection(
       scheduleTestValue,
@@ -202,94 +260,43 @@ export default function ImportPage() {
     setScheduleTestResult(null);
   };
 
-  const applyCorrectionsAndParse = async () => {
-    if (!currentFileState) return;
-    
-    setLoading(true);
-    
-    // Save all header corrections to feedback store
-    for (const [detected, canonical] of Object.entries(currentFileState.headerCorrections)) {
-      saveHeaderAlias(detected, canonical, 1.0);
+  const handleImport = async () => {
+    const readyFiles = Object.values(fileAnalyses).filter(a => a.preview?.canImport);
+    if (readyFiles.length === 0) {
+      setShowPreview(true);
+      return;
     }
-    
-    // Re-parse with corrections
-    const result = parseCSV(currentFileState.content, currentFileState.file.name);
-    
-    // Update file state
-    setFileStates(prev => ({
-      ...prev,
-      [currentFileState.file.name]: {
-        ...prev[currentFileState.file.name],
-        needsCorrection: !result.success,
-        parseErrors: result.errors
-      }
-    }));
-    
-    if (result.success) {
-      // Move to next file or close dialog
-      if (currentFileIndex < files.length - 1) {
-        setCurrentFileIndex(prev => prev + 1);
-      } else {
-        setCorrectionDialogOpen(false);
-        // Proceed with full import
-        await handleImportWithCorrections();
-      }
-    }
-    
-    setLoading(false);
-  };
 
-  const handleImportWithCorrections = async () => {
+    setLoading(true);
     const results: typeof parseResults = [];
     const allCourses: Course[] = [];
     const allSections: Section[] = [];
-    
-    for (const file of files) {
-      const state = fileStates[file.name];
-      if (!state) continue;
-      
-      const result = parseCSV(state.content, file.name);
+
+    for (const analysis of readyFiles) {
+      const result = parseCSV(analysis.content, analysis.file.name);
       
       results.push({
         courses: result.courses,
         sections: result.sections,
         errors: result.errors,
         warnings: result.warnings,
-        filename: file.name,
+        filename: analysis.file.name,
       });
       
       allCourses.push(...result.courses);
       allSections.push(...result.sections);
     }
-    
+
     setParseResults(results);
     
     if (allCourses.length > 0) {
-      // Merge with existing courses
       const existing = getCourses();
-      const mergedCourses = [...existing.courses, ...allCourses];
-      const mergedSections = [...existing.sections, ...allSections];
-      saveCourses(mergedCourses, mergedSections);
+      saveCourses([...existing.courses, ...allCourses], [...existing.sections, ...allSections]);
       setImported(true);
     }
-  };
 
-  const handleImport = async () => {
-    if (files.length === 0) return;
-    
-    // Check if any files need correction
-    const needsCorrection = Object.values(fileStates).some(s => s.needsCorrection);
-    if (needsCorrection) {
-      handleStartCorrection();
-      return;
-    }
-    
-    setLoading(true);
-    setParseResults([]);
-    
-    await handleImportWithCorrections();
-    
     setLoading(false);
+    setShowPreview(false);
   };
 
   const handleLoadSample = async () => {
@@ -318,20 +325,20 @@ export default function ImportPage() {
       f => f.name.endsWith('.csv')
     );
     setFiles(prev => [...prev, ...droppedFiles]);
-    
-    // Trigger file analysis
-    const mockEvent = { target: { files: droppedFiles as unknown as FileList } } as React.ChangeEvent<HTMLInputElement>;
-    handleFileSelect(mockEvent);
-  }, [handleFileSelect]);
+    droppedFiles.forEach(file => analyzeFile(file));
+  }, [analyzeFile]);
 
   const handleDragOver = (event: React.DragEvent) => {
     event.preventDefault();
   };
 
-  const filesNeedingCorrection = useMemo(() => 
-    Object.values(fileStates).filter(s => s.needsCorrection),
-    [fileStates]
-  );
+  const allFilesReady = useMemo(() => {
+    return Object.values(fileAnalyses).every(a => a.preview?.canImport);
+  }, [fileAnalyses]);
+
+  const readyFilesCount = useMemo(() => {
+    return Object.values(fileAnalyses).filter(a => a.preview?.canImport).length;
+  }, [fileAnalyses]);
 
   return (
     <Box>
@@ -339,9 +346,10 @@ export default function ImportPage() {
         Import Courses
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        Upload one or more CSV files containing course data
+        Upload CSV files and preview how they'll be imported
       </Typography>
 
+      {/* Upload Area */}
       <Card
         sx={{
           mb: 3,
@@ -386,22 +394,49 @@ export default function ImportPage() {
         </Box>
       </Card>
 
+      {/* Files List */}
       {files.length > 0 && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Selected Files ({files.length})
-            </Typography>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+              <Typography variant="h6">
+                Files ({files.length})
+              </Typography>
+              {readyFilesCount > 0 && (
+                <Chip 
+                  icon={<CheckCircle />}
+                  label={`${readyFilesCount} ready to import`}
+                  color="success"
+                  size="small"
+                />
+              )}
+            </Stack>
+
             <List>
               {files.map((file, index) => {
-                const state = fileStates[file.name];
-                const needsFix = state?.needsCorrection;
+                const analysis = fileAnalyses[file.name];
+                const isReady = analysis?.preview?.canImport;
+                const hasIssues = analysis?.preview && !analysis.preview.canImport;
                 
                 return (
-                  <ListItem key={index}>
+                  <ListItem 
+                    key={index}
+                    onClick={() => setActiveFileIndex(index)}
+                    sx={{ 
+                      cursor: 'pointer', 
+                      borderRadius: 1,
+                      bgcolor: activeFileIndex === index ? 'action.selected' : 'inherit'
+                    }}
+                  >
                     <ListItemIcon>
-                      {needsFix ? (
-                        <Tooltip title="Needs mapping correction">
+                      {analysis?.isAnalyzing ? (
+                        <Box sx={{ width: 20 }}>
+                          <LinearProgress />
+                        </Box>
+                      ) : isReady ? (
+                        <CheckCircle color="success" />
+                      ) : hasIssues ? (
+                        <Tooltip title="Needs attention">
                           <Warning color="warning" />
                         </Tooltip>
                       ) : (
@@ -413,25 +448,26 @@ export default function ImportPage() {
                       secondary={
                         <Stack direction="row" spacing={1} alignItems="center">
                           <span>{(file.size / 1024).toFixed(1)} KB</span>
-                          {state?.detectedHeaders && (
-                            <Chip 
-                              size="small" 
-                              label={`${state.detectedHeaders.length} columns`} 
-                              variant="outlined"
-                            />
-                          )}
-                          {needsFix && (
-                            <Chip 
-                              size="small" 
-                              label="Mapping needed" 
-                              color="warning"
-                            />
+                          {analysis?.preview && (
+                            <>
+                              <Chip 
+                                size="small" 
+                                label={`${analysis.preview.headers.length} columns`}
+                                variant="outlined"
+                              />
+                              <Chip 
+                                size="small"
+                                label={`${analysis.preview.rows.filter(r => r.isValid).length}/${analysis.preview.rows.length} rows valid`}
+                                color={isReady ? 'success' : hasIssues ? 'warning' : 'default'}
+                                variant="outlined"
+                              />
+                            </>
                           )}
                         </Stack>
                       }
                     />
                     <ListItemSecondaryAction>
-                      <IconButton onClick={() => handleRemoveFile(index)}>
+                      <IconButton onClick={() => handleRemoveFile(index)} size="small">
                         <Delete />
                       </IconButton>
                     </ListItemSecondaryAction>
@@ -439,216 +475,338 @@ export default function ImportPage() {
                 );
               })}
             </List>
+
             <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
               <Button
                 variant="contained"
-                onClick={handleImport}
-                disabled={loading || files.length === 0}
+                onClick={allFilesReady ? handleImport : () => setShowPreview(true)}
+                disabled={loading || files.length === 0 || Object.keys(fileAnalyses).length === 0}
                 size="large"
-                startIcon={filesNeedingCorrection.length > 0 ? <Map /> : undefined}
+                startIcon={allFilesReady ? <CheckCircle /> : <Visibility />}
               >
                 {loading ? <LinearProgress sx={{ width: '100%' }} /> : 
-                  filesNeedingCorrection.length > 0 ? `Import with Corrections (${filesNeedingCorrection.length})` : 'Import Files'}
+                  allFilesReady ? `Import ${readyFilesCount} File${readyFilesCount > 1 ? 's' : ''}` : 'Review & Map'}
               </Button>
               <Button variant="outlined" onClick={handleLoadSample} disabled={loading}>
-                Load Sample Data
+                Load Sample
               </Button>
             </Stack>
           </CardContent>
         </Card>
       )}
 
-      {/* Correction Dialog */}
-      <Dialog 
-        open={correctionDialogOpen} 
-        onClose={() => setCorrectionDialogOpen(false)}
-        maxWidth="md"
+      {/* Live Preview Dialog */}
+      <Dialog
+        open={showPreview}
+        onClose={() => setShowPreview(false)}
+        maxWidth="xl"
         fullWidth
+        scroll="paper"
       >
         <DialogTitle>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Map />
-            <span>Map CSV Headers for {currentFileState?.file.name}</span>
+          <Stack direction="row" alignItems="center" spacing={2}>
+            <Preview color="primary" />
+            <Box>
+              <Typography variant="h6">Preview & Map Headers</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {activeFile?.name}
+              </Typography>
+            </Box>
+            {activeAnalysis?.preview && (
+              <Chip
+                size="small"
+                icon={activeAnalysis.preview.canImport ? <CheckCircle /> : <Warning />}
+                label={activeAnalysis.preview.canImport ? 'Ready to import' : 'Needs mapping'}
+                color={activeAnalysis.preview.canImport ? 'success' : 'warning'}
+              />
+            )}
           </Stack>
         </DialogTitle>
-        <DialogContent>
-          {currentFileState && (
+
+        <DialogContent dividers>
+          {activeAnalysis?.preview && (
             <Stack spacing={3}>
-              <Alert severity="info">
-                Map the detected CSV columns to the expected fields. This mapping will be saved for future imports.
-              </Alert>
-              
-              {/* Suggested Mappings */}
-              {currentFileState.suggestedMappings.length > 0 && (
-                <Accordion defaultExpanded>
-                  <AccordionSummary expandIcon={<ExpandMore />}>
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                      <Lightbulb color="primary" />
-                      <Typography>Suggested Mappings ({currentFileState.suggestedMappings.length})</Typography>
-                    </Stack>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <Grid container spacing={2}>
-                      {currentFileState.suggestedMappings.map(({ detected, suggested, confidence }) => (
-                        <Grid key={detected}>
-                          <Card variant="outlined">
-                            <CardContent>
-                              <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                <Box>
-                                  <Typography variant="subtitle2">{detected}</Typography>
-                                  <Typography variant="body2" color="text.secondary">
-                                    → {CANONICAL_FIELDS.find(f => f.value === suggested)?.label || suggested}
+              {/* Required Fields Status */}
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Required Fields
+                  </Typography>
+                  <Stack direction="row" flexWrap="wrap" gap={1}>
+                    {Object.entries(activeAnalysis.preview.requiredFieldsPresent)
+                      .filter(([key]) => key !== 'timeInfo')
+                      .map(([field, present]) => {
+                        const fieldInfo = CANONICAL_FIELDS.find(f => f.value === field);
+                        return (
+                          <Chip
+                            key={field}
+                            size="small"
+                            icon={present ? <Check /> : <Error />}
+                            label={fieldInfo?.label || field}
+                            color={present ? 'success' : 'error'}
+                            variant={present ? 'filled' : 'outlined'}
+                          />
+                        );
+                      })}
+                    <Chip
+                      size="small"
+                      icon={activeAnalysis.preview.requiredFieldsPresent.timeInfo ? <Check /> : <Error />}
+                      label="Time Info"
+                      color={activeAnalysis.preview.requiredFieldsPresent.timeInfo ? 'success' : 'error'}
+                      variant={activeAnalysis.preview.requiredFieldsPresent.timeInfo ? 'filled' : 'outlined'}
+                    />
+                  </Stack>
+                </CardContent>
+              </Card>
+
+              {/* Header Mapping Section */}
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Map CSV Headers
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                    Select the correct field for each detected header. High confidence matches are pre-selected.
+                  </Typography>
+
+                  <Grid container spacing={2}>
+                    {activeAnalysis.suggestions.map((suggestion) => {
+                      const currentValue = activeAnalysis.customMappings[suggestion.header] || '';
+                      const isMapped = !!currentValue;
+                      
+                      return (
+                        <Grid key={suggestion.header}>
+                          <Card 
+                            variant="outlined" 
+                            sx={{ 
+                              borderColor: isMapped ? FIELD_COLORS[currentValue] : 'divider',
+                              borderWidth: isMapped ? 2 : 1,
+                            }}
+                          >
+                            <CardContent sx={{ py: 1, px: 2, '&:last-child': { pb: 1 } }}>
+                              <Stack spacing={1}>
+                                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                                  <Typography variant="subtitle2" fontWeight={600}>
+                                    {suggestion.header}
                                   </Typography>
-                                </Box>
-                                <Chip 
-                                  size="small" 
-                                  label={`${Math.round(confidence * 100)}%`}
-                                  color={confidence >= 0.9 ? 'success' : confidence >= 0.7 ? 'warning' : 'default'}
-                                />
+                                  <Tooltip title={suggestion.reason}>
+                                    <Chip
+                                      size="small"
+                                      label={getConfidenceLabel(suggestion.confidence)}
+                                      color={getConfidenceColor(suggestion.confidence)}
+                                      variant="outlined"
+                                    />
+                                  </Tooltip>
+                                </Stack>
+                                
+                                <FormControl fullWidth size="small">
+                                  <Select
+                                    value={currentValue}
+                                    onChange={(e) => handleMappingChange(suggestion.header, e.target.value)}
+                                    displayEmpty
+                                    renderValue={(selected) => {
+                                      if (!selected) return <em>Select field...</em>;
+                                      const field = CANONICAL_FIELDS.find(f => f.value === selected);
+                                      return (
+                                        <Stack direction="row" alignItems="center" spacing={1}>
+                                          <span>{field?.icon}</span>
+                                          <span>{field?.label}</span>
+                                        </Stack>
+                                      );
+                                    }}
+                                  >
+                                    <MenuItem value="">
+                                      <em>Not mapped</em>
+                                    </MenuItem>
+                                    {CANONICAL_FIELDS.map(field => (
+                                      <MenuItem key={field.value} value={field.value}>
+                                        <Stack direction="row" alignItems="center" spacing={1} width="100%">
+                                          <span>{field.icon}</span>
+                                          <span>{field.label}</span>
+                                          {field.required && (
+                                            <Chip size="small" label="Required" color="primary" sx={{ ml: 'auto' }} />
+                                          )}
+                                        </Stack>
+                                      </MenuItem>
+                                    ))}
+                                  </Select>
+                                </FormControl>
+
+                                {suggestion.alternatives.length > 0 && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    Also similar to: {suggestion.alternatives.join(', ')}
+                                  </Typography>
+                                )}
                               </Stack>
                             </CardContent>
                           </Card>
                         </Grid>
-                      ))}
-                    </Grid>
-                  </AccordionDetails>
-                </Accordion>
-              )}
-              
-              {/* Manual Header Mapping */}
-              <Accordion defaultExpanded>
-                <AccordionSummary expandIcon={<ExpandMore />}>
-                  <Typography fontWeight={600}>Manual Column Mapping</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Grid container spacing={2}>
-                    {currentFileState.detectedHeaders.map(header => {
-                      const currentMapping = currentFileState.suggestedMappings.find(s => s.detected === header);
-                      const manualMapping = currentFileState.headerCorrections[header];
-                      
-                      return (
-                        <Grid key={header}>
-                          <FormControl fullWidth size="small">
-                            <InputLabel>{header}</InputLabel>
-                            <Select
-                              value={manualMapping || currentMapping?.suggested || ''}
-                              onChange={(e) => handleHeaderCorrectionChange(header, e.target.value)}
-                              label={header}
-                            >
-                              <MenuItem value="">
-                                <em>Not mapped</em>
-                              </MenuItem>
-                              {CANONICAL_FIELDS.map(field => (
-                                <MenuItem key={field.value} value={field.value}>
-                                  {field.label} {field.required && '*'}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        </Grid>
                       );
                     })}
                   </Grid>
-                </AccordionDetails>
-              </Accordion>
-              
-              {/* Schedule Parser Testing */}
-              <Accordion>
-                <AccordionSummary expandIcon={<ExpandMore />}>
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <Schedule />
-                    <Typography>Test Schedule Parser</Typography>
+                </CardContent>
+              </Card>
+
+              {/* Preview Table */}
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Data Preview (First {activeAnalysis.preview.rows.length} rows)
+                  </Typography>
+                  
+                  <TableContainer component={Paper} variant="outlined">
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow sx={{ bgcolor: 'action.hover' }}>
+                          <TableCell width={50}>#</TableCell>
+                          <TableCell width={100}>Status</TableCell>
+                          {activeAnalysis.preview.headers.map(header => {
+                            const mappedField = activeAnalysis.preview?.mappings[header];
+                            const fieldInfo = CANONICAL_FIELDS.find(f => f.value === mappedField);
+                            return (
+                              <TableCell key={header}>
+                                <Stack direction="row" alignItems="center" spacing={1}>
+                                  <span>{fieldInfo?.icon}</span>
+                                  <span>{fieldInfo?.label || header}</span>
+                                  {mappedField && (
+                                    <Chip 
+                                      size="small" 
+                                      label={header}
+                                      variant="outlined"
+                                      sx={{ fontSize: '0.6rem' }}
+                                    />
+                                  )}
+                                </Stack>
+                              </TableCell>
+                            );
+                          })}
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {activeAnalysis.preview.rows.map((row) => (
+                          <TableRow 
+                            key={row.rowNumber}
+                            sx={{ 
+                              bgcolor: row.isValid ? 'inherit' : 'error.light',
+                              '&:hover': { bgcolor: row.isValid ? 'action.hover' : 'error.light' }
+                            }}
+                          >
+                            <TableCell>{row.rowNumber}</TableCell>
+                            <TableCell>
+                              {row.isValid ? (
+                                <CheckCircle color="success" fontSize="small" />
+                              ) : (
+                                <Tooltip title={row.errors.join(', ')}>
+                                  <Error color="error" fontSize="small" />
+                                </Tooltip>
+                              )}
+                            </TableCell>
+                            {activeAnalysis.preview?.headers.map(header => {
+                              const mappedField = activeAnalysis.preview?.mappings[header];
+                              const rawValue = row.rawData[header];
+                              const parsedValue = mappedField ? getParsedValue(row, mappedField) : null;
+                              
+                              return (
+                                <TableCell key={header}>
+                                  <Tooltip 
+                                    title={
+                                      parsedValue && parsedValue !== rawValue 
+                                        ? `Raw: ${rawValue}` 
+                                        : ''
+                                    }
+                                  >
+                                    <span>
+                                      {parsedValue || rawValue || '-'}
+                                    </span>
+                                  </Tooltip>
+                                </TableCell>
+                              );
+                            })}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </CardContent>
+              </Card>
+
+              {/* Schedule Parser Test */}
+              <Card variant="outlined">
+                <CardContent>
+                  <Typography variant="subtitle2" gutterBottom>
+                    <Schedule sx={{ verticalAlign: 'middle', mr: 1 }} />
+                    Schedule Parser Test
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                    Test how combined schedule strings (e.g., "MWF 9:00-9:50") will be parsed
+                  </Typography>
+                  
+                  <Stack direction="row" spacing={2} alignItems="flex-start">
+                    <TextField
+                      fullWidth
+                      size="small"
+                      label="Schedule string"
+                      placeholder="e.g., MWF 9:00 AM - 9:50 AM"
+                      value={scheduleTestValue}
+                      onChange={(e) => setScheduleTestValue(e.target.value)}
+                    />
+                    <Button variant="outlined" onClick={handleTestSchedule}>
+                      Test
+                    </Button>
                   </Stack>
-                </AccordionSummary>
-                <AccordionDetails>
-                  <Stack spacing={2}>
-                    <Typography variant="body2" color="text.secondary">
-                      Test how combined schedule strings (e.g., "MWF 9:00-9:50") are parsed.
-                    </Typography>
-                    <Stack direction="row" spacing={2}>
-                      <TextField
-                        fullWidth
-                        size="small"
-                        label="Schedule string"
-                        placeholder="e.g., MWF 9:00 AM - 9:50 AM"
-                        value={scheduleTestValue}
-                        onChange={(e) => setScheduleTestValue(e.target.value)}
-                      />
-                      <Button variant="outlined" onClick={handleTestSchedule}>
-                        Test
-                      </Button>
-                    </Stack>
-                    {scheduleTestResult && (
-                      <Alert severity={scheduleTestResult.isValid ? 'success' : 'warning'}>
-                        {scheduleTestResult.isValid ? (
-                          <Stack spacing={0.5}>
-                            <Typography variant="body2">
-                              <strong>Days:</strong> {scheduleTestResult.days.join(', ')}
-                            </Typography>
-                            <Typography variant="body2">
-                              <strong>Time:</strong> {scheduleTestResult.startTime} - {scheduleTestResult.endTime}
-                            </Typography>
-                          </Stack>
-                        ) : (
-                          <Typography variant="body2">{scheduleTestResult.error}</Typography>
-                        )}
-                      </Alert>
-                    )}
-                    {scheduleTestResult?.isValid && (
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<Save />}
-                        onClick={handleSaveScheduleCorrection}
-                      >
-                        Save as Correct Parse
-                      </Button>
-                    )}
-                  </Stack>
-                </AccordionDetails>
-              </Accordion>
-              
-              {/* Learned Aliases Display */}
-              <Accordion>
-                <AccordionSummary expandIcon={<ExpandMore />}>
-                  <Typography>Learned Header Aliases</Typography>
-                </AccordionSummary>
-                <AccordionDetails>
-                  {Object.entries(getHeaderAliases()).length === 0 ? (
-                    <Typography variant="body2" color="text.secondary">
-                      No learned aliases yet. Map headers above to build knowledge.
-                    </Typography>
-                  ) : (
-                    <Stack spacing={1}>
-                      {Object.entries(getHeaderAliases()).map(([alias, data]) => (
-                        <Chip
-                          key={alias}
-                          label={`"${alias}" → ${data.canonicalHeader} (${Math.round(data.confidence * 100)}%)`}
-                          variant="outlined"
-                          size="small"
-                        />
-                      ))}
-                    </Stack>
+                  
+                  {scheduleTestResult && (
+                    <Alert 
+                      severity={scheduleTestResult.isValid ? 'success' : 'warning'}
+                      sx={{ mt: 2 }}
+                      action={
+                        scheduleTestResult.isValid && (
+                          <Button 
+                            size="small" 
+                            startIcon={<Save />}
+                            onClick={handleSaveScheduleCorrection}
+                          >
+                            Save
+                          </Button>
+                        )
+                      }
+                    >
+                      {scheduleTestResult.isValid ? (
+                        <Stack spacing={0.5}>
+                          <Typography variant="body2">
+                            <strong>Days:</strong> {scheduleTestResult.days.join(', ')}
+                          </Typography>
+                          <Typography variant="body2">
+                            <strong>Time:</strong> {scheduleTestResult.startTime} - {scheduleTestResult.endTime}
+                          </Typography>
+                        </Stack>
+                      ) : (
+                        <Typography variant="body2">{scheduleTestResult.error}</Typography>
+                      )}
+                    </Alert>
                   )}
-                </AccordionDetails>
-              </Accordion>
+                </CardContent>
+              </Card>
             </Stack>
           )}
         </DialogContent>
+
         <DialogActions>
-          <Button onClick={() => setCorrectionDialogOpen(false)}>
-            Cancel
+          <Button onClick={() => setShowPreview(false)}>
+            Close
           </Button>
-          <Button 
-            variant="contained" 
-            onClick={applyCorrectionsAndParse}
-            disabled={loading}
+          <Button
+            variant="contained"
+            onClick={handleImport}
+            disabled={!activeAnalysis?.preview?.canImport || loading}
+            startIcon={<CheckCircle />}
           >
-            {loading ? 'Parsing...' : currentFileIndex < files.length - 1 ? 'Next File' : 'Import All'}
+            Import This File
           </Button>
         </DialogActions>
       </Dialog>
 
+      {/* Results */}
       {parseResults.length > 0 && (
         <Card sx={{ mb: 3 }}>
           <CardContent>
@@ -706,30 +864,48 @@ export default function ImportPage() {
             </Button>
           }
         >
-          Courses imported successfully! You can now browse and select your courses.
+          Courses imported successfully!
         </Alert>
       )}
-
-      <Card sx={{ mt: 3, bgcolor: 'primary.light' }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            CSV Format Requirements
-          </Typography>
-          <Typography variant="body2" sx={{ mb: 2 }}>
-            Your CSV files should include these headers:
-          </Typography>
-          <Stack direction="row" flexWrap="wrap" gap={1}>
-            {['Course Code', 'Course Name', 'Subject', 'Section', 'Instructor', 'Days', 'Start Time', 'End Time', 'Location', 'Credits'].map(header => (
-              <Chip key={header} label={header} variant="outlined" />
-            ))}
-          </Stack>
-          <Divider sx={{ my: 2 }} />
-          <Typography variant="body2">
-            <strong>Alternative format:</strong> You can use a combined "Schedule" column instead of separate Days/Start Time/End Time columns.
-            Example: <code>MWF 9:00 AM - 9:50 AM</code> or <code>TTh 14:00-15:15</code>
-          </Typography>
-        </CardContent>
-      </Card>
     </Box>
   );
+}
+
+// Helper function to get parsed value for display
+function getParsedValue(row: PreviewRow, field: string): string | null {
+  const value = row.parsedData[field as keyof typeof row.parsedData];
+  if (!value) return null;
+  
+  if (Array.isArray(value)) {
+    return value.join(', ');
+  }
+  return String(value);
+}
+
+// Helper to detect headers
+function detectCSVHeaders(csvContent: string): string[] {
+  const lines = csvContent.split('\n');
+  if (lines.length === 0) return [];
+  
+  const headerLine = lines[0].trim();
+  if (!headerLine) return [];
+  
+  // Simple CSV parsing for headers
+  const headers: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (const char of headerLine) {
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      headers.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  headers.push(current.trim());
+  
+  return headers;
 }
