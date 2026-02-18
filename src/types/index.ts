@@ -101,6 +101,120 @@ export interface CSVParseResult {
   sections: Section[];
   errors: string[];
   warnings: string[];
+  detectedHeaders?: string[];
+  parseContext?: {
+    usedAliases: Record<string, string>;
+    usedScheduleCorrections: string[];
+  };
+}
+
+// Feedback types for self-learning
+export interface HeaderAlias {
+  canonicalHeader: string;
+  confidence: number;
+  usageCount: number;
+  lastUsed: string;
+}
+
+export interface ScheduleCorrection {
+  days: string[];
+  startTime: string;
+  endTime: string;
+  usageCount: number;
+  successCount: number;
+  lastUsed: string;
+}
+
+// Complex schedule format support
+export interface ScheduleTimeSlot {
+  day: string;
+  startTime: string;
+  endTime: string;
+  startDate?: string;
+  endDate?: string;
+  location?: string;
+}
+
+export interface CustomScheduleFormat {
+  id: string;
+  name: string;
+  description: string;
+  separator: string;
+  pattern: string;
+  example: string;
+  extractTimeSlots: (scheduleString: string) => ScheduleTimeSlot[];
+}
+
+export interface ScheduleParseResult {
+  timeSlots: ScheduleTimeSlot[];
+  isValid: boolean;
+  error?: string;
+  formatUsed?: string;
+}
+
+export interface FeedbackEntry {
+  id: string;
+  type: 'header_mapping' | 'schedule_correction' | 'parse_error';
+  description: string;
+  originalValue?: string;
+  correctedValue?: string;
+  timestamp?: string;
+  fileName?: string;
+}
+
+export interface HeaderMappingCorrection {
+  detectedHeader: string;
+  mappedField: string;
+  isCorrect: boolean;
+  suggestedMapping?: string;
+}
+
+// Live preview types for CSV import
+export interface PreviewRow {
+  rowNumber: number;
+  rawData: Record<string, string>;
+  parsedData: {
+    courseCode?: string;
+    courseName?: string;
+    subject?: string;
+    sectionNumber?: string;
+    instructor?: string;
+    location?: string;
+    credits?: number;
+    days?: string[];
+    startTime?: string;
+    endTime?: string;
+    schedule?: string;
+    term?: string;
+  };
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface CSVPreviewResult {
+  headers: string[];
+  rows: PreviewRow[];
+  mappings: Record<string, string>;
+  suggestedMappings: Array<{
+    detected: string;
+    suggested: string;
+    confidence: number;
+  }>;
+  unmappedHeaders: string[];
+  requiredFieldsPresent: Record<string, boolean>;
+  canImport: boolean;
+}
+
+export type MappingConfidence = 'high' | 'medium' | 'low' | 'none';
+
+export interface HeaderMappingSuggestion {
+  header: string;
+  suggestedField: string;
+  confidence: MappingConfidence;
+  confidenceScore: number;
+  reason: string;
+  alternatives: string[];
 }
 
 export interface OptimizationResult {
