@@ -125,6 +125,33 @@ export interface ScheduleCorrection {
   lastUsed: string;
 }
 
+// Complex schedule format support
+export interface ScheduleTimeSlot {
+  day: string;
+  startTime: string;
+  endTime: string;
+  startDate?: string;
+  endDate?: string;
+  location?: string;
+}
+
+export interface CustomScheduleFormat {
+  id: string;
+  name: string;
+  description: string;
+  separator: string;
+  pattern: string;
+  example: string;
+  extractTimeSlots: (scheduleString: string) => ScheduleTimeSlot[];
+}
+
+export interface ScheduleParseResult {
+  timeSlots: ScheduleTimeSlot[];
+  isValid: boolean;
+  error?: string;
+  formatUsed?: string;
+}
+
 export interface FeedbackEntry {
   id: string;
   type: 'header_mapping' | 'schedule_correction' | 'parse_error';

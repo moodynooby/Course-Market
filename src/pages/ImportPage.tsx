@@ -62,9 +62,9 @@ import {
   Visibility,
 } from '@mui/icons-material';
 import { parseCSV, generateSampleCSV, generateCSVPreview, getHeaderMappingSuggestions, getHeaderAliases } from '../utils/csv';
-import { parseScheduleField } from '../constants/csvHeaders';
+import { parseScheduleField, parseComplexSchedule, createCustomScheduleParser } from '../constants/csvHeaders';
 import { saveCourses, getCourses } from '../services/database';
-import { saveHeaderAlias, saveScheduleCorrection } from '../services/feedback';
+import { saveHeaderAlias, saveScheduleCorrection, saveCustomScheduleFormat, getCustomScheduleFormats, learnSchedulePattern } from '../services/feedback';
 import { useNavigate } from 'react-router-dom';
 import type { Course, Section, CSVPreviewResult, HeaderMappingSuggestion, PreviewRow } from '../types';
 
@@ -141,6 +141,12 @@ export default function ImportPage() {
   const [showPreview, setShowPreview] = useState(false);
   const [scheduleTestValue, setScheduleTestValue] = useState('');
   const [scheduleTestResult, setScheduleTestResult] = useState<ReturnType<typeof parseScheduleField> | null>(null);
+  const [complexScheduleResult, setComplexScheduleResult] = useState<ReturnType<typeof parseComplexSchedule> | null>(null);
+  const [showCustomFormatBuilder, setShowCustomFormatBuilder] = useState(false);
+  const [customSeparator, setCustomSeparator] = useState('Section');
+  const [customPattern, setCustomPattern] = useState('');
+  const [customFormatName, setCustomFormatName] = useState('');
+  const [savedFormats, setSavedFormats] = useState(getCustomScheduleFormats());
   const navigate = useNavigate();
 
   const activeFile = files[activeFileIndex];
@@ -243,6 +249,10 @@ export default function ImportPage() {
     if (!scheduleTestValue) return;
     const result = parseScheduleField(scheduleTestValue);
     setScheduleTestResult(result);
+    
+    // Also try complex parsing
+    const complexResult = parseComplexSchedule(scheduleTestValue);
+    setComplexScheduleResult(complexResult);
   };
 
   const handleSaveScheduleCorrection = () => {
@@ -258,6 +268,47 @@ export default function ImportPage() {
     
     setScheduleTestValue('');
     setScheduleTestResult(null);
+  };
+
+  const handleTestCustomFormat = () => {
+    if (!scheduleTestValue || !customSeparator) return;
+    
+    try {
+      const parser = createCustomScheduleParser(
+        customSeparator,
+        new RegExp(customPattern, 'gi')
+      );
+      const result = parser(scheduleTestValue);
+      setComplexScheduleResult(result);
+    } catch (err) {
+      setComplexScheduleResult({
+        timeSlots: [],
+        isValid: false,
+        error: 'Invalid pattern or separator'
+      });
+    }
+  };
+
+  const handleSaveCustomFormat = () => {
+    if (!customFormatName || !customSeparator) return;
+    
+    const format = {
+      id: Math.random().toString(36).substring(2, 15),
+      name: customFormatName,
+      description: `Separator: "${customSeparator}", Pattern: "${customPattern}"`,
+      separator: customSeparator,
+      pattern: customPattern,
+      example: scheduleTestValue.slice(0, 100) + '...',
+      extractTimeSlots: () => []
+    };
+    
+    saveCustomScheduleFormat(format);
+    setSavedFormats(getCustomScheduleFormats());
+    
+    // Also save to feedback
+    learnSchedulePattern(scheduleTestValue, customSeparator, customPattern, customFormatName);
+    
+    setCustomFormatName('');
   };
 
   const handleImport = async () => {
@@ -785,6 +836,146 @@ export default function ImportPage() {
                       )}
                     </Alert>
                   )}
+                </CardContent>
+              </Card>
+
+              {/* Complex Schedule Parser */}
+              <Card variant="outlined">
+                <CardContent>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="subtitle2">
+                      <Schedule sx={{ verticalAlign: 'middle', mr: 1 }} />
+                      Complex Schedule Parser
+                    </Typography>
+                    <Button
+                      size="small"
+                      onClick={() => setShowCustomFormatBuilder(!showCustomFormatBuilder)}
+                    >
+                      {showCustomFormatBuilder ? 'Hide' : 'Custom Format'}
+                    </Button>
+                  </Stack>
+                  <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                    Parse schedules with multiple time slots, dates, and sections
+                    <br />
+                    Example: "Section 1 Tue [15:00 to 16:00] [04-08-2025 to 23-11-2025]..."
+                  </Typography>
+
+                  {complexScheduleResult && complexScheduleResult.timeSlots.length > 0 && (
+                    <Alert severity="success" sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2">
+                        Found {complexScheduleResult.timeSlots.length} time slot(s):
+                      </Typography>
+                      <TableContainer component={Paper} variant="outlined" sx={{ mt: 1 }}>
+                        <Table size="small">
+                          <TableHead>
+                            <TableRow>
+                              {complexScheduleResult.timeSlots[0]?.section && <TableCell>Section</TableCell>}
+                              <TableCell>Day</TableCell>
+                              <TableCell>Time</TableCell>
+                              {complexScheduleResult.timeSlots.some(s => s.startDate) && <TableCell>Dates</TableCell>}
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {complexScheduleResult.timeSlots.map((slot, idx) => (
+                              <TableRow key={idx}>
+                                {slot.section && <TableCell>{slot.section}</TableCell>}
+                                <TableCell>{slot.day}</TableCell>
+                                <TableCell>{slot.startTime} - {slot.endTime}</TableCell>
+                                {slot.startDate && (
+                                  <TableCell>{slot.startDate} to {slot.endDate}</TableCell>
+                                )}
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </TableContainer>
+                    </Alert>
+                  )}
+
+                  <Collapse in={showCustomFormatBuilder}>
+                    <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
+                      <Typography variant="subtitle2" gutterBottom>
+                        Custom Format Builder
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ mb: 2, display: 'block' }}>
+                        Define how to split and parse complex schedule strings
+                      </Typography>
+
+                      <Stack spacing={2}>
+                        <TextField
+                          size="small"
+                          label="Separator (e.g., 'Section', 'Day', '|')"
+                          value={customSeparator}
+                          onChange={(e) => setCustomSeparator(e.target.value)}
+                          helperText="Text that separates different time slot groups"
+                        />
+                        <TextField
+                          size="small"
+                          label="Pattern (Regex) - Optional"
+                          value={customPattern}
+                          onChange={(e) => setCustomPattern(e.target.value)}
+                          placeholder="e.g., (\\w+)\\s*\\[(\\d+:\\d+)\\s*to\\s*(\\d+:\\d+)\\]"
+                          helperText="Regex pattern with capture groups for: day, start time, end time"
+                        />
+                        <Stack direction="row" spacing={2}>
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={handleTestCustomFormat}
+                            disabled={!scheduleTestValue}
+                          >
+                            Test Custom Format
+                          </Button>
+                        </Stack>
+
+                        {complexScheduleResult?.isValid && (
+                          <Stack direction="row" spacing={2} alignItems="center">
+                            <TextField
+                              size="small"
+                              label="Format name"
+                              value={customFormatName}
+                              onChange={(e) => setCustomFormatName(e.target.value)}
+                              placeholder="e.g., My University Format"
+                            />
+                            <Button
+                              variant="contained"
+                              size="small"
+                              startIcon={<Save />}
+                              onClick={handleSaveCustomFormat}
+                              disabled={!customFormatName}
+                            >
+                              Save Format
+                            </Button>
+                          </Stack>
+                        )}
+                      </Stack>
+
+                      {/* Saved Formats */}
+                      {Object.keys(savedFormats).length > 0 && (
+                        <Box sx={{ mt: 2 }}>
+                          <Typography variant="caption" fontWeight={600}>
+                            Saved Formats:
+                          </Typography>
+                          <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 1 }}>
+                            {Object.values(savedFormats).map((format) => (
+                              <Chip
+                                key={format.id}
+                                label={format.name}
+                                onClick={() => {
+                                  setCustomSeparator(format.separator);
+                                  setCustomPattern(format.pattern);
+                                }}
+                                onDelete={() => {
+                                  // Would need delete function
+                                }}
+                                size="small"
+                              />
+                            ))}
+                          </Stack>
+                        </Box>
+                      )}
+                    </Box>
+                  </Collapse>
                 </CardContent>
               </Card>
             </Stack>

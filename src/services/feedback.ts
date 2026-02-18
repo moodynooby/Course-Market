@@ -1,11 +1,12 @@
 // Feedback service for self-learning header mappings and schedule parsing
 // Uses localStorage for persistence
 
-import type { HeaderAlias, ScheduleCorrection, FeedbackEntry } from '../types';
+import type { HeaderAlias, ScheduleCorrection, FeedbackEntry, CustomScheduleFormat } from '../types';
 
 const FEEDBACK_KEY = 'course_market_feedback';
 const HEADER_ALIASES_KEY = 'course_market_header_aliases';
 const SCHEDULE_CORRECTIONS_KEY = 'course_market_schedule_corrections';
+const CUSTOM_SCHEDULE_FORMATS_KEY = 'course_market_custom_schedule_formats';
 
 // Feedback entries for analytics/monitoring
 export function saveFeedbackEntry(entry: FeedbackEntry): void {
@@ -214,4 +215,41 @@ export function getFeedbackStats(): {
     scheduleCorrections: Object.keys(corrections).length,
     avgHeaderConfidence: avgConfidence
   };
+}
+
+// Custom schedule format storage
+export function saveCustomScheduleFormat(format: CustomScheduleFormat): void {
+  const formats = getCustomScheduleFormats();
+  formats[format.id] = format;
+  localStorage.setItem(CUSTOM_SCHEDULE_FORMATS_KEY, JSON.stringify(formats));
+}
+
+export function getCustomScheduleFormats(): Record<string, CustomScheduleFormat> {
+  const saved = localStorage.getItem(CUSTOM_SCHEDULE_FORMATS_KEY);
+  return saved ? JSON.parse(saved) : {};
+}
+
+export function deleteCustomScheduleFormat(formatId: string): void {
+  const formats = getCustomScheduleFormats();
+  delete formats[formatId];
+  localStorage.setItem(CUSTOM_SCHEDULE_FORMATS_KEY, JSON.stringify(formats));
+}
+
+// Pattern learning for schedule formats
+export function learnSchedulePattern(
+  rawSchedule: string,
+  separator: string,
+  pattern: string,
+  description: string
+): void {
+  const entries = getFeedbackEntries();
+  entries.push({
+    id: Math.random().toString(36).substring(2, 15),
+    type: 'schedule_correction',
+    description: `Learned pattern: ${description}`,
+    originalValue: rawSchedule,
+    correctedValue: `Separator: "${separator}", Pattern: "${pattern}"`,
+    timestamp: new Date().toISOString()
+  });
+  localStorage.setItem(FEEDBACK_KEY, JSON.stringify(entries));
 }

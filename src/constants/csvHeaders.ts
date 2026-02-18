@@ -274,6 +274,23 @@ export interface ParsedSchedule {
   error?: string;
 }
 
+// Complex schedule with multiple time slots, dates, locations
+export interface ComplexScheduleTimeSlot {
+  section?: string;
+  day: string;
+  startTime: string;
+  endTime: string;
+  startDate?: string;
+  endDate?: string;
+  location?: string;
+}
+
+export interface ComplexScheduleResult {
+  timeSlots: ComplexScheduleTimeSlot[];
+  isValid: boolean;
+  error?: string;
+}
+
 export function parseScheduleField(scheduleString: string): ParsedSchedule {
   if (!scheduleString || scheduleString.trim() === '') {
     return { days: [], startTime: '', endTime: '', isValid: false, error: 'Empty schedule' };
@@ -384,6 +401,160 @@ export function parseScheduleField(scheduleString: string): ParsedSchedule {
   }
   
   return { days: [], startTime: '', endTime: '', isValid: false, error: 'Could not parse schedule format' };
+}
+
+// Parse complex schedule formats with multiple time slots
+// Example: "Section 1 Tue [15:00 to 16:00] [04-08-2025 to 23-11-2025]Tue [16:00 to 17:00] ..."
+export function parseComplexSchedule(
+  scheduleString: string,
+  options: {
+    sectionSeparator?: string;
+    timeSlotSeparator?: string;
+    extractDates?: boolean;
+  } = {}
+): ComplexScheduleResult {
+  if (!scheduleString || scheduleString.trim() === '') {
+    return { timeSlots: [], isValid: false, error: 'Empty schedule' };
+  }
+
+  const timeSlots: ComplexScheduleTimeSlot[] = [];
+  const errors: string[] = [];
+
+  // Default separators - user can customize
+  const sectionSeparator = options.sectionSeparator || 'Section';
+  const timeSlotSeparator = options.timeSlotSeparator || /(?=\w+\s*\[)/;
+
+  // Split by section if multiple sections exist
+  const sections = scheduleString.split(sectionSeparator).filter(s => s.trim());
+
+  for (const sectionPart of sections) {
+    const trimmedSection = sectionPart.trim();
+    if (!trimmedSection) continue;
+
+    // Try to extract section number
+    const sectionMatch = trimmedSection.match(/^(\d+)\s*/);
+    const sectionNumber = sectionMatch ? sectionMatch[1] : undefined;
+    const sectionContent = sectionMatch ? trimmedSection.slice(sectionMatch[0].length) : trimmedSection;
+
+    // Split into individual time slot entries
+    // Pattern: Day [time range] [date range]
+    const timeSlotPattern = /(\w+)\s*\[(\d{1,2}:\d{2})\s*to\s*(\d{1,2}:\d{2})\](?:\s*\[(\d{2}-\d{2}-\d{4})\s*to\s*(\d{2}-\d{2}-\d{4})\])?/gi;
+
+    let match;
+    while ((match = timeSlotPattern.exec(sectionContent)) !== null) {
+      try {
+        const day = parseDayFromString(match[1]);
+        const startTime = parseTime(match[2]);
+        const endTime = parseTime(match[3]);
+        const startDate = match[4];
+        const endDate = match[5];
+
+        if (day) {
+          timeSlots.push({
+            section: sectionNumber,
+            day,
+            startTime,
+            endTime,
+            ...(startDate && { startDate }),
+            ...(endDate && { endDate })
+          });
+        }
+      } catch (err) {
+        errors.push(`Failed to parse time slot: ${match[0]}`);
+      }
+    }
+  }
+
+  // Also try alternative format: "Tue 15:00-16:00 (04-08-2025 to 23-11-2025)"
+  if (timeSlots.length === 0) {
+    const altPattern = /(\w+)[\s\[]+(\d{1,2}:\d{2})\s*[-–to]+\s*(\d{1,2}:\d{2})\]?(?:\s*[\[(](\d{2}[/-]\d{2}[/-]\d{4})\s*[-to]+\s*(\d{2}[/-]\d{2}[/-]\d{4})[\])])?/gi;
+    let match;
+    while ((match = altPattern.exec(scheduleString)) !== null) {
+      try {
+        const day = parseDayFromString(match[1]);
+        const startTime = parseTime(match[2]);
+        const endTime = parseTime(match[3]);
+        const startDate = match[4];
+        const endDate = match[5];
+
+        if (day) {
+          timeSlots.push({
+            day,
+            startTime,
+            endTime,
+            ...(startDate && { startDate }),
+            ...(endDate && { endDate })
+          });
+        }
+      } catch (err) {
+        errors.push(`Failed to parse: ${match[0]}`);
+      }
+    }
+  }
+
+  if (timeSlots.length === 0 && errors.length > 0) {
+    return { timeSlots: [], isValid: false, error: errors.join('; ') };
+  }
+
+  return { timeSlots, isValid: timeSlots.length > 0 };
+}
+
+// Helper to parse single day from various formats
+function parseDayFromString(dayStr: string): string | null {
+  const dayMap: Record<string, string> = {
+    'monday': 'M', 'mon': 'M', 'm': 'M',
+    'tuesday': 'T', 'tue': 'T', 'tues': 'T', 't': 'T',
+    'wednesday': 'W', 'wed': 'W', 'w': 'W',
+    'thursday': 'Th', 'thu': 'Th', 'thur': 'Th', 'thurs': 'Th', 'th': 'Th', 'r': 'Th',
+    'friday': 'F', 'fri': 'F', 'f': 'F',
+    'saturday': 'Sa', 'sat': 'Sa', 'sa': 'Sa',
+    'sunday': 'Su', 'sun': 'Su', 'su': 'Su'
+  };
+
+  const normalized = dayStr.toLowerCase().trim();
+  return dayMap[normalized] || null;
+}
+
+// User-defined custom format parser
+export function createCustomScheduleParser(
+  separator: string,
+  timeSlotPattern: RegExp
+): (scheduleString: string) => ComplexScheduleResult {
+  return (scheduleString: string): ComplexScheduleResult => {
+    if (!scheduleString) {
+      return { timeSlots: [], isValid: false, error: 'Empty schedule' };
+    }
+
+    const timeSlots: ComplexScheduleTimeSlot[] = [];
+    const parts = scheduleString.split(separator).filter(s => s.trim());
+
+    for (const part of parts) {
+      const match = part.match(timeSlotPattern);
+      if (match) {
+        try {
+          // Extract groups: day, startTime, endTime, startDate?, endDate?
+          const day = parseDayFromString(match[1]);
+          if (day) {
+            timeSlots.push({
+              day,
+              startTime: parseTime(match[2]),
+              endTime: parseTime(match[3]),
+              ...(match[4] && { startDate: match[4] }),
+              ...(match[5] && { endDate: match[5] })
+            });
+          }
+        } catch (err) {
+          // Skip invalid matches
+        }
+      }
+    }
+
+    return {
+      timeSlots,
+      isValid: timeSlots.length > 0,
+      error: timeSlots.length === 0 ? 'No valid time slots found with custom pattern' : undefined
+    };
+  };
 }
 
 // Check if we have required time info (either separate columns or combined)
