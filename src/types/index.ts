@@ -5,6 +5,8 @@ export interface Course {
   subject: string;
   credits: number;
   description?: string;
+  sourceCsv?: string;
+  importedAt?: string;
 }
 
 export interface Section {
@@ -21,8 +23,8 @@ export interface Section {
 
 export interface TimeSlot {
   day: DayOfWeek;
-  startTime: string; // 24-hour format "HH:MM"
-  endTime: string;   // 24-hour format "HH:MM"
+  startTime: string;
+  endTime: string;
 }
 
 export type DayOfWeek = 'M' | 'T' | 'W' | 'Th' | 'F' | 'Sa' | 'Su';
@@ -40,8 +42,8 @@ export interface Preferences {
   userId: string;
   displayName: string;
   email?: string;
-  preferredStartTime: string; // "HH:MM"
-  preferredEndTime: string;   // "HH:MM"
+  preferredStartTime: string;
+  preferredEndTime: string;
   maxGapMinutes: number;
   preferConsecutiveDays: boolean;
   preferMorning: boolean;
@@ -50,6 +52,7 @@ export interface Preferences {
   minCredits: number;
   avoidDays: DayOfWeek[];
   excludeInstructors: string[];
+  theme?: 'light' | 'dark' | 'system';
 }
 
 export interface TradePost {
@@ -63,6 +66,7 @@ export interface TradePost {
   action: 'offer' | 'request';
   status: 'open' | 'pending' | 'completed' | 'cancelled';
   description?: string;
+  contactPhone?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -71,6 +75,23 @@ export interface UserProfile {
   id: string;
   displayName: string;
   email: string;
+  avatarUrl?: string;
+  provider: 'google' | 'github' | 'phone' | 'email';
+  phoneNumber?: string;
+  createdAt: string;
+}
+
+export interface UserPreference extends Preferences {
+  theme?: 'light' | 'dark' | 'system';
+}
+
+export interface ContactRequest {
+  id: string;
+  fromUserId: string;
+  toUserId: string;
+  tradeId?: string;
+  message?: string;
+  status: 'pending' | 'accepted' | 'rejected';
   createdAt: string;
 }
 
@@ -87,4 +108,9 @@ export interface OptimizationResult {
   bestSchedule: Schedule | null;
   aiAnalysis?: string;
   error?: string;
+}
+
+export interface ThemeMode {
+  mode: 'light' | 'dark' | 'system';
+  isDark: boolean;
 }
