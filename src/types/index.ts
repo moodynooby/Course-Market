@@ -101,6 +101,45 @@ export interface CSVParseResult {
   sections: Section[];
   errors: string[];
   warnings: string[];
+  detectedHeaders?: string[];
+  parseContext?: {
+    usedAliases: Record<string, string>;
+    usedScheduleCorrections: string[];
+  };
+}
+
+// Feedback types for self-learning
+export interface HeaderAlias {
+  canonicalHeader: string;
+  confidence: number;
+  usageCount: number;
+  lastUsed: string;
+}
+
+export interface ScheduleCorrection {
+  days: string[];
+  startTime: string;
+  endTime: string;
+  usageCount: number;
+  successCount: number;
+  lastUsed: string;
+}
+
+export interface FeedbackEntry {
+  id: string;
+  type: 'header_mapping' | 'schedule_correction' | 'parse_error';
+  description: string;
+  originalValue?: string;
+  correctedValue?: string;
+  timestamp?: string;
+  fileName?: string;
+}
+
+export interface HeaderMappingCorrection {
+  detectedHeader: string;
+  mappedField: string;
+  isCorrect: boolean;
+  suggestedMapping?: string;
 }
 
 export interface OptimizationResult {
