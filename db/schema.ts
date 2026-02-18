@@ -96,6 +96,17 @@ export const contactRequests = pgTable('contact_requests', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// CSV Parsing Rules for feedback loop
+export const csvParsingRules = pgTable('csv_parsing_rules', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id', { length: 255 }).notNull(), // Store Auth UID string directly
+  type: varchar('type', { length: 20 }).notNull(), // 'header', 'schedule'
+  originalValue: text('original_value').notNull(),
+  mappedValue: text('mapped_value').notNull(),
+  explanation: text('explanation'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   preferences: one(userPreferences),
@@ -123,3 +134,5 @@ export type Course = typeof courses.$inferSelect;
 export type Section = typeof sections.$inferSelect;
 export type Trade = typeof trades.$inferSelect;
 export type ContactRequest = typeof contactRequests.$inferSelect;
+export type CSVParsingRule = typeof csvParsingRules.$inferSelect;
+export type NewCSVParsingRule = typeof csvParsingRules.$inferInsert;

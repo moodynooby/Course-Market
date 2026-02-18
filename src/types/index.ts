@@ -101,6 +101,8 @@ export interface CSVParseResult {
   sections: Section[];
   errors: string[];
   warnings: string[];
+  suggestedMappings?: HeaderMapping[];
+  appliedMappings?: HeaderMapping[];
 }
 
 export interface OptimizationResult {
@@ -113,4 +115,20 @@ export interface OptimizationResult {
 export interface ThemeMode {
   mode: 'light' | 'dark' | 'system';
   isDark: boolean;
+}
+
+export interface CSVParsingRule {
+  id: string;
+  userId: string;
+  type: 'header' | 'schedule';
+  originalValue: string;
+  mappedValue: string;
+  explanation?: string;
+  createdAt: string;
+}
+
+export interface HeaderMapping {
+  csvHeader: string;
+  mappedHeader: string;
+  isConfirmed: boolean;
 }
