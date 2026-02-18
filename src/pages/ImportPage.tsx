@@ -62,9 +62,19 @@ import {
   Visibility,
 } from '@mui/icons-material';
 import { parseCSV, generateSampleCSV, generateCSVPreview, getHeaderMappingSuggestions, getHeaderAliases } from '../utils/csv';
-import { parseScheduleField, parseComplexSchedule, createCustomScheduleParser } from '../constants/csvHeaders';
+import { parseScheduleField, parseComplexSchedule } from '../constants/csvHeaders';
+import { parseScheduleWithLLM, suggestMappingsWithLLM, induceParsingRuleWithLLM } from '../services/llm';
 import { saveCourses, getCourses } from '../services/database';
-import { saveHeaderAlias, saveScheduleCorrection, saveCustomScheduleFormat, getCustomScheduleFormats, learnSchedulePattern } from '../services/feedback';
+import {
+  saveHeaderAlias,
+  saveScheduleCorrection,
+  saveCustomScheduleFormat,
+  getCustomScheduleFormats,
+  learnSchedulePattern,
+  saveAIRule,
+  getAIRules,
+  deleteAIRule
+} from '../services/feedback';
 import { useNavigate } from 'react-router-dom';
 import type { Course, Section, CSVPreviewResult, HeaderMappingSuggestion, PreviewRow } from '../types';
 
@@ -139,6 +149,7 @@ export default function ImportPage() {
   const [loading, setLoading] = useState(false);
   const [imported, setImported] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [userInstructions, setUserInstructions] = useState('');
   const [scheduleTestValue, setScheduleTestValue] = useState('');
   const [scheduleTestResult, setScheduleTestResult] = useState<ReturnType<typeof parseScheduleField> | null>(null);
   const [complexScheduleResult, setComplexScheduleResult] = useState<ReturnType<typeof parseComplexSchedule> | null>(null);
@@ -147,6 +158,7 @@ export default function ImportPage() {
   const [customPattern, setCustomPattern] = useState('');
   const [customFormatName, setCustomFormatName] = useState('');
   const [savedFormats, setSavedFormats] = useState(getCustomScheduleFormats());
+  const [aiRules, setAiRules] = useState(getAIRules());
   const navigate = useNavigate();
 
   const activeFile = files[activeFileIndex];
@@ -171,7 +183,7 @@ export default function ImportPage() {
         }
       });
 
-      const preview = generateCSVPreview(content, initialMappings);
+      const preview = await generateCSVPreview(content, initialMappings, 5, userInstructions);
 
       setFileAnalyses(prev => ({
         ...prev,
@@ -217,7 +229,7 @@ export default function ImportPage() {
     }
   };
 
-  const handleMappingChange = (header: string, field: string) => {
+  const handleMappingChange = async (header: string, field: string) => {
     if (!activeAnalysis) return;
 
     const newMappings = { ...activeAnalysis.customMappings };
@@ -228,7 +240,7 @@ export default function ImportPage() {
     }
 
     // Regenerate preview with new mappings
-    const newPreview = generateCSVPreview(activeAnalysis.content, newMappings);
+    const newPreview = await generateCSVPreview(activeAnalysis.content, newMappings, 5, userInstructions);
 
     setFileAnalyses(prev => ({
       ...prev,
@@ -271,22 +283,10 @@ export default function ImportPage() {
   };
 
   const handleTestCustomFormat = () => {
-    if (!scheduleTestValue || !customSeparator) return;
+    if (!scheduleTestValue) return;
     
-    try {
-      const parser = createCustomScheduleParser(
-        customSeparator,
-        new RegExp(customPattern, 'gi')
-      );
-      const result = parser(scheduleTestValue);
-      setComplexScheduleResult(result);
-    } catch (err) {
-      setComplexScheduleResult({
-        timeSlots: [],
-        isValid: false,
-        error: 'Invalid pattern or separator'
-      });
-    }
+    // Custom format now primarily uses AI fallback via parseScheduleWithLLM
+    handleTestSchedule();
   };
 
   const handleSaveCustomFormat = () => {
@@ -324,7 +324,7 @@ export default function ImportPage() {
     const allSections: Section[] = [];
 
     for (const analysis of readyFiles) {
-      const result = parseCSV(analysis.content, analysis.file.name);
+      const result = await parseCSV(analysis.content, analysis.file.name, userInstructions);
       
       results.push({
         courses: result.courses,
@@ -350,10 +350,54 @@ export default function ImportPage() {
     setShowPreview(false);
   };
 
+  const handleRemoveAIRule = (id: string) => {
+    deleteAIRule(id);
+    setAiRules(getAIRules());
+    if (activeFile) {
+      analyzeFile(activeFile);
+    }
+  };
+
+  const handleSaveAIRule = async (type: 'mapping' | 'parsing') => {
+    if (!userInstructions.trim()) return;
+
+    setLoading(true);
+    saveAIRule(type, userInstructions);
+
+    // If it's a parsing rule, try to induce a programmatic regex rule too
+    if (type === 'parsing') {
+      const sample = scheduleTestValue || activeAnalysis?.preview?.rows.find(r => r.parsedData.schedule)?.parsedData.schedule;
+      const induced = await induceParsingRuleWithLLM(userInstructions, sample);
+
+      if (induced) {
+        const format = {
+          id: Math.random().toString(36).substring(2, 15),
+          name: induced.description,
+          description: `AI Induced: ${userInstructions}`,
+          separator: induced.separator,
+          pattern: induced.pattern,
+          example: sample || '',
+          extractTimeSlots: () => []
+        };
+        saveCustomScheduleFormat(format);
+        setSavedFormats(getCustomScheduleFormats());
+      }
+    }
+
+    setAiRules(getAIRules());
+    setUserInstructions('');
+
+    // Re-analyze active file if any
+    if (activeFile) {
+      await analyzeFile(activeFile);
+    }
+    setLoading(false);
+  };
+
   const handleLoadSample = async () => {
     setLoading(true);
     const sampleCSV = generateSampleCSV();
-    const result = parseCSV(sampleCSV);
+    const result = await parseCSV(sampleCSV);
     
     if (result.success) {
       saveCourses(result.courses, result.sections);
@@ -443,6 +487,85 @@ export default function ImportPage() {
             />
           </Button>
         </Box>
+      </Card>
+
+      {/* AI Instructions */}
+      <Card sx={{ mb: 3, bgcolor: 'primary.50' }}>
+        <CardContent>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+            <Lightbulb color="primary" />
+            <Typography variant="h6" color="primary.main">
+              Natural Language AI Helper
+            </Typography>
+          </Stack>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Tell the AI how to interpret this CSV. Examples: "The column 'CRN' is the course code",
+            "The schedule format is Day: HH:MM-HH:MM", or "Ignore columns after 'Credits'".
+          </Typography>
+
+          <Stack spacing={2}>
+            <TextField
+              fullWidth
+              multiline
+              rows={2}
+              placeholder="Enter instructions for the AI..."
+              value={userInstructions}
+              onChange={(e) => setUserInstructions(e.target.value)}
+              variant="outlined"
+              size="small"
+              sx={{ bgcolor: 'background.paper' }}
+            />
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Save />}
+                onClick={() => handleSaveAIRule('mapping')}
+                disabled={!userInstructions.trim()}
+              >
+                Learn as Mapping Rule
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Save />}
+                onClick={() => handleSaveAIRule('parsing')}
+                disabled={!userInstructions.trim()}
+              >
+                Learn as Schedule Rule
+              </Button>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={() => activeFile && analyzeFile(activeFile)}
+                disabled={!activeFile}
+              >
+                Apply to Current Preview
+              </Button>
+            </Stack>
+
+            {aiRules.length > 0 && (
+              <Box>
+                <Divider sx={{ my: 1 }} />
+                <Typography variant="caption" fontWeight={600} display="block" sx={{ mb: 1 }}>
+                  Active Learned Rules:
+                </Typography>
+                <Stack direction="row" flexWrap="wrap" gap={1}>
+                  {aiRules.map((rule) => (
+                    <Chip
+                      key={rule.id}
+                      label={rule.instruction}
+                      size="small"
+                      onDelete={() => handleRemoveAIRule(rule.id)}
+                      color={rule.type === 'mapping' ? 'info' : 'secondary'}
+                      variant="outlined"
+                    />
+                  ))}
+                </Stack>
+              </Box>
+            )}
+          </Stack>
+        </CardContent>
       </Card>
 
       {/* Files List */}

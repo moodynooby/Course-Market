@@ -7,6 +7,36 @@ const FEEDBACK_KEY = 'course_market_feedback';
 const HEADER_ALIASES_KEY = 'course_market_header_aliases';
 const SCHEDULE_CORRECTIONS_KEY = 'course_market_schedule_corrections';
 const CUSTOM_SCHEDULE_FORMATS_KEY = 'course_market_custom_schedule_formats';
+const AI_RULES_KEY = 'course_market_ai_rules';
+
+export interface AIRule {
+  id: string;
+  type: 'mapping' | 'parsing';
+  instruction: string;
+  timestamp: string;
+}
+
+export function saveAIRule(type: 'mapping' | 'parsing', instruction: string): void {
+  const rules = getAIRules();
+  rules.push({
+    id: Math.random().toString(36).substring(2, 15),
+    type,
+    instruction,
+    timestamp: new Date().toISOString()
+  });
+  localStorage.setItem(AI_RULES_KEY, JSON.stringify(rules));
+}
+
+export function getAIRules(): AIRule[] {
+  const saved = localStorage.getItem(AI_RULES_KEY);
+  return saved ? JSON.parse(saved) : [];
+}
+
+export function deleteAIRule(id: string): void {
+  const rules = getAIRules();
+  const updated = rules.filter(r => r.id !== id);
+  localStorage.setItem(AI_RULES_KEY, JSON.stringify(updated));
+}
 
 // Feedback entries for analytics/monitoring
 export function saveFeedbackEntry(entry: FeedbackEntry): void {

@@ -1,18 +1,17 @@
 import Papa from 'papaparse';
-import type { Course, Section, CSVParseResult, TimeSlot, CSVPreviewResult, PreviewRow, HeaderMappingSuggestion, MappingConfidence } from '../types';
+import { parse } from 'csv-parse/browser/esm';
+import type { Course, Section, CSVParseResult, TimeSlot, CSVPreviewResult, PreviewRow, HeaderMappingSuggestion, MappingConfidence, DayOfWeek } from '../types';
 import { 
   REQUIRED_HEADERS_LOWERCASE,
-  TIME_HEADERS_LOWERCASE, 
   HEADER_MAPPING,
-  REQUIRED_CSV_HEADERS,
   parseDays, 
   parseTime,
   parseScheduleField,
-  hasRequiredTimeInfo,
   findScheduleCorrection,
   saveScheduleCorrection
 } from '../constants/csvHeaders';
 import { getLearnedHeaderMappings, getHeaderAliases, saveHeaderAlias, saveFeedbackEntry } from '../services/feedback';
+import { parseScheduleWithLLM, suggestMappingsWithLLM } from '../services/llm';
 
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
@@ -117,15 +116,17 @@ function parseRow(row: Record<string, string>, mapping: Record<string, string>):
   return result;
 }
 
-function extractTimeSlots(
+async function extractTimeSlots(
   parsed: Record<string, string>,
-  context: ParseContext
-): { timeSlots: TimeSlot[]; warnings: string[]; usedCorrection: boolean } {
+  context: ParseContext,
+  userInstructions?: string,
+  skipAIFallback: boolean = false
+): Promise<{ timeSlots: TimeSlot[]; warnings: string[]; usedCorrection: boolean }> {
   const timeSlots: TimeSlot[] = [];
   const warnings: string[] = [];
   let usedCorrection = false;
   
-  // Try separate columns first
+  // 1. Try separate columns first
   if (parsed.days && parsed.startTime && parsed.endTime) {
     try {
       const daysArray = parseDays(parsed.days);
@@ -146,9 +147,9 @@ function extractTimeSlots(
     }
   }
   
-  // Try combined schedule field
+  // 2. Try combined schedule field
   if (parsed.schedule) {
-    // Check learned corrections first
+    // A. Check learned corrections first (Highest priority)
     const correction = findScheduleCorrection(parsed.schedule);
     if (correction) {
       for (const day of correction.days) {
@@ -163,7 +164,7 @@ function extractTimeSlots(
       return { timeSlots, warnings, usedCorrection };
     }
     
-    // Parse the schedule field
+    // B. Parse with standard rules
     const scheduleResult = parseScheduleField(parsed.schedule);
     
     if (scheduleResult.isValid) {
@@ -185,39 +186,85 @@ function extractTimeSlots(
       );
       
       return { timeSlots, warnings, usedCorrection };
-    } else {
-      warnings.push(`Could not parse schedule "${parsed.schedule}": ${scheduleResult.error}`);
+    } else if (!skipAIFallback) {
+      // C. AI Fallback (ONLY if allowed, to prevent performance issues in large loops)
+      try {
+        const aiResult = await parseScheduleWithLLM(parsed.schedule, userInstructions);
+        if (aiResult.isValid && aiResult.timeSlots.length > 0) {
+          for (const slot of aiResult.timeSlots) {
+            timeSlots.push({
+              day: slot.day as DayOfWeek,
+              startTime: slot.startTime,
+              endTime: slot.endTime
+            });
+          }
+
+          // Store AI successful result in corrections so future identical rows don't hit the LLM
+          saveScheduleCorrection(
+            parsed.schedule,
+            aiResult.timeSlots.map(ts => ts.day),
+            aiResult.timeSlots[0].startTime,
+            aiResult.timeSlots[0].endTime,
+            true
+          );
+
+          usedCorrection = true;
+          return { timeSlots, warnings, usedCorrection };
+        }
+      } catch (aiErr) {
+        // AI Fallback failed
+      }
     }
+
+    warnings.push(`Could not parse schedule "${parsed.schedule}": ${scheduleResult.error}`);
   }
   
   return { timeSlots, warnings, usedCorrection };
 }
 
-export function parseCSV(csvContent: string, fileName?: string): CSVParseResult {
+export async function parseCSV(csvContent: string, fileName?: string, userInstructions?: string): Promise<CSVParseResult> {
   const parseContext: ParseContext = { usedAliases: {}, usedScheduleCorrections: [] };
   
-  // Parse with PapaParse
-  const parseResult = Papa.parse<Record<string, string>>(csvContent, {
-    header: true,
-    skipEmptyLines: true,
-    transformHeader: (header) => header.trim(),
-    transform: (value) => value.trim()
-  });
+  let data: Record<string, string>[] = [];
+  let headers: string[] = [];
   
-  if (parseResult.errors.length > 0) {
-    const criticalErrors = parseResult.errors.filter(e => e.type !== 'Quotes');
-    if (criticalErrors.length > 0) {
-      return {
-        success: false,
-        courses: [],
-        sections: [],
-        errors: criticalErrors.map(e => `Parse error: ${e.message}`),
-        warnings: []
-      };
+  // Use csv-parse as an alternative/robust engine if needed
+  if (csvContent.includes(';') || csvContent.includes('|')) {
+    try {
+      data = await new Promise<Record<string, string>[]>((resolve, reject) => {
+        parse(csvContent, {
+          columns: true,
+          skip_empty_lines: true,
+          trim: true,
+          relax_column_count: true
+        }, (err, output) => {
+          if (err) reject(err);
+          else resolve(output as Record<string, string>[]);
+        });
+      });
+      headers = data.length > 0 ? Object.keys(data[0]) : [];
+    } catch (e) {
+      const result = Papa.parse<Record<string, string>>(csvContent, {
+        header: true,
+        skipEmptyLines: true,
+        transformHeader: (h) => h.trim(),
+        transform: (v) => v.trim()
+      });
+      data = result.data;
+      headers = result.meta.fields || [];
     }
+  } else {
+    const result = Papa.parse<Record<string, string>>(csvContent, {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: (h) => h.trim(),
+      transform: (v) => v.trim()
+    });
+    data = result.data;
+    headers = result.meta.fields || [];
   }
   
-  if (parseResult.data.length === 0) {
+  if (data.length === 0) {
     return {
       success: false,
       courses: [],
@@ -227,9 +274,20 @@ export function parseCSV(csvContent: string, fileName?: string): CSVParseResult 
     };
   }
   
-  const headers = parseResult.meta.fields || [];
-  const { mapping, unknownHeaders, context } = buildHeaderMapping(headers);
+  let { mapping, unknownHeaders, context } = buildHeaderMapping(headers);
   
+  // AI Fallback for header mapping if we have unknown or missing headers
+  if (unknownHeaders.length > 0 || Object.keys(mapping).length < REQUIRED_HEADERS_LOWERCASE.length) {
+    const sampleRows = data.slice(0, 3);
+    const aiMappings = await suggestMappingsWithLLM(headers, sampleRows, userInstructions);
+
+    if (Object.keys(aiMappings).length > 0) {
+      mapping = { ...mapping, ...aiMappings };
+      // Update unknown headers after AI mapping
+      unknownHeaders = headers.filter(h => !mapping[h]);
+    }
+  }
+
   // Merge contexts
   Object.assign(parseContext.usedAliases, context.usedAliases);
   
@@ -264,8 +322,8 @@ export function parseCSV(csvContent: string, fileName?: string): CSVParseResult 
   const seenCourses = new Map<string, Course>();
   let scheduleParseFailures = 0;
   
-  for (let i = 0; i < parseResult.data.length; i++) {
-    const row = parseResult.data[i];
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
     const rowNum = i + 2; // +2 because PapaParse uses 0-indexed data and we skip header
     
     try {
@@ -295,8 +353,16 @@ export function parseCSV(csvContent: string, fileName?: string): CSVParseResult 
         seenCourses.set(course.code, course);
       }
       
-      // Extract time slots
-      const { timeSlots, warnings: timeWarnings, usedCorrection } = extractTimeSlots(parsed, parseContext);
+      // Extract time slots.
+      // To avoid performance issues, we only use AI fallback for the FIRST 5 failures.
+      // After that, we rely on the corrections learned from those 5 AI calls.
+      const shouldSkipAI = scheduleParseFailures > 5;
+      const { timeSlots, warnings: timeWarnings, usedCorrection } = await extractTimeSlots(
+        parsed,
+        parseContext,
+        userInstructions,
+        shouldSkipAI
+      );
       
       if (timeWarnings.length > 0) {
         warnings.push(`Row ${rowNum}: ${timeWarnings.join(', ')}`);
@@ -352,12 +418,13 @@ export function parseCSV(csvContent: string, fileName?: string): CSVParseResult 
 }
 
 // Apply user corrections and re-parse
-export function parseCSVWithCorrections(
+export async function parseCSVWithCorrections(
   csvContent: string, 
   headerCorrections: Record<string, string>,
   scheduleCorrections: Array<{ rowIndex: number; days: string; startTime: string; endTime: string }>,
-  fileName?: string
-): CSVParseResult {
+  fileName?: string,
+  userInstructions?: string
+): Promise<CSVParseResult> {
   // Save header corrections to feedback store
   for (const [detectedHeader, canonicalField] of Object.entries(headerCorrections)) {
     saveHeaderAlias(detectedHeader, canonicalField, 1.0);
@@ -371,7 +438,7 @@ export function parseCSVWithCorrections(
   }
   
   // Re-parse with updated mappings
-  return parseCSV(csvContent, fileName);
+  return parseCSV(csvContent, fileName, userInstructions);
 }
 
 // Get detected headers from CSV without full parsing
@@ -570,29 +637,71 @@ export function getHeaderMappingSuggestions(detectedHeaders: string[]): HeaderMa
 }
 
 // Generate live preview of CSV parsing
-export function generateCSVPreview(
+export async function generateCSVPreview(
   csvContent: string, 
   customMappings: Record<string, string> = {},
-  maxRows: number = 5
-): CSVPreviewResult {
-  // Parse just the preview rows
-  const parseResult = Papa.parse<Record<string, string>>(csvContent, {
-    header: true,
-    skipEmptyLines: true,
-    preview: maxRows,
-    transformHeader: (header) => header.trim(),
-    transform: (value) => value.trim()
-  });
+  maxRows: number = 5,
+  userInstructions?: string
+): Promise<CSVPreviewResult> {
+  let data: Record<string, string>[] = [];
+  let headers: string[] = [];
+
+  // Use csv-parse for preview if it looks like it has special delimiters
+  if (csvContent.includes(';') || csvContent.includes('|')) {
+    try {
+      data = await new Promise<Record<string, string>[]>((resolve, reject) => {
+        parse(csvContent, {
+          columns: true,
+          skip_empty_lines: true,
+          trim: true,
+          to: maxRows,
+          relax_column_count: true
+        }, (err, output) => {
+          if (err) reject(err);
+          else resolve(output as Record<string, string>[]);
+        });
+      });
+      headers = data.length > 0 ? Object.keys(data[0]) : [];
+    } catch (e) {
+      const result = Papa.parse<Record<string, string>>(csvContent, {
+        header: true,
+        skipEmptyLines: true,
+        preview: maxRows,
+        transformHeader: (h) => h.trim(),
+        transform: (v) => v.trim()
+      });
+      data = result.data;
+      headers = result.meta.fields || [];
+    }
+  } else {
+    const result = Papa.parse<Record<string, string>>(csvContent, {
+      header: true,
+      skipEmptyLines: true,
+      preview: maxRows,
+      transformHeader: (h) => h.trim(),
+      transform: (v) => v.trim()
+    });
+    data = result.data;
+    headers = result.meta.fields || [];
+  }
   
-  const headers = parseResult.meta.fields || [];
-  const suggestions = getHeaderMappingSuggestions(headers);
+  let suggestions = getHeaderMappingSuggestions(headers);
   
   // Build final mappings (custom overrides suggestions)
-  const mappings: Record<string, string> = {};
+  let mappings: Record<string, string> = {};
+
+  // Try AI for mappings if we have user instructions or if standard suggestions are weak
+  const hasStrongSuggestions = suggestions.every(s => s.confidence === 'high');
+  if (userInstructions || !hasStrongSuggestions) {
+    const aiMappings = await suggestMappingsWithLLM(headers, data.slice(0, 3), userInstructions);
+    mappings = { ...aiMappings };
+  }
+
+  // Apply suggestions and custom overrides
   for (const suggestion of suggestions) {
     if (customMappings[suggestion.header] !== undefined) {
       mappings[suggestion.header] = customMappings[suggestion.header];
-    } else if (suggestion.confidenceScore >= 0.5) {
+    } else if (!mappings[suggestion.header] && suggestion.confidenceScore >= 0.5) {
       mappings[suggestion.header] = suggestion.suggestedField;
     }
   }
@@ -616,8 +725,8 @@ export function generateCSVPreview(
   
   // Generate preview rows
   const rows: PreviewRow[] = [];
-  for (let i = 0; i < parseResult.data.length; i++) {
-    const rawRow = parseResult.data[i];
+  for (let i = 0; i < data.length; i++) {
+    const rawRow = data[i];
     const rowNum = i + 2; // +2 for header row
     
     const parsedData: PreviewRow['parsedData'] = {};
@@ -679,7 +788,19 @@ export function generateCSVPreview(
             parsedData.startTime = scheduleResult.startTime;
             parsedData.endTime = scheduleResult.endTime;
           } else {
-            warnings.push(`Schedule: ${scheduleResult.error}`);
+            // AI fallback for preview
+            try {
+              const aiResult = await parseScheduleWithLLM(value, userInstructions);
+              if (aiResult.isValid && aiResult.timeSlots.length > 0) {
+                parsedData.days = aiResult.timeSlots.map(ts => ts.day);
+                parsedData.startTime = aiResult.timeSlots[0].startTime;
+                parsedData.endTime = aiResult.timeSlots[0].endTime;
+              } else {
+                warnings.push(`Schedule: ${scheduleResult.error}`);
+              }
+            } catch {
+              warnings.push(`Schedule: ${scheduleResult.error}`);
+            }
           }
           break;
         case 'term':
