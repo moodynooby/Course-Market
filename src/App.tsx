@@ -1,7 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, RouterProvider, Outlet } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Box, CircularProgress } from '@mui/material';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import ImportPage from './pages/ImportPage';
@@ -12,7 +13,7 @@ import SettingsPage from './pages/SettingsPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  
+
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -20,11 +21,11 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
       </Box>
     );
   }
-  
-  return user ? <>{children}</> : <Navigate to="/login" />;
+
+  return user ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
-function AppRoutes() {
+function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -35,29 +36,65 @@ function AppRoutes() {
     );
   }
 
-  return (
-    <Routes>
-      <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
-      <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
-        <Route index element={<ImportPage />} />
-        <Route path="courses" element={<CoursesPage />} />
-        <Route path="schedule" element={<SchedulePage />} />
-        <Route path="trading" element={<TradingPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-      </Route>
-    </Routes>
-  );
+  return user ? <Navigate to="/" replace /> : <>{children}</>;
 }
+
+const router = createBrowserRouter([
+  {
+    path: '/login',
+    element: (
+      <AuthProvider>
+        <PublicRoute>
+          <LoginPage />
+        </PublicRoute>
+      </AuthProvider>
+    ),
+  },
+  {
+    path: '/',
+    element: (
+      <AuthProvider>
+        <PrivateRoute>
+          <Layout />
+        </PrivateRoute>
+      </AuthProvider>
+    ),
+    children: [
+      {
+        index: true,
+        element: <ImportPage />,
+      },
+      {
+        path: 'courses',
+        element: <CoursesPage />,
+      },
+      {
+        path: 'schedule',
+        element: <SchedulePage />,
+      },
+      {
+        path: 'trading',
+        element: <TradingPage />,
+      },
+      {
+        path: 'settings',
+        element: <SettingsPage />,
+      },
+    ],
+  },
+  {
+    path: '*',
+    element: <Navigate to="/" replace />,
+  },
+]);
 
 function App() {
   return (
-    <BrowserRouter>
+    <ErrorBoundary>
       <ThemeProvider>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
+        <RouterProvider router={router} />
       </ThemeProvider>
-    </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

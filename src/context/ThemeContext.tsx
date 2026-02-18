@@ -32,7 +32,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     setSystemDark(mediaQuery.matches);
-    
+
     const handler = (e: MediaQueryListEvent) => setSystemDark(e.matches);
     mediaQuery.addEventListener('change', handler);
     return () => mediaQuery.removeEventListener('change', handler);
@@ -94,7 +94,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
       MuiButton: {
         styleOverrides: {
           root: {
-            textTransform: 'none' as const,
+            textTransform: 'none',
             fontWeight: 600,
             borderRadius: 8,
           },
@@ -104,9 +104,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         styleOverrides: {
           root: {
             borderRadius: 16,
-            boxShadow: isDark 
-              ? '0 4px 20px rgba(0,0,0,0.4)' 
-              : '0 4px 20px rgba(0,0,0,0.08)',
+            boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.4)' : '0 4px 20px rgba(0,0,0,0.08)',
           },
         },
       },

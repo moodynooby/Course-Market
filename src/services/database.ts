@@ -1,6 +1,9 @@
 // Database service using Drizzle with localStorage fallback
 
-import type { Course, Section, Trade, Preferences } from '../types';
+import type { Course, Section, TradePost, Preferences } from '../types';
+
+// Type alias for backward compatibility
+type Trade = TradePost;
 
 // Local storage keys
 const COURSES_KEY = 'course_market_courses';

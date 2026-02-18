@@ -73,6 +73,7 @@ export async function createUser(displayName: string, email?: string): Promise<U
     id: generateUserId(),
     displayName,
     email: email || '',
+    provider: 'email',
     createdAt: new Date().toISOString(),
   };
 
