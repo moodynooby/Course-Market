@@ -124,8 +124,7 @@ export default function Layout() {
           label={mode === 'system' ? 'System' : isDark ? 'Dark' : 'Light'}
           onClick={handleThemeToggle}
           variant="outlined"
-          fullWidth
-          sx={{ cursor: 'pointer' }}
+          sx={{ cursor: 'pointer', width: '100%' }}
         />
       </Box>
     </Box>
