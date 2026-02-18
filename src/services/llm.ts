@@ -56,6 +56,41 @@ export async function isLLMAvailable(): Promise<boolean> {
   }
 }
 
+export async function queryLLM(prompt: string, systemPrompt?: string): Promise<string> {
+  const isAvailable = await isLLMAvailable();
+  if (!isAvailable) {
+    throw new Error('LLM not available');
+  }
+
+  try {
+    const response = await fetch(llmConfig.endpoint!, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: llmConfig.model,
+        messages: [
+          ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        stream: false
+      }),
+      signal: AbortSignal.timeout(llmConfig.timeout || 30000)
+    });
+
+    if (!response.ok) {
+      throw new Error(`LLM request failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.message?.content || data.response || '';
+  } catch (error) {
+    throw new Error(`LLM query failed: ${(error as Error).message}`);
+  }
+}
+
 export async function optimizeWithLLM(
   schedules: Schedule[],
   preferences: Preferences
