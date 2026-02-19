@@ -15,6 +15,10 @@ import {
   ListItemIcon,
   ListItemText,
   ListItemSecondaryAction,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import {
   Upload,
@@ -42,6 +46,8 @@ export default function ImportPage() {
   >([]);
   const [loading, setLoading] = useState(false);
   const [imported, setImported] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [fileToDelete, setFileToDelete] = useState<number | null>(null);
   const navigate = useNavigate();
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,8 +57,17 @@ export default function ImportPage() {
     }
   }, []);
 
-  const handleRemoveFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+  const handleConfirmRemoveFile = (index: number) => {
+    setFileToDelete(index);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleRemoveFile = () => {
+    if (fileToDelete !== null) {
+      setFiles((prev) => prev.filter((_, i) => i !== fileToDelete));
+    }
+    setDeleteDialogOpen(false);
+    setFileToDelete(null);
   };
 
   const handleImport = async () => {
@@ -122,6 +137,33 @@ export default function ImportPage() {
         Upload one or more CSV files containing course data
       </Typography>
 
+      <Card sx={{ mb: 3, bgcolor: 'primary.light' }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            CSV Format Requirements
+          </Typography>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Your CSV files should include these headers:
+          </Typography>
+          <Stack direction="row" flexWrap="wrap" gap={1}>
+            {[
+              'Course Code',
+              'Course Name',
+              'Subject',
+              'Section',
+              'Instructor',
+              'Days',
+              'Start Time',
+              'End Time',
+              'Location',
+              'Credits',
+            ].map((header) => (
+              <Chip key={header} label={header} variant="outlined" />
+            ))}
+          </Stack>
+        </CardContent>
+      </Card>
+
       <Card
         sx={{
           mb: 3,
@@ -172,7 +214,7 @@ export default function ImportPage() {
                     secondary={`${(file.size / 1024).toFixed(1)} KB`}
                   />
                   <ListItemSecondaryAction>
-                    <IconButton onClick={() => handleRemoveFile(index)}>
+                    <IconButton onClick={() => handleConfirmRemoveFile(index)}>
                       <Delete />
                     </IconButton>
                   </ListItemSecondaryAction>
@@ -247,32 +289,21 @@ export default function ImportPage() {
         </Alert>
       )}
 
-      <Card sx={{ mt: 3, bgcolor: 'primary.light' }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            CSV Format Requirements
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Remove File?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to remove {fileToDelete !== null ? files[fileToDelete]?.name : ''}
+            ?
           </Typography>
-          <Typography variant="body2" sx={{ mb: 2 }}>
-            Your CSV files should include these headers:
-          </Typography>
-          <Stack direction="row" flexWrap="wrap" gap={1}>
-            {[
-              'Course Code',
-              'Course Name',
-              'Subject',
-              'Section',
-              'Instructor',
-              'Days',
-              'Start Time',
-              'End Time',
-              'Location',
-              'Credits',
-            ].map((header) => (
-              <Chip key={header} label={header} variant="outlined" />
-            ))}
-          </Stack>
-        </CardContent>
-      </Card>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button color="error" onClick={handleRemoveFile}>
+            Remove
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

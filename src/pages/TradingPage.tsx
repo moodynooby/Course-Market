@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -18,8 +18,10 @@ import {
   IconButton,
   Avatar,
   Fab,
+  CircularProgress,
+  Skeleton,
 } from '@mui/material';
-import { Add, SwapHoriz, Phone } from '@mui/icons-material';
+import { Add, SwapHoriz, Phone, Search } from '@mui/icons-material';
 import {
   getTrades as fetchTrades,
   createTrade,
@@ -40,6 +42,7 @@ function TradeCard({
 }) {
   const { user } = useAuth();
   const canManage = user && trade.userId === user.uid;
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   return (
     <Card>
@@ -131,11 +134,33 @@ function TradeCard({
               Complete
             </Button>
           )}
-          <Button size="small" color="error" onClick={() => onDelete(trade.id)}>
+          <Button size="small" color="error" onClick={() => setConfirmDeleteOpen(true)}>
             Delete
           </Button>
         </CardActions>
       )}
+
+      <Dialog open={confirmDeleteOpen} onClose={() => setConfirmDeleteOpen(false)}>
+        <DialogTitle>Delete Trade?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this trade for {trade.courseCode}? This action cannot be
+            undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDeleteOpen(false)}>Cancel</Button>
+          <Button
+            color="error"
+            onClick={() => {
+              setConfirmDeleteOpen(false);
+              onDelete(trade.id);
+            }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Card>
   );
 }
@@ -147,6 +172,9 @@ export default function TradingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [tradeToDelete, setTradeToDelete] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
   const [tradeForm, setTradeForm] = useState({
     courseCode: '',
     courseName: '',
@@ -223,6 +251,54 @@ export default function TradingPage() {
     }
   };
 
+  const filteredTrades = useMemo(() => {
+    if (!search.trim()) return trades;
+    const lower = search.toLowerCase();
+    return trades.filter(
+      (t) =>
+        t.courseCode.toLowerCase().includes(lower) ||
+        t.courseName?.toLowerCase().includes(lower) ||
+        t.sectionOffered.toLowerCase().includes(lower) ||
+        t.sectionWanted.toLowerCase().includes(lower),
+    );
+  }, [trades, search]);
+
+  if (loading) {
+    return (
+      <Box>
+        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
+          <Typography variant="h4" fontWeight={700}>
+            Course Trading
+          </Typography>
+        </Stack>
+        <Stack spacing={2}>
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent>
+                <Stack direction="row" justifyContent="space-between" mb={2}>
+                  <Stack direction="row" spacing={1}>
+                    <Skeleton variant="circular" width={32} height={32} />
+                    <Skeleton variant="text" width={80} />
+                  </Stack>
+                  <Stack direction="row" spacing={1}>
+                    <Skeleton variant="rounded" width={60} height={24} />
+                    <Skeleton variant="rounded" width={60} height={24} />
+                  </Stack>
+                </Stack>
+                <Skeleton variant="text" width="40%" />
+                <Skeleton variant="text" width="60%" />
+                <Stack direction="row" spacing={1} mt={2}>
+                  <Skeleton variant="rounded" width={100} height={24} />
+                  <Skeleton variant="rounded" width={100} height={24} />
+                </Stack>
+              </CardContent>
+            </Card>
+          ))}
+        </Stack>
+      </Box>
+    );
+  }
+
   return (
     <Box>
       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
@@ -257,16 +333,23 @@ export default function TradingPage() {
         </Card>
       ) : (
         <Stack spacing={2}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Typography variant="h6">
-              {trades.length} Trade{trades.length !== 1 ? 's' : ''}
-            </Typography>
-            <Button variant="contained" startIcon={<Add />} onClick={() => setDialogOpen(true)}>
-              Post Trade
-            </Button>
-          </Stack>
+          <TextField
+            placeholder="Search trades..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            size="small"
+            InputProps={{
+              startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+            }}
+            sx={{ mb: 1 }}
+          />
 
-          {trades.map((trade) => (
+          <Typography variant="h6">
+            {filteredTrades.length} Trade{filteredTrades.length !== 1 ? 's' : ''}
+            {search && ` (${trades.length} total)`}
+          </Typography>
+
+          {filteredTrades.map((trade) => (
             <TradeCard
               key={trade.id}
               trade={trade}

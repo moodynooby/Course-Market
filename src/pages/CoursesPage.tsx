@@ -16,9 +16,20 @@ import {
   IconButton,
   Collapse,
   Alert,
+  Skeleton,
 } from '@mui/material';
-import { ExpandMore, ExpandLess, Delete, Schedule, Person, LocationOn } from '@mui/icons-material';
+import {
+  ExpandMore,
+  ExpandLess,
+  Delete,
+  Schedule,
+  Person,
+  LocationOn,
+  Upload,
+  Warning,
+} from '@mui/icons-material';
 import { getCourses, saveCourses } from '../services/database';
+import { useNavigate } from 'react-router-dom';
 import type { Course, Section } from '../types';
 
 function formatTime(time24: string): string {
@@ -36,11 +47,14 @@ export default function CoursesPage() {
   const [search, setSearch] = useState('');
   const [subject, setSubject] = useState('all');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const data = getCourses();
     setCourses(data.courses);
     setSections(data.sections);
+    setLoading(false);
 
     // Load selections from localStorage
     const saved = localStorage.getItem('course-selections');
@@ -122,22 +136,63 @@ export default function CoursesPage() {
     setSelectedSections(new Map());
   };
 
+  if (loading) {
+    return (
+      <Box>
+        <Typography variant="h4" gutterBottom fontWeight={700}>
+          Course Browser
+        </Typography>
+        <Stack spacing={2}>
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent>
+                <Skeleton variant="text" width="30%" height={30} />
+                <Skeleton variant="text" width="60%" />
+                <Skeleton variant="rectangular" height={60} sx={{ mt: 1 }} />
+              </CardContent>
+            </Card>
+          ))}
+        </Stack>
+      </Box>
+    );
+  }
+
   if (courses.length === 0) {
     return (
       <Box>
         <Typography variant="h4" gutterBottom fontWeight={700}>
           Course Browser
         </Typography>
-        <Alert severity="info">No courses imported yet. Go to Import to add courses.</Alert>
+        <Alert severity="info" sx={{ mb: 3 }}>
+          No courses imported yet. Import a CSV file to get started.
+        </Alert>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<Upload />}
+            onClick={() => navigate('/')}
+          >
+            Import Courses
+          </Button>
+          <Button variant="outlined" size="large" onClick={() => navigate('/schedule')}>
+            View Schedule
+          </Button>
+        </Stack>
       </Box>
     );
   }
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom fontWeight={700}>
-        Course Browser
-      </Typography>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
+        <Typography variant="h4" fontWeight={700}>
+          Course Browser
+        </Typography>
+        <Button variant="outlined" startIcon={<Upload />} onClick={() => navigate('/')}>
+          Import
+        </Button>
+      </Stack>
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
         <TextField
@@ -267,7 +322,12 @@ export default function CoursesPage() {
                             </Box>
                             {isSelected && <Chip size="small" label="Selected" color="success" />}
                             {conflict && !isSelected && (
-                              <Chip size="small" label="Conflict" color="error" />
+                              <Chip
+                                size="small"
+                                icon={<Warning />}
+                                label="Conflict"
+                                color="error"
+                              />
                             )}
                           </Stack>
                         </CardContent>

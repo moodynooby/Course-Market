@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -19,8 +19,20 @@ import {
   Divider,
   FormHelperText,
   LinearProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
-import { Save, Phone, Palette, AccountCircle, Psychology, CloudOff } from '@mui/icons-material';
+import {
+  Save,
+  Phone,
+  Palette,
+  AccountCircle,
+  Psychology,
+  CloudOff,
+  DeleteForever,
+} from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
 import type { Preferences } from '../types';
@@ -95,12 +107,32 @@ export default function SettingsPage() {
   const { mode, setMode } = useThemeMode();
   const [saved, setSaved] = useState(false);
   const [llmSaved, setLlmSaved] = useState(false);
+  const [clearDataOpen, setClearDataOpen] = useState(false);
 
   const [preferences, setPreferences] = useState<Preferences>(DEFAULT_PREFERENCES);
   const [llmConfig, setLlmConfig] = useState<BYOKConfig>(DEFAULT_LLM_CONFIG);
 
+  const savePreferences = useCallback(() => {
+    localStorage.setItem('course_market_preferences', JSON.stringify(preferences));
+    setMode(preferences.theme || 'system');
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  }, [preferences, setMode]);
+
+  const saveLlmConfig = useCallback(() => {
+    if (llmConfig.provider !== 'webllm' && !llmConfig.apiKey) {
+      return false;
+    }
+    if (llmConfig.provider === 'custom' && !llmConfig.apiBaseUrl) {
+      return false;
+    }
+    localStorage.setItem('llm-byot-config', JSON.stringify(llmConfig));
+    setLlmSaved(true);
+    setTimeout(() => setLlmSaved(false), 3000);
+    return true;
+  }, [llmConfig]);
+
   useEffect(() => {
-    // Load saved preferences - use single source of truth
     const savedPrefs = localStorage.getItem('course_market_preferences');
     if (savedPrefs) {
       try {
@@ -108,7 +140,6 @@ export default function SettingsPage() {
       } catch {}
     }
 
-    // Load saved LLM config
     const savedLlm = localStorage.getItem('llm-byot-config');
     if (savedLlm) {
       try {
@@ -117,28 +148,23 @@ export default function SettingsPage() {
     }
   }, []);
 
-  const handleSavePreferences = () => {
-    localStorage.setItem('course_market_preferences', JSON.stringify(preferences));
-    setMode(preferences.theme || 'system');
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  };
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      savePreferences();
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [preferences, savePreferences]);
 
-  const handleSaveLLM = () => {
-    // Validate
-    if (llmConfig.provider !== 'webllm' && !llmConfig.apiKey) {
-      alert('API Key is required for this provider');
-      return;
-    }
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      saveLlmConfig();
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [llmConfig, saveLlmConfig]);
 
-    if (llmConfig.provider === 'custom' && !llmConfig.apiBaseUrl) {
-      alert('API URL is required for custom provider');
-      return;
-    }
-
-    localStorage.setItem('llm-byot-config', JSON.stringify(llmConfig));
-    setLlmSaved(true);
-    setTimeout(() => setLlmSaved(false), 3000);
+  const handleClearData = () => {
+    localStorage.clear();
+    window.location.reload();
   };
 
   const handleProviderChange = (provider: LLMProvider) => {
@@ -451,19 +477,11 @@ export default function SettingsPage() {
                   helperText="Maximum response length"
                 />
 
-                {llmSaved && <Alert severity="success">AI Settings saved successfully!</Alert>}
+                {llmSaved && <Alert severity="success">AI Settings auto-saved!</Alert>}
+
+                {!llmSaved && <Alert severity="info">AI settings will auto-save as you type</Alert>}
 
                 <Divider />
-
-                <Button
-                  variant="contained"
-                  size="large"
-                  onClick={handleSaveLLM}
-                  startIcon={<Save />}
-                  fullWidth
-                >
-                  Save AI Settings
-                </Button>
 
                 {llmConfig.provider === 'webllm' && (
                   <Alert severity="info" icon={<CloudOff />}>
@@ -478,29 +496,38 @@ export default function SettingsPage() {
         </Grid>
       </Grid>
 
-      <Stack direction="row" justifyContent="space-between" sx={{ mt: 3 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 3 }}>
         <Button
           variant="outlined"
           color="error"
-          onClick={() => {
-            if (confirm('This will clear all your data. Are you sure?')) {
-              localStorage.clear();
-              window.location.reload();
-            }
-          }}
+          startIcon={<DeleteForever />}
+          onClick={() => setClearDataOpen(true)}
         >
           Clear All Data
         </Button>
 
-        <Button
-          variant="contained"
-          size="large"
-          startIcon={<Save />}
-          onClick={handleSavePreferences}
-        >
-          Save Settings
-        </Button>
+        {saved && (
+          <Alert severity="success" sx={{ py: 0 }}>
+            Settings auto-saved!
+          </Alert>
+        )}
       </Stack>
+
+      <Dialog open={clearDataOpen} onClose={() => setClearDataOpen(false)}>
+        <DialogTitle>Clear All Data?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            This will permanently delete all your courses, preferences, and AI settings. This action
+            cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setClearDataOpen(false)}>Cancel</Button>
+          <Button color="error" onClick={handleClearData}>
+            Clear All Data
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

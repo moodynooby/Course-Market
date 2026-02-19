@@ -1,10 +1,7 @@
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
-  AppBar,
   Box,
-  Toolbar,
-  Typography,
   Drawer,
   List,
   ListItem,
@@ -13,16 +10,16 @@ import {
   ListItemText,
   IconButton,
   Avatar,
-  Menu,
-  MenuItem,
   Divider,
   useTheme,
   useMediaQuery,
   Chip,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Upload,
   School,
   CalendarMonth,
   SwapHoriz,
@@ -31,6 +28,8 @@ import {
   LightMode,
   Logout,
   Person,
+  Upload,
+  SettingsBrightness,
 } from '@mui/icons-material';
 import { useThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -38,7 +37,6 @@ import { useAuth } from '../context/AuthContext';
 const drawerWidth = 240;
 
 const navItems = [
-  { text: 'Import', icon: <Upload />, path: '/' },
   { text: 'Courses', icon: <School />, path: '/courses' },
   { text: 'Schedule', icon: <CalendarMonth />, path: '/schedule' },
   { text: 'Trading', icon: <SwapHoriz />, path: '/trading' },
@@ -47,7 +45,6 @@ const navItems = [
 
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
@@ -57,14 +54,6 @@ export default function Layout() {
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
-  };
-
-  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
   };
 
   const handleThemeToggle = () => {
@@ -80,13 +69,6 @@ export default function Layout() {
 
   const drawer = (
     <Box sx={{ overflow: 'auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <School sx={{ color: 'primary.main', fontSize: 32 }} />
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          Course Hub
-        </Typography>
-      </Box>
-      <Divider />
       <List sx={{ flex: 1 }}>
         {navItems.map((item) => (
           <ListItem key={item.text} disablePadding>
@@ -98,6 +80,7 @@ export default function Layout() {
               }}
               sx={{
                 mx: 1,
+                my: 0.5,
                 borderRadius: 2,
                 '&.Mui-selected': {
                   bgcolor: 'primary.main',
@@ -119,80 +102,57 @@ export default function Layout() {
       </List>
       <Divider />
       <Box sx={{ p: 2 }}>
-        <Chip
-          icon={isDark ? <DarkMode /> : <LightMode />}
-          label={mode === 'system' ? 'System' : isDark ? 'Dark' : 'Light'}
-          onClick={handleThemeToggle}
-          variant="outlined"
-          sx={{ cursor: 'pointer', width: '100%' }}
-        />
+        <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+          Theme
+        </Typography>
+        <ToggleButtonGroup
+          value={mode}
+          exclusive
+          onChange={(_, newMode) => newMode && setMode(newMode)}
+          size="small"
+          fullWidth
+        >
+          <ToggleButton value="light" sx={{ py: 1 }}>
+            <LightMode sx={{ mr: 0.5 }} />
+          </ToggleButton>
+          <ToggleButton value="dark" sx={{ py: 1 }}>
+            <DarkMode sx={{ mr: 0.5 }} />
+          </ToggleButton>
+          <ToggleButton value="system" sx={{ py: 1 }}>
+            <SettingsBrightness sx={{ mr: 0.5 }} />
+          </ToggleButton>
+        </ToggleButtonGroup>
+        <Box
+          sx={{
+            display: 'flex',
+            marginTop: 5,
+            alignItems: 'center',
+            gap: 1.5,
+            p: 1,
+            borderRadius: 2,
+            bgcolor: 'action.hover',
+            cursor: 'pointer',
+          }}
+          onClick={() => navigate('/settings')}
+        >
+          <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main' }}>
+            {user?.displayName?.[0] || 'U'}
+          </Avatar>
+          <Box sx={{ overflow: 'hidden' }}>
+            <ListItemText
+              primary={user?.displayName || 'User'}
+              secondary={user?.phoneNumber}
+              primaryTypographyProps={{ variant: 'body2', fontWeight: 600, noWrap: true }}
+              secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
+            />
+          </Box>
+        </Box>
       </Box>
     </Box>
   );
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { md: `calc(100% - ${drawerWidth}px)` },
-          ml: { md: `${drawerWidth}px` },
-          bgcolor: 'background.paper',
-          color: 'text.primary',
-          boxShadow: 1,
-        }}
-      >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { md: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Box sx={{ flexGrow: 1 }} />
-          <IconButton onClick={handleThemeToggle} sx={{ mr: 1 }}>
-            {isDark ? <DarkMode /> : <LightMode />}
-          </IconButton>
-          <IconButton onClick={handleMenu} sx={{ p: 0 }}>
-            <Avatar sx={{ bgcolor: 'primary.main' }}>{user?.displayName?.[0] || 'U'}</Avatar>
-          </IconButton>
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleClose}
-            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-          >
-            <MenuItem disabled>
-              <ListItemIcon>
-                <Person fontSize="small" />
-              </ListItemIcon>
-              <ListItemText primary={user?.displayName || 'User'} secondary={user?.phoneNumber} />
-            </MenuItem>
-            <Divider />
-            <MenuItem
-              onClick={() => {
-                handleClose();
-                navigate('/settings');
-              }}
-            >
-              <ListItemIcon>
-                <Settings fontSize="small" />
-              </ListItemIcon>
-              Settings
-            </MenuItem>
-            <MenuItem onClick={handleSignOut}>
-              <ListItemIcon>
-                <Logout fontSize="small" />
-              </ListItemIcon>
-              Sign Out
-            </MenuItem>
-          </Menu>
-        </Toolbar>
-      </AppBar>
       <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
         <Drawer
           variant="temporary"
@@ -223,11 +183,21 @@ export default function Layout() {
           flexGrow: 1,
           p: 3,
           width: { md: `calc(100% - ${drawerWidth}px)` },
-          mt: 8,
           bgcolor: 'background.default',
-          minHeight: 'calc(100vh - 64px)',
+          minHeight: '100vh',
         }}
       >
+        {isMobile && (
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mb: 2 }}
+          >
+            <MenuIcon />
+          </IconButton>
+        )}
         <Outlet />
       </Box>
     </Box>
