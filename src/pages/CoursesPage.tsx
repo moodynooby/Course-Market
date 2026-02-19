@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -18,27 +18,13 @@ import {
   Alert,
   Skeleton,
 } from '@mui/material';
-import {
-  ExpandMore,
-  ExpandLess,
-  Delete,
-  Schedule,
-  Person,
-  LocationOn,
-  Upload,
-  Warning,
-} from '@mui/icons-material';
-import { getCourses, saveCourses } from '../services/database';
-import { useNavigate } from 'react-router-dom';
+import { ExpandMore, ExpandLess, Schedule, Person, Warning } from '@mui/icons-material';
+import { getCourses } from '../services/database';
 import type { Course, Section } from '../types';
+import { formatTime, hasSectionConflict } from '../utils/schedule';
 
-function formatTime(time24: string): string {
-  const [hours, minutes] = time24.split(':');
-  const hour = parseInt(hours, 10);
-  const period = hour >= 12 ? 'PM' : 'AM';
-  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  return `${displayHour}:${minutes}${period}`;
-}
+const INITIAL_VISIBLE_COURSES = 25;
+const VISIBLE_COURSE_STEP = 25;
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -48,7 +34,7 @@ export default function CoursesPage() {
   const [subject, setSubject] = useState('all');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COURSES);
 
   useEffect(() => {
     const data = getCourses();
@@ -76,21 +62,51 @@ export default function CoursesPage() {
   }, [courses]);
 
   const filteredCourses = useMemo(() => {
+    const loweredSearch = search.toLowerCase();
+
     return courses.filter((course) => {
       const matchesSearch =
-        course.name.toLowerCase().includes(search.toLowerCase()) ||
-        course.code.toLowerCase().includes(search.toLowerCase());
+        course.name.toLowerCase().includes(loweredSearch) ||
+        course.code.toLowerCase().includes(loweredSearch);
       const matchesSubject = subject === 'all' || course.subject === subject;
       return matchesSearch && matchesSubject;
     });
   }, [courses, search, subject]);
 
-  const courseSections = (courseId: string) => sections.filter((s) => s.courseId === courseId);
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE_COURSES);
+  }, [search, subject]);
 
-  const getSelectedSection = (courseId: string) => {
-    const sectionId = selectedSections.get(courseId);
-    return sectionId ? sections.find((s) => s.id === sectionId) : undefined;
-  };
+  const courseSectionsMap = useMemo(() => {
+    const map = new Map<string, Section[]>();
+    sections.forEach((section) => {
+      const existing = map.get(section.courseId) || [];
+      existing.push(section);
+      map.set(section.courseId, existing);
+    });
+    return map;
+  }, [sections]);
+
+  const courseSections = useCallback(
+    (courseId: string) => courseSectionsMap.get(courseId) || [],
+    [courseSectionsMap],
+  );
+
+  const sectionsById = useMemo(() => {
+    const map = new Map<string, Section>();
+    sections.forEach((section) => {
+      map.set(section.id, section);
+    });
+    return map;
+  }, [sections]);
+
+  const getSelectedSection = useCallback(
+    (courseId: string) => {
+      const sectionId = selectedSections.get(courseId);
+      return sectionId ? sectionsById.get(sectionId) : undefined;
+    },
+    [selectedSections, sectionsById],
+  );
 
   const handleSelectSection = (courseId: string, sectionId: string) => {
     const newMap = new Map(selectedSections);
@@ -108,29 +124,23 @@ export default function CoursesPage() {
     setSelectedSections(newMap);
   };
 
-  const hasConflict = (section: Section): boolean => {
-    const selectedList = getSelectedSectionList();
-    for (const sel of selectedList) {
-      if (sel.id === section.id) continue;
-      for (const slot1 of section.timeSlots) {
-        for (const slot2 of sel.timeSlots) {
-          if (slot1.day === slot2.day) {
-            const start1 = parseInt(slot1.startTime.replace(':', ''), 10);
-            const end1 = parseInt(slot1.endTime.replace(':', ''), 10);
-            const start2 = parseInt(slot2.startTime.replace(':', ''), 10);
-            const end2 = parseInt(slot2.endTime.replace(':', ''), 10);
-            if (start1 < end2 && start2 < end1) return true;
-          }
-        }
-      }
-    }
-    return false;
-  };
+  const selectedSectionList = useMemo(() => {
+    const ids = new Set(selectedSections.values());
+    return sections.filter((section) => ids.has(section.id));
+  }, [selectedSections, sections]);
 
-  const getSelectedSectionList = (): Section[] => {
-    const ids = Array.from(selectedSections.values());
-    return sections.filter((s) => ids.includes(s.id));
-  };
+  const visibleCourses = useMemo(
+    () => filteredCourses.slice(0, visibleCount),
+    [filteredCourses, visibleCount],
+  );
+
+  const hasMoreCourses = filteredCourses.length > visibleCount;
+
+  const hasConflict = useCallback(
+    (section: Section): boolean =>
+      selectedSectionList.some((sel) => sel.id !== section.id && hasSectionConflict(section, sel)),
+    [selectedSectionList],
+  );
 
   const handleClearAll = () => {
     setSelectedSections(new Map());
@@ -166,19 +176,6 @@ export default function CoursesPage() {
         <Alert severity="info" sx={{ mb: 3 }}>
           No courses imported yet. Import a CSV file to get started.
         </Alert>
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <Button
-            variant="contained"
-            size="large"
-            startIcon={<Upload />}
-            onClick={() => navigate('/')}
-          >
-            Import Courses
-          </Button>
-          <Button variant="outlined" size="large" onClick={() => navigate('/schedule')}>
-            View Schedule
-          </Button>
-        </Stack>
       </Box>
     );
   }
@@ -189,9 +186,6 @@ export default function CoursesPage() {
         <Typography variant="h4" fontWeight={700}>
           Course Browser
         </Typography>
-        <Button variant="outlined" startIcon={<Upload />} onClick={() => navigate('/')}>
-          Import
-        </Button>
       </Stack>
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
@@ -227,7 +221,7 @@ export default function CoursesPage() {
         </Button>
       </Stack>
 
-      {filteredCourses.map((course) => {
+      {visibleCourses.map((course) => {
         const sectionList = courseSections(course.id);
         const selected = getSelectedSection(course.id);
         const isExpanded = expanded === course.id;
@@ -314,10 +308,6 @@ export default function CoursesPage() {
                                     {dayDisplay} {timeDisplay}
                                   </Typography>
                                 </Stack>
-                                <Stack direction="row" alignItems="center" spacing={0.5}>
-                                  <LocationOn sx={{ fontSize: 16 }} />
-                                  <Typography variant="caption">{section.location}</Typography>
-                                </Stack>
                               </Stack>
                             </Box>
                             {isSelected && <Chip size="small" label="Selected" color="success" />}
@@ -343,6 +333,17 @@ export default function CoursesPage() {
 
       {filteredCourses.length === 0 && (
         <Alert severity="info">No courses found matching your criteria.</Alert>
+      )}
+
+      {hasMoreCourses && (
+        <Box display="flex" justifyContent="center" mt={2}>
+          <Button
+            variant="outlined"
+            onClick={() => setVisibleCount((count) => count + VISIBLE_COURSE_STEP)}
+          >
+            Load More Courses
+          </Button>
+        </Box>
       )}
     </Box>
   );

@@ -3,7 +3,7 @@
 
 import { neon } from '@netlify/neon';
 import { drizzle } from 'drizzle-orm/neon-http';
-import { eq, desc, ilike, and, sql } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 
 function getDb() {

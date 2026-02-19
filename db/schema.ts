@@ -52,7 +52,6 @@ export const sections = pgTable('sections', {
   courseId: integer('course_id').references(() => courses.id).notNull(),
   sectionNumber: varchar('section_number', { length: 20 }).notNull(),
   instructor: varchar('instructor', { length: 255 }).default('TBA'),
-  location: varchar('location', { length: 255 }).default('TBA'),
   days: varchar('days', { length: 20 }).notNull(),
   startTime: varchar('start_time', { length: 10 }).notNull(),
   endTime: varchar('end_time', { length: 10 }).notNull(),

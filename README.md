@@ -103,7 +103,6 @@ The application expects CSV files with the following headers:
 | Days | Class days | MWF |
 | Start Time | Class start time | 09:00 |
 | End Time | Class end time | 09:50 |
-| Location | Classroom/building | Room 101 |
 | Credits | Credit hours | 3 |
 
 ### Example CSV Data

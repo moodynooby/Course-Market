@@ -36,7 +36,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
 import type { Preferences } from '../types';
-import type { LLMProvider } from '../services/webllm';
+
+export type LLMProvider = 'webllm' | 'wllama' | 'openai' | 'anthropic' | 'custom';
 
 interface BYOKConfig {
   provider: LLMProvider;
@@ -56,7 +57,13 @@ const PROVIDER_OPTIONS: {
   {
     value: 'webllm',
     label: 'WebLLM (Browser-based, Free)',
-    defaultModel: 'Llama-3-8B-Instruct-q4f32_1-MLC',
+    defaultModel: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
+    urlPlaceholder: 'Not required',
+  },
+  {
+    value: 'wllama',
+    label: 'Wllama (Fallback, No WebGPU Required)',
+    defaultModel: 'TinyLlama-1.1B-Chat-v1.0.Q4_K_M.gguf',
     urlPlaceholder: 'Not required',
   },
   {
@@ -97,7 +104,7 @@ const DEFAULT_PREFERENCES: Preferences = {
 const DEFAULT_LLM_CONFIG: BYOKConfig = {
   provider: 'webllm',
   apiKey: '',
-  model: 'Llama-3-8B-Instruct-q4f32_1-MLC',
+  model: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
   temperature: 0.7,
   maxTokens: 1024,
 };
@@ -126,7 +133,7 @@ export default function SettingsPage() {
     if (llmConfig.provider === 'custom' && !llmConfig.apiBaseUrl) {
       return false;
     }
-    localStorage.setItem('llm-byot-config', JSON.stringify(llmConfig));
+    localStorage.setItem('llm-byok-config', JSON.stringify(llmConfig));
     setLlmSaved(true);
     setTimeout(() => setLlmSaved(false), 3000);
     return true;
@@ -140,7 +147,7 @@ export default function SettingsPage() {
       } catch {}
     }
 
-    const savedLlm = localStorage.getItem('llm-byot-config');
+    const savedLlm = localStorage.getItem('llm-byok-config');
     if (savedLlm) {
       try {
         setLlmConfig(JSON.parse(savedLlm));
@@ -401,11 +408,13 @@ export default function SettingsPage() {
                   <FormHelperText>
                     {llmConfig.provider === 'webllm'
                       ? 'Runs locally in your browser using WebGPU. No API key needed.'
-                      : 'Cloud-based API. Requires valid API key.'}
+                      : llmConfig.provider === 'wllama'
+                        ? 'Fallback option that works without WebGPU. May be slower.'
+                        : 'Cloud-based API. Requires valid API key.'}
                   </FormHelperText>
                 </FormControl>
 
-                {llmConfig.provider !== 'webllm' && (
+                {llmConfig.provider !== 'webllm' && llmConfig.provider !== 'wllama' && (
                   <>
                     <TextField
                       fullWidth
@@ -477,17 +486,22 @@ export default function SettingsPage() {
                   helperText="Maximum response length"
                 />
 
-                {llmSaved && <Alert severity="success">AI Settings auto-saved!</Alert>}
-
-                {!llmSaved && <Alert severity="info">AI settings will auto-save as you type</Alert>}
-
                 <Divider />
 
-                {llmConfig.provider === 'webllm' && (
+                {(llmConfig.provider === 'webllm' || llmConfig.provider === 'wllama') && (
                   <Alert severity="info" icon={<CloudOff />}>
-                    <strong>WebLLM Mode:</strong> Runs entirely in your browser using WebGPU.
-                    Requires Chrome 113+ or Firefox 141+. First load may take longer as the model
-                    downloads.
+                    {llmConfig.provider === 'webllm' ? (
+                      <>
+                        <strong>WebLLM Mode:</strong> Runs entirely in your browser using WebGPU.
+                        Requires Chrome 113+ or Firefox 141+. First load may take longer as the
+                        model downloads.
+                      </>
+                    ) : (
+                      <>
+                        <strong>Wllama Mode:</strong> Fallback option that works without WebGPU. May
+                        be slower but works on more browsers.
+                      </>
+                    )}
                   </Alert>
                 )}
               </Stack>

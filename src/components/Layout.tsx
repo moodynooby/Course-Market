@@ -10,7 +10,9 @@ import {
   ListItemText,
   IconButton,
   Avatar,
+  Button,
   Divider,
+  SvgIcon,
   useTheme,
   useMediaQuery,
   Chip,
@@ -33,6 +35,7 @@ import {
 } from '@mui/icons-material';
 import { useThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import ImportDialog from './ImportDialog';
 
 const drawerWidth = 240;
 
@@ -45,6 +48,7 @@ const navItems = [
 
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
@@ -70,6 +74,21 @@ export default function Layout() {
   const drawer = (
     <Box sx={{ overflow: 'auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <List sx={{ flex: 1 }}>
+        <ListItem disablePadding>
+          <ListItemButton
+            onClick={() => {
+              setImportOpen(true);
+              if (isMobile) setMobileOpen(false);
+            }}
+            sx={{ mx: 1, my: 0.5, borderRadius: 2 }}
+          >
+            <ListItemIcon sx={{ minWidth: 40 }}>
+              <Upload />
+            </ListItemIcon>
+            <ListItemText primary="Import" />
+          </ListItemButton>
+        </ListItem>
+        <Divider sx={{ mx: 2, my: 0.5 }} />
         {navItems.map((item) => (
           <ListItem key={item.text} disablePadding>
             <ListItemButton
@@ -122,10 +141,41 @@ export default function Layout() {
             <SettingsBrightness sx={{ mr: 0.5 }} />
           </ToggleButton>
         </ToggleButtonGroup>
+        <Button
+          href="mailto:manasdoshi27@gmail.com"
+          target="_blank"
+          variant="outlined"
+          size="small"
+          fullWidth
+          startIcon={
+            <SvgIcon viewBox="0 0 24 24" sx={{ fontSize: 20 }}>
+              <path d="M20 3H4v10c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4v-3h2c1.11 0 2-.89 2-2V5c0-1.11-.89-2-2-2zm0 5h-2V5h2v3zM4 19h16v2H4z" />
+            </SvgIcon>
+          }
+          sx={{ mt: 2, mb: 1 }}
+        >
+          Support
+        </Button>
+        <Button
+          href="https://ko-fi.com/U7U51S87CX"
+          target="_blank"
+          variant="outlined"
+          size="small"
+          fullWidth
+          startIcon={
+            <SvgIcon viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
+            </SvgIcon>
+          }
+          sx={{ mt: 2, mb: 1 }}
+        >
+          Contact
+        </Button>
+
         <Box
           sx={{
             display: 'flex',
-            marginTop: 5,
+            marginTop: 1,
             alignItems: 'center',
             gap: 1.5,
             p: 1,
@@ -200,6 +250,7 @@ export default function Layout() {
         )}
         <Outlet />
       </Box>
+      <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
     </Box>
   );
 }

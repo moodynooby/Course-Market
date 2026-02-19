@@ -14,7 +14,6 @@ export interface Section {
   courseId: string;
   sectionNumber: string;
   instructor: string;
-  location: string;
   timeSlots: TimeSlot[];
   capacity: number;
   enrolled: number;
@@ -71,26 +70,6 @@ export interface TradePost {
   updatedAt: string;
 }
 
-export interface UserProfile {
-  id: string;
-  displayName: string;
-  email: string;
-  avatarUrl?: string;
-  provider: 'google' | 'github' | 'phone' | 'email';
-  phoneNumber?: string;
-  createdAt: string;
-}
-
-export interface ContactRequest {
-  id: string;
-  fromUserId: string;
-  toUserId: string;
-  tradeId?: string;
-  message?: string;
-  status: 'pending' | 'accepted' | 'rejected';
-  createdAt: string;
-}
-
 export interface CSVParseResult {
   success: boolean;
   courses: Course[];
@@ -99,14 +78,14 @@ export interface CSVParseResult {
   warnings: string[];
 }
 
-export interface OptimizationResult {
-  schedules: Schedule[];
-  bestSchedule: Schedule | null;
-  aiAnalysis?: string;
-  error?: string;
-}
+export type LLMProvider = 'webllm' | 'wllama' | 'openai' | 'anthropic' | 'custom';
 
-export interface ThemeMode {
-  mode: 'light' | 'dark' | 'system';
-  isDark: boolean;
+export interface LLMConfig {
+  provider: LLMProvider;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  apiKey?: string;
+  apiBaseUrl?: string;
+  initProgressCallback?: (progress: { progress: number; text: string }) => void;
 }

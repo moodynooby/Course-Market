@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import type { Course, Section } from '../types';
+import { formatTime, hasSectionConflict } from '../utils/schedule';
 
 interface CourseListProps {
   courses: Course[];
@@ -7,14 +8,6 @@ interface CourseListProps {
   selectedSections: Map<string, string>;
   onSelectSection: (courseId: string, sectionId: string) => void;
   onDeselectCourse: (courseId: string) => void;
-}
-
-function formatTime(time24: string): string {
-  const [hours, minutes] = time24.split(':');
-  const hour = parseInt(hours, 10);
-  const period = hour >= 12 ? 'PM' : 'AM';
-  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  return `${displayHour}:${minutes} ${period}`;
 }
 
 function SectionCard({
@@ -62,10 +55,6 @@ function SectionCard({
           </span>
         </div>
         <div className="detail-row">
-          <span className="label">Location:</span>
-          <span className="value">{section.location}</span>
-        </div>
-        <div className="detail-row">
           <span className="label">Enrollment:</span>
           <span className="value">
             {section.enrolled}/{section.capacity}
@@ -87,44 +76,50 @@ export function CourseList({
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
 
-  const subjects = Array.from(new Set(courses.map((course) => course.subject))).sort();
+  const subjects = useMemo(
+    () => Array.from(new Set(courses.map((course) => course.subject))).sort(),
+    [courses],
+  );
 
-  const filteredCourses = courses.filter((course) => {
-    const matchesSubject = selectedSubject === 'all' || course.subject === selectedSubject;
-    const matchesSearch =
-      course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.code.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSubject && matchesSearch;
-  });
+  const filteredCourses = useMemo(
+    () =>
+      courses.filter((course) => {
+        const matchesSubject = selectedSubject === 'all' || course.subject === selectedSubject;
+        const matchesSearch =
+          course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          course.code.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesSubject && matchesSearch;
+      }),
+    [courses, selectedSubject, searchTerm],
+  );
 
-  const courseSections = (courseId: string): Section[] =>
-    sections.filter((section) => section.courseId === courseId);
+  const courseSectionsMap = useMemo(() => {
+    const map = new Map<string, Section[]>();
+    sections.forEach((section) => {
+      const existing = map.get(section.courseId) || [];
+      existing.push(section);
+      map.set(section.courseId, existing);
+    });
+    return map;
+  }, [sections]);
 
-  const hasConflict = (section: Section): boolean => {
-    const selectedSectionIds = Array.from(selectedSections.values());
-    const selectedSectionsList = sections.filter((s) => selectedSectionIds.includes(s.id));
+  const courseSections = useCallback(
+    (courseId: string): Section[] => courseSectionsMap.get(courseId) || [],
+    [courseSectionsMap],
+  );
 
-    for (const selectedSection of selectedSectionsList) {
-      if (selectedSection.id === section.id) continue;
+  const selectedSectionsList = useMemo(() => {
+    const ids = Array.from(selectedSections.values());
+    return sections.filter((s) => ids.includes(s.id));
+  }, [selectedSections, sections]);
 
-      for (const slot1 of section.timeSlots) {
-        for (const slot2 of selectedSection.timeSlots) {
-          if (slot1.day === slot2.day) {
-            const start1 = parseInt(slot1.startTime.replace(':', ''), 10);
-            const end1 = parseInt(slot1.endTime.replace(':', ''), 10);
-            const start2 = parseInt(slot2.startTime.replace(':', ''), 10);
-            const end2 = parseInt(slot2.endTime.replace(':', ''), 10);
-
-            if (start1 < end2 && start2 < end1) {
-              return true;
-            }
-          }
-        }
-      }
-    }
-
-    return false;
-  };
+  const hasConflict = useCallback(
+    (section: Section): boolean =>
+      selectedSectionsList.some(
+        (selected) => selected.id !== section.id && hasSectionConflict(section, selected),
+      ),
+    [selectedSectionsList],
+  );
 
   const getSelectedSection = (courseId: string): Section | undefined => {
     const sectionId = selectedSections.get(courseId);

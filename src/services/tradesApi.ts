@@ -16,9 +16,15 @@ async function fetchApi(path: string, options: RequestInit = {}): Promise<any> {
     },
   });
 
+  const contentType = response.headers.get('content-type') || '';
+
   if (!response.ok) {
     const errorBody = await response.text();
     throw new Error(`API error ${response.status}: ${errorBody}`);
+  }
+
+  if (!contentType.includes('application/json')) {
+    throw new Error('Server returned non-JSON response. Are Netlify Functions running?.');
   }
 
   return response.json();
@@ -77,28 +83,6 @@ export async function deleteTrade(tradeId: string): Promise<boolean> {
   });
 
   return result.success;
-}
-
-export async function searchTrades(filters?: {
-  courseCode?: string;
-  action?: 'offer' | 'request';
-  status?: string;
-}): Promise<TradePost[]> {
-  const trades = await getTrades();
-
-  if (!filters) return trades;
-
-  return trades.filter((trade) => {
-    if (
-      filters.courseCode &&
-      !trade.courseCode.toLowerCase().includes(filters.courseCode.toLowerCase())
-    ) {
-      return false;
-    }
-    if (filters.action && trade.action !== filters.action) return false;
-    if (filters.status && trade.status !== filters.status) return false;
-    return true;
-  });
 }
 
 // Map DB row (snake_case / numeric IDs) to frontend TradePost

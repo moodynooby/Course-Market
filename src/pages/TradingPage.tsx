@@ -172,8 +172,6 @@ export default function TradingPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [tradeToDelete, setTradeToDelete] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [tradeForm, setTradeForm] = useState({
     courseCode: '',

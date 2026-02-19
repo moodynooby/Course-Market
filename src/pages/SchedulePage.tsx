@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useMediaQuery } from '@mui/material';
 import {
   Box,
   Typography,
@@ -18,19 +19,16 @@ import {
   Paper,
   LinearProgress,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
 import { PlayArrow, Psychology, Schedule as ScheduleIcon } from '@mui/icons-material';
 import { getCourses } from '../services/database';
-import { optimizeWithWebLLM, type LLMConfig } from '../services/webllm';
-import type { Section, Schedule, Preferences } from '../types';
-
-function formatTime(time24: string): string {
-  const [hours, minutes] = time24.split(':');
-  const hour = parseInt(hours, 10);
-  const period = hour >= 12 ? 'PM' : 'AM';
-  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  return `${displayHour}:${minutes}${period}`;
-}
+import { optimizeWithLLM } from '../services/llm';
+import type { Course, Section, Schedule, Preferences, LLMProvider, LLMConfig } from '../types';
+import { formatTime, checkConflicts } from '../utils/schedule';
 
 function generateCurrentSchedule(): Schedule | null {
   const { courses, sections } = getCourses();
@@ -69,34 +67,6 @@ function generateCurrentSchedule(): Schedule | null {
   }
 }
 
-function checkConflicts(sections: Section[]): string[] {
-  const conflicts: string[] = [];
-
-  for (let i = 0; i < sections.length; i++) {
-    for (let j = i + 1; j < sections.length; j++) {
-      const s1 = sections[i];
-      const s2 = sections[j];
-
-      for (const slot1 of s1.timeSlots) {
-        for (const slot2 of s2.timeSlots) {
-          if (slot1.day === slot2.day) {
-            const start1 = parseInt(slot1.startTime.replace(':', ''), 10);
-            const end1 = parseInt(slot1.endTime.replace(':', ''), 10);
-            const start2 = parseInt(slot2.startTime.replace(':', ''), 10);
-            const end2 = parseInt(slot2.endTime.replace(':', ''), 10);
-
-            if (start1 < end2 && start2 < end1) {
-              conflicts.push(`${s1.sectionNumber} and ${s2.sectionNumber} conflict`);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return conflicts;
-}
-
 export default function SchedulePage() {
   const [currentSchedule, setCurrentSchedule] = useState<Schedule | null>(null);
   const [optimizing, setOptimizing] = useState(false);
@@ -104,12 +74,16 @@ export default function SchedulePage() {
   const [webllmAvailable, setWebllmAvailable] = useState(false);
   const [initProgress, setInitProgress] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [allCourses, setAllCourses] = useState<Course[]>([]);
+  const isMobile = useMediaQuery('(max-width:899px)');
+  const [dismissedMobileWarning, setDismissedMobileWarning] = useState(false);
+  const [webgpuWarningOpen, setWebgpuWarningOpen] = useState(false);
 
   useEffect(() => {
     const schedule = generateCurrentSchedule();
     setCurrentSchedule(schedule);
+    setAllCourses(getCourses().courses);
 
-    // Check WebGPU support for WebLLM
     setWebllmAvailable('gpu' in navigator);
   }, []);
 
@@ -124,7 +98,6 @@ export default function SchedulePage() {
     setInitProgress('');
 
     try {
-      // Get user preferences
       const storedPrefs = localStorage.getItem('course_market_preferences');
       const preferences: Preferences = storedPrefs
         ? JSON.parse(storedPrefs)
@@ -143,7 +116,6 @@ export default function SchedulePage() {
             excludeInstructors: [],
           };
 
-      // Configure LLM - check for BYOK settings first
       const llmConfig: LLMConfig = {
         provider: 'webllm',
         initProgressCallback: (report) => {
@@ -151,19 +123,32 @@ export default function SchedulePage() {
         },
       };
 
-      // Check for BYOK configuration in localStorage
-      const BYOKConfig = localStorage.getItem('llm-BYOK-config');
-      if (BYOKConfig) {
+      const savedLlm = localStorage.getItem('llm-byok-config');
+      if (savedLlm) {
         try {
-          const config = JSON.parse(BYOKConfig);
+          const config = JSON.parse(savedLlm);
           Object.assign(llmConfig, config);
         } catch (e) {
           console.warn('Failed to parse BYOK config');
         }
       }
 
-      // Run optimization
-      const result = await optimizeWithWebLLM([currentSchedule], preferences, llmConfig);
+      const config: Record<string, unknown> = {
+        model: llmConfig.model,
+        temperature: llmConfig.temperature,
+        maxTokens: llmConfig.maxTokens,
+      };
+      if (llmConfig.provider === 'wllama') {
+        config.initProgressCallback = (progress: { loaded: number; total: number }) => {
+          setInitProgress(
+            `Downloading model... ${Math.round((progress.loaded / progress.total) * 100)}%`,
+          );
+        };
+      }
+      const result = await optimizeWithLLM([currentSchedule], preferences, {
+        provider: llmConfig.provider as 'webllm' | 'wllama' | 'openai' | 'anthropic' | 'custom',
+        ...config,
+      });
 
       if (result.bestSchedule) {
         setCurrentSchedule(result.bestSchedule);
@@ -234,12 +219,11 @@ export default function SchedulePage() {
                       <TableCell>Section</TableCell>
                       <TableCell>Schedule</TableCell>
                       <TableCell>Instructor</TableCell>
-                      <TableCell>Location</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {currentSchedule.sections.map((section) => {
-                      const course = getCourses().courses.find((c) => c.id === section.courseId);
+                      const course = allCourses.find((c) => c.id === section.courseId);
                       const dayDisplay = section.timeSlots
                         .map((s) => s.day)
                         .filter((d, i, arr) => arr.indexOf(d) === i)
@@ -266,7 +250,6 @@ export default function SchedulePage() {
                             </Typography>
                           </TableCell>
                           <TableCell>{section.instructor}</TableCell>
-                          <TableCell>{section.location}</TableCell>
                         </TableRow>
                       );
                     })}
@@ -285,11 +268,22 @@ export default function SchedulePage() {
               </Typography>
 
               <Stack spacing={2}>
+                {isMobile && !dismissedMobileWarning && (
+                  <Alert severity="warning" onClose={() => setDismissedMobileWarning(true)}>
+                    For optimal performance, use a desktop computer for AI optimization.
+                  </Alert>
+                )}
                 <Button
                   variant="contained"
                   size="large"
-                  onClick={handleOptimize}
-                  disabled={optimizing || !webllmAvailable}
+                  onClick={() => {
+                    if (!webllmAvailable) {
+                      setWebgpuWarningOpen(true);
+                    } else {
+                      handleOptimize();
+                    }
+                  }}
+                  disabled={optimizing}
                   startIcon={<PlayArrow />}
                   fullWidth
                 >
@@ -342,6 +336,28 @@ export default function SchedulePage() {
           </Card>
         </Box>
       </Stack>
+
+      <Dialog open={webgpuWarningOpen} onClose={() => setWebgpuWarningOpen(false)}>
+        <DialogTitle>WebGPU Not Supported</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Your browser does not support WebGPU, which is required for optimal AI optimization. For
+            the best experience, please use Chrome 113+ or Firefox 141+ on a desktop computer.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setWebgpuWarningOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setWebgpuWarningOpen(false);
+              handleOptimize();
+            }}
+          >
+            Go Ahead Anyway
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -3,20 +3,6 @@
 import type { Course, Section } from '../types';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 
-// User functions
-export function saveUser(user: any) {
-  localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
-}
-
-export function getUser(): any | null {
-  const saved = localStorage.getItem(STORAGE_KEYS.USER);
-  return saved ? JSON.parse(saved) : null;
-}
-
-export function clearUser() {
-  localStorage.removeItem(STORAGE_KEYS.USER);
-}
-
 // Courses functions
 export function saveCourses(courses: Course[], sections: Section[]) {
   localStorage.setItem(STORAGE_KEYS.COURSES, JSON.stringify(courses));

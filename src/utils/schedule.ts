@@ -1,6 +1,43 @@
 import type { Course, Section, Schedule, TimeSlot, DayOfWeek, Preferences } from '../types';
 import { generateId } from './id';
 
+export function formatTime(time24: string): string {
+  const [hours, minutes] = time24.split(':');
+  const hour = parseInt(hours, 10);
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${displayHour}:${minutes} ${period}`;
+}
+
+export function parseTimeToInt(time: string): number {
+  return parseInt(time.replace(':', ''), 10);
+}
+
+export function hasSectionConflict(section1: Section, section2: Section): boolean {
+  for (const slot1 of section1.timeSlots) {
+    for (const slot2 of section2.timeSlots) {
+      if (hasTimeConflict(slot1, slot2)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+export function checkConflicts(sections: Section[]): string[] {
+  const conflicts: string[] = [];
+
+  for (let i = 0; i < sections.length; i++) {
+    for (let j = i + 1; j < sections.length; j++) {
+      if (hasSectionConflict(sections[i], sections[j])) {
+        conflicts.push(`${sections[i].sectionNumber} and ${sections[j].sectionNumber} conflict`);
+      }
+    }
+  }
+
+  return conflicts;
+}
+
 export function hasTimeConflict(slot1: TimeSlot, slot2: TimeSlot): boolean {
   if (slot1.day !== slot2.day) return false;
 

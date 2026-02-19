@@ -39,18 +39,6 @@ bun run db:studio        # Open Drizzle Studio
 - **Format**: Prettier (100 char line width, 2 space indent, single quotes, trailing commas)
 - **Linting**: ESLint with react-hooks and react-refresh plugins
 
-### Imports & Path Aliases
-
-```typescript
-// Use path aliases instead of relative paths
-import { CourseList } from '@components/CourseList';
-import { useCourses } from '@hooks/useCourses';
-import { Course } from '@types';
-
-// Aliases: @/ -> src/, @components -> src/components, @pages -> src/pages,
-// @context -> src/context, @hooks -> src/hooks, @utils -> src/utils,
-// @types -> src/types, @services -> src/services, @constants -> src/constants
-```
 
 ### Naming Conventions
 
@@ -60,23 +48,6 @@ import { Course } from '@types';
 - **Types**: Use `type` for unions/primitives, `interface` for objects
 - **Files**: kebab-case (e.g., `use-courses.ts`)
 
-### TypeScript Conventions
-
-```typescript
-interface CourseListProps {
-  courses: Course[];
-  onSelectSection: (courseId: string, sectionId: string) => void;
-}
-
-type DayOfWeek = 'M' | 'T' | 'W' | 'Th' | 'F' | 'Sa' | 'Su';
-
-async function loadCSV(csvContent: string): Promise<void> {}
-
-interface Course {
-  id: string;
-  description?: string; // Optional, not null
-}
-```
 
 ### React Patterns
 

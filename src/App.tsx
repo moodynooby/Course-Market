@@ -5,7 +5,6 @@ import { Box, CircularProgress } from '@mui/material';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
-import ImportPage from './pages/ImportPage';
 import CoursesPage from './pages/CoursesPage';
 import SchedulePage from './pages/SchedulePage';
 import TradingPage from './pages/TradingPage';
@@ -47,26 +46,22 @@ const router = createBrowserRouter([
   {
     path: '/login',
     element: (
-      <AuthProvider>
-        <PublicRoute>
-          <LoginPage />
-        </PublicRoute>
-      </AuthProvider>
+      <PublicRoute>
+        <LoginPage />
+      </PublicRoute>
     ),
   },
   {
     path: '/',
     element: (
-      <AuthProvider>
-        <PrivateRoute>
-          <Layout />
-        </PrivateRoute>
-      </AuthProvider>
+      <PrivateRoute>
+        <Layout />
+      </PrivateRoute>
     ),
     children: [
       {
         index: true,
-        element: <ImportPage />,
+        element: <Navigate to="/courses" replace />,
       },
       {
         path: 'courses',
@@ -96,7 +91,9 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <RouterProvider router={router} />
+        <AuthProvider>
+          <RouterProvider router={router} />
+        </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
