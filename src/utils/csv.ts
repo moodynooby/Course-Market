@@ -168,16 +168,3 @@ export function parseCSV(csvContent: string): CSVParseResult {
     warnings,
   };
 }
-
-export function generateSampleCSV(): string {
-  return `Course Code,Course Name,Subject,Section,Instructor,Days,Start Time,End Time,Location,Credits
-CS 101,Intro to Computer Science,CS,001,Dr. Smith,MWF,09:00,09:50,Room 101,3
-CS 101,Intro to Computer Science,CS,002,Dr. Jones,MWF,10:00,10:50,Room 102,3
-CS 101,Intro to Computer Science,CS,003,Dr. Smith,TTh,14:00,15:15,Room 101,3
-MATH 201,Calculus II,MATH,001,Dr. Brown,MWF,08:00,08:50,Room 201,4
-MATH 201,Calculus II,MATH,002,Dr. Wilson,TTh,09:30,10:45,Room 202,4
-ENG 101,English Composition,ENG,001,Prof. Davis,MWF,11:00,11:50,Room 301,3
-ENG 101,English Composition,ENG,002,Prof. Miller,TTh,13:00,14:15,Room 302,3
-PHYS 101,Physics I,PHYS,001,Dr. Taylor,MWF,15:00,15:50,Lab 401,4
-CHEM 101,Chemistry I,CHEM,001,Prof. Anderson,MWF,12:00,12:50,Lab 501,4`;
-}

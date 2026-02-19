@@ -47,7 +47,7 @@ class WebLLMService {
         // Check WebGPU support
         if (!('gpu' in navigator)) {
           throw new Error(
-            'WebGPU is not supported in this browser. Please use Chrome 113+ or Edge 113+.',
+            'WebGPU is not supported in this browser. Please use Chrome 113+ or Firefox 141+.',
           );
         }
 

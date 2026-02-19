@@ -98,21 +98,63 @@ export const contactRequests = pgTable('contact_requests', {
 
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
-  preferences: one(userPreferences),
+  preferences: one(userPreferences, {
+    fields: [users.id],
+    references: [userPreferences.userId],
+  }),
   courses: many(courses),
   trades: many(trades),
 }));
 
-export const coursesRelations = relations(courses, ({ many }) => ({
+export const userPreferencesRelations = relations(userPreferences, ({ one }) => ({
+  user: one(users, {
+    fields: [userPreferences.userId],
+    references: [users.id],
+  }),
+}));
+
+export const coursesRelations = relations(courses, ({ one, many }) => ({
+  user: one(users, {
+    fields: [courses.userId],
+    references: [users.id],
+  }),
   sections: many(sections),
 }));
 
 export const sectionsRelations = relations(sections, ({ one }) => ({
-  course: one(courses),
+  course: one(courses, {
+    fields: [sections.courseId],
+    references: [courses.id],
+  }),
+}));
+
+export const userSelectionsRelations = relations(userSelections, ({ one }) => ({
+  user: one(users, {
+    fields: [userSelections.userId],
+    references: [users.id],
+  }),
+  section: one(sections, {
+    fields: [userSelections.sectionId],
+    references: [sections.id],
+  }),
 }));
 
 export const tradesRelations = relations(trades, ({ one }) => ({
-  user: one(users),
+  user: one(users, {
+    fields: [trades.userId],
+    references: [users.id],
+  }),
+}));
+
+export const contactRequestsRelations = relations(contactRequests, ({ one }) => ({
+  fromUser: one(users, {
+    fields: [contactRequests.fromUserId],
+    references: [users.id],
+  }),
+  trade: one(trades, {
+    fields: [contactRequests.tradeId],
+    references: [trades.id],
+  }),
 }));
 
 // Type exports

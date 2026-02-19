@@ -1,55 +1,14 @@
-import type { TradePost, UserProfile } from '../types';
-import { generateId } from '../utils/id';
-import { STORAGE_KEYS } from '../constants/storageKeys';
+import type { TradePost } from '../types';
 
 const NETLIFY_FUNCTION_URL = import.meta.env.VITE_NETLIFY_FUNCTION_URL;
 
-let isOnlineMode = !!NETLIFY_FUNCTION_URL;
-
-export function configureTrading(online: boolean = true): void {
-  isOnlineMode = online && !!NETLIFY_FUNCTION_URL;
+function getBaseUrl(): string {
+  if (NETLIFY_FUNCTION_URL) return NETLIFY_FUNCTION_URL;
+  return '/.netlify/functions';
 }
 
-function generateUserId(): string {
-  return `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-}
-
-function getStoredUsers(): UserProfile[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEYS.USERS);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
-
-function storeUsers(users: UserProfile[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-  } catch (e) {
-    console.warn('Failed to store users:', e);
-  }
-}
-
-function getStoredTrades(): TradePost[] {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEYS.TRADES);
-    return stored ? JSON.parse(stored) : [];
-  } catch {
-    return [];
-  }
-}
-
-function storeTrades(trades: TradePost[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEYS.TRADES, JSON.stringify(trades));
-  } catch (e) {
-    console.warn('Failed to store trades:', e);
-  }
-}
-
-async function fetchFromNetlify(path: string, options: RequestInit = {}): Promise<any> {
-  const response = await fetch(`${NETLIFY_FUNCTION_URL}${path}`, {
+async function fetchApi(path: string, options: RequestInit = {}): Promise<any> {
+  const response = await fetch(`${getBaseUrl()}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -58,58 +17,16 @@ async function fetchFromNetlify(path: string, options: RequestInit = {}): Promis
   });
 
   if (!response.ok) {
-    throw new Error(`Netlify function error: ${response.statusText}`);
+    const errorBody = await response.text();
+    throw new Error(`API error ${response.status}: ${errorBody}`);
   }
 
   return response.json();
 }
 
-export async function createUser(displayName: string, email?: string): Promise<UserProfile> {
-  const newUser: UserProfile = {
-    id: generateUserId(),
-    displayName,
-    email: email || '',
-    provider: 'email',
-    createdAt: new Date().toISOString(),
-  };
-
-  if (isOnlineMode) {
-    try {
-      await fetchFromNetlify('/trades', {
-        method: 'POST',
-        body: JSON.stringify({ action: 'createUser', user: newUser }),
-      });
-    } catch (error) {
-      console.warn('Failed to create user online, falling back to local:', error);
-      isOnlineMode = false;
-    }
-  }
-
-  if (!isOnlineMode) {
-    const users = getStoredUsers();
-    users.push(newUser);
-    storeUsers(users);
-  }
-
-  return newUser;
-}
-
 export async function getTrades(): Promise<TradePost[]> {
-  if (isOnlineMode) {
-    try {
-      const result = await fetchFromNetlify('/trades');
-      return result.trades || [];
-    } catch (error) {
-      console.warn('Failed to fetch trades from Netlify, falling back to local:', error);
-      isOnlineMode = false;
-    }
-  }
-
-  if (!isOnlineMode) {
-    return getStoredTrades();
-  }
-
-  return [];
+  const result = await fetchApi('/trades');
+  return (result.trades || []).map(mapDbTradeToFrontend);
 }
 
 export async function createTrade(
@@ -122,98 +39,44 @@ export async function createTrade(
     sectionWanted: string;
     action: 'offer' | 'request';
     description?: string;
+    contactPhone?: string;
   },
 ): Promise<TradePost> {
-  const trade: TradePost = {
-    id: generateId(),
-    userId,
-    userDisplayName,
-    ...tradeData,
-    status: 'open',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+  const result = await fetchApi('/trades', {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'createTrade',
+      trade: {
+        userId: parseInt(userId) || 1,
+        userDisplayName,
+        ...tradeData,
+        status: 'open',
+      },
+    }),
+  });
 
-  if (isOnlineMode) {
-    try {
-      const result = await fetchFromNetlify('/trades', {
-        method: 'POST',
-        body: JSON.stringify({ action: 'createTrade', trade }),
-      });
-      return result.trade || trade;
-    } catch (error) {
-      console.warn('Failed to create trade online, falling back to local:', error);
-      isOnlineMode = false;
-    }
-  }
-
-  if (!isOnlineMode) {
-    const trades = getStoredTrades();
-    trades.push(trade);
-    storeTrades(trades);
-    return trade;
-  }
-
-  return trade;
+  return mapDbTradeToFrontend(result.trade);
 }
 
 export async function updateTradeStatus(
   tradeId: string,
   status: 'pending' | 'completed' | 'cancelled',
 ): Promise<TradePost | null> {
-  if (isOnlineMode) {
-    try {
-      const result = await fetchFromNetlify('/trades', {
-        method: 'PUT',
-        body: JSON.stringify({ action: 'updateTrade', tradeId, status }),
-      });
-      return result.trade || null;
-    } catch (error) {
-      console.warn('Failed to update trade online, falling back to local:', error);
-      isOnlineMode = false;
-    }
-  }
+  const result = await fetchApi('/trades', {
+    method: 'PUT',
+    body: JSON.stringify({ action: 'updateTrade', tradeId: parseInt(tradeId), status }),
+  });
 
-  if (!isOnlineMode) {
-    const trades = getStoredTrades();
-    const index = trades.findIndex((t) => t.id === tradeId);
-
-    if (index !== -1) {
-      trades[index] = {
-        ...trades[index],
-        status,
-        updatedAt: new Date().toISOString(),
-      };
-      storeTrades(trades);
-      return trades[index];
-    }
-  }
-
-  return null;
+  return result.trade ? mapDbTradeToFrontend(result.trade) : null;
 }
 
 export async function deleteTrade(tradeId: string): Promise<boolean> {
-  if (isOnlineMode) {
-    try {
-      await fetchFromNetlify('/trades', {
-        method: 'DELETE',
-        body: JSON.stringify({ action: 'deleteTrade', tradeId }),
-      });
-      return true;
-    } catch (error) {
-      console.warn('Failed to delete trade online, falling back to local:', error);
-      isOnlineMode = false;
-    }
-  }
+  const result = await fetchApi('/trades', {
+    method: 'DELETE',
+    body: JSON.stringify({ action: 'deleteTrade', tradeId: parseInt(tradeId) }),
+  });
 
-  if (!isOnlineMode) {
-    const trades = getStoredTrades();
-    const filteredTrades = trades.filter((t) => t.id !== tradeId);
-    storeTrades(filteredTrades);
-    return true;
-  }
-
-  return false;
+  return result.success;
 }
 
 export async function searchTrades(filters?: {
@@ -223,9 +86,7 @@ export async function searchTrades(filters?: {
 }): Promise<TradePost[]> {
   const trades = await getTrades();
 
-  if (!filters) {
-    return trades;
-  }
+  if (!filters) return trades;
 
   return trades.filter((trade) => {
     if (
@@ -234,74 +95,27 @@ export async function searchTrades(filters?: {
     ) {
       return false;
     }
-    if (filters.action && trade.action !== filters.action) {
-      return false;
-    }
-    if (filters.status && trade.status !== filters.status) {
-      return false;
-    }
+    if (filters.action && trade.action !== filters.action) return false;
+    if (filters.status && trade.status !== filters.status) return false;
     return true;
   });
 }
 
-export function getConnectionStatus(): {
-  isOnlineMode: boolean;
-  hasNetlify: boolean;
-  mode: 'online' | 'local';
-} {
+// Map DB row (snake_case / numeric IDs) to frontend TradePost
+function mapDbTradeToFrontend(row: any): TradePost {
   return {
-    isOnlineMode,
-    hasNetlify: !!NETLIFY_FUNCTION_URL,
-    mode: isOnlineMode ? 'online' : 'local',
+    id: String(row.id),
+    userId: String(row.userId ?? row.user_id),
+    userDisplayName: row.userDisplayName ?? row.user_display_name ?? 'User',
+    courseCode: row.courseCode ?? row.course_code,
+    courseName: row.courseName ?? row.course_name ?? '',
+    sectionOffered: row.sectionOffered ?? row.section_offered,
+    sectionWanted: row.sectionWanted ?? row.section_wanted,
+    action: row.action,
+    status: row.status,
+    description: row.description ?? undefined,
+    contactPhone: row.contactPhone ?? row.contact_phone ?? undefined,
+    createdAt: row.createdAt ?? row.created_at,
+    updatedAt: row.updatedAt ?? row.updated_at,
   };
-}
-
-export function generateSampleTrades(userId: string, userName: string): void {
-  const sampleTrades: Omit<TradePost, 'id' | 'createdAt' | 'updatedAt'>[] = [
-    {
-      userId,
-      userDisplayName: userName,
-      courseCode: 'CS 101',
-      courseName: 'Intro to Computer Science',
-      sectionOffered: '001',
-      sectionWanted: '002',
-      action: 'offer',
-      status: 'open',
-      description:
-        'Can offer section 001 (Dr. Smith MWF 9:00) for section 002 (Dr. Jones MWF 10:00)',
-    },
-    {
-      userId,
-      userDisplayName: userName,
-      courseCode: 'MATH 201',
-      courseName: 'Calculus II',
-      sectionOffered: '002',
-      sectionWanted: '001',
-      action: 'request',
-      status: 'open',
-      description: 'Looking for morning section 001 (Dr. Brown MWF 8:00)',
-    },
-    {
-      userId,
-      userDisplayName: 'Alice Johnson',
-      courseCode: 'ENG 101',
-      courseName: 'English Composition',
-      sectionOffered: '002',
-      sectionWanted: '001',
-      action: 'offer',
-      status: 'open',
-      description: 'Available for trade with morning preference',
-    },
-  ];
-
-  const trades = getStoredTrades();
-  const newTrades = sampleTrades.map((trade) => ({
-    ...trade,
-    id: generateId(),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }));
-
-  trades.push(...newTrades);
-  storeTrades(trades);
 }

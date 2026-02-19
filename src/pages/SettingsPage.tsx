@@ -468,7 +468,7 @@ export default function SettingsPage() {
                 {llmConfig.provider === 'webllm' && (
                   <Alert severity="info" icon={<CloudOff />}>
                     <strong>WebLLM Mode:</strong> Runs entirely in your browser using WebGPU.
-                    Requires Chrome 113+ or Edge 113+. First load may take longer as the model
+                    Requires Chrome 113+ or Firefox 141+. First load may take longer as the model
                     downloads.
                   </Alert>
                 )}

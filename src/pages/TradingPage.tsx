@@ -19,8 +19,13 @@ import {
   Avatar,
   Fab,
 } from '@mui/material';
-import { Add, SwapHoriz, Phone, Edit, Delete, CheckCircle, Cancel } from '@mui/icons-material';
-import { getTrades, addTrade, updateTrade, deleteTrade } from '../services/database';
+import { Add, SwapHoriz, Phone } from '@mui/icons-material';
+import {
+  getTrades as fetchTrades,
+  createTrade,
+  updateTradeStatus,
+  deleteTrade,
+} from '../services/tradesApi';
 import { useAuth } from '../context/AuthContext';
 import type { TradePost } from '../types';
 
@@ -139,6 +144,8 @@ export default function TradingPage() {
   const { user } = useAuth();
 
   const [trades, setTrades] = useState<TradePost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [tradeForm, setTradeForm] = useState({
     courseCode: '',
@@ -150,91 +157,70 @@ export default function TradingPage() {
     contactPhone: '',
   });
 
-  useEffect(() => {
-    setTrades(getTrades());
-  }, []);
-
-  const handleSubmit = () => {
-    if (!user) return;
-
-    const newTrade: TradePost = {
-      id: `trade-${Date.now()}`,
-      userId: user.uid,
-      userDisplayName: user.displayName || 'User',
-      ...tradeForm,
-      status: 'open',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    addTrade(newTrade);
-    setTrades(getTrades());
-    setDialogOpen(false);
-    setTradeForm({
-      courseCode: '',
-      courseName: '',
-      sectionOffered: '',
-      sectionWanted: '',
-      action: 'offer',
-      description: '',
-      contactPhone: '',
-    });
-  };
-
-  const handleUpdate = (id: string, updates: Partial<TradePost>) => {
-    const updated = updateTrade(id, updates);
-    if (updated) {
-      setTrades(getTrades());
+  const loadTrades = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await fetchTrades();
+      setTrades(result);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDelete = (id: string) => {
-    deleteTrade(id);
-    setTrades(getTrades());
-  };
+  useEffect(() => {
+    loadTrades();
+  }, []);
 
-  const loadSampleTrades = () => {
+  const handleSubmit = async () => {
     if (!user) return;
 
-    // Add sample trades
-    const sampleTrades: Omit<TradePost, 'id' | 'userId' | 'userDisplayName'>[] = [
-      {
-        courseCode: 'CS 101',
-        courseName: 'Intro to Computer Science',
-        sectionOffered: '001',
-        sectionWanted: '002',
+    try {
+      await createTrade(user.uid, user.displayName || 'User', {
+        courseCode: tradeForm.courseCode,
+        courseName: tradeForm.courseName,
+        sectionOffered: tradeForm.sectionOffered,
+        sectionWanted: tradeForm.sectionWanted,
+        action: tradeForm.action,
+        description: tradeForm.description || undefined,
+        contactPhone: tradeForm.contactPhone || undefined,
+      });
+      setDialogOpen(false);
+      setTradeForm({
+        courseCode: '',
+        courseName: '',
+        sectionOffered: '',
+        sectionWanted: '',
         action: 'offer',
-        status: 'open',
-        description:
-          'Can offer section 001 (Dr. Smith MWF 9:00) for section 002 (Dr. Jones MWF 10:00)',
-        contactPhone: '+1-555-0123',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        courseCode: 'MATH 201',
-        courseName: 'Calculus II',
-        sectionOffered: '002',
-        sectionWanted: '001',
-        action: 'request',
-        status: 'open',
-        description: 'Looking for morning section 001 (Dr. Brown MWF 8:00)',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    ];
+        description: '',
+        contactPhone: '',
+      });
+      await loadTrades();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
 
-    sampleTrades.forEach((trade) => {
-      const newTrade: TradePost = {
-        id: `sample-${Date.now()}-${Math.random()}`,
-        userId: user.uid,
-        userDisplayName: user.displayName || 'Sample User',
-        ...trade,
-      };
-      addTrade(newTrade);
-    });
+  const handleUpdate = async (id: string, updates: Partial<TradePost>) => {
+    if (updates.status) {
+      try {
+        await updateTradeStatus(id, updates.status as 'pending' | 'completed' | 'cancelled');
+        await loadTrades();
+      } catch (e) {
+        setError((e as Error).message);
+      }
+    }
+  };
 
-    setTrades(getTrades());
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteTrade(id);
+      await loadTrades();
+    } catch (e) {
+      setError((e as Error).message);
+    }
   };
 
   return (
@@ -243,17 +229,18 @@ export default function TradingPage() {
         <Typography variant="h4" fontWeight={700}>
           Course Trading
         </Typography>
-        <Stack direction="row" spacing={1}>
-          <Button variant="outlined" onClick={() => setTrades(getTrades())}>
-            Refresh
-          </Button>
-          <Button variant="outlined" onClick={loadSampleTrades}>
-            Load Sample
-          </Button>
-        </Stack>
+        <Button variant="outlined" onClick={loadTrades} disabled={loading}>
+          Refresh
+        </Button>
       </Stack>
 
-      {trades.length === 0 ? (
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
+
+      {trades.length === 0 && !loading ? (
         <Card>
           <CardContent sx={{ textAlign: 'center', py: 4 }}>
             <SwapHoriz sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />

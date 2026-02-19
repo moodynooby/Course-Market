@@ -1,6 +1,6 @@
-// Database service using localStorage
+// Database service using localStorage (courses & user only — trades use the DB via tradesApi)
 
-import type { Course, Section, TradePost } from '../types';
+import type { Course, Section } from '../types';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // User functions
@@ -31,38 +31,4 @@ export function getCourses(): { courses: Course[]; sections: Section[] } {
     courses: coursesStr ? JSON.parse(coursesStr) : [],
     sections: sectionsStr ? JSON.parse(sectionsStr) : [],
   };
-}
-
-// Trades functions
-export function saveTrades(trades: TradePost[]) {
-  localStorage.setItem(STORAGE_KEYS.TRADES, JSON.stringify(trades));
-}
-
-export function getTrades(): TradePost[] {
-  const saved = localStorage.getItem(STORAGE_KEYS.TRADES);
-  return saved ? JSON.parse(saved) : [];
-}
-
-export function addTrade(trade: TradePost) {
-  const trades = getTrades();
-  trades.unshift(trade);
-  saveTrades(trades);
-  return trade;
-}
-
-export function updateTrade(tradeId: string, updates: Partial<TradePost>) {
-  const trades = getTrades();
-  const index = trades.findIndex((t) => t.id === tradeId);
-  if (index !== -1) {
-    trades[index] = { ...trades[index], ...updates };
-    saveTrades(trades);
-    return trades[index];
-  }
-  return null;
-}
-
-export function deleteTrade(tradeId: string) {
-  const trades = getTrades();
-  const filtered = trades.filter((t) => t.id !== tradeId);
-  saveTrades(filtered);
 }

@@ -75,16 +75,6 @@ body {
   font-size: 0.875rem;
 }
 
-.sample-btn {
-  margin-top: 1rem;
-  background: var(--secondary-color);
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-}
-
 .file-info {
   margin-top: 1rem;
   padding: 0.75rem;

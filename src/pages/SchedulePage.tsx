@@ -317,7 +317,7 @@ export default function SchedulePage() {
                   </Stack>
                 ) : (
                   <Alert severity="warning">
-                    WebGPU not supported. Use Chrome 113+ or Edge 113+ for WebLLM.
+                    WebGPU not supported. Use Chrome 113+ or Firefox 141+ for WebLLM.
                   </Alert>
                 )}
 

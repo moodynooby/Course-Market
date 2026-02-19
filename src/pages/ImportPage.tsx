@@ -24,7 +24,7 @@ import {
   Warning,
   CloudUpload,
 } from '@mui/icons-material';
-import { parseCSV, generateSampleCSV } from '../utils/csv';
+import { parseCSV } from '../utils/csv';
 import { saveCourses, getCourses } from '../services/database';
 import { useNavigate } from 'react-router-dom';
 import type { Course, Section } from '../types';
@@ -95,28 +95,6 @@ export default function ImportPage() {
 
     if (allCourses.length > 0) {
       saveCourses(allCourses, allSections);
-      setImported(true);
-    }
-
-    setLoading(false);
-  };
-
-  const handleLoadSample = async () => {
-    setLoading(true);
-    const sampleCSV = generateSampleCSV();
-    const result = parseCSV(sampleCSV);
-
-    if (result.success) {
-      saveCourses(result.courses, result.sections);
-      setParseResults([
-        {
-          courses: result.courses,
-          sections: result.sections,
-          errors: result.errors,
-          warnings: result.warnings,
-          filename: 'sample_courses.csv',
-        },
-      ]);
       setImported(true);
     }
 
@@ -209,9 +187,6 @@ export default function ImportPage() {
                 size="large"
               >
                 {loading ? <LinearProgress sx={{ width: '100%' }} /> : 'Import Files'}
-              </Button>
-              <Button variant="outlined" onClick={handleLoadSample} disabled={loading}>
-                Load Sample Data
               </Button>
             </Stack>
           </CardContent>
