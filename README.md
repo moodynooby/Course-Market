@@ -24,7 +24,7 @@ A comprehensive web application for course management, schedule optimization, an
 - Morning/afternoon time preferences
 
 ### 🧠 AI-Powered Schedule Optimization
-- Local LLM integration (supports Ollama, LM Studio, etc.)
+- Browser-based AI (WebLLM) integration
 - Deterministic fallback scheduling algorithm
 - Comprehensive schedule scoring based on user preferences
 - AI-powered analysis and recommendations
@@ -50,7 +50,6 @@ A comprehensive web application for course management, schedule optimization, an
 ### Prerequisites
 - Node.js 20+ 
 - npm or yarn
-- (Optional) Local LLM server (Ollama, LM Studio)
 - (Optional) Netlify account for deployment
 
 ### Installation
@@ -83,9 +82,6 @@ cp .env.example .env
 Configure environment variables:
 
 ```bash
-# Local LLM endpoint (optional)
-VITE_LLM_ENDPOINT=http://localhost:11434/api/chat
-
 # Netlify function URL (optional)
 VITE_NETLIFY_FUNCTION_URL=https://your-site.netlify.app/.netlify/functions
 
@@ -118,31 +114,9 @@ CS 101,Intro to Computer Science,CS,002,Dr. Jones,MWF,10:00,10:50,Room 102,3
 MATH 201,Calculus II,MATH,001,Dr. Brown,MWF,08:00,08:50,Room 201,4
 ```
 
-## 🤖 LLM Integration
+## 🤖 AI Integration
 
-### Supported LLM Services
-
-- **Ollama** (recommended): `http://localhost:11434/api/chat`
-- **LM Studio**: `http://localhost:1234/v1/chat/completions`
-- **Custom endpoints**: Compatible with OpenAI-compatible APIs
-
-### Setup Ollama (Recommended)
-
-1. **Install Ollama**: https://ollama.ai/
-2. **Start Ollama service**:
-   ```bash
-   ollama serve
-   ```
-3. **Pull a model**:
-   ```bash
-   ollama pull llama3.2
-   ```
-4. **Update environment**:
-   ```bash
-   VITE_LLM_ENDPOINT=http://localhost:11434/api/chat
-   ```
-
-The application automatically detects LLM availability and falls back to deterministic scheduling when unavailable.
+The application uses browser-based AI (WebLLM) for schedule optimization. This provides AI-powered analysis directly in the browser without requiring a local server.
 
 ## 🏗️ Architecture
 
@@ -208,34 +182,39 @@ The application includes comprehensive local storage fallback:
 
 ## 📱 Usage Guide
 
-### 1. Import Courses
+### 1. Sign In
+1. Enter your full name
+2. Enter your phone number
+3. Click "Sign In" to proceed
+
+### 2. Import Courses
 1. Click "Import" tab
 2. Drag & drop CSV file or click "Load Sample Data"
 3. Review import summary and warnings
 4. Proceed to browse courses
 
-### 2. Select Courses
+### 3. Select Courses
 1. Click "Courses" tab
 2. Filter by subject or search
 3. Expand course cards to see available sections
 4. Click sections to add to your selection
 5. Conflicts are automatically detected
 
-### 3. Set Preferences
+### 4. Set Preferences
 1. Click "Preferences" tab
 2. Set your ideal time windows
 3. Choose preferred days and times
 4. Add instructors to exclude
 5. Set credit range requirements
 
-### 4. Optimize Schedule
+### 5. Optimize Schedule
 1. Click "Schedule" tab
 2. Select desired sections from course browser
 3. Click "Optimize with AI" for AI-powered recommendations
 4. Review visual schedule and AI analysis
 5. Explore alternative schedules
 
-### 5. Trading Board
+### 6. Trading Board
 1. Click "Trading" tab
 2. Create your user profile
 3. Post trades (offers/requests)
@@ -297,9 +276,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - React 19 with TypeScript
 - Vite build tool
+- WebLLM for browser-based AI
 - Netlify functions for serverless API
 - Neon PostgreSQL for database
-- Local LLM community (Ollama, LM Studio)
 - Modern UI design patterns
 
 ---

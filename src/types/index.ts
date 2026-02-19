@@ -81,10 +81,6 @@ export interface UserProfile {
   createdAt: string;
 }
 
-export interface UserPreference extends Preferences {
-  theme?: 'light' | 'dark' | 'system';
-}
-
 export interface ContactRequest {
   id: string;
   fromUserId: string;

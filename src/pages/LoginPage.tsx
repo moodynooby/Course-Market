@@ -7,58 +7,48 @@ import {
   Typography,
   Button,
   TextField,
-  Divider,
   Alert,
   CircularProgress,
   Avatar,
   Stack,
 } from '@mui/material';
-import {
-  Google,
-  GitHub,
-  PhoneAndroid,
-  School,
-} from '@mui/icons-material';
+import { School, PhoneAndroid, Person } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
+  const [displayName, setDisplayName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [phoneError, setPhoneError] = useState('');
+  const [errors, setErrors] = useState({ name: '', phone: '' });
   const navigate = useNavigate();
-  const { signInWithGoogle, signInWithGithub, signInWithPhone, loading } = useAuth();
+  const { login, loading, error } = useAuth();
 
-  const handleGoogleSignIn = async () => {
-    try {
-      await signInWithGoogle();
-      navigate('/');
-    } catch (error) {
-      console.error('Google sign in failed:', error);
-    }
-  };
-
-  const handleGithubSignIn = async () => {
-    try {
-      await signInWithGithub();
-      navigate('/');
-    } catch (error) {
-      console.error('GitHub sign in failed:', error);
-    }
-  };
-
-  const handlePhoneSignIn = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPhoneError('');
-    
-    // Basic phone validation
-    const phoneRegex = /^\+?[\d\s-]{10,}$/;
-    if (!phoneRegex.test(phoneNumber)) {
-      setPhoneError('Please enter a valid phone number');
+    setErrors({ name: '', phone: '' });
+
+    // Validation
+    if (!displayName.trim()) {
+      setErrors((prev) => ({ ...prev, name: 'Name is required' }));
       return;
     }
-    
-    signInWithPhone(phoneNumber).then(() => {
+
+    if (!phoneNumber.trim()) {
+      setErrors((prev) => ({ ...prev, phone: 'Phone number is required' }));
+      return;
+    }
+
+    const phoneRegex = /^\+?[\d\s\-\(\)]{10,}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      setErrors((prev) => ({ ...prev, phone: 'Please enter a valid phone number' }));
+      return;
+    }
+
+    try {
+      await login(displayName, phoneNumber);
       navigate('/');
-    });
+    } catch (err) {
+      console.error('Login failed:', err);
+    }
   };
 
   return (
@@ -94,67 +84,58 @@ export default function LoginPage() {
             </Typography>
           </Box>
 
-          <Stack spacing={2}>
-            <Button
-              fullWidth
-              variant="outlined"
-              size="large"
-              startIcon={<Google />}
-              onClick={handleGoogleSignIn}
-              disabled={loading}
-              sx={{ py: 1.5 }}
-            >
-              Continue with Google
-            </Button>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
 
-            <Button
-              fullWidth
-              variant="outlined"
-              size="large"
-              startIcon={<GitHub />}
-              onClick={handleGithubSignIn}
-              disabled={loading}
-              sx={{ py: 1.5 }}
-            >
-              Continue with GitHub
-            </Button>
+          <Box component="form" onSubmit={handleSubmit}>
+            <Stack spacing={2} sx={{ mb: 3 }}>
+              <TextField
+                fullWidth
+                label="Full Name"
+                placeholder="John Doe"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                error={!!errors.name}
+                helperText={errors.name}
+                disabled={loading}
+                InputProps={{
+                  startAdornment: <Person sx={{ mr: 1, color: 'text.secondary' }} />,
+                }}
+              />
 
-            <Divider>
-              <Typography variant="body2" color="text.secondary">
-                or
-              </Typography>
-            </Divider>
-
-            <Box component="form" onSubmit={handlePhoneSignIn}>
               <TextField
                 fullWidth
                 label="Phone Number"
                 placeholder="+1 (555) 123-4567"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
-                error={!!phoneError}
-                helperText={phoneError}
+                error={!!errors.phone}
+                helperText={errors.phone}
+                disabled={loading}
                 InputProps={{
                   startAdornment: <PhoneAndroid sx={{ mr: 1, color: 'text.secondary' }} />,
                 }}
-                sx={{ mb: 2 }}
               />
+
               <Button
                 fullWidth
                 type="submit"
                 variant="contained"
                 size="large"
-                disabled={loading || !phoneNumber}
+                disabled={loading || !displayName.trim() || !phoneNumber.trim()}
                 sx={{ py: 1.5 }}
               >
-                {loading ? <CircularProgress size={24} /> : 'Sign in with Phone'}
+                {loading ? <CircularProgress size={24} /> : 'Sign In'}
               </Button>
-            </Box>
-          </Stack>
+            </Stack>
+          </Box>
 
-          <Alert severity="info" sx={{ mt: 3 }}>
-            By signing in, you agree to our Terms of Service and Privacy Policy.
-            Your data is stored securely and never shared with third parties.
+          <Alert severity="info">
+            By signing in, you agree to our Terms of Service and Privacy Policy. Your data is stored
+            securely in your browser.
           </Alert>
         </CardContent>
       </Card>

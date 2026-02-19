@@ -21,9 +21,8 @@ import {
 } from '@mui/material';
 import { PlayArrow, Psychology, Schedule as ScheduleIcon } from '@mui/icons-material';
 import { getCourses } from '../services/database';
-import { optimizeWithLLM } from '../services/llm';
-import { optimizeWithWebLLM } from '../services/webllm';
-import type { Section, Schedule } from '../types';
+import { optimizeWithWebLLM, type LLMConfig } from '../services/webllm';
+import type { Section, Schedule, Preferences } from '../types';
 
 function formatTime(time24: string): string {
   const [hours, minutes] = time24.split(':');
@@ -36,27 +35,27 @@ function formatTime(time24: string): string {
 function generateCurrentSchedule(): Schedule | null {
   const { courses, sections } = getCourses();
   const saved = localStorage.getItem('course-selections');
-  
+
   if (!saved) return null;
-  
+
   try {
     const selections = JSON.parse(saved);
     const selectedSections: Section[] = [];
     const courseIds = new Set(Object.keys(selections));
-    
-    courseIds.forEach(courseId => {
+
+    courseIds.forEach((courseId) => {
       const sectionId = selections[courseId];
-      const section = sections.find(s => s.id === sectionId);
+      const section = sections.find((s) => s.id === sectionId);
       if (section) selectedSections.push(section);
     });
-    
+
     if (selectedSections.length === 0) return null;
-    
+
     const totalCredits = selectedSections.reduce((sum, s) => {
-      const course = courses.find(c => c.id === s.courseId);
+      const course = courses.find((c) => c.id === s.courseId);
       return sum + (course?.credits || 3);
     }, 0);
-    
+
     return {
       id: 'current',
       name: 'Current Selection',
@@ -72,12 +71,12 @@ function generateCurrentSchedule(): Schedule | null {
 
 function checkConflicts(sections: Section[]): string[] {
   const conflicts: string[] = [];
-  
+
   for (let i = 0; i < sections.length; i++) {
     for (let j = i + 1; j < sections.length; j++) {
       const s1 = sections[i];
       const s2 = sections[j];
-      
+
       for (const slot1 of s1.timeSlots) {
         for (const slot2 of s2.timeSlots) {
           if (slot1.day === slot2.day) {
@@ -85,7 +84,7 @@ function checkConflicts(sections: Section[]): string[] {
             const end1 = parseInt(slot1.endTime.replace(':', ''), 10);
             const start2 = parseInt(slot2.startTime.replace(':', ''), 10);
             const end2 = parseInt(slot2.endTime.replace(':', ''), 10);
-            
+
             if (start1 < end2 && start2 < end1) {
               conflicts.push(`${s1.sectionNumber} and ${s2.sectionNumber} conflict`);
             }
@@ -94,7 +93,7 @@ function checkConflicts(sections: Section[]): string[] {
       }
     }
   }
-  
+
   return conflicts;
 }
 
@@ -103,17 +102,15 @@ export default function SchedulePage() {
   const [optimizing, setOptimizing] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
   const [webllmAvailable, setWebllmAvailable] = useState(false);
+  const [initProgress, setInitProgress] = useState<string>('');
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
     const schedule = generateCurrentSchedule();
     setCurrentSchedule(schedule);
-    
-    // Check WebLLM availability
-    optimizeWithWebLLM([], { userId: '' }).catch(() => {
-      // WebLLM not available, that's okay
-    });
-    setWebllmAvailable(true); // For demo purposes
+
+    // Check WebGPU support for WebLLM
+    setWebllmAvailable('gpu' in navigator);
   }, []);
 
   const handleOptimize = async () => {
@@ -121,38 +118,57 @@ export default function SchedulePage() {
       setError('No courses selected. Please select some courses first.');
       return;
     }
-    
+
     setOptimizing(true);
     setError('');
-    
+    setInitProgress('');
+
     try {
-      let result;
-      try {
-        // Try WebLLM first (browser-based)
-        result = await optimizeWithWebLLM([currentSchedule], {});
-        setAiAnalysis(result.aiAnalysis || 'WebLLM optimization completed.');
-      } catch {
-        // Fall back to local LLM
-        result = await optimizeWithLLM([currentSchedule], {
-          userId: '',
-          displayName: '',
-          preferredStartTime: '08:00',
-          preferredEndTime: '17:00',
-          maxGapMinutes: 60,
-          preferConsecutiveDays: true,
-          preferMorning: false,
-          preferAfternoon: false,
-          maxCredits: 18,
-          minCredits: 12,
-          avoidDays: [],
-          excludeInstructors: [],
-        });
+      // Get user preferences
+      const storedPrefs = localStorage.getItem('course_market_preferences');
+      const preferences: Preferences = storedPrefs
+        ? JSON.parse(storedPrefs)
+        : {
+            userId: '',
+            displayName: '',
+            preferredStartTime: '08:00',
+            preferredEndTime: '17:00',
+            maxGapMinutes: 60,
+            preferConsecutiveDays: true,
+            preferMorning: false,
+            preferAfternoon: false,
+            maxCredits: 18,
+            minCredits: 12,
+            avoidDays: [],
+            excludeInstructors: [],
+          };
+
+      // Configure LLM - check for BYOK settings first
+      const llmConfig: LLMConfig = {
+        provider: 'webllm',
+        initProgressCallback: (report) => {
+          setInitProgress(`${report.text} (${report.progress.toFixed(0)}%)`);
+        },
+      };
+
+      // Check for BYOK configuration in localStorage
+      const BYOKConfig = localStorage.getItem('llm-BYOK-config');
+      if (BYOKConfig) {
+        try {
+          const config = JSON.parse(BYOKConfig);
+          Object.assign(llmConfig, config);
+        } catch (e) {
+          console.warn('Failed to parse BYOK config');
+        }
       }
-      
+
+      // Run optimization
+      const result = await optimizeWithWebLLM([currentSchedule], preferences, llmConfig);
+
       if (result.bestSchedule) {
         setCurrentSchedule(result.bestSchedule);
       }
-      
+
       setAiAnalysis(result.aiAnalysis || 'Schedule optimized successfully.');
     } catch (err) {
       setError(`Optimization failed: ${(err as Error).message}`);
@@ -202,10 +218,7 @@ export default function SchedulePage() {
                     label={`${currentSchedule.sections.length} sections`}
                     variant="outlined"
                   />
-                  <Chip
-                    label={`${currentSchedule.totalCredits} credits`}
-                    variant="outlined"
-                  />
+                  <Chip label={`${currentSchedule.totalCredits} credits`} variant="outlined" />
                   <Chip
                     label={`Score: ${currentSchedule.score}/100`}
                     color={currentSchedule.score > 70 ? 'success' : 'warning'}
@@ -225,15 +238,16 @@ export default function SchedulePage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {currentSchedule.sections.map(section => {
-                      const course = getCourses().courses.find(c => c.id === section.courseId);
+                    {currentSchedule.sections.map((section) => {
+                      const course = getCourses().courses.find((c) => c.id === section.courseId);
                       const dayDisplay = section.timeSlots
-                        .map(s => s.day)
+                        .map((s) => s.day)
                         .filter((d, i, arr) => arr.indexOf(d) === i)
                         .join('');
-                      const timeDisplay = section.timeSlots.length > 0
-                        ? `${formatTime(section.timeSlots[0].startTime)}-${formatTime(section.timeSlots[0].endTime)}`
-                        : 'TBA';
+                      const timeDisplay =
+                        section.timeSlots.length > 0
+                          ? `${formatTime(section.timeSlots[0].startTime)}-${formatTime(section.timeSlots[0].endTime)}`
+                          : 'TBA';
 
                       return (
                         <TableRow key={section.id}>
@@ -269,28 +283,42 @@ export default function SchedulePage() {
               <Typography variant="h6" gutterBottom fontWeight={600}>
                 AI Optimization
               </Typography>
-              
+
               <Stack spacing={2}>
                 <Button
                   variant="contained"
                   size="large"
                   onClick={handleOptimize}
-                  disabled={optimizing}
-                  startIcon={optimizing ? <LinearProgress sx={{ width: '20px' }} /> : <PlayArrow />}
+                  disabled={optimizing || !webllmAvailable}
+                  startIcon={<PlayArrow />}
                   fullWidth
                 >
                   {optimizing ? 'Optimizing...' : 'Optimize with AI'}
                 </Button>
 
+                {initProgress && (
+                  <Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={parseFloat(initProgress.match(/\d+/)?.[0] || '0')}
+                    />
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                      {initProgress}
+                    </Typography>
+                  </Box>
+                )}
+
                 <Divider />
 
-                {webllmAvailable && (
+                {webllmAvailable ? (
                   <Stack direction="row" alignItems="center" spacing={1}>
                     <Psychology color="primary" />
-                    <Typography variant="body2">
-                      WebLLM (Browser-based AI) available
-                    </Typography>
+                    <Typography variant="body2">WebLLM (Browser-based AI) available</Typography>
                   </Stack>
+                ) : (
+                  <Alert severity="warning">
+                    WebGPU not supported. Use Chrome 113+ or Edge 113+ for WebLLM.
+                  </Alert>
                 )}
 
                 {aiAnalysis && (
@@ -298,17 +326,17 @@ export default function SchedulePage() {
                     <Typography variant="subtitle2" gutterBottom>
                       AI Analysis
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line' }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ whiteSpace: 'pre-line' }}
+                    >
                       {aiAnalysis}
                     </Typography>
                   </Box>
                 )}
 
-                {error && (
-                  <Alert severity="error">
-                    {error}
-                  </Alert>
-                )}
+                {error && <Alert severity="error">{error}</Alert>}
               </Stack>
             </CardContent>
           </Card>

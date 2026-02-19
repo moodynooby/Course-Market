@@ -157,9 +157,7 @@ export default function Layout() {
             {isDark ? <DarkMode /> : <LightMode />}
           </IconButton>
           <IconButton onClick={handleMenu} sx={{ p: 0 }}>
-            <Avatar sx={{ bgcolor: 'primary.main' }}>
-              {user?.displayName?.[0] || user?.email?.[0] || 'U'}
-            </Avatar>
+            <Avatar sx={{ bgcolor: 'primary.main' }}>{user?.displayName?.[0] || 'U'}</Avatar>
           </IconButton>
           <Menu
             anchorEl={anchorEl}
@@ -172,10 +170,15 @@ export default function Layout() {
               <ListItemIcon>
                 <Person fontSize="small" />
               </ListItemIcon>
-              <ListItemText primary={user?.displayName || 'User'} secondary={user?.email} />
+              <ListItemText primary={user?.displayName || 'User'} secondary={user?.phoneNumber} />
             </MenuItem>
             <Divider />
-            <MenuItem onClick={() => { handleClose(); navigate('/settings'); }}>
+            <MenuItem
+              onClick={() => {
+                handleClose();
+                navigate('/settings');
+              }}
+            >
               <ListItemIcon>
                 <Settings fontSize="small" />
               </ListItemIcon>
@@ -190,10 +193,7 @@ export default function Layout() {
           </Menu>
         </Toolbar>
       </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
-      >
+      <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
         <Drawer
           variant="temporary"
           open={mobileOpen}

@@ -19,21 +19,17 @@ import {
   Avatar,
   Fab,
 } from '@mui/material';
-import {
-  Add,
-  SwapHoriz,
-  Phone,
-  Edit,
-  Delete,
-  CheckCircle,
-  Cancel,
-} from '@mui/icons-material';
+import { Add, SwapHoriz, Phone, Edit, Delete, CheckCircle, Cancel } from '@mui/icons-material';
 import { getTrades, addTrade, updateTrade, deleteTrade } from '../services/database';
 import { useAuth } from '../context/AuthContext';
 import type { TradePost } from '../types';
 
-function TradeCard({ trade, onUpdate, onDelete }: { 
-  trade: TradePost; 
+function TradeCard({
+  trade,
+  onUpdate,
+  onDelete,
+}: {
+  trade: TradePost;
   onUpdate: (id: string, updates: Partial<TradePost>) => void;
   onDelete: (id: string) => void;
 }) {
@@ -45,9 +41,7 @@ function TradeCard({ trade, onUpdate, onDelete }: {
       <CardContent>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
           <Stack direction="row" alignItems="center" spacing={1}>
-            <Avatar sx={{ width: 32, height: 32 }}>
-              {trade.userDisplayName[0] || 'U'}
-            </Avatar>
+            <Avatar sx={{ width: 32, height: 32 }}>{trade.userDisplayName[0] || 'U'}</Avatar>
             <Typography variant="body2" color="text.secondary">
               {trade.userDisplayName}
             </Typography>
@@ -62,9 +56,13 @@ function TradeCard({ trade, onUpdate, onDelete }: {
               size="small"
               label={trade.status}
               color={
-                trade.status === 'open' ? 'success' :
-                trade.status === 'pending' ? 'warning' :
-                trade.status === 'completed' ? 'info' : 'default'
+                trade.status === 'open'
+                  ? 'success'
+                  : trade.status === 'pending'
+                    ? 'warning'
+                    : trade.status === 'completed'
+                      ? 'info'
+                      : 'default'
               }
             />
           </Stack>
@@ -104,7 +102,7 @@ function TradeCard({ trade, onUpdate, onDelete }: {
           <Typography variant="caption" color="text.secondary">
             {new Date(trade.createdAt).toLocaleDateString()}
           </Typography>
-          
+
           {trade.contactPhone && (
             <Stack direction="row" alignItems="center" spacing={0.5}>
               <Phone sx={{ fontSize: 16, color: 'text.secondary' }} />
@@ -138,6 +136,8 @@ function TradeCard({ trade, onUpdate, onDelete }: {
 }
 
 export default function TradingPage() {
+  const { user } = useAuth();
+
   const [trades, setTrades] = useState<TradePost[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [tradeForm, setTradeForm] = useState({
@@ -155,13 +155,12 @@ export default function TradingPage() {
   }, []);
 
   const handleSubmit = () => {
-    const { user } = useAuth();
     if (!user) return;
 
     const newTrade: TradePost = {
       id: `trade-${Date.now()}`,
       userId: user.uid,
-      userDisplayName: user.displayName || user.email || 'User',
+      userDisplayName: user.displayName || 'User',
       ...tradeForm,
       status: 'open',
       createdAt: new Date().toISOString(),
@@ -195,9 +194,8 @@ export default function TradingPage() {
   };
 
   const loadSampleTrades = () => {
-    const { user } = useAuth();
     if (!user) return;
-    
+
     // Add sample trades
     const sampleTrades: Omit<TradePost, 'id' | 'userId' | 'userDisplayName'>[] = [
       {
@@ -207,7 +205,8 @@ export default function TradingPage() {
         sectionWanted: '002',
         action: 'offer',
         status: 'open',
-        description: 'Can offer section 001 (Dr. Smith MWF 9:00) for section 002 (Dr. Jones MWF 10:00)',
+        description:
+          'Can offer section 001 (Dr. Smith MWF 9:00) for section 002 (Dr. Jones MWF 10:00)',
         contactPhone: '+1-555-0123',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -225,7 +224,7 @@ export default function TradingPage() {
       },
     ];
 
-    sampleTrades.forEach(trade => {
+    sampleTrades.forEach((trade) => {
       const newTrade: TradePost = {
         id: `sample-${Date.now()}-${Math.random()}`,
         userId: user.uid,
@@ -264,11 +263,7 @@ export default function TradingPage() {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Be the first to post a course trade
             </Typography>
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={() => setDialogOpen(true)}
-            >
+            <Button variant="contained" startIcon={<Add />} onClick={() => setDialogOpen(true)}>
               Post Trade
             </Button>
           </CardContent>
@@ -279,16 +274,12 @@ export default function TradingPage() {
             <Typography variant="h6">
               {trades.length} Trade{trades.length !== 1 ? 's' : ''}
             </Typography>
-            <Button
-              variant="contained"
-              startIcon={<Add />}
-              onClick={() => setDialogOpen(true)}
-            >
+            <Button variant="contained" startIcon={<Add />} onClick={() => setDialogOpen(true)}>
               Post Trade
             </Button>
           </Stack>
 
-          {trades.map(trade => (
+          {trades.map((trade) => (
             <TradeCard
               key={trade.id}
               trade={trade}
@@ -341,7 +332,9 @@ export default function TradingPage() {
               select
               label="Trade Type *"
               value={tradeForm.action}
-              onChange={(e) => setTradeForm({ ...tradeForm, action: e.target.value as 'offer' | 'request' })}
+              onChange={(e) =>
+                setTradeForm({ ...tradeForm, action: e.target.value as 'offer' | 'request' })
+              }
               fullWidth
             >
               <MenuItem value="offer">I can offer</MenuItem>
@@ -369,7 +362,9 @@ export default function TradingPage() {
           <Button
             onClick={handleSubmit}
             variant="contained"
-            disabled={!tradeForm.courseCode || !tradeForm.sectionOffered || !tradeForm.sectionWanted}
+            disabled={
+              !tradeForm.courseCode || !tradeForm.sectionOffered || !tradeForm.sectionWanted
+            }
           >
             Post Trade
           </Button>

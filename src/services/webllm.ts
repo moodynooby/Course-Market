@@ -1,29 +1,37 @@
-// WebLLM-like service for browser-based AI integration
-// This is a mock implementation - real WebLLM integration requires additional setup
+// Real WebLLM integration for browser-based LLM inference
+// Uses @mlc-ai/web-llm for in-browser AI with WebGPU acceleration
+
+import * as webllm from '@mlc-ai/web-llm';
+
+export type LLMProvider = 'webllm' | 'openai' | 'anthropic' | 'custom';
 
 export interface LLMConfig {
+  provider: LLMProvider;
   model?: string;
   temperature?: number;
   maxTokens?: number;
-  topK?: number;
-  topP?: number;
+  // BYOK fields
+  apiKey?: string;
+  apiBaseUrl?: string;
+  // WebLLM specific
+  initProgressCallback?: (progress: webllm.InitProgressReport) => void;
+}
+
+export interface LLMMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
 }
 
 class WebLLMService {
+  private engine: webllm.MLCEngineInterface | null = null;
   private isInitialized = false;
   private isLoading = false;
   private config: LLMConfig = {
-    model: 'phi-3-mini',
+    provider: 'webllm',
+    model: 'Llama-3-8B-Instruct-q4f32_1-MLC',
     temperature: 0.7,
     maxTokens: 1024,
-    topK: 40,
-    topP: 0.95,
   };
-  private session = null;
-
-  constructor() {
-    // Initialize with default config from environment
-  }
 
   async initialize(config?: Partial<LLMConfig>): Promise<boolean> {
     if (this.isInitialized || this.isLoading) {
@@ -33,14 +41,42 @@ class WebLLMService {
     this.isLoading = true;
 
     try {
-      // In a real implementation, this would initialize WebLLM
-      // For now, we provide a mock implementation
       this.config = { ...this.config, ...config };
+
+      if (this.config.provider === 'webllm') {
+        // Check WebGPU support
+        if (!('gpu' in navigator)) {
+          throw new Error(
+            'WebGPU is not supported in this browser. Please use Chrome 113+ or Edge 113+.',
+          );
+        }
+
+        // Initialize WebLLM engine
+        this.engine = new webllm.MLCEngine();
+
+        // Set up progress callback
+        if (this.config.initProgressCallback) {
+          this.engine.setInitProgressCallback(this.config.initProgressCallback);
+        }
+
+        // Load the model
+        if (this.config.model) {
+          await this.engine.reload(this.config.model, {
+            temperature: this.config.temperature,
+          });
+        }
+
+        this.isInitialized = true;
+        console.warn('WebLLM initialized with model:', this.config.model);
+        return true;
+      }
+
+      // For other providers (BYOK), just store config
       this.isInitialized = true;
-      console.log('WebLLM service initialized (mock mode)');
+      console.warn(`${this.config.provider} configured`);
       return true;
     } catch (error) {
-      console.warn('Failed to initialize WebLLM:', error);
+      console.warn('Failed to initialize LLM:', error);
       this.isInitialized = false;
       return false;
     } finally {
@@ -48,77 +84,199 @@ class WebLLMService {
     }
   }
 
-  async generateCompletion(prompt: string, context?: string): Promise<string> {
+  async generateCompletion(prompt: string, systemPrompt?: string): Promise<string> {
     if (!this.isInitialized) {
-      throw new Error('WebLLM service not initialized');
+      throw new Error('LLM service not initialized');
     }
 
     try {
-      // Simulate AI processing delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Return mock response based on prompt type
-      if (prompt.toLowerCase().includes('schedule')) {
-        return `Based on your preferences, I recommend the following schedule optimization:
+      if (this.config.provider === 'webllm' && this.engine) {
+        const messages: LLMMessage[] = [];
+        if (systemPrompt) {
+          messages.push({ role: 'system', content: systemPrompt });
+        }
+        messages.push({ role: 'user', content: prompt });
 
-1. Consider taking CS 101 at 9:00 AM instead of 10:00 AM for better time distribution
-2. MATH 201 conflicts with ENG 101, so try section 002 of MATH 201
-3. Your preferred morning schedule aligns well with the suggested sections
+        const reply = await this.engine.chat.completions.create({
+          messages,
+          temperature: this.config.temperature,
+          max_tokens: this.config.maxTokens,
+        });
 
-Overall score: 85/100. This schedule minimizes gaps and maximizes your preferred time preferences.`;
+        return reply.choices[0]?.message?.content || 'No response generated';
       }
-      
-      return `I understand you'd like assistance with "${prompt}". For optimal schedule recommendations, please ensure you have:
 
-1. Imported your course data via CSV
-2. Selected your preferred sections
-3. Set your time preferences in the settings
-
-I can then provide personalized recommendations for your schedule optimization.`;
-
+      // BYOK: External API call
+      return await this.callExternalAPI(prompt, systemPrompt);
     } catch (error) {
-      console.error('WebLLM completion failed:', error);
-      throw new Error('Failed to generate completion');
+      console.error('LLM completion failed:', error);
+      throw new Error(`Failed to generate completion: ${(error as Error).message}`);
     }
   }
 
+  private async callExternalAPI(prompt: string, systemPrompt?: string): Promise<string> {
+    const { provider, apiKey, apiBaseUrl, model, temperature, maxTokens } = this.config;
+
+    if (!apiKey) {
+      throw new Error(`API key required for ${provider}`);
+    }
+
+    const messages: LLMMessage[] = [];
+    if (systemPrompt) {
+      messages.push({ role: 'system', content: systemPrompt });
+    }
+    messages.push({ role: 'user', content: prompt });
+
+    let url = apiBaseUrl;
+    let body: any;
+    const headers: any = {
+      'Content-Type': 'application/json',
+    };
+
+    switch (provider) {
+      case 'openai':
+        url = url || 'https://api.openai.com/v1/chat/completions';
+        headers['Authorization'] = `Bearer ${apiKey}`;
+        body = {
+          model: model || 'gpt-3.5-turbo',
+          messages,
+          temperature,
+          max_tokens: maxTokens,
+        };
+        break;
+
+      case 'anthropic':
+        url = url || 'https://api.anthropic.com/v1/messages';
+        headers['x-api-key'] = apiKey;
+        headers['anthropic-version'] = '2023-06-01';
+        // Anthropic format
+        const systemMessage = messages.find((m) => m.role === 'system');
+        const userMessages = messages.filter((m) => m.role !== 'system');
+        body = {
+          model: model || 'claude-3-haiku-20240307',
+          max_tokens: maxTokens || 1024,
+          system: systemMessage?.content,
+          messages: userMessages.map((m) => ({
+            role: m.role === 'assistant' ? 'assistant' : 'user',
+            content: m.content,
+          })),
+        };
+        break;
+
+      case 'custom':
+        if (!url) {
+          throw new Error('Custom API URL required');
+        }
+        if (apiKey) {
+          headers['Authorization'] = `Bearer ${apiKey}`;
+        }
+        body = {
+          model: model,
+          messages,
+          temperature,
+          max_tokens: maxTokens,
+        };
+        break;
+
+      default:
+        throw new Error(`Unsupported provider: ${provider}`);
+    }
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`API error (${response.status}): ${error}`);
+    }
+
+    const data = await response.json();
+
+    // Parse response based on provider
+    if (provider === 'anthropic') {
+      return data.content?.[0]?.text || 'No response generated';
+    }
+    return data.choices?.[0]?.message?.content || 'No response generated';
+  }
+
   async analyzeSchedule(schedule: any, preferences: any): Promise<string> {
-    const prompt = `Analyze this schedule and provide recommendations:
+    const systemPrompt = `You are a helpful academic advisor assistant. Analyze schedules and provide concise, actionable recommendations.`;
 
-Schedule: ${JSON.stringify(schedule, null, 2)}
-Preferences: ${JSON.stringify(preferences, null, 2)}
+    const prompt = `Analyze this course schedule and provide recommendations:
 
-Please provide:
-1. Schedule score (0-100)
+**Schedule Details:**
+- Total Credits: ${schedule.totalCredits}
+- Score: ${schedule.score}/100
+- Sections: ${schedule.sections.map((s: any) => `${s.code} Section ${s.sectionNumber} (${s.instructor})`).join(', ')}
+
+**Time Slots:**
+${schedule.sections
+  .map(
+    (s: any) =>
+      `${s.code}: ${s.timeSlots.map((t: any) => `${t.day} ${t.startTime}-${t.endTime}`).join(', ')}`,
+  )
+  .join('\n')}
+
+**User Preferences:**
+- Preferred time: ${preferences.preferredStartTime || '08:00'} - ${preferences.preferredEndTime || '17:00'}
+- Max gap between classes: ${preferences.maxGapMinutes || 60} minutes
+- Prefer ${preferences.preferMorning ? 'morning' : preferences.preferAfternoon ? 'afternoon' : 'any'} classes
+- Avoid days: ${preferences.avoidDays?.join(', ') || 'None'}
+
+Provide:
+1. Schedule score assessment (is it good?)
 2. Key strengths
-3. Areas for improvement
-4. Specific recommendations`;
+3. Areas for improvement  
+4. Specific recommendations (max 3)`;
 
-    return this.generateCompletion(prompt);
+    return this.generateCompletion(prompt, systemPrompt);
   }
 
   async getScheduleAdvice(courses: any[], preferences: any): Promise<string> {
+    const systemPrompt = `You are a helpful academic advisor. Provide strategic advice for course selection.`;
+
     const prompt = `Provide advice for selecting sections from these courses:
 
-Available courses: ${courses.map((c: any) => c.code).join(', ')}
-Preferences: ${JSON.stringify(preferences, null, 2)}
+**Available Courses:**
+${courses.map((c: any) => `- ${c.code}: ${c.name} (${c.credits} credits)`).join('\n')}
 
-Please provide strategic advice for optimal course selection.`;
+**User Preferences:**
+- Time preference: ${preferences.preferMorning ? 'Morning' : preferences.preferAfternoon ? 'Afternoon' : 'Flexible'}
+- Credit range: ${preferences.minCredits}-${preferences.maxCredits}
+- Max gap: ${preferences.maxGapMinutes} minutes
 
-    return this.generateCompletion(prompt);
+Provide strategic advice for optimal course and section selection.`;
+
+    return this.generateCompletion(prompt, systemPrompt);
   }
 
   isSupported(): boolean {
-    // Always return true for mock implementation
-    return true;
+    if (this.config.provider === 'webllm') {
+      return 'gpu' in navigator;
+    }
+    return true; // Other providers always supported via API
   }
 
   isReady(): boolean {
     return this.isInitialized && !this.isLoading;
   }
 
+  getProvider(): LLMProvider {
+    return this.config.provider;
+  }
+
+  getModel(): string | undefined {
+    return this.config.model;
+  }
+
   async destroy(): Promise<void> {
-    this.session = null;
+    if (this.engine) {
+      await this.engine.unload();
+      this.engine = null;
+    }
     this.isInitialized = false;
   }
 }
@@ -131,15 +289,29 @@ export async function isWebLLMAvailable(): Promise<boolean> {
   return webLLM.isSupported();
 }
 
-export async function optimizeWithWebLLM(schedules: any[], preferences: any): Promise<any> {
-  await webLLM.initialize();
-  
+export async function optimizeWithWebLLM(
+  schedules: any[],
+  preferences: any,
+  config?: Partial<LLMConfig>,
+): Promise<any> {
+  // Initialize with optional config
+  await webLLM.initialize(config);
+
   if (!webLLM.isReady()) {
-    throw new Error('WebLLM not available');
+    throw new Error('LLM not available or not initialized');
   }
 
+  if (schedules.length === 0) {
+    return {
+      schedules,
+      bestSchedule: null,
+      error: 'No schedules to optimize',
+    };
+  }
+
+  // Analyze the best schedule
   const analysis = await webLLM.analyzeSchedule(schedules[0], preferences);
-  
+
   return {
     schedules,
     bestSchedule: schedules[0] || null,
@@ -147,5 +319,4 @@ export async function optimizeWithWebLLM(schedules: any[], preferences: any): Pr
   };
 }
 
-// Export default
 export default webLLM;

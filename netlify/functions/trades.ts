@@ -66,7 +66,7 @@ async function initDatabase() {
       )
     `);
     
-    console.log('Database initialized');
+    console.warn('Database initialized');
   } catch (error) {
     console.warn('Failed to initialize database, using in-memory store:', error);
     db = null;
