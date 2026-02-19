@@ -6,10 +6,9 @@ import { drizzle } from 'drizzle-orm/neon-http';
 import { eq, desc } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 
-function getDb() {
-  const client = neon();
-  return drizzle({ client, schema });
-}
+// Initialize database connection once at module level (not per request)
+const client = neon();
+const db = drizzle({ client, schema });
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -32,7 +31,6 @@ exports.handler = async (event: any) => {
   }
 
   try {
-    const db = getDb();
     const { httpMethod, path, body } = event;
     const requestBody = body ? JSON.parse(body) : {};
 
