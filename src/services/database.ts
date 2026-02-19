@@ -1,37 +1,31 @@
 // Database service using localStorage
 
-import type { Course, Section, TradePost, Preferences } from '../types';
-
-// Local storage keys
-const COURSES_KEY = 'course_market_courses';
-const SECTIONS_KEY = 'course_market_sections';
-const TRADES_KEY = 'course_market_trades';
-const PREFERENCES_KEY = 'course_market_preferences';
-const USER_KEY = 'course_market_user';
+import type { Course, Section, TradePost } from '../types';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // User functions
 export function saveUser(user: any) {
-  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
 }
 
 export function getUser(): any | null {
-  const saved = localStorage.getItem(USER_KEY);
+  const saved = localStorage.getItem(STORAGE_KEYS.USER);
   return saved ? JSON.parse(saved) : null;
 }
 
 export function clearUser() {
-  localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(STORAGE_KEYS.USER);
 }
 
 // Courses functions
 export function saveCourses(courses: Course[], sections: Section[]) {
-  localStorage.setItem(COURSES_KEY, JSON.stringify(courses));
-  localStorage.setItem(SECTIONS_KEY, JSON.stringify(sections));
+  localStorage.setItem(STORAGE_KEYS.COURSES, JSON.stringify(courses));
+  localStorage.setItem(STORAGE_KEYS.SECTIONS, JSON.stringify(sections));
 }
 
 export function getCourses(): { courses: Course[]; sections: Section[] } {
-  const coursesStr = localStorage.getItem(COURSES_KEY);
-  const sectionsStr = localStorage.getItem(SECTIONS_KEY);
+  const coursesStr = localStorage.getItem(STORAGE_KEYS.COURSES);
+  const sectionsStr = localStorage.getItem(STORAGE_KEYS.SECTIONS);
 
   return {
     courses: coursesStr ? JSON.parse(coursesStr) : [],
@@ -41,11 +35,11 @@ export function getCourses(): { courses: Course[]; sections: Section[] } {
 
 // Trades functions
 export function saveTrades(trades: TradePost[]) {
-  localStorage.setItem(TRADES_KEY, JSON.stringify(trades));
+  localStorage.setItem(STORAGE_KEYS.TRADES, JSON.stringify(trades));
 }
 
 export function getTrades(): TradePost[] {
-  const saved = localStorage.getItem(TRADES_KEY);
+  const saved = localStorage.getItem(STORAGE_KEYS.TRADES);
   return saved ? JSON.parse(saved) : [];
 }
 
@@ -71,23 +65,4 @@ export function deleteTrade(tradeId: string) {
   const trades = getTrades();
   const filtered = trades.filter((t) => t.id !== tradeId);
   saveTrades(filtered);
-}
-
-// Preferences functions
-export function savePreferences(prefs: Preferences) {
-  localStorage.setItem(PREFERENCES_KEY, JSON.stringify(prefs));
-}
-
-export function getPreferences(): Preferences | null {
-  const saved = localStorage.getItem(PREFERENCES_KEY);
-  return saved ? JSON.parse(saved) : null;
-}
-
-// Clear all data
-export function clearAllData() {
-  localStorage.removeItem(COURSES_KEY);
-  localStorage.removeItem(SECTIONS_KEY);
-  localStorage.removeItem(TRADES_KEY);
-  localStorage.removeItem(PREFERENCES_KEY);
-  localStorage.removeItem(USER_KEY);
 }

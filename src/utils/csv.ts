@@ -1,14 +1,11 @@
 import type { Course, Section, CSVParseResult, TimeSlot } from '../types';
-import { 
-  REQUIRED_HEADERS_LOWERCASE, 
-  HEADER_MAPPING, 
-  parseDays, 
-  parseTime 
+import {
+  REQUIRED_HEADERS_LOWERCASE,
+  HEADER_MAPPING,
+  parseDays,
+  parseTime,
 } from '../constants/csvHeaders';
-
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 15);
-}
+import { generateId } from './id';
 
 function parseCSVLine(line: string): string[] {
   const result: string[] = [];
@@ -17,7 +14,7 @@ function parseCSVLine(line: string): string[] {
 
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
-    
+
     if (char === '"') {
       inQuotes = !inQuotes;
     } else if (char === ',' && !inQuotes) {
@@ -28,13 +25,13 @@ function parseCSVLine(line: string): string[] {
     }
   }
   result.push(current.trim());
-  
-  return result.map(cell => cell.replace(/^"|"$/g, '').trim());
+
+  return result.map((cell) => cell.replace(/^"|"$/g, '').trim());
 }
 
 function validateHeaders(headers: string[]): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
-  const normalizedHeaders = headers.map(h => h.toLowerCase().trim());
+  const normalizedHeaders = headers.map((h) => h.toLowerCase().trim());
 
   const missingHeaders: string[] = [];
   for (const required of REQUIRED_HEADERS_LOWERCASE) {
@@ -52,7 +49,7 @@ function validateHeaders(headers: string[]): { valid: boolean; errors: string[] 
 
 function parseRow(row: string[], headers: string[]): Record<string, string> {
   const result: Record<string, string> = {};
-  
+
   headers.forEach((header, index) => {
     const mappedKey = HEADER_MAPPING[header.toLowerCase()];
     if (mappedKey && row[index] !== undefined) {
@@ -65,14 +62,14 @@ function parseRow(row: string[], headers: string[]): Record<string, string> {
 
 export function parseCSV(csvContent: string): CSVParseResult {
   const lines = csvContent.trim().split('\n');
-  
+
   if (lines.length < 2) {
     return {
       success: false,
       courses: [],
       sections: [],
       errors: ['CSV file must contain a header row and at least one data row'],
-      warnings: []
+      warnings: [],
     };
   }
 
@@ -85,7 +82,7 @@ export function parseCSV(csvContent: string): CSVParseResult {
       courses: [],
       sections: [],
       errors: headerErrors,
-      warnings: []
+      warnings: [],
     };
   }
 
@@ -99,21 +96,25 @@ export function parseCSV(csvContent: string): CSVParseResult {
     if (!line) continue;
 
     const row = parseCSVLine(line);
-    
+
     if (row.length !== headers.length) {
-      warnings.push(`Row ${i + 1}: Column count mismatch (expected ${headers.length}, got ${row.length})`);
+      warnings.push(
+        `Row ${i + 1}: Column count mismatch (expected ${headers.length}, got ${row.length})`,
+      );
       continue;
     }
 
     try {
       const parsed = parseRow(row, headers);
-      
+
       const courseCode = parsed.courseCode;
       const courseName = parsed.courseName;
       const sectionNumber = parsed.sectionNumber;
-      
+
       if (!courseCode || !courseName || !sectionNumber) {
-        warnings.push(`Row ${i + 1}: Missing required fields (Course Code, Course Name, or Section)`);
+        warnings.push(
+          `Row ${i + 1}: Missing required fields (Course Code, Course Name, or Section)`,
+        );
         continue;
       }
 
@@ -125,7 +126,7 @@ export function parseCSV(csvContent: string): CSVParseResult {
           name: courseName,
           subject: parsed.subject || courseCode.split(' ')[0],
           credits: parseInt(parsed.credits, 10) || 3,
-          description: ''
+          description: '',
         };
         courses.push(course);
         seenCourses.set(course.code, course);
@@ -135,10 +136,10 @@ export function parseCSV(csvContent: string): CSVParseResult {
       const startTime = parseTime(parsed.startTime || '00:00');
       const endTime = parseTime(parsed.endTime || '00:00');
 
-      const timeSlots: TimeSlot[] = daysArray.map(day => ({
+      const timeSlots: TimeSlot[] = daysArray.map((day) => ({
         day: day as 'M' | 'T' | 'W' | 'Th' | 'F' | 'Sa' | 'Su',
         startTime,
-        endTime
+        endTime,
       }));
 
       const section: Section = {
@@ -150,11 +151,10 @@ export function parseCSV(csvContent: string): CSVParseResult {
         timeSlots,
         capacity: 30,
         enrolled: 0,
-        term: parsed.term
+        term: parsed.term,
       };
 
       sections.push(section);
-
     } catch (err) {
       warnings.push(`Row ${i + 1}: ${(err as Error).message}`);
     }
@@ -165,7 +165,7 @@ export function parseCSV(csvContent: string): CSVParseResult {
     courses,
     sections,
     errors: [],
-    warnings
+    warnings,
   };
 }
 

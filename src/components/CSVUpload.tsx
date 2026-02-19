@@ -41,7 +41,7 @@ export function CSVUpload({ onUpload, errors, warnings, isLoaded }: CSVUploadPro
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
+
     const file = e.dataTransfer.files[0];
     if (file) {
       handleFile(file);
@@ -64,7 +64,7 @@ export function CSVUpload({ onUpload, errors, warnings, isLoaded }: CSVUploadPro
   return (
     <div className="csv-upload">
       <h2>📥 CSV Course Import</h2>
-      
+
       {!isLoaded && (
         <div
           className={`upload-zone ${isDragging ? 'dragging' : ''}`}
@@ -80,14 +80,18 @@ export function CSVUpload({ onUpload, errors, warnings, isLoaded }: CSVUploadPro
             onChange={handleInputChange}
             style={{ display: 'none' }}
           />
-          
+
           <div className="upload-icon">📄</div>
           <p>Drag and drop your CSV file here</p>
           <p className="sub-text">or click to browse</p>
-          <button type="button" className="sample-btn" onClick={(e) => {
-            e.stopPropagation();
-            loadSampleData();
-          }}>
+          <button
+            type="button"
+            className="sample-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              loadSampleData();
+            }}
+          >
             Load Sample Data
           </button>
         </div>
@@ -121,11 +125,7 @@ export function CSVUpload({ onUpload, errors, warnings, isLoaded }: CSVUploadPro
         </div>
       )}
 
-      {isLoaded && (
-        <div className="success-message">
-          ✅ Courses loaded successfully!
-        </div>
-      )}
+      {isLoaded && <div className="success-message">✅ Courses loaded successfully!</div>}
     </div>
   );
 }

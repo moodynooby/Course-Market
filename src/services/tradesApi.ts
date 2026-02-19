@@ -1,17 +1,13 @@
 import type { TradePost, UserProfile } from '../types';
+import { generateId } from '../utils/id';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 const NETLIFY_FUNCTION_URL = import.meta.env.VITE_NETLIFY_FUNCTION_URL;
-const LOCAL_STORAGE_KEY = 'course_market_trades';
-const USERS_KEY = 'course_market_users';
 
 let isOnlineMode = !!NETLIFY_FUNCTION_URL;
 
 export function configureTrading(online: boolean = true): void {
   isOnlineMode = online && !!NETLIFY_FUNCTION_URL;
-}
-
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 15);
 }
 
 function generateUserId(): string {
@@ -20,7 +16,7 @@ function generateUserId(): string {
 
 function getStoredUsers(): UserProfile[] {
   try {
-    const stored = localStorage.getItem(USERS_KEY);
+    const stored = localStorage.getItem(STORAGE_KEYS.USERS);
     return stored ? JSON.parse(stored) : [];
   } catch {
     return [];
@@ -29,7 +25,7 @@ function getStoredUsers(): UserProfile[] {
 
 function storeUsers(users: UserProfile[]): void {
   try {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
   } catch (e) {
     console.warn('Failed to store users:', e);
   }
@@ -37,7 +33,7 @@ function storeUsers(users: UserProfile[]): void {
 
 function getStoredTrades(): TradePost[] {
   try {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const stored = localStorage.getItem(STORAGE_KEYS.TRADES);
     return stored ? JSON.parse(stored) : [];
   } catch {
     return [];
@@ -46,7 +42,7 @@ function getStoredTrades(): TradePost[] {
 
 function storeTrades(trades: TradePost[]): void {
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(trades));
+    localStorage.setItem(STORAGE_KEYS.TRADES, JSON.stringify(trades));
   } catch (e) {
     console.warn('Failed to store trades:', e);
   }
@@ -126,7 +122,7 @@ export async function createTrade(
     sectionWanted: string;
     action: 'offer' | 'request';
     description?: string;
-  }
+  },
 ): Promise<TradePost> {
   const trade: TradePost = {
     id: generateId(),
@@ -163,7 +159,7 @@ export async function createTrade(
 
 export async function updateTradeStatus(
   tradeId: string,
-  status: 'pending' | 'completed' | 'cancelled'
+  status: 'pending' | 'completed' | 'cancelled',
 ): Promise<TradePost | null> {
   if (isOnlineMode) {
     try {
@@ -180,8 +176,8 @@ export async function updateTradeStatus(
 
   if (!isOnlineMode) {
     const trades = getStoredTrades();
-    const index = trades.findIndex(t => t.id === tradeId);
-    
+    const index = trades.findIndex((t) => t.id === tradeId);
+
     if (index !== -1) {
       trades[index] = {
         ...trades[index],
@@ -212,7 +208,7 @@ export async function deleteTrade(tradeId: string): Promise<boolean> {
 
   if (!isOnlineMode) {
     const trades = getStoredTrades();
-    const filteredTrades = trades.filter(t => t.id !== tradeId);
+    const filteredTrades = trades.filter((t) => t.id !== tradeId);
     storeTrades(filteredTrades);
     return true;
   }
@@ -220,21 +216,22 @@ export async function deleteTrade(tradeId: string): Promise<boolean> {
   return false;
 }
 
-export async function searchTrades(
-  filters?: {
-    courseCode?: string;
-    action?: 'offer' | 'request';
-    status?: string;
-  }
-): Promise<TradePost[]> {
+export async function searchTrades(filters?: {
+  courseCode?: string;
+  action?: 'offer' | 'request';
+  status?: string;
+}): Promise<TradePost[]> {
   const trades = await getTrades();
-  
+
   if (!filters) {
     return trades;
   }
 
-  return trades.filter(trade => {
-    if (filters.courseCode && !trade.courseCode.toLowerCase().includes(filters.courseCode.toLowerCase())) {
+  return trades.filter((trade) => {
+    if (
+      filters.courseCode &&
+      !trade.courseCode.toLowerCase().includes(filters.courseCode.toLowerCase())
+    ) {
       return false;
     }
     if (filters.action && trade.action !== filters.action) {
@@ -255,7 +252,7 @@ export function getConnectionStatus(): {
   return {
     isOnlineMode,
     hasNetlify: !!NETLIFY_FUNCTION_URL,
-    mode: isOnlineMode ? 'online' : 'local'
+    mode: isOnlineMode ? 'online' : 'local',
   };
 }
 
@@ -270,7 +267,8 @@ export function generateSampleTrades(userId: string, userName: string): void {
       sectionWanted: '002',
       action: 'offer',
       status: 'open',
-      description: 'Can offer section 001 (Dr. Smith MWF 9:00) for section 002 (Dr. Jones MWF 10:00)'
+      description:
+        'Can offer section 001 (Dr. Smith MWF 9:00) for section 002 (Dr. Jones MWF 10:00)',
     },
     {
       userId,
@@ -281,7 +279,7 @@ export function generateSampleTrades(userId: string, userName: string): void {
       sectionWanted: '001',
       action: 'request',
       status: 'open',
-      description: 'Looking for morning section 001 (Dr. Brown MWF 8:00)'
+      description: 'Looking for morning section 001 (Dr. Brown MWF 8:00)',
     },
     {
       userId,
@@ -292,12 +290,12 @@ export function generateSampleTrades(userId: string, userName: string): void {
       sectionWanted: '001',
       action: 'offer',
       status: 'open',
-      description: 'Available for trade with morning preference'
-    }
+      description: 'Available for trade with morning preference',
+    },
   ];
 
   const trades = getStoredTrades();
-  const newTrades = sampleTrades.map(trade => ({
+  const newTrades = sampleTrades.map((trade) => ({
     ...trade,
     id: generateId(),
     createdAt: new Date().toISOString(),

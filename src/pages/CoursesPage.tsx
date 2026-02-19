@@ -17,14 +17,7 @@ import {
   Collapse,
   Alert,
 } from '@mui/material';
-import {
-  ExpandMore,
-  ExpandLess,
-  Delete,
-  Schedule,
-  Person,
-  LocationOn,
-} from '@mui/icons-material';
+import { ExpandMore, ExpandLess, Delete, Schedule, Person, LocationOn } from '@mui/icons-material';
 import { getCourses, saveCourses } from '../services/database';
 import type { Course, Section } from '../types';
 
@@ -48,7 +41,7 @@ export default function CoursesPage() {
     const data = getCourses();
     setCourses(data.courses);
     setSections(data.sections);
-    
+
     // Load selections from localStorage
     const saved = localStorage.getItem('course-selections');
     if (saved) {
@@ -64,25 +57,25 @@ export default function CoursesPage() {
   }, [selectedSections]);
 
   const subjects = useMemo(() => {
-    const subs = new Set(courses.map(c => c.subject));
+    const subs = new Set(courses.map((c) => c.subject));
     return Array.from(subs).sort();
   }, [courses]);
 
   const filteredCourses = useMemo(() => {
-    return courses.filter(course => {
-      const matchesSearch = course.name.toLowerCase().includes(search.toLowerCase()) ||
+    return courses.filter((course) => {
+      const matchesSearch =
+        course.name.toLowerCase().includes(search.toLowerCase()) ||
         course.code.toLowerCase().includes(search.toLowerCase());
       const matchesSubject = subject === 'all' || course.subject === subject;
       return matchesSearch && matchesSubject;
     });
   }, [courses, search, subject]);
 
-  const courseSections = (courseId: string) => 
-    sections.filter(s => s.courseId === courseId);
+  const courseSections = (courseId: string) => sections.filter((s) => s.courseId === courseId);
 
   const getSelectedSection = (courseId: string) => {
     const sectionId = selectedSections.get(courseId);
-    return sectionId ? sections.find(s => s.id === sectionId) : undefined;
+    return sectionId ? sections.find((s) => s.id === sectionId) : undefined;
   };
 
   const handleSelectSection = (courseId: string, sectionId: string) => {
@@ -122,7 +115,7 @@ export default function CoursesPage() {
 
   const getSelectedSectionList = (): Section[] => {
     const ids = Array.from(selectedSections.values());
-    return sections.filter(s => ids.includes(s.id));
+    return sections.filter((s) => ids.includes(s.id));
   };
 
   const handleClearAll = () => {
@@ -135,9 +128,7 @@ export default function CoursesPage() {
         <Typography variant="h4" gutterBottom fontWeight={700}>
           Course Browser
         </Typography>
-        <Alert severity="info">
-          No courses imported yet. Go to Import to add courses.
-        </Alert>
+        <Alert severity="info">No courses imported yet. Go to Import to add courses.</Alert>
       </Box>
     );
   }
@@ -158,14 +149,12 @@ export default function CoursesPage() {
         />
         <FormControl sx={{ minWidth: 150 }} size="small">
           <InputLabel>Subject</InputLabel>
-          <Select
-            value={subject}
-            label="Subject"
-            onChange={(e) => setSubject(e.target.value)}
-          >
+          <Select value={subject} label="Subject" onChange={(e) => setSubject(e.target.value)}>
             <MenuItem value="all">All Subjects</MenuItem>
-            {subjects.map(s => (
-              <MenuItem key={s} value={s}>{s}</MenuItem>
+            {subjects.map((s) => (
+              <MenuItem key={s} value={s}>
+                {s}
+              </MenuItem>
             ))}
           </Select>
         </FormControl>
@@ -183,7 +172,7 @@ export default function CoursesPage() {
         </Button>
       </Stack>
 
-      {filteredCourses.map(course => {
+      {filteredCourses.map((course) => {
         const sectionList = courseSections(course.id);
         const selected = getSelectedSection(course.id);
         const isExpanded = expanded === course.id;
@@ -218,16 +207,17 @@ export default function CoursesPage() {
             <Collapse in={isExpanded}>
               <CardActions sx={{ pt: 0, px: 2, pb: 2 }}>
                 <Stack spacing={1.5} sx={{ width: '100%' }}>
-                  {sectionList.map(section => {
+                  {sectionList.map((section) => {
                     const isSelected = selectedSections.get(course.id) === section.id;
                     const conflict = hasConflict(section);
                     const dayDisplay = section.timeSlots
-                      .map(s => s.day)
+                      .map((s) => s.day)
                       .filter((d, i, arr) => arr.indexOf(d) === i)
                       .join('');
-                    const timeDisplay = section.timeSlots.length > 0
-                      ? `${formatTime(section.timeSlots[0].startTime)} - ${formatTime(section.timeSlots[0].endTime)}`
-                      : 'TBA';
+                    const timeDisplay =
+                      section.timeSlots.length > 0
+                        ? `${formatTime(section.timeSlots[0].startTime)} - ${formatTime(section.timeSlots[0].endTime)}`
+                        : 'TBA';
 
                     return (
                       <Card
@@ -235,8 +225,16 @@ export default function CoursesPage() {
                         variant="outlined"
                         sx={{
                           cursor: 'pointer',
-                          borderColor: isSelected ? 'success.main' : conflict ? 'error.main' : 'divider',
-                          bgcolor: isSelected ? 'success.main' : conflict ? 'error.main' : 'transparent',
+                          borderColor: isSelected
+                            ? 'success.main'
+                            : conflict
+                              ? 'error.main'
+                              : 'divider',
+                          bgcolor: isSelected
+                            ? 'success.main'
+                            : conflict
+                              ? 'error.main'
+                              : 'transparent',
                           color: isSelected || conflict ? 'white' : 'inherit',
                           '&:hover': {
                             borderColor: 'primary.main',
@@ -257,7 +255,9 @@ export default function CoursesPage() {
                                 </Stack>
                                 <Stack direction="row" alignItems="center" spacing={0.5}>
                                   <Schedule sx={{ fontSize: 16 }} />
-                                  <Typography variant="caption">{dayDisplay} {timeDisplay}</Typography>
+                                  <Typography variant="caption">
+                                    {dayDisplay} {timeDisplay}
+                                  </Typography>
                                 </Stack>
                                 <Stack direction="row" alignItems="center" spacing={0.5}>
                                   <LocationOn sx={{ fontSize: 16 }} />
@@ -266,7 +266,9 @@ export default function CoursesPage() {
                               </Stack>
                             </Box>
                             {isSelected && <Chip size="small" label="Selected" color="success" />}
-                            {conflict && !isSelected && <Chip size="small" label="Conflict" color="error" />}
+                            {conflict && !isSelected && (
+                              <Chip size="small" label="Conflict" color="error" />
+                            )}
                           </Stack>
                         </CardContent>
                       </Card>

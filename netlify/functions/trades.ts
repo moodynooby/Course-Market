@@ -1,6 +1,10 @@
 // Netlify Function for Course Trading Board
 // This function provides CRUD operations for trade posts using Neon/PostgreSQL
 
+function generateId(): string {
+  return Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+}
+
 interface TradePost {
   id: string;
   userId: string;
@@ -78,10 +82,6 @@ const memoryStore = {
   users: new Map<string, UserProfile>(),
   trades: new Map<string, TradePost>(),
 };
-
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
-}
 
 async function getTrades(): Promise<TradePost[]> {
   if (db) {
@@ -191,7 +191,7 @@ async function createUser(userData: UserProfile): Promise<UserProfile> {
   return userData;
 }
 
-exports.handler = async (event: any, _context: any) => {
+exports.handler = async (event: any) => {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',

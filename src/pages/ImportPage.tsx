@@ -31,13 +31,15 @@ import type { Course, Section } from '../types';
 
 export default function ImportPage() {
   const [files, setFiles] = useState<File[]>([]);
-  const [parseResults, setParseResults] = useState<{
-    courses: Course[];
-    sections: Section[];
-    errors: string[];
-    warnings: string[];
-    filename: string;
-  }[]>([]);
+  const [parseResults, setParseResults] = useState<
+    {
+      courses: Course[];
+      sections: Section[];
+      errors: string[];
+      warnings: string[];
+      filename: string;
+    }[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [imported, setImported] = useState(false);
   const navigate = useNavigate();
@@ -45,17 +47,17 @@ export default function ImportPage() {
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const newFiles = Array.from(event.target.files);
-      setFiles(prev => [...prev, ...newFiles]);
+      setFiles((prev) => [...prev, ...newFiles]);
     }
   }, []);
 
   const handleRemoveFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleImport = async () => {
     if (files.length === 0) return;
-    
+
     setLoading(true);
     setParseResults([]);
 
@@ -67,7 +69,7 @@ export default function ImportPage() {
       try {
         const content = await file.text();
         const result = parseCSV(content);
-        
+
         results.push({
           courses: result.courses,
           sections: result.sections,
@@ -75,7 +77,7 @@ export default function ImportPage() {
           warnings: result.warnings,
           filename: file.name,
         });
-        
+
         allCourses.push(...result.courses);
         allSections.push(...result.sections);
       } catch (error) {
@@ -90,12 +92,12 @@ export default function ImportPage() {
     }
 
     setParseResults(results);
-    
+
     if (allCourses.length > 0) {
       saveCourses(allCourses, allSections);
       setImported(true);
     }
-    
+
     setLoading(false);
   };
 
@@ -103,28 +105,30 @@ export default function ImportPage() {
     setLoading(true);
     const sampleCSV = generateSampleCSV();
     const result = parseCSV(sampleCSV);
-    
+
     if (result.success) {
       saveCourses(result.courses, result.sections);
-      setParseResults([{
-        courses: result.courses,
-        sections: result.sections,
-        errors: result.errors,
-        warnings: result.warnings,
-        filename: 'sample_courses.csv',
-      }]);
+      setParseResults([
+        {
+          courses: result.courses,
+          sections: result.sections,
+          errors: result.errors,
+          warnings: result.warnings,
+          filename: 'sample_courses.csv',
+        },
+      ]);
       setImported(true);
     }
-    
+
     setLoading(false);
   };
 
   const handleDrop = useCallback((event: React.DragEvent) => {
     event.preventDefault();
-    const droppedFiles = Array.from(event.dataTransfer.files).filter(
-      f => f.name.endsWith('.csv')
+    const droppedFiles = Array.from(event.dataTransfer.files).filter((f) =>
+      f.name.endsWith('.csv'),
     );
-    setFiles(prev => [...prev, ...droppedFiles]);
+    setFiles((prev) => [...prev, ...droppedFiles]);
   }, []);
 
   const handleDragOver = (event: React.DragEvent) => {
@@ -166,20 +170,9 @@ export default function ImportPage() {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             or click to browse (multiple files allowed)
           </Typography>
-          <Button
-            variant="contained"
-            component="label"
-            startIcon={<Upload />}
-            size="large"
-          >
+          <Button variant="contained" component="label" startIcon={<Upload />} size="large">
             Select Files
-            <input
-              type="file"
-              accept=".csv"
-              multiple
-              hidden
-              onChange={handleFileSelect}
-            />
+            <input type="file" accept=".csv" multiple hidden onChange={handleFileSelect} />
           </Button>
         </Box>
       </Card>
@@ -250,17 +243,15 @@ export default function ImportPage() {
                     />
                   )}
                 </Stack>
-                
+
                 {result.errors.length > 0 && (
                   <Alert severity="error" sx={{ mb: 1 }}>
                     {result.errors.join(', ')}
                   </Alert>
                 )}
-                
+
                 {result.warnings.length > 0 && (
-                  <Alert severity="warning">
-                    {result.warnings.join(', ')}
-                  </Alert>
+                  <Alert severity="warning">{result.warnings.join(', ')}</Alert>
                 )}
               </Box>
             ))}
@@ -272,11 +263,7 @@ export default function ImportPage() {
         <Alert
           severity="success"
           action={
-            <Button
-              color="inherit"
-              size="small"
-              onClick={() => navigate('/courses')}
-            >
+            <Button color="inherit" size="small" onClick={() => navigate('/courses')}>
               Browse Courses
             </Button>
           }
@@ -294,7 +281,18 @@ export default function ImportPage() {
             Your CSV files should include these headers:
           </Typography>
           <Stack direction="row" flexWrap="wrap" gap={1}>
-            {['Course Code', 'Course Name', 'Subject', 'Section', 'Instructor', 'Days', 'Start Time', 'End Time', 'Location', 'Credits'].map(header => (
+            {[
+              'Course Code',
+              'Course Name',
+              'Subject',
+              'Section',
+              'Instructor',
+              'Days',
+              'Start Time',
+              'End Time',
+              'Location',
+              'Credits',
+            ].map((header) => (
               <Chip key={header} label={header} variant="outlined" />
             ))}
           </Stack>

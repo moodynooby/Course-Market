@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Course, Section } from '../types';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 interface CoursesState {
   courses: Course[];
@@ -18,8 +19,6 @@ interface CoursesActions {
 }
 
 type CoursesHook = CoursesState & CoursesActions;
-
-const STORAGE_KEY = 'course_market_courses';
 
 export function useCourses(): CoursesHook {
   const [state, setState] = useState<CoursesState>({
@@ -44,13 +43,16 @@ export function useCourses(): CoursesHook {
       });
 
       if (result.success) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          courses: result.courses,
-          sections: result.sections,
-        }));
+        localStorage.setItem(
+          STORAGE_KEYS.COURSES,
+          JSON.stringify({
+            courses: result.courses,
+            sections: result.sections,
+          }),
+        );
       }
     } catch (error) {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         parseErrors: [`Failed to parse CSV: ${(error as Error).message}`],
         parseWarnings: prev.parseWarnings,
@@ -66,25 +68,25 @@ export function useCourses(): CoursesHook {
       parseErrors: [],
       parseWarnings: [],
     });
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEYS.COURSES);
   };
 
   const getCourseSections = (courseId: string): Section[] => {
-    return state.sections.filter(section => section.courseId === courseId);
+    return state.sections.filter((section) => section.courseId === courseId);
   };
 
   const getCourseById = (courseId: string): Course | undefined => {
-    return state.courses.find(course => course.id === courseId);
+    return state.courses.find((course) => course.id === courseId);
   };
 
   const getSubjectList = (): string[] => {
-    const subjects = new Set(state.courses.map(course => course.subject));
+    const subjects = new Set(state.courses.map((course) => course.subject));
     return Array.from(subjects).sort();
   };
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
+      const stored = localStorage.getItem(STORAGE_KEYS.COURSES);
       if (stored) {
         const data = JSON.parse(stored);
         setState({

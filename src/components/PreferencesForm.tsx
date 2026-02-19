@@ -18,24 +18,25 @@ const DAYS: { value: DayOfWeek; label: string }[] = [
 export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps) {
   const handleDayToggle = (day: DayOfWeek) => {
     const current = preferences.avoidDays;
-    const updated = current.includes(day)
-      ? current.filter(d => d !== day)
-      : [...current, day];
+    const updated = current.includes(day) ? current.filter((d) => d !== day) : [...current, day];
     onUpdate('avoidDays', updated);
   };
 
   const handleInstructorChange = (value: string) => {
-    const instructors = value.split(',').map(i => i.trim()).filter(Boolean);
+    const instructors = value
+      .split(',')
+      .map((i) => i.trim())
+      .filter(Boolean);
     onUpdate('excludeInstructors', instructors);
   };
 
   return (
     <div className="preferences-form">
       <h2>⚙️ Schedule Preferences</h2>
-      
+
       <div className="form-section">
         <h3>User Profile</h3>
-        
+
         <div className="form-group">
           <label>Display Name</label>
           <input
@@ -45,7 +46,7 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
             placeholder="Your name"
           />
         </div>
-        
+
         <div className="form-group">
           <label>Email (optional)</label>
           <input
@@ -59,7 +60,7 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
 
       <div className="form-section">
         <h3>⏰ Time Preferences</h3>
-        
+
         <div className="form-row">
           <div className="form-group">
             <label>Preferred Start Time</label>
@@ -69,7 +70,7 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
               onChange={(e) => onUpdate('preferredStartTime', e.target.value)}
             />
           </div>
-          
+
           <div className="form-group">
             <label>Preferred End Time</label>
             <input
@@ -105,7 +106,7 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
 
       <div className="form-section">
         <h3>📅 Schedule Preferences</h3>
-        
+
         <div className="form-row">
           <div className="form-group">
             <label>Minimum Credits</label>
@@ -117,7 +118,7 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
               onChange={(e) => onUpdate('minCredits', parseInt(e.target.value, 10) || 0)}
             />
           </div>
-          
+
           <div className="form-group">
             <label>Maximum Credits</label>
             <input
@@ -146,7 +147,7 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
         <div className="form-group">
           <label>Days to Avoid</label>
           <div className="day-buttons">
-            {DAYS.map(day => (
+            {DAYS.map((day) => (
               <button
                 key={day.value}
                 type="button"
@@ -173,7 +174,7 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
 
       <div className="form-section">
         <h3>👨‍🏫 Instructor Preferences</h3>
-        
+
         <div className="form-group">
           <label>Instructors to Exclude (comma-separated)</label>
           <input

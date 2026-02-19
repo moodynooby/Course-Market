@@ -18,43 +18,45 @@ function formatTime(time24: string): string {
 
 const DAYS_ORDER: DayOfWeek[] = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su'];
 const DAYS_FULL = {
-  'M': 'Monday',
-  'T': 'Tuesday', 
-  'W': 'Wednesday',
-  'Th': 'Thursday',
-  'F': 'Friday',
-  'Sa': 'Saturday',
-  'Su': 'Sunday'
+  M: 'Monday',
+  T: 'Tuesday',
+  W: 'Wednesday',
+  Th: 'Thursday',
+  F: 'Friday',
+  Sa: 'Saturday',
+  Su: 'Sunday',
 };
 
-function TimeSlot({ 
-  section, 
+function TimeSlot({
+  section,
   day,
   slotIndex,
-  totalSlots 
-}: { 
-  section: Section; 
-  day: DayOfWeek; 
+  totalSlots,
+}: {
+  section: Section;
+  day: DayOfWeek;
   slotIndex: number;
   totalSlots: number;
 }) {
-  const slot = section.timeSlots.find(s => s.day === day);
+  const slot = section.timeSlots.find((s) => s.day === day);
   if (!slot) return null;
 
   const startTime = parseInt(slot.startTime.replace(':', ''), 10);
   const endTime = parseInt(slot.endTime.replace(':', ''), 10);
-  
+
   return (
-    <div 
+    <div
       className="time-slot"
       style={{
         gridRow: `${startTime - 800 + 2} / ${endTime - 800 + 2}`,
-        gridColumn: `${slotIndex + 1} / ${totalSlots + 1}`
+        gridColumn: `${slotIndex + 1} / ${totalSlots + 1}`,
       }}
     >
       <div className="course-info">
         <div className="course-code">{section.sectionNumber}</div>
-        <div className="course-time">{formatTime(slot.startTime)}-{formatTime(slot.endTime)}</div>
+        <div className="course-time">
+          {formatTime(slot.startTime)}-{formatTime(slot.endTime)}
+        </div>
         <div className="instructor">{section.instructor}</div>
         <div className="location">{section.location}</div>
       </div>
@@ -71,7 +73,7 @@ function ScheduleGrid({ schedule }: { schedule: Schedule }) {
   return (
     <div className="schedule-grid" style={gridStyle}>
       <div className="time-labels">
-        {[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].map(hour => (
+        {[8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].map((hour) => (
           <div key={hour} className="time-label">
             {formatTime(`${hour.toString().padStart(2, '0')}:00`)}
           </div>
@@ -79,7 +81,7 @@ function ScheduleGrid({ schedule }: { schedule: Schedule }) {
       </div>
 
       <div className="day-headers">
-        {DAYS_ORDER.map(day => (
+        {DAYS_ORDER.map((day) => (
           <div key={day} className="day-header">
             {DAYS_FULL[day]}
           </div>
@@ -88,9 +90,9 @@ function ScheduleGrid({ schedule }: { schedule: Schedule }) {
 
       <div className="time-slots">
         {schedule.sections.map((section, index) => (
-          <TimeSlot 
+          <TimeSlot
             key={`${section.id}-${index}`}
-            section={section} 
+            section={section}
             day={DAYS_ORDER[index % DAYS_ORDER.length]}
             slotIndex={index}
             totalSlots={DAYS_ORDER.length}
@@ -113,11 +115,11 @@ function ScheduleGrid({ schedule }: { schedule: Schedule }) {
 function ScheduleList({ schedule }: { schedule: Schedule }) {
   return (
     <div className="schedule-list">
-      {schedule.sections.map(section => {
-        const times = section.timeSlots.map(slot => 
-          `${slot.day} ${formatTime(slot.startTime)}-${formatTime(slot.endTime)}`
-        ).join(', ');
-        
+      {schedule.sections.map((section) => {
+        const times = section.timeSlots
+          .map((slot) => `${slot.day} ${formatTime(slot.startTime)}-${formatTime(slot.endTime)}`)
+          .join(', ');
+
         return (
           <div key={section.id} className="schedule-item">
             <div className="section-header">
@@ -135,12 +137,12 @@ function ScheduleList({ schedule }: { schedule: Schedule }) {
   );
 }
 
-export function ScheduleView({ 
-  currentSchedule, 
-  alternativeSchedules, 
-  aiAnalysis, 
+export function ScheduleView({
+  currentSchedule,
+  alternativeSchedules,
+  aiAnalysis,
   error,
-  isOptimizing 
+  isOptimizing,
 }: ScheduleViewProps) {
   if (isOptimizing) {
     return (
@@ -199,7 +201,7 @@ export function ScheduleView({
         <div className="schedule-grid-view">
           <ScheduleGrid schedule={currentSchedule} />
         </div>
-        
+
         <div className="schedule-list-view">
           <ScheduleList schedule={currentSchedule} />
         </div>
