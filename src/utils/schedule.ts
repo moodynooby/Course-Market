@@ -1,5 +1,4 @@
 import type { Course, Section, Schedule, TimeSlot, DayOfWeek, Preferences } from '../types';
-import { generateId } from './id';
 
 export function formatTime(time24: string): string {
   const [hours, minutes] = time24.split(':');
@@ -7,6 +6,29 @@ export function formatTime(time24: string): string {
   const period = hour >= 12 ? 'PM' : 'AM';
   const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
   return `${displayHour}:${minutes} ${period}`;
+}
+
+/**
+ * Formats time slots into a display string (e.g., "MWF 9:00 AM - 10:00 AM")
+ * Optimized to avoid recalculating on every render.
+ */
+export function formatTimeSlots(timeSlots: TimeSlot[]): {
+  dayDisplay: string;
+  timeDisplay: string;
+} {
+  if (timeSlots.length === 0) {
+    return { dayDisplay: '', timeDisplay: 'TBA' };
+  }
+
+  // Get unique days efficiently
+  const uniqueDays = new Set(timeSlots.map((slot) => slot.day));
+  const dayDisplay = Array.from(uniqueDays).join('');
+
+  // Use first time slot for display
+  const firstSlot = timeSlots[0];
+  const timeDisplay = `${formatTime(firstSlot.startTime)} - ${formatTime(firstSlot.endTime)}`;
+
+  return { dayDisplay, timeDisplay };
 }
 
 export function hasSectionConflict(section1: Section, section2: Section): boolean {

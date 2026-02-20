@@ -29,4 +29,18 @@ export default defineConfig({
     port: 3000,
     host: true,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split heavy LLM dependencies into separate chunks
+          'web-llm': ['@mlc-ai/web-llm', 'detect-gpu'],
+          'wllama': ['@wllama/wllama'],
+          // Split MUI components into separate chunks
+          'mui-material': ['@mui/material'],
+          'mui-icons': ['@mui/icons-material'],
+        },
+      },
+    },
+  },
 });

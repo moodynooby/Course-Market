@@ -1,45 +1,52 @@
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Box, CircularProgress } from '@mui/material';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import Layout from './components/Layout';
-import LoginPage from './pages/LoginPage';
-import CoursesPage from './pages/CoursesPage';
-import SchedulePage from './pages/SchedulePage';
-import TradingPage from './pages/TradingPage';
-import SettingsPage from './pages/SettingsPage';
+
+// Lazy load pages for code splitting
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const CoursesPage = lazy(() => import('./pages/CoursesPage'));
+const SchedulePage = lazy(() => import('./pages/SchedulePage'));
+const TradingPage = lazy(() => import('./pages/TradingPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+
+function LoadingFallback() {
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <CircularProgress />
+    </Box>
+  );
+}
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <Box
-        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
-      >
-        <CircularProgress />
-      </Box>
-    );
+    return <LoadingFallback />;
   }
 
-  return user ? <>{children}</> : <Navigate to="/login" replace />;
+  return user ? (
+    <Suspense fallback={<LoadingFallback />}>{children}</Suspense>
+  ) : (
+    <Navigate to="/login" replace />
+  );
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <Box
-        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}
-      >
-        <CircularProgress />
-      </Box>
-    );
+    return <LoadingFallback />;
   }
 
-  return user ? <Navigate to="/" replace /> : <>{children}</>;
+  return user ? (
+    <Navigate to="/" replace />
+  ) : (
+    <Suspense fallback={<LoadingFallback />}>{children}</Suspense>
+  );
 }
 
 const router = createBrowserRouter([
@@ -65,19 +72,35 @@ const router = createBrowserRouter([
       },
       {
         path: 'courses',
-        element: <CoursesPage />,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <CoursesPage />
+          </Suspense>
+        ),
       },
       {
         path: 'schedule',
-        element: <SchedulePage />,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <SchedulePage />
+          </Suspense>
+        ),
       },
       {
         path: 'trading',
-        element: <TradingPage />,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <TradingPage />
+          </Suspense>
+        ),
       },
       {
         path: 'settings',
-        element: <SettingsPage />,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <SettingsPage />
+          </Suspense>
+        ),
       },
     ],
   },

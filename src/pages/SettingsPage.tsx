@@ -26,7 +26,12 @@ import {
 import { Save, Phone, Palette, Psychology, CloudOff, DeleteForever } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
-import { DEFAULT_PREFERENCES, savePreferences, getPreferences } from '../config/userConfig';
+import {
+  DEFAULT_PREFERENCES,
+  savePreferences,
+  getPreferences,
+  STORAGE_KEYS,
+} from '../config/userConfig';
 import {
   saveLlmConfig,
   getLlmConfig,
@@ -46,25 +51,28 @@ export default function SettingsPage() {
   const [preferences, setPreferences] = useState<Preferences>(DEFAULT_PREFERENCES);
   const [llmConfig, setLlmConfig] = useState<BYOKConfig>(DEFAULT_LLM_CONFIG);
 
-  const savePreferencesHandler = useCallback(() => {
-    savePreferences(preferences);
-    setMode(preferences.theme || 'system');
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  }, [preferences, setMode]);
+  const savePreferencesHandler = useCallback(
+    (prefs: Preferences) => {
+      savePreferences(prefs);
+      setMode(prefs.theme || 'system');
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    },
+    [setMode],
+  );
 
-  const saveLlmConfigHandler = useCallback(() => {
-    if (llmConfig.provider !== 'webllm' && !llmConfig.apiKey) {
+  const saveLlmConfigHandler = useCallback((config: BYOKConfig) => {
+    if (config.provider !== 'webllm' && !config.apiKey) {
       return false;
     }
-    if (llmConfig.provider === 'custom' && !llmConfig.apiBaseUrl) {
+    if (config.provider === 'custom' && !config.apiBaseUrl) {
       return false;
     }
-    saveLlmConfig(llmConfig);
+    saveLlmConfig(config);
     setLlmSaved(true);
     setTimeout(() => setLlmSaved(false), 3000);
     return true;
-  }, [llmConfig]);
+  }, []);
 
   useEffect(() => {
     setPreferences(getPreferences());
@@ -73,20 +81,31 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      savePreferencesHandler();
+      savePreferencesHandler(preferences);
     }, 1000);
     return () => clearTimeout(timer);
   }, [preferences, savePreferencesHandler]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      saveLlmConfigHandler();
+      saveLlmConfigHandler(llmConfig);
     }, 1000);
     return () => clearTimeout(timer);
   }, [llmConfig, saveLlmConfigHandler]);
 
   const handleClearData = () => {
-    localStorage.clear();
+    const APP_KEY_PREFIX = 'auraishub_';
+    const APP_SPECIFIC_KEYS = new Set<string>([
+      STORAGE_KEYS.APP_USER,
+      STORAGE_KEYS.COURSE_SELECTIONS,
+      STORAGE_KEYS.THEME_MODE,
+    ]);
+
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith(APP_KEY_PREFIX) || APP_SPECIFIC_KEYS.has(key)) {
+        localStorage.removeItem(key);
+      }
+    });
     window.location.reload();
   };
 
@@ -108,12 +127,6 @@ export default function SettingsPage() {
       <Typography variant="h4" gutterBottom fontWeight={700}>
         Settings
       </Typography>
-
-      {saved && (
-        <Alert severity="success" sx={{ mb: 3 }}>
-          Settings saved successfully!
-        </Alert>
-      )}
 
       <Grid container spacing={3}>
         {/* Profile Settings */}
@@ -435,12 +448,6 @@ export default function SettingsPage() {
         >
           Clear All Data
         </Button>
-
-        {saved && (
-          <Alert severity="success" sx={{ py: 0 }}>
-            Settings auto-saved!
-          </Alert>
-        )}
       </Stack>
 
       <Dialog open={clearDataOpen} onClose={() => setClearDataOpen(false)}>

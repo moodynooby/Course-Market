@@ -57,7 +57,6 @@ export const sections = pgTable('sections', {
   endTime: varchar('end_time', { length: 10 }).notNull(),
   capacity: integer('capacity').default(30),
   enrolled: integer('enrolled').default(0),
-  term: varchar('term', { length: 50 }),
 });
 
 // User selected sections

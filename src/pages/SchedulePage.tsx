@@ -30,7 +30,7 @@ import { STORAGE_KEYS, DEFAULT_PREFERENCES, getPreferences } from '../config/use
 import { getLlmConfig } from '../config/llmConfig';
 import { optimizeWithLLM } from '../services/llm';
 import type { Course, Section, Schedule, LLMConfig } from '../types';
-import { formatTime, checkConflicts } from '../utils/schedule';
+import { formatTime, checkConflicts, formatTimeSlots } from '../utils/schedule';
 
 function generateCurrentSchedule(): Schedule | null {
   const { courses, sections } = getCourses();
@@ -232,14 +232,7 @@ export default function SchedulePage() {
                   <TableBody>
                     {currentSchedule.sections.map((section) => {
                       const course = allCourses.find((c) => c.id === section.courseId);
-                      const dayDisplay = section.timeSlots
-                        .map((s) => s.day)
-                        .filter((d, i, arr) => arr.indexOf(d) === i)
-                        .join('');
-                      const timeDisplay =
-                        section.timeSlots.length > 0
-                          ? `${formatTime(section.timeSlots[0].startTime)}-${formatTime(section.timeSlots[0].endTime)}`
-                          : 'TBA';
+                      const { dayDisplay, timeDisplay } = formatTimeSlots(section.timeSlots);
 
                       return (
                         <TableRow key={section.id}>

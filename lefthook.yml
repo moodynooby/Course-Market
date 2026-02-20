@@ -1,0 +1,8 @@
+pre-commit:
+  commands:
+    lint:
+      glob: "src/**/*.{ts,tsx,json,css,md}"
+      run: "biome lint --write {staged_files}"
+    format:
+      glob: "src/**/*.{ts,tsx,json,css,md}"
+      run: "biome format --write {staged_files}"

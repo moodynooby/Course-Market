@@ -100,6 +100,20 @@ function cleanCourseCode(raw: string): string {
 }
 
 /**
+ * Extracts subject from course code.
+ * Handles formats like "COM101" -> "COM" or "COM 101" -> "COM"
+ */
+export function extractSubject(courseCode: string): string {
+  // First try removing digits (for formats like "COM101")
+  const withoutDigits = courseCode.replace(/\d+/g, '').trim();
+  if (withoutDigits) {
+    return withoutDigits;
+  }
+  // Fallback to first word (for formats like "COM 101")
+  return courseCode.split(' ')[0] || courseCode;
+}
+
+/**
  * Detects whether the CSV uses the "Course Directory" format
  * by checking for a "Schedule" column header.
  */
@@ -217,7 +231,7 @@ function parseCourseDirectoryFormat(
           id: generateId(),
           code: courseCode,
           name: courseName,
-          subject: courseCode.replace(/\d+/g, '').trim(),
+          subject: extractSubject(courseCode),
           credits,
           description: description || undefined,
         };
@@ -245,7 +259,8 @@ function parseCourseDirectoryFormat(
         sections.push(section);
       }
     } catch (err) {
-      warnings.push(`Row ${i + 2}: ${(err as Error).message}`);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      warnings.push(`Row ${i + 2}: ${errorMessage}`);
     }
   }
 
@@ -302,7 +317,7 @@ function parseStandardFormat(
           id: generateId(),
           code: courseCode,
           name: courseName,
-          subject: parsed.subject || courseCode.split(' ')[0],
+          subject: parsed.subject || extractSubject(courseCode),
           credits: parseInt(parsed.credits, 10) || 3,
           description: '',
         };
@@ -332,7 +347,8 @@ function parseStandardFormat(
 
       sections.push(section);
     } catch (err) {
-      warnings.push(`Row ${i + 2}: ${(err as Error).message}`);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      warnings.push(`Row ${i + 2}: ${errorMessage}`);
     }
   }
 

@@ -52,14 +52,14 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         palette: {
           mode: isDark ? 'dark' : 'light',
           primary: {
-            main: '#6366f1',
-            light: '#818cf8',
-            dark: '#4f46e5',
+            main: '#c87a2a',
+            light: '#d9944d',
+            dark: '#a5641f',
           },
           secondary: {
-            main: '#06b6d4',
-            light: '#22d3ee',
-            dark: '#0891b2',
+            main: '#b06a1f',
+            light: '#c9883f',
+            dark: '#8d5518',
           },
           success: {
             main: '#10b981',
@@ -107,7 +107,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
             styleOverrides: {
               root: {
                 borderRadius: 16,
-                boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.4)' : '0 4px 20px rgba(0,0,0,0.08)',
+                boxShadow: isDark
+                  ? '0 4px 20px rgba(0,0,0,0.4)'
+                  : '0 4px 20px rgba(0,0,0,0.08)',
               },
             },
           },

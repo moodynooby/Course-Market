@@ -15,7 +15,6 @@ import {
   SvgIcon,
   useTheme,
   useMediaQuery,
-  Chip,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
@@ -52,26 +51,24 @@ export default function Layout() {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
-  const { mode, setMode, isDark } = useThemeMode();
+  const { mode, setMode } = useThemeMode();
   const { user, signOut } = useAuth();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const handleThemeToggle = () => {
-    if (mode === 'light') setMode('dark');
-    else if (mode === 'dark') setMode('system');
-    else setMode('light');
-  };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
-  };
 
   const drawer = (
     <Box sx={{ overflow: 'auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+        <img src="/apple-touch-icon.png" alt="Logo" style={{ width: 32, height: 32 }} />
+        <Typography variant="h6" fontWeight={700} sx={{ color: 'primary.main', fontFamily: '"Zilla Slab", serif' }}>
+          AuraIsHub
+        </Typography>
+      </Box>
+      <Divider />
       <List sx={{ flex: 1 }}>
         <ListItem disablePadding>
           <ListItemButton

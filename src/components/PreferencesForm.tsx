@@ -115,7 +115,11 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
               min="0"
               max="24"
               value={preferences.minCredits}
-              onChange={(e) => onUpdate('minCredits', parseInt(e.target.value, 10) || 0)}
+              onChange={(e) => {
+                const raw = Number(e.target.value);
+                const value = Number.isNaN(raw) ? 0 : Math.max(0, Math.min(24, raw));
+                onUpdate('minCredits', value);
+              }}
             />
           </div>
 
@@ -126,7 +130,13 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
               min="0"
               max="24"
               value={preferences.maxCredits}
-              onChange={(e) => onUpdate('maxCredits', parseInt(e.target.value, 10) || 24)}
+              onChange={(e) => {
+                const raw = Number(e.target.value);
+                const value = Number.isNaN(raw)
+                  ? preferences.minCredits
+                  : Math.max(preferences.minCredits, Math.min(24, raw));
+                onUpdate('maxCredits', value);
+              }}
             />
           </div>
         </div>
@@ -139,7 +149,11 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
             max="180"
             step="15"
             value={preferences.maxGapMinutes}
-            onChange={(e) => onUpdate('maxGapMinutes', parseInt(e.target.value, 10))}
+            onChange={(e) => {
+              const raw = Number(e.target.value);
+              const value = Number.isNaN(raw) ? 0 : Math.max(0, Math.min(180, raw));
+              onUpdate('maxGapMinutes', value);
+            }}
           />
           <span className="range-value">{preferences.maxGapMinutes} minutes</span>
         </div>

@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import type { Course, Section } from '../types';
-import { formatTime, hasSectionConflict } from '../utils/schedule';
+import { formatTime, hasSectionConflict, formatTimeSlots } from '../utils/schedule';
 
 interface CourseListProps {
   courses: Course[];
@@ -21,15 +21,7 @@ function SectionCard({
   hasConflict: boolean;
   onClick: () => void;
 }) {
-  const dayDisplay = section.timeSlots
-    .map((slot) => slot.day)
-    .filter((day, index, arr) => arr.indexOf(day) === index)
-    .join('');
-
-  const timeDisplay =
-    section.timeSlots.length > 0
-      ? `${formatTime(section.timeSlots[0].startTime)} - ${formatTime(section.timeSlots[0].endTime)}`
-      : 'TBA';
+  const { dayDisplay, timeDisplay } = formatTimeSlots(section.timeSlots);
 
   return (
     <div
@@ -109,8 +101,8 @@ export function CourseList({
   );
 
   const selectedSectionsList = useMemo(() => {
-    const ids = Array.from(selectedSections.values());
-    return sections.filter((s) => ids.includes(s.id));
+    const ids = new Set(selectedSections.values());
+    return sections.filter((s) => ids.has(s.id));
   }, [selectedSections, sections]);
 
   const hasConflict = useCallback(

@@ -78,8 +78,8 @@ export default function LoginPage() {
             >
               <School sx={{ fontSize: 40 }} />
             </Avatar>
-            <Typography variant="h4" component="h1" gutterBottom fontWeight={700}>
-              Course Hub
+            <Typography variant="h4" component="h1" gutterBottom fontWeight={700} sx={{ fontFamily: '"Zilla Slab", serif' }}>
+              AuraIsHub
             </Typography>
             <Typography variant="body1" color="text.secondary">
               Sign in to access your courses and connect with other students

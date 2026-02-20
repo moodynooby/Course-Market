@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -183,7 +183,7 @@ export default function TradingPage() {
     contactPhone: '',
   });
 
-  const loadTrades = async () => {
+  const loadTrades = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -194,11 +194,11 @@ export default function TradingPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadTrades();
-  }, []);
+  }, [loadTrades]);
 
   const handleSubmit = async () => {
     if (!user) return;

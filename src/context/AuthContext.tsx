@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { STORAGE_KEYS } from '../config/userConfig';
+import { ENV } from '../config/devConfig';
 
 // Types
 export interface AppUser {
@@ -41,7 +42,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (saved) {
       try {
         setUser(JSON.parse(saved));
-      } catch {}
+      } catch (error) {
+        if (ENV.IS_DEV) {
+          console.error('Failed to parse app user from localStorage:', error);
+        }
+      }
     }
   }, []);
 

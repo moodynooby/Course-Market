@@ -22,7 +22,7 @@ import { ExpandMore, ExpandLess, Schedule, Person, Warning } from '@mui/icons-ma
 import { getCourses } from '../config/storageConfig';
 import { STORAGE_KEYS } from '../config/userConfig';
 import type { Course, Section } from '../types';
-import { formatTime, hasSectionConflict } from '../utils/schedule';
+import { formatTime, hasSectionConflict, formatTimeSlots } from '../utils/schedule';
 
 const INITIAL_VISIBLE_COURSES = 25;
 const VISIBLE_COURSE_STEP = 25;
@@ -263,14 +263,7 @@ export default function CoursesPage() {
                   {sectionList.map((section) => {
                     const isSelected = selectedSections.get(course.id) === section.id;
                     const conflict = hasConflict(section);
-                    const dayDisplay = section.timeSlots
-                      .map((s) => s.day)
-                      .filter((d, i, arr) => arr.indexOf(d) === i)
-                      .join('');
-                    const timeDisplay =
-                      section.timeSlots.length > 0
-                        ? `${formatTime(section.timeSlots[0].startTime)} - ${formatTime(section.timeSlots[0].endTime)}`
-                        : 'TBA';
+                    const { dayDisplay, timeDisplay } = formatTimeSlots(section.timeSlots);
 
                     return (
                       <Card

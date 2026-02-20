@@ -184,7 +184,8 @@ class UnifiedLLMService {
       if (ENV.IS_DEV) {
         console.error('LLM completion failed:', error);
       }
-      throw new Error(`Failed to generate completion: ${(error as Error).message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to generate completion: ${errorMessage}`);
     }
   }
 

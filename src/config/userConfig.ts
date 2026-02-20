@@ -3,11 +3,11 @@ import { ENV } from './devConfig';
 
 // --- STORAGE KEYS ---
 export const STORAGE_KEYS = {
-  COURSES: 'course_market_courses',
-  SECTIONS: 'course_market_sections',
-  PREFERENCES: 'course_market_preferences',
-  USER: 'course_market_user',
-  SELECTIONS: 'course_market_selections',
+  COURSES: 'auraishub_courses',
+  SECTIONS: 'auraishub_sections',
+  PREFERENCES: 'auraishub_preferences',
+  USER: 'auraishub_user',
+  SELECTIONS: 'auraishub_selections',
   COURSE_SELECTIONS: 'course-selections',
   THEME_MODE: 'theme-mode',
   APP_USER: 'app-user',

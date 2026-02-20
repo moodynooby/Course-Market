@@ -86,21 +86,51 @@ export async function deleteTrade(tradeId: string): Promise<boolean> {
   return result.success;
 }
 
+// Shape of a trade row returned from the database/Netlify function
+interface DbTradeRow {
+  id?: unknown;
+  userId?: unknown;
+  user_id?: unknown;
+  userDisplayName?: unknown;
+  user_display_name?: unknown;
+  courseCode?: unknown;
+  course_code?: unknown;
+  courseName?: unknown;
+  course_name?: unknown;
+  sectionOffered?: unknown;
+  section_offered?: unknown;
+  sectionWanted?: unknown;
+  section_wanted?: unknown;
+  action?: unknown;
+  status?: unknown;
+  description?: unknown;
+  contactPhone?: unknown;
+  contact_phone?: unknown;
+  createdAt?: unknown;
+  created_at?: unknown;
+  updatedAt?: unknown;
+  updated_at?: unknown;
+}
+
 // Map DB row (snake_case / numeric IDs) to frontend TradePost
-function mapDbTradeToFrontend(row: any): TradePost {
+function mapDbTradeToFrontend(row: DbTradeRow): TradePost {
   return {
-    id: String(row.id),
-    userId: String(row.userId ?? row.user_id),
-    userDisplayName: row.userDisplayName ?? row.user_display_name ?? 'User',
-    courseCode: row.courseCode ?? row.course_code,
-    courseName: row.courseName ?? row.course_name ?? '',
-    sectionOffered: row.sectionOffered ?? row.section_offered,
-    sectionWanted: row.sectionWanted ?? row.section_wanted,
-    action: row.action,
-    status: row.status,
-    description: row.description ?? undefined,
-    contactPhone: row.contactPhone ?? row.contact_phone ?? undefined,
-    createdAt: row.createdAt ?? row.created_at,
-    updatedAt: row.updatedAt ?? row.updated_at,
+    id: String(row.id ?? ''),
+    userId: String(row.userId ?? row.user_id ?? ''),
+    userDisplayName: String(row.userDisplayName ?? row.user_display_name ?? 'User'),
+    courseCode: String(row.courseCode ?? row.course_code ?? ''),
+    courseName: String(row.courseName ?? row.course_name ?? ''),
+    sectionOffered: String(row.sectionOffered ?? row.section_offered ?? ''),
+    sectionWanted: String(row.sectionWanted ?? row.section_wanted ?? ''),
+    action: row.action as 'offer' | 'request',
+    status: row.status as 'open' | 'pending' | 'completed' | 'cancelled',
+    description: row.description as string | undefined,
+    contactPhone: row.contactPhone
+      ? String(row.contactPhone)
+      : row.contact_phone
+        ? String(row.contact_phone)
+        : undefined,
+    createdAt: String(row.createdAt ?? row.created_at ?? ''),
+    updatedAt: String(row.updatedAt ?? row.updated_at ?? ''),
   };
 }
