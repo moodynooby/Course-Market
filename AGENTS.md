@@ -25,7 +25,11 @@ bun run db:generate      # Generate Drizzle schema
 bun run db:migrate       # Run database migrations
 bun run db:studio        # Open Drizzle Studio
 
-# Testing: No test framework currently configured
+# Testing (Vitest + Testing Library)
+bun run test             # Run tests in watch mode
+bun run test:run         # Run tests once (CI)
+bun run test:ui          # Run tests with UI
+bun run test:coverage    # Run tests with coverage report
 ```
 
 ## Code Style Guidelines
@@ -79,6 +83,7 @@ src/
 ├── types/        # TypeScript type definitions
 ├── config/       # Centralized application configurations and accessors
 └── assets/       # Static assets
+
 ```
 
 ### Database & Netlify Functions
@@ -92,6 +97,7 @@ src/
 - Always run `bun run lint:fix` and `bun run format` before committing
 - Check `eslint.config.js` for linting rules
 - Uses React Compiler (babel-plugin-react-compiler)
-- No test framework configured; add Vitest if needed
+- Test framework: Vitest + Testing Library (see `TESTING.md` for details)
 - DONT BE AFRAID OF CHANGES OR BACKWARDS COMPATIBILTY THIS IS A TOOL NOT USED BY ANYONE ELSE
 - ALWAYS UPDATE AGENTS.MD AFTER A ARCHITECTRAL CHANGE
+- Recent Audits are kept in the folder Audits For additional context
