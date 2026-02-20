@@ -18,96 +18,23 @@ import {
   Avatar,
   Divider,
   FormHelperText,
-  LinearProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
 } from '@mui/material';
-import {
-  Save,
-  Phone,
-  Palette,
-  AccountCircle,
-  Psychology,
-  CloudOff,
-  DeleteForever,
-} from '@mui/icons-material';
+import { Save, Phone, Palette, Psychology, CloudOff, DeleteForever } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
-import type { Preferences } from '../types';
-
-export type LLMProvider = 'webllm' | 'wllama' | 'openai' | 'anthropic' | 'custom';
-
-interface BYOKConfig {
-  provider: LLMProvider;
-  apiKey: string;
-  apiBaseUrl?: string;
-  model?: string;
-  temperature?: number;
-  maxTokens?: number;
-}
-
-const PROVIDER_OPTIONS: {
-  value: LLMProvider;
-  label: string;
-  defaultModel: string;
-  urlPlaceholder: string;
-}[] = [
-  {
-    value: 'webllm',
-    label: 'WebLLM (Browser-based, Free)',
-    defaultModel: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
-    urlPlaceholder: 'Not required',
-  },
-  {
-    value: 'wllama',
-    label: 'Wllama (Fallback, No WebGPU Required)',
-    defaultModel: 'TinyLlama-1.1B-Chat-v1.0.Q4_K_M.gguf',
-    urlPlaceholder: 'Not required',
-  },
-  {
-    value: 'openai',
-    label: 'OpenAI API',
-    defaultModel: 'gpt-3.5-turbo',
-    urlPlaceholder: 'https://api.openai.com/v1/chat/completions',
-  },
-  {
-    value: 'anthropic',
-    label: 'Anthropic Claude',
-    defaultModel: 'claude-3-haiku-20240307',
-    urlPlaceholder: 'https://api.anthropic.com/v1/messages',
-  },
-  {
-    value: 'custom',
-    label: 'Custom OpenAI-compatible API',
-    defaultModel: '',
-    urlPlaceholder: 'https://your-api.com/v1/chat/completions',
-  },
-];
-
-const DEFAULT_PREFERENCES: Preferences = {
-  userId: '',
-  displayName: '',
-  preferredStartTime: '08:00',
-  preferredEndTime: '17:00',
-  maxGapMinutes: 60,
-  preferConsecutiveDays: true,
-  preferMorning: false,
-  preferAfternoon: false,
-  maxCredits: 18,
-  minCredits: 12,
-  avoidDays: [],
-  excludeInstructors: [],
-};
-
-const DEFAULT_LLM_CONFIG: BYOKConfig = {
-  provider: 'webllm',
-  apiKey: '',
-  model: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
-  temperature: 0.7,
-  maxTokens: 1024,
-};
+import { DEFAULT_PREFERENCES, savePreferences, getPreferences } from '../config/userConfig';
+import {
+  saveLlmConfig,
+  getLlmConfig,
+  DEFAULT_LLM_CONFIG,
+  PROVIDER_OPTIONS,
+  type BYOKConfig,
+} from '../config/llmConfig';
+import type { Preferences, LLMProvider } from '../types';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -119,55 +46,44 @@ export default function SettingsPage() {
   const [preferences, setPreferences] = useState<Preferences>(DEFAULT_PREFERENCES);
   const [llmConfig, setLlmConfig] = useState<BYOKConfig>(DEFAULT_LLM_CONFIG);
 
-  const savePreferences = useCallback(() => {
-    localStorage.setItem('course_market_preferences', JSON.stringify(preferences));
+  const savePreferencesHandler = useCallback(() => {
+    savePreferences(preferences);
     setMode(preferences.theme || 'system');
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   }, [preferences, setMode]);
 
-  const saveLlmConfig = useCallback(() => {
+  const saveLlmConfigHandler = useCallback(() => {
     if (llmConfig.provider !== 'webllm' && !llmConfig.apiKey) {
       return false;
     }
     if (llmConfig.provider === 'custom' && !llmConfig.apiBaseUrl) {
       return false;
     }
-    localStorage.setItem('llm-byok-config', JSON.stringify(llmConfig));
+    saveLlmConfig(llmConfig);
     setLlmSaved(true);
     setTimeout(() => setLlmSaved(false), 3000);
     return true;
   }, [llmConfig]);
 
   useEffect(() => {
-    const savedPrefs = localStorage.getItem('course_market_preferences');
-    if (savedPrefs) {
-      try {
-        setPreferences(JSON.parse(savedPrefs));
-      } catch {}
-    }
-
-    const savedLlm = localStorage.getItem('llm-byok-config');
-    if (savedLlm) {
-      try {
-        setLlmConfig(JSON.parse(savedLlm));
-      } catch {}
-    }
+    setPreferences(getPreferences());
+    setLlmConfig(getLlmConfig());
   }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      savePreferences();
+      savePreferencesHandler();
     }, 1000);
     return () => clearTimeout(timer);
-  }, [preferences, savePreferences]);
+  }, [preferences, savePreferencesHandler]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      saveLlmConfig();
+      saveLlmConfigHandler();
     }, 1000);
     return () => clearTimeout(timer);
-  }, [llmConfig, saveLlmConfig]);
+  }, [llmConfig, saveLlmConfigHandler]);
 
   const handleClearData = () => {
     localStorage.clear();

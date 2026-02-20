@@ -1,6 +1,7 @@
 import type { TradePost } from '../types';
+import { ENV } from '../config/devConfig';
 
-const NETLIFY_FUNCTION_URL = import.meta.env.VITE_NETLIFY_FUNCTION_URL;
+const NETLIFY_FUNCTION_URL = ENV.NETLIFY_FUNCTION_URL;
 
 function getBaseUrl(): string {
   if (NETLIFY_FUNCTION_URL) return NETLIFY_FUNCTION_URL;

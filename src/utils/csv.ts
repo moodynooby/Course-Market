@@ -5,7 +5,7 @@ import {
   HEADER_MAPPING,
   parseDays,
   parseTime,
-} from '../constants/csvHeaders';
+} from '../config/csvConfig';
 import { generateId } from './id';
 
 // --- Course Directory format helpers ---
@@ -152,7 +152,6 @@ export function parseCSV(csvContent: string): CSVParseResult {
 
   if (papaErrors.length > 0 && data.length === 0) {
     return {
-      success: false,
       courses: [],
       sections: [],
       errors: papaErrors.map((e) => `Row ${e.row ?? '?'}: ${e.message}`),
@@ -162,7 +161,6 @@ export function parseCSV(csvContent: string): CSVParseResult {
 
   if (data.length === 0) {
     return {
-      success: false,
       courses: [],
       sections: [],
       errors: ['CSV file must contain a header row and at least one data row'],
@@ -243,7 +241,6 @@ function parseCourseDirectoryFormat(
           timeSlots: ps.timeSlots,
           capacity: 30,
           enrolled: 0,
-          term: term || undefined,
         };
         sections.push(section);
       }
@@ -253,7 +250,6 @@ function parseCourseDirectoryFormat(
   }
 
   return {
-    success: courses.length > 0,
     courses,
     sections,
     errors: [],
@@ -270,7 +266,6 @@ function parseStandardFormat(
 
   if (!valid) {
     return {
-      success: false,
       courses: [],
       sections: [],
       errors: headerErrors,
@@ -333,7 +328,6 @@ function parseStandardFormat(
         timeSlots,
         capacity: 30,
         enrolled: 0,
-        term: parsed.term,
       };
 
       sections.push(section);
@@ -343,7 +337,6 @@ function parseStandardFormat(
   }
 
   return {
-    success: courses.length > 0,
     courses,
     sections,
     errors: [],

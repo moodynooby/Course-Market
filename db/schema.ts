@@ -103,6 +103,9 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   }),
   courses: many(courses),
   trades: many(trades),
+  userSelections: many(userSelections),
+  sentContactRequests: many(contactRequests, { relationName: 'sentRequests' }),
+  receivedContactRequests: many(contactRequests, { relationName: 'receivedRequests' }),
 }));
 
 export const userPreferencesRelations = relations(userPreferences, ({ one }) => ({
@@ -120,11 +123,12 @@ export const coursesRelations = relations(courses, ({ one, many }) => ({
   sections: many(sections),
 }));
 
-export const sectionsRelations = relations(sections, ({ one }) => ({
+export const sectionsRelations = relations(sections, ({ one, many }) => ({
   course: one(courses, {
     fields: [sections.courseId],
     references: [courses.id],
   }),
+  userSelections: many(userSelections),
 }));
 
 export const userSelectionsRelations = relations(userSelections, ({ one }) => ({
@@ -138,17 +142,24 @@ export const userSelectionsRelations = relations(userSelections, ({ one }) => ({
   }),
 }));
 
-export const tradesRelations = relations(trades, ({ one }) => ({
+export const tradesRelations = relations(trades, ({ one, many }) => ({
   user: one(users, {
     fields: [trades.userId],
     references: [users.id],
   }),
+  contactRequests: many(contactRequests),
 }));
 
 export const contactRequestsRelations = relations(contactRequests, ({ one }) => ({
   fromUser: one(users, {
     fields: [contactRequests.fromUserId],
     references: [users.id],
+    relationName: 'sentRequests',
+  }),
+  toUser: one(users, {
+    fields: [contactRequests.toUserId],
+    references: [users.id],
+    relationName: 'receivedRequests',
   }),
   trade: one(trades, {
     fields: [contactRequests.tradeId],

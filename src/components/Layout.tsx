@@ -28,13 +28,12 @@ import {
   Settings,
   DarkMode,
   LightMode,
-  Logout,
-  Person,
   Upload,
   SettingsBrightness,
 } from '@mui/icons-material';
 import { useThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { APP_CONFIG } from '../config/appConfig';
 import ImportDialog from './ImportDialog';
 
 const drawerWidth = 240;
@@ -142,7 +141,7 @@ export default function Layout() {
           </ToggleButton>
         </ToggleButtonGroup>
         <Button
-          href="mailto:manasdoshi27@gmail.com"
+          href={`mailto:${APP_CONFIG.SUPPORT_EMAIL}`}
           target="_blank"
           variant="outlined"
           size="small"
@@ -157,7 +156,7 @@ export default function Layout() {
           Support
         </Button>
         <Button
-          href="https://ko-fi.com/U7U51S87CX"
+          href={APP_CONFIG.KOFI_URL}
           target="_blank"
           variant="outlined"
           size="small"

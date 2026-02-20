@@ -1,7 +1,4 @@
 # AGENTS.md - Agent Coding Guidelines
-
-This file provides guidelines for AI agents working in this repository.
-
 ## Project Overview
 
 - **Type**: React + TypeScript web application (Vite)
@@ -80,7 +77,7 @@ src/
 ├── services/     # API and external service integrations
 ├── utils/        # Pure utility functions
 ├── types/        # TypeScript type definitions
-├── constants/    # Application constants
+├── config/       # Centralized application configurations and accessors
 └── assets/       # Static assets
 ```
 
@@ -88,7 +85,7 @@ src/
 
 - Schema in `db/schema.ts` using Drizzle ORM
 - Netlify functions in `netlify/functions/`
-- Access environment variables via `process.env`
+- Access environment variables via `ENV` in `src/config` (Do not use `process.env` or `import.meta.env` directly in components/services)
 
 ## Notes for Agents
 
@@ -96,3 +93,5 @@ src/
 - Check `eslint.config.js` for linting rules
 - Uses React Compiler (babel-plugin-react-compiler)
 - No test framework configured; add Vitest if needed
+- DONT BE AFRAID OF CHANGES OR BACKWARDS COMPATIBILTY THIS IS A TOOL NOT USED BY ANYONE ELSE
+- ALWAYS UPDATE AGENTS.MD AFTER A ARCHITECTRAL CHANGE

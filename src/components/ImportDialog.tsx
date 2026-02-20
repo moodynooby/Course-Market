@@ -27,11 +27,11 @@ import {
   Warning,
   CloudUpload,
   Close,
-  HelpOutline,
 } from '@mui/icons-material';
 import { parseCSV } from '../utils/csv';
-import { saveCourses } from '../services/database';
+import { saveCourses } from '../config/storageConfig';
 import { useNavigate } from 'react-router-dom';
+import { APP_CONFIG } from '../config/appConfig';
 import type { Course, Section } from '../types';
 
 interface ImportDialogProps {
@@ -160,7 +160,7 @@ export default function ImportDialog({ open, onClose }: ImportDialogProps) {
               Supported CSV Formats - Most of Ahmedabad University format
             </Typography>
             <Button
-              href="mailto:doshimanas27@gmail.com"
+              href={`mailto:${APP_CONFIG.SUPPORT_EMAIL}`}
               variant="contained"
               component="label"
               startIcon={<Support />}

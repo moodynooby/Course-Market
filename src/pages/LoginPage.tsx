@@ -47,7 +47,9 @@ export default function LoginPage() {
       await login(displayName, phoneNumber);
       navigate('/');
     } catch (err) {
-      console.error('Login failed:', err);
+      if (import.meta.env.DEV) {
+        console.error('Login failed:', err);
+      }
     }
   };
 

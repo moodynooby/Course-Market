@@ -1,7 +1,7 @@
-// Database service using localStorage (courses & user only — trades use the DB via tradesApi)
+// Storage service using localStorage (courses & user only — trades use the DB via tradesApi)
 
 import type { Course, Section } from '../types';
-import { STORAGE_KEYS } from '../constants/storageKeys';
+import { STORAGE_KEYS } from './userConfig';
 
 // Courses functions
 export function saveCourses(courses: Course[], sections: Section[]) {

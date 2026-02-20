@@ -19,7 +19,8 @@ import {
   Skeleton,
 } from '@mui/material';
 import { ExpandMore, ExpandLess, Schedule, Person, Warning } from '@mui/icons-material';
-import { getCourses } from '../services/database';
+import { getCourses } from '../config/storageConfig';
+import { STORAGE_KEYS } from '../config/userConfig';
 import type { Course, Section } from '../types';
 import { formatTime, hasSectionConflict } from '../utils/schedule';
 
@@ -43,7 +44,7 @@ export default function CoursesPage() {
     setLoading(false);
 
     // Load selections from localStorage
-    const saved = localStorage.getItem('course-selections');
+    const saved = localStorage.getItem(STORAGE_KEYS.COURSE_SELECTIONS);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -53,7 +54,10 @@ export default function CoursesPage() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('course-selections', JSON.stringify(Object.fromEntries(selectedSections)));
+    localStorage.setItem(
+      STORAGE_KEYS.COURSE_SELECTIONS,
+      JSON.stringify(Object.fromEntries(selectedSections)),
+    );
   }, [selectedSections]);
 
   const subjects = useMemo(() => {

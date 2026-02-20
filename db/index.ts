@@ -12,14 +12,12 @@ export const db = drizzle({
 
 // Database utility functions
 export async function getUserByEmail(email: string) {
-  const { users } = schema;
   return await db.query.users.findFirst({
     where: (users, { eq }) => eq(users.email, email),
   });
 }
 
 export async function getUserByProviderId(provider: string, providerId: string) {
-  const { users } = schema;
   return await db.query.users.findFirst({
     where: (users, { and, eq }) => and(
       eq(users.provider, provider),
@@ -29,18 +27,16 @@ export async function getUserByProviderId(provider: string, providerId: string) 
 }
 
 export async function createUser(data: schema.NewUser) {
-  const { users } = schema;
-  const [result] = await db.insert(users).values(data).returning();
+  const [result] = await db.insert(schema.users).values(data).returning();
   return result;
 }
 
 export async function updateUserPreferences(userId: number, preferences: Partial<schema.UserPreference>) {
-  const { userPreferences } = schema;
   const [result] = await db
-    .insert(userPreferences)
+    .insert(schema.userPreferences)
     .values({ ...preferences, userId })
     .onConflictDoUpdate({
-      target: userPreferences.userId,
+      target: schema.userPreferences.userId,
       set: { ...preferences, updatedAt: new Date() },
     })
     .returning();
@@ -48,27 +44,23 @@ export async function updateUserPreferences(userId: number, preferences: Partial
 }
 
 export async function getUserPreferences(userId: number) {
-  const { userPreferences } = schema;
   return await db.query.userPreferences.findFirst({
     where: (pref, { eq }) => eq(pref.userId, userId),
   });
 }
 
 export async function createCourseWithSections(userId: number, courseData: schema.Course, sectionsData: schema.Section[]) {
-  const { courses, sections } = schema;
-  
-  const [course] = await db.insert(courses).values({ ...courseData, userId }).returning();
-  
+  const [course] = await db.insert(schema.courses).values({ ...courseData, userId }).returning();
+
   if (sectionsData.length > 0) {
     const sectionsWithCourseId = sectionsData.map(section => ({ ...section, courseId: course.id }));
-    await db.insert(sections).values(sectionsWithCourseId);
+    await db.insert(schema.sections).values(sectionsWithCourseId);
   }
-  
+
   return course;
 }
 
 export async function getUserCoursesWithSections(userId: number) {
-  const { courses, sections } = schema;
   return await db.query.courses.findMany({
     where: (courses, { eq }) => eq(courses.userId, userId),
     with: {
@@ -78,7 +70,6 @@ export async function getUserCoursesWithSections(userId: number) {
 }
 
 export async function getUserSelectedSections(userId: number) {
-  const { userSelections, sections } = schema;
   return await db.query.userSelections.findMany({
     where: (sel, { eq }) => eq(sel.userId, userId),
     with: {
@@ -92,13 +83,11 @@ export async function getUserSelectedSections(userId: number) {
 }
 
 export async function createTrade(data: schema.Trade) {
-  const { trades } = schema;
-  const [result] = await db.insert(trades).values(data).returning();
+  const [result] = await db.insert(schema.trades).values(data).returning();
   return result;
 }
 
 export async function getUserTrades(userId: number) {
-  const { trades } = schema;
   return await db.query.trades.findMany({
     where: (trades, { eq }) => eq(trades.userId, userId),
     orderBy: (trades, { desc }) => desc(trades.createdAt),
@@ -106,7 +95,6 @@ export async function getUserTrades(userId: number) {
 }
 
 export async function getAllTrades() {
-  const { trades } = schema;
   return await db.query.trades.findMany({
     with: {
       user: true,
@@ -116,7 +104,6 @@ export async function getAllTrades() {
 }
 
 export async function createContactRequest(data: schema.ContactRequest) {
-  const { contactRequests } = schema;
-  const [result] = await db.insert(contactRequests).values(data).returning();
+  const [result] = await db.insert(schema.contactRequests).values(data).returning();
   return result;
 }

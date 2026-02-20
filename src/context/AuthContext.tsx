@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { STORAGE_KEYS } from '../config/userConfig';
 
 // Types
 export interface AppUser {
@@ -36,7 +37,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Check for existing session on mount
   useEffect(() => {
-    const saved = localStorage.getItem('app-user');
+    const saved = localStorage.getItem(STORAGE_KEYS.APP_USER);
     if (saved) {
       try {
         setUser(JSON.parse(saved));
@@ -54,7 +55,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         phoneNumber,
       };
       setUser(user);
-      localStorage.setItem('app-user', JSON.stringify(user));
+      localStorage.setItem(STORAGE_KEYS.APP_USER, JSON.stringify(user));
     } catch (err) {
       setError('Login failed. Please try again.');
     } finally {
@@ -64,7 +65,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signOut = async () => {
     setUser(null);
-    localStorage.removeItem('app-user');
+    localStorage.removeItem(STORAGE_KEYS.APP_USER);
   };
 
   return (

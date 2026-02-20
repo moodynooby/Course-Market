@@ -9,10 +9,6 @@ export function formatTime(time24: string): string {
   return `${displayHour}:${minutes} ${period}`;
 }
 
-export function parseTimeToInt(time: string): number {
-  return parseInt(time.replace(':', ''), 10);
-}
-
 export function hasSectionConflict(section1: Section, section2: Section): boolean {
   for (const slot1 of section1.timeSlots) {
     for (const slot2 of section2.timeSlots) {
@@ -47,27 +43,6 @@ export function hasTimeConflict(slot1: TimeSlot, slot2: TimeSlot): boolean {
   const end2 = parseInt(slot2.endTime.replace(':', ''), 10);
 
   return start1 < end2 && start2 < end1;
-}
-
-export function checkSectionConflicts(sections: Section[]): string[] {
-  const conflicts: string[] = [];
-
-  for (let i = 0; i < sections.length; i++) {
-    for (let j = i + 1; j < sections.length; j++) {
-      const section1 = sections[i];
-      const section2 = sections[j];
-
-      for (const slot1 of section1.timeSlots) {
-        for (const slot2 of section2.timeSlots) {
-          if (hasTimeConflict(slot1, slot2)) {
-            conflicts.push(`${section1.sectionNumber} and ${section2.sectionNumber} conflict`);
-          }
-        }
-      }
-    }
-  }
-
-  return conflicts;
 }
 
 export function calculateScheduleScore(schedule: Schedule, preferences: Preferences): number {
@@ -172,87 +147,4 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
   }
 
   return Math.max(0, Math.min(100, score));
-}
-
-export function generateAllSchedules(
-  courses: Course[],
-  sections: Section[],
-  selectedSections: Map<string, string>,
-  preferences: Preferences,
-): Schedule[] {
-  const schedules: Schedule[] = [];
-
-  const coursesWithSections = courses.filter((course) => {
-    const sectionId = selectedSections.get(course.id);
-    return sectionId && sections.find((s) => s.id === sectionId);
-  });
-
-  if (coursesWithSections.length === 0) {
-    return schedules;
-  }
-
-  function generateCombinations(index: number, currentSections: Section[]): void {
-    if (index >= coursesWithSections.length) {
-      const conflicts = checkSectionConflicts(currentSections);
-      const totalCredits = currentSections.reduce((sum, s) => {
-        const course = courses.find((c) => c.id === s.courseId);
-        return sum + (course?.credits || 3);
-      }, 0);
-
-      const schedule: Schedule = {
-        id: generateId(),
-        name: `Schedule ${schedules.length + 1}`,
-        sections: [...currentSections],
-        totalCredits,
-        score: 0,
-        conflicts,
-      };
-
-      schedule.score = calculateScheduleScore(schedule, preferences);
-      schedules.push(schedule);
-      return;
-    }
-
-    const course = coursesWithSections[index];
-    const courseSections = sections.filter((s) => s.courseId === course.id);
-    const selectedSectionId = selectedSections.get(course.id);
-
-    if (selectedSectionId) {
-      const selectedSection = courseSections.find((s) => s.id === selectedSectionId);
-      if (selectedSection) {
-        const hasConflict = currentSections.some((current) =>
-          current.timeSlots.some((slot1) =>
-            selectedSection.timeSlots.some((slot2) => hasTimeConflict(slot1, slot2)),
-          ),
-        );
-
-        if (!hasConflict) {
-          generateCombinations(index + 1, [...currentSections, selectedSection]);
-        }
-      }
-    } else {
-      for (const section of courseSections) {
-        const hasConflict = currentSections.some((current) =>
-          current.timeSlots.some((slot1) =>
-            section.timeSlots.some((slot2) => hasTimeConflict(slot1, slot2)),
-          ),
-        );
-
-        if (!hasConflict) {
-          generateCombinations(index + 1, [...currentSections, section]);
-        }
-      }
-    }
-  }
-
-  generateCombinations(0, []);
-
-  schedules.sort((a, b) => b.score - a.score);
-
-  return schedules;
-}
-
-export function getBestSchedule(schedules: Schedule[]): Schedule | null {
-  if (schedules.length === 0) return null;
-  return schedules[0];
 }

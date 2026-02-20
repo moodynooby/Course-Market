@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useMediaQuery } from '@mui/material';
 import {
   Box,
@@ -25,14 +25,16 @@ import {
   DialogActions,
 } from '@mui/material';
 import { PlayArrow, Psychology, Schedule as ScheduleIcon } from '@mui/icons-material';
-import { getCourses } from '../services/database';
+import { getCourses } from '../config/storageConfig';
+import { STORAGE_KEYS, DEFAULT_PREFERENCES, getPreferences } from '../config/userConfig';
+import { getLlmConfig } from '../config/llmConfig';
 import { optimizeWithLLM } from '../services/llm';
-import type { Course, Section, Schedule, Preferences, LLMProvider, LLMConfig } from '../types';
+import type { Course, Section, Schedule, LLMConfig } from '../types';
 import { formatTime, checkConflicts } from '../utils/schedule';
 
 function generateCurrentSchedule(): Schedule | null {
   const { courses, sections } = getCourses();
-  const saved = localStorage.getItem('course-selections');
+  const saved = localStorage.getItem(STORAGE_KEYS.COURSE_SELECTIONS);
 
   if (!saved) return null;
 
@@ -79,13 +81,45 @@ export default function SchedulePage() {
   const [dismissedMobileWarning, setDismissedMobileWarning] = useState(false);
   const [webgpuWarningOpen, setWebgpuWarningOpen] = useState(false);
 
-  useEffect(() => {
+  const refreshSchedule = useCallback(() => {
     const schedule = generateCurrentSchedule();
     setCurrentSchedule(schedule);
     setAllCourses(getCourses().courses);
-
-    setWebllmAvailable('gpu' in navigator);
   }, []);
+
+  useEffect(() => {
+    refreshSchedule();
+    setWebllmAvailable('gpu' in navigator);
+
+    // Listen for storage changes (works across tabs/windows)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEYS.COURSE_SELECTIONS) {
+        refreshSchedule();
+      }
+    };
+
+    // Listen for page visibility changes (when user switches tabs/apps)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshSchedule();
+      }
+    };
+
+    // Listen for focus to refresh when user returns to this tab
+    const handleFocus = () => {
+      refreshSchedule();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [refreshSchedule]);
 
   const handleOptimize = async () => {
     if (!currentSchedule) {
@@ -98,40 +132,14 @@ export default function SchedulePage() {
     setInitProgress('');
 
     try {
-      const storedPrefs = localStorage.getItem('course_market_preferences');
-      const preferences: Preferences = storedPrefs
-        ? JSON.parse(storedPrefs)
-        : {
-            userId: '',
-            displayName: '',
-            preferredStartTime: '08:00',
-            preferredEndTime: '17:00',
-            maxGapMinutes: 60,
-            preferConsecutiveDays: true,
-            preferMorning: false,
-            preferAfternoon: false,
-            maxCredits: 18,
-            minCredits: 12,
-            avoidDays: [],
-            excludeInstructors: [],
-          };
+      const preferences = getPreferences();
 
       const llmConfig: LLMConfig = {
-        provider: 'webllm',
+        ...getLlmConfig(),
         initProgressCallback: (report) => {
           setInitProgress(`${report.text} (${report.progress.toFixed(0)}%)`);
         },
       };
-
-      const savedLlm = localStorage.getItem('llm-byok-config');
-      if (savedLlm) {
-        try {
-          const config = JSON.parse(savedLlm);
-          Object.assign(llmConfig, config);
-        } catch (e) {
-          console.warn('Failed to parse BYOK config');
-        }
-      }
 
       const config: Record<string, unknown> = {
         model: llmConfig.model,

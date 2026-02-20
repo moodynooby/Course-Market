@@ -5,8 +5,6 @@ export interface Course {
   subject: string;
   credits: number;
   description?: string;
-  sourceCsv?: string;
-  importedAt?: string;
 }
 
 export interface Section {
@@ -17,7 +15,6 @@ export interface Section {
   timeSlots: TimeSlot[];
   capacity: number;
   enrolled: number;
-  term?: string;
 }
 
 export interface TimeSlot {
@@ -71,7 +68,6 @@ export interface TradePost {
 }
 
 export interface CSVParseResult {
-  success: boolean;
   courses: Course[];
   sections: Section[];
   errors: string[];

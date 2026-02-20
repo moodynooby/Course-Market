@@ -4,27 +4,24 @@
 import { CreateMLCEngine, type MLCEngineInterface } from '@mlc-ai/web-llm';
 import { Wllama } from '@wllama/wllama';
 import { getGPUTier } from 'detect-gpu';
-import type { LLMProvider, LLMConfig, Schedule, Preferences } from '../types';
+import type { Schedule, Preferences } from '../types';
+import { ENV } from '../config/devConfig';
+import {
+  LLM_MODELS,
+  LLM_CONSTANTS,
+  DEFAULT_LLM_CONFIG,
+  getDefaultModel as getModelFromConfig,
+  type BYOKConfig,
+} from '../config/llmConfig';
+import type { LLMProvider } from '../types';
 
-export { LLMProvider, LLMConfig };
-
-export const LLM_MODELS = {
-  webllm: {
-    laptop: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
-    mobile: 'SmolLM-1.7B-Instruct-q4f16_1-MLC',
-  },
-  wllama: {
-    laptop: 'TinyLlama-1.1B-Chat-v1.0.Q4_K_M.gguf',
-    mobile: 'TinyLlama-1.1B-Chat-v1.0.Q4_K_M.gguf',
-  },
-} as const;
+export { LLMProvider };
+export type LLMConfig = BYOKConfig;
 
 export async function getDefaultModel(provider: 'webllm' | 'wllama'): Promise<string> {
   const gpuTier = await getGPUTier();
   const isMobile = gpuTier.isMobile || gpuTier.tier < 2;
-  const models = LLM_MODELS[provider];
-  if (!models) return '';
-  return isMobile ? models.mobile : models.laptop;
+  return getModelFromConfig(provider, isMobile);
 }
 
 interface LLMMessage {
@@ -78,12 +75,7 @@ class UnifiedLLMService {
   private wllama: Wllama | null = null;
   private isInitialized = false;
   private isLoading = false;
-  private config: LLMConfig = {
-    provider: 'webllm',
-    model: '',
-    temperature: 0.7,
-    maxTokens: 1024,
-  };
+  private config: LLMConfig = DEFAULT_LLM_CONFIG;
 
   async initialize(config?: Partial<LLMConfig>): Promise<boolean> {
     if (this.isInitialized || this.isLoading) {
@@ -102,11 +94,15 @@ class UnifiedLLMService {
           return await this.initializeWllama();
         default:
           this.isInitialized = true;
-          console.warn(`${this.config.provider} configured`);
+          if (ENV.IS_DEV) {
+            console.warn(`${this.config.provider} configured`);
+          }
           return true;
       }
     } catch (error) {
-      console.error('Failed to initialize LLM:', error);
+      if (ENV.IS_DEV) {
+        console.error('Failed to initialize LLM:', error);
+      }
       this.isInitialized = false;
       return false;
     } finally {
@@ -128,7 +124,9 @@ class UnifiedLLMService {
     });
 
     this.isInitialized = true;
-    console.warn('WebLLM initialized with model:', model);
+    if (ENV.IS_DEV) {
+      console.warn('WebLLM initialized with model:', model);
+    }
     return true;
   }
 
@@ -139,10 +137,8 @@ class UnifiedLLMService {
     const modelPath = this.getWllamaModelPath(model);
 
     this.wllama = new Wllama({
-      'single-thread/wllama.wasm':
-        'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.7/single-thread/wllama.wasm',
-      'multi-thread/wllama.wasm':
-        'https://cdn.jsdelivr.net/npm/@wllama/wllama@2.3.7/multi-thread/wllama.wasm',
+      'single-thread/wllama.wasm': LLM_CONSTANTS.WLLAMA_WASM['single-thread'],
+      'multi-thread/wllama.wasm': LLM_CONSTANTS.WLLAMA_WASM['multi-thread'],
     });
 
     await this.wllama.loadModelFromUrl(modelPath, {
@@ -157,7 +153,9 @@ class UnifiedLLMService {
     });
 
     this.isInitialized = true;
-    console.warn('Wllama initialized with model:', model);
+    if (ENV.IS_DEV) {
+      console.warn('Wllama initialized with model:', model);
+    }
     return true;
   }
 
@@ -183,7 +181,9 @@ class UnifiedLLMService {
           return await this.callExternalAPI(prompt, systemPrompt);
       }
     } catch (error) {
-      console.error('LLM completion failed:', error);
+      if (ENV.IS_DEV) {
+        console.error('LLM completion failed:', error);
+      }
       throw new Error(`Failed to generate completion: ${(error as Error).message}`);
     }
   }
@@ -244,10 +244,10 @@ class UnifiedLLMService {
 
     switch (provider) {
       case 'openai':
-        url = url || 'https://api.openai.com/v1/chat/completions';
+        url = url || LLM_CONSTANTS.API_DEFAULTS.OPENAI;
         headers['Authorization'] = `Bearer ${apiKey}`;
         body = {
-          model: model || 'gpt-3.5-turbo',
+          model: model || LLM_CONSTANTS.DEFAULT_MODELS.OPENAI,
           messages,
           temperature,
           max_tokens: maxTokens,
@@ -255,13 +255,13 @@ class UnifiedLLMService {
         break;
 
       case 'anthropic':
-        url = url || 'https://api.anthropic.com/v1/messages';
+        url = url || LLM_CONSTANTS.API_DEFAULTS.ANTHROPIC;
         headers['x-api-key'] = apiKey;
-        headers['anthropic-version'] = '2023-06-01';
+        headers['anthropic-version'] = LLM_CONSTANTS.ANTHROPIC_API_VERSION;
         const systemMessage = messages.find((m) => m.role === 'system');
         const userMessages = messages.filter((m) => m.role !== 'system');
         body = {
-          model: model || 'claude-3-haiku-20240307',
+          model: model || LLM_CONSTANTS.DEFAULT_MODELS.ANTHROPIC,
           max_tokens: maxTokens || 1024,
           system: systemMessage?.content,
           messages: userMessages.map((m) => ({
