@@ -5,7 +5,7 @@ import { neon } from '@netlify/neon';
 import { drizzle } from 'drizzle-orm/neon-http';
 import { eq, desc } from 'drizzle-orm';
 import * as schema from '../../db/schema';
-import { validateToken, type AuthUser } from './lib/auth';
+import { validateToken } from './lib/auth';
 
 // Initialize database connection once at module level (not per request)
 const client = neon();

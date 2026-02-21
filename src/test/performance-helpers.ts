@@ -18,8 +18,6 @@ export const makeSection = (overrides: Partial<Section>): Section => ({
 });
 
 export const basePreferences: Preferences = {
-  userId: 'u1',
-  displayName: 'User',
   preferredStartTime: '08:00',
   preferredEndTime: '17:00',
   maxGapMinutes: 60,

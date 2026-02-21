@@ -35,9 +35,6 @@ export interface Schedule {
 }
 
 export interface Preferences {
-  userId: string;
-  displayName: string;
-  email?: string;
   preferredStartTime: string;
   preferredEndTime: string;
   maxGapMinutes: number;
@@ -53,8 +50,10 @@ export interface Preferences {
 
 export interface TradePost {
   id: string;
-  userId: string;
+  auth0UserId: string;
   userDisplayName: string;
+  userEmail: string;
+  userAvatarUrl?: string;
   courseCode: string;
   courseName: string;
   sectionOffered: string;

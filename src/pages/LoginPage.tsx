@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -6,52 +6,37 @@ import {
   CardContent,
   Typography,
   Button,
-  TextField,
-  Alert,
   CircularProgress,
   Avatar,
-  Stack,
 } from '@mui/material';
-import { School, PhoneAndroid, Person } from '@mui/icons-material';
-import { useAuth } from '../context/AuthContext';
+import { School } from '@mui/icons-material';
+import { useAuth } from '../hooks/useAuth';
 
 export default function LoginPage() {
-  const [displayName, setDisplayName] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [errors, setErrors] = useState({ name: '', phone: '' });
+  const { signIn, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
-  const { login, loading, error } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrors({ name: '', phone: '' });
-
-    // Validation
-    if (!displayName.trim()) {
-      setErrors((prev) => ({ ...prev, name: 'Name is required' }));
-      return;
-    }
-
-    if (!phoneNumber.trim()) {
-      setErrors((prev) => ({ ...prev, phone: 'Phone number is required' }));
-      return;
-    }
-
-    const phoneRegex = /^\+?[\d\s\-\(\)]{10,}$/;
-    if (!phoneRegex.test(phoneNumber)) {
-      setErrors((prev) => ({ ...prev, phone: 'Please enter a valid phone number' }));
-      return;
-    }
-
-    try {
-      await login(displayName, phoneNumber);
+  useEffect(() => {
+    if (isAuthenticated) {
       navigate('/');
-    } catch (err) {
-      if (import.meta.env.DEV) {
-        console.error('Login failed:', err);
-      }
     }
-  };
+  }, [isAuthenticated, navigate]);
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          bgcolor: 'background.default',
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -88,63 +73,23 @@ export default function LoginPage() {
               AuraIsHub
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Sign in to access your courses and connect with other students
+              Sign in to access course trading
             </Typography>
           </Box>
 
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
+          <Button
+            fullWidth
+            variant="contained"
+            size="large"
+            onClick={signIn}
+            sx={{ py: 1.5, mb: 2 }}
+          >
+            Sign In with Auth0
+          </Button>
 
-          <Box component="form" onSubmit={handleSubmit}>
-            <Stack spacing={2} sx={{ mb: 3 }}>
-              <TextField
-                fullWidth
-                label="Full Name"
-                placeholder="John Doe"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                error={!!errors.name}
-                helperText={errors.name}
-                disabled={loading}
-                InputProps={{
-                  startAdornment: <Person sx={{ mr: 1, color: 'text.secondary' }} />,
-                }}
-              />
-
-              <TextField
-                fullWidth
-                label="Phone Number"
-                placeholder="+1 (555) 123-4567"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                error={!!errors.phone}
-                helperText={errors.phone}
-                disabled={loading}
-                InputProps={{
-                  startAdornment: <PhoneAndroid sx={{ mr: 1, color: 'text.secondary' }} />,
-                }}
-              />
-
-              <Button
-                fullWidth
-                type="submit"
-                variant="contained"
-                size="large"
-                disabled={loading || !displayName.trim() || !phoneNumber.trim()}
-                sx={{ py: 1.5 }}
-              >
-                {loading ? <CircularProgress size={24} /> : 'Sign In'}
-              </Button>
-            </Stack>
-          </Box>
-
-          <Alert severity="info">
-            By signing in, you agree to our Terms of Service and Privacy Policy. Your data is stored
-            securely in your browser.
-          </Alert>
+          <Typography variant="caption" color="text.secondary" display="block" textAlign="center">
+            Supports email, Google, and more
+          </Typography>
         </CardContent>
       </Card>
     </Box>

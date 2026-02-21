@@ -23,8 +23,8 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material';
-import { Save, Phone, Palette, Psychology, CloudOff, DeleteForever } from '@mui/icons-material';
-import { useAuth } from '../context/AuthContext';
+import { Save, Palette, Psychology, CloudOff, DeleteForever } from '@mui/icons-material';
+import { useAuth } from '../hooks/useAuth';
 import { useThemeMode } from '../context/ThemeContext';
 import {
   DEFAULT_PREFERENCES,
@@ -96,7 +96,6 @@ export default function SettingsPage() {
   const handleClearData = () => {
     const APP_KEY_PREFIX = 'auraishub_';
     const APP_SPECIFIC_KEYS = new Set<string>([
-      STORAGE_KEYS.APP_USER,
       STORAGE_KEYS.COURSE_SELECTIONS,
       STORAGE_KEYS.THEME_MODE,
     ]);
@@ -140,33 +139,12 @@ export default function SettingsPage() {
                     {user?.displayName || 'User'}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {user?.phoneNumber}
+                    {user?.email}
                   </Typography>
                 </Box>
               </Stack>
 
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Display Name"
-                    value={preferences.displayName || user?.displayName || ''}
-                    onChange={(e) =>
-                      setPreferences({ ...preferences, displayName: e.target.value })
-                    }
-                    fullWidth
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    label="Phone Number"
-                    value={user?.phoneNumber || ''}
-                    disabled
-                    fullWidth
-                    InputProps={{
-                      startAdornment: <Phone sx={{ mr: 1, color: 'text.secondary' }} />,
-                    }}
-                  />
-                </Grid>
                 <Grid item xs={12} sm={6}>
                   <FormControl fullWidth>
                     <InputLabel>Theme</InputLabel>

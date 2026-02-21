@@ -5,6 +5,7 @@
 - **Type**: React + TypeScript web application (Vite)
 - **UI Framework**: MUI (Material-UI) with Emotion
 - **Database**: Drizzle ORM (SQLite on Netlify)
+- **Authentication**: Auth0 (SPA with JWT token validation)
 - **Purpose**: Course marketplace for trading course sections
 
 ## Build Commands
@@ -16,10 +17,8 @@ bun run build            # TypeScript compile + Vite build
 bun run preview          # Preview production build
 
 # Linting & Formatting
-bun run lint             # Run Biome lint
-bun run format           # Check formatting (no changes)
 bun run fix              # Fix lint & format issues
-bun run ci               # Run lint + format + tests
+bun run ci               # Run lint + format +  tests and tsc check
 ```
 
 ## Code Style Guidelines
@@ -47,7 +46,8 @@ bun run ci               # Run lint + format + tests
 
 ### State Management
 
-- Use React Context for global state (auth, theme)
+- Use Auth0 SDK for authentication state (use `useAuth` hook from `src/hooks/useAuth.ts`)
+- Use React Context for theme state only
 - Use local useState for component-specific state
 - Use custom hooks to encapsulate stateful logic
 
@@ -131,9 +131,11 @@ src/
 
 ### Database & Netlify Functions
 
-- Schema in `db/schema.ts` using Drizzle ORM
+- Schema in `db/schema.ts` using Drizzle ORM - **only contains trades table** (no users table)
 - Netlify functions in `netlify/functions/`
 - Access environment variables via `ENV` in `src/config` (Do not use `process.env` or `import.meta.env` directly in components/services)
+- All Netlify functions validate Auth0 JWT tokens using the `jose` library
+- User identity comes from Auth0 `sub` claim stored in `auth0_user_id` column
 
 ## Notes for Agents
 
@@ -142,3 +144,7 @@ src/
 - Test framework: Vitest + Testing Library
 - DONT BE AFRAID OF CHANGES OR BACKWARDS COMPATIBILITY THIS IS A TOOL NOT USED BY ANYONE ELSE
 - ALWAYS UPDATE AGENTS.md AFTER AN ARCHITECTURAL CHANGE
+- Auth0 integration: Authentication is handled by `@auth0/auth0-react` SDK on frontend and `jose` library on backend
+- All API requests require JWT token in Authorization header
+- Protected routes use `ProtectedRoute` component that checks Auth0 authentication
+- User identity is tracked via `auth0UserId` (from Auth0 `sub` claim), not local user IDs

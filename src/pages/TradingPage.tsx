@@ -25,23 +25,25 @@ import { Add, SwapHoriz, Phone, Search } from '@mui/icons-material';
 import {
   getTrades as fetchTrades,
   createTrade,
-  updateTradeStatus,
+  updateTrade,
   deleteTrade,
 } from '../services/tradesApi';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import type { TradePost } from '../types';
 
 function TradeCard({
   trade,
   onUpdate,
   onDelete,
+  onEdit,
 }: {
   trade: TradePost;
   onUpdate: (id: string, updates: Partial<TradePost>) => void;
   onDelete: (id: string) => void;
+  onEdit: (trade: TradePost) => void;
 }) {
   const { user } = useAuth();
-  const canManage = user && trade.userId === user.uid;
+  const isOwner = user && trade.auth0UserId === user.id;
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   return (
@@ -122,18 +124,19 @@ function TradeCard({
         </Stack>
       </CardContent>
 
-      {canManage && (
+      {isOwner && (
         <CardActions>
+          <Button size="small" onClick={() => onEdit(trade)}>
+            Edit
+          </Button>
           {trade.status === 'open' && (
             <Button size="small" onClick={() => onUpdate(trade.id, { status: 'pending' })}>
               Mark Pending
             </Button>
           )}
-          {(trade.status === 'open' || trade.status === 'pending') && (
-            <Button size="small" onClick={() => onUpdate(trade.id, { status: 'completed' })}>
-              Complete
-            </Button>
-          )}
+          <Button size="small" onClick={() => onUpdate(trade.id, { status: 'completed' })}>
+            Complete
+          </Button>
           <Button size="small" color="error" onClick={() => setConfirmDeleteOpen(true)}>
             Delete
           </Button>
@@ -166,13 +169,14 @@ function TradeCard({
 }
 
 export default function TradingPage() {
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
 
   const [trades, setTrades] = useState<TradePost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [editingTrade, setEditingTrade] = useState<TradePost | null>(null);
   const [tradeForm, setTradeForm] = useState({
     courseCode: '',
     courseName: '',
@@ -187,33 +191,48 @@ export default function TradingPage() {
     setLoading(true);
     setError(null);
     try {
-      const result = await fetchTrades();
+      const token = await getToken();
+      const result = await fetchTrades(token);
       setTrades(result);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getToken]);
 
   useEffect(() => {
     loadTrades();
   }, [loadTrades]);
 
+  const handleEdit = (trade: TradePost) => {
+    setEditingTrade(trade);
+    setTradeForm({
+      courseCode: trade.courseCode,
+      courseName: trade.courseName || '',
+      sectionOffered: trade.sectionOffered,
+      sectionWanted: trade.sectionWanted,
+      action: trade.action,
+      description: trade.description || '',
+      contactPhone: trade.contactPhone || '',
+    });
+    setDialogOpen(true);
+  };
+
   const handleSubmit = async () => {
     if (!user) return;
 
     try {
-      await createTrade(user.uid, user.displayName || 'User', {
-        courseCode: tradeForm.courseCode,
-        courseName: tradeForm.courseName,
-        sectionOffered: tradeForm.sectionOffered,
-        sectionWanted: tradeForm.sectionWanted,
-        action: tradeForm.action,
-        description: tradeForm.description || undefined,
-        contactPhone: tradeForm.contactPhone || undefined,
-      });
+      const token = await getToken();
+
+      if (editingTrade) {
+        await updateTrade(token, editingTrade.id, tradeForm);
+      } else {
+        await createTrade(token, tradeForm);
+      }
+
       setDialogOpen(false);
+      setEditingTrade(null);
       setTradeForm({
         courseCode: '',
         courseName: '',
@@ -230,19 +249,19 @@ export default function TradingPage() {
   };
 
   const handleUpdate = async (id: string, updates: Partial<TradePost>) => {
-    if (updates.status) {
-      try {
-        await updateTradeStatus(id, updates.status as 'pending' | 'completed' | 'cancelled');
-        await loadTrades();
-      } catch (e) {
-        setError((e as Error).message);
-      }
+    try {
+      const token = await getToken();
+      await updateTrade(token, id, updates);
+      await loadTrades();
+    } catch (e) {
+      setError((e as Error).message);
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteTrade(id);
+      const token = await getToken();
+      await deleteTrade(token, id);
       await loadTrades();
     } catch (e) {
       setError((e as Error).message);
@@ -353,6 +372,7 @@ export default function TradingPage() {
               trade={trade}
               onUpdate={handleUpdate}
               onDelete={handleDelete}
+              onEdit={handleEdit}
             />
           ))}
         </Stack>
@@ -366,8 +386,16 @@ export default function TradingPage() {
         <Add />
       </Fab>
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Post a Trade</DialogTitle>
+      <Dialog
+        open={dialogOpen}
+        onClose={() => {
+          setDialogOpen(false);
+          setEditingTrade(null);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>{editingTrade ? 'Edit Trade' : 'Post a Trade'}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
@@ -426,7 +454,14 @@ export default function TradingPage() {
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              setDialogOpen(false);
+              setEditingTrade(null);
+            }}
+          >
+            Cancel
+          </Button>
           <Button
             onClick={handleSubmit}
             variant="contained"
@@ -434,7 +469,7 @@ export default function TradingPage() {
               !tradeForm.courseCode || !tradeForm.sectionOffered || !tradeForm.sectionWanted
             }
           >
-            Post Trade
+            {editingTrade ? 'Save Changes' : 'Post Trade'}
           </Button>
         </DialogActions>
       </Dialog>

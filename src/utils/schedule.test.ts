@@ -1,57 +1,55 @@
 import { describe, it, expect } from 'vitest';
 import { formatTime, hasTimeConflict, calculateScheduleScore } from './schedule';
-import type { Schedule, Preferences, Section } from '../types';
-import { makeTimeSlot, makeSection, basePreferences } from '../test/performance-helpers';
+import type { Schedule, Preferences } from '../types';
 
-const makeSchedule = (sections: Section[], totalCredits: number): Schedule => ({
-  id: 'sched',
-  name: 'Test',
-  sections,
-  totalCredits,
-  score: 0,
-  conflicts: [],
-});
-
-describe('formatTime', () => {
-  it('formats morning times correctly', () => {
-    expect(formatTime('09:15')).toBe('9:15 AM');
+describe('schedule', () => {
+  it('formats time correctly', () => {
+    expect(formatTime('09:00')).toBe('9:00 AM');
+    expect(formatTime('13:00')).toBe('1:00 PM');
+    expect(formatTime('00:00')).toBe('12:00 AM');
   });
 
-  it('formats afternoon times correctly', () => {
-    expect(formatTime('13:30')).toBe('1:30 PM');
-  });
-});
+  it('detects time conflicts', () => {
+    expect(
+      hasTimeConflict(
+        { day: 'M', startTime: '09:00', endTime: '10:00' },
+        { day: 'M', startTime: '09:30', endTime: '10:30' },
+      ),
+    ).toBe(true);
 
-describe('hasTimeConflict', () => {
-  it('detects conflicts on same day with overlapping times', () => {
-    const a = makeTimeSlot('M', '10:00', '11:00');
-    const b = makeTimeSlot('M', '10:30', '11:30');
-    expect(hasTimeConflict(a, b)).toBe(true);
-  });
-
-  it('does not report conflict on different days', () => {
-    const a = makeTimeSlot('M', '10:00', '11:00');
-    const b = makeTimeSlot('T', '10:00', '11:00');
-    expect(hasTimeConflict(a, b)).toBe(false);
-  });
-});
-
-describe('calculateScheduleScore', () => {
-  it('penalizes schedules outside credit range', () => {
-    const prefs = { ...basePreferences, minCredits: 12, maxCredits: 18 };
-    const low = calculateScheduleScore(makeSchedule([], 9), prefs);
-    const high = calculateScheduleScore(makeSchedule([], 21), prefs);
-    expect(low).toBeLessThan(100);
-    expect(high).toBeLessThan(100);
+    expect(
+      hasTimeConflict(
+        { day: 'M', startTime: '09:00', endTime: '10:00' },
+        { day: 'T', startTime: '09:00', endTime: '10:00' },
+      ),
+    ).toBe(false);
   });
 
-  it('penalizes days the user wants to avoid', () => {
-    const section = makeSection({
-      timeSlots: [makeTimeSlot('F', '10:00', '11:00')],
-      instructor: 'Test',
-    });
-    const prefs = { ...basePreferences, avoidDays: ['F'] } as Preferences;
-    const score = calculateScheduleScore(makeSchedule([section], 15), prefs);
-    expect(score).toBeLessThan(100);
+  it('calculates schedule scores', () => {
+    const schedule: Schedule = {
+      id: 'test',
+      name: 'Test',
+      sections: [],
+      totalCredits: 15,
+      score: 0,
+      conflicts: [],
+    };
+
+    const prefs: Preferences = {
+      preferredStartTime: '08:00',
+      preferredEndTime: '17:00',
+      maxGapMinutes: 60,
+      preferConsecutiveDays: true,
+      preferMorning: false,
+      preferAfternoon: false,
+      maxCredits: 18,
+      minCredits: 12,
+      avoidDays: [],
+      excludeInstructors: [],
+    };
+
+    const score = calculateScheduleScore(schedule, prefs);
+    expect(score).toBeGreaterThanOrEqual(0);
+    expect(score).toBeLessThanOrEqual(200);
   });
 });

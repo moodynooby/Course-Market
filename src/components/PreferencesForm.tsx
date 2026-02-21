@@ -35,36 +35,13 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
       <h2>⚙️ Schedule Preferences</h2>
 
       <div className="form-section">
-        <h3>User Profile</h3>
-
-        <div className="form-group">
-          <label>Display Name</label>
-          <input
-            type="text"
-            value={preferences.displayName}
-            onChange={(e) => onUpdate('displayName', e.target.value)}
-            placeholder="Your name"
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Email (optional)</label>
-          <input
-            type="email"
-            value={preferences.email || ''}
-            onChange={(e) => onUpdate('email', e.target.value)}
-            placeholder="your@email.com"
-          />
-        </div>
-      </div>
-
-      <div className="form-section">
         <h3>⏰ Time Preferences</h3>
 
         <div className="form-row">
           <div className="form-group">
-            <label>Preferred Start Time</label>
+            <label htmlFor="preferredStartTime">Preferred Start Time</label>
             <input
+              id="preferredStartTime"
               type="time"
               value={preferences.preferredStartTime}
               onChange={(e) => onUpdate('preferredStartTime', e.target.value)}
@@ -72,8 +49,9 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
           </div>
 
           <div className="form-group">
-            <label>Preferred End Time</label>
+            <label htmlFor="preferredEndTime">Preferred End Time</label>
             <input
+              id="preferredEndTime"
               type="time"
               value={preferences.preferredEndTime}
               onChange={(e) => onUpdate('preferredEndTime', e.target.value)}

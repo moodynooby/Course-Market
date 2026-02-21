@@ -10,111 +10,40 @@ export const db = drizzle({
   client,
 });
 
-// Database utility functions
-export async function getUserByEmail(email: string) {
-  return await db.query.users.findFirst({
-    where: (users, { eq }) => eq(users.email, email),
-  });
-}
-
-export async function getUserByProviderId(provider: string, providerId: string) {
-  return await db.query.users.findFirst({
-    where: (users, { and, eq }) =>
-      and(eq(users.provider, provider), eq(users.providerId, providerId)),
-  });
-}
-
-export async function createUser(data: schema.NewUser) {
-  const [result] = await db.insert(schema.users).values(data).returning();
-  return result;
-}
-
-export async function updateUserPreferences(
-  userId: number,
-  preferences: Partial<schema.UserPreference>,
-) {
-  const [result] = await db
-    .insert(schema.userPreferences)
-    .values({ ...preferences, userId })
-    .onConflictDoUpdate({
-      target: schema.userPreferences.userId,
-      set: { ...preferences, updatedAt: new Date() },
-    })
-    .returning();
-  return result;
-}
-
-export async function getUserPreferences(userId: number) {
-  return await db.query.userPreferences.findFirst({
-    where: (pref, { eq }) => eq(pref.userId, userId),
-  });
-}
-
-export async function createCourseWithSections(
-  userId: number,
-  courseData: schema.Course,
-  sectionsData: schema.Section[],
-) {
-  const [course] = await db
-    .insert(schema.courses)
-    .values({ ...courseData, userId })
-    .returning();
-
-  if (sectionsData.length > 0) {
-    const sectionsWithCourseId = sectionsData.map((section) => ({
-      ...section,
-      courseId: course.id,
-    }));
-    await db.insert(schema.sections).values(sectionsWithCourseId);
-  }
-
-  return course;
-}
-
-export async function getUserCoursesWithSections(userId: number) {
-  return await db.query.courses.findMany({
-    where: (courses, { eq }) => eq(courses.userId, userId),
-    with: {
-      sections: true,
-    },
-  });
-}
-
-export async function getUserSelectedSections(userId: number) {
-  return await db.query.userSelections.findMany({
-    where: (sel, { eq }) => eq(sel.userId, userId),
-    with: {
-      section: {
-        with: {
-          course: true,
-        },
-      },
-    },
-  });
-}
-
-export async function createTrade(data: schema.Trade) {
+// Trade operations
+export async function createTrade(data: schema.NewTrade) {
   const [result] = await db.insert(schema.trades).values(data).returning();
   return result;
 }
 
-export async function getUserTrades(userId: number) {
-  return await db.query.trades.findMany({
-    where: (trades, { eq }) => eq(trades.userId, userId),
-    orderBy: (trades, { desc }) => desc(trades.createdAt),
-  });
-}
-
 export async function getAllTrades() {
   return await db.query.trades.findMany({
-    with: {
-      user: true,
-    },
     orderBy: (trades, { desc }) => desc(trades.createdAt),
   });
 }
 
-export async function createContactRequest(data: schema.ContactRequest) {
-  const [result] = await db.insert(schema.contactRequests).values(data).returning();
+export async function getTradeById(id: number) {
+  return await db.query.trades.findFirst({
+    where: (trades, { eq }) => eq(trades.id, id),
+  });
+}
+
+export async function updateTrade(id: number, data: Partial<schema.NewTrade>) {
+  const [result] = await db
+    .update(schema.trades)
+    .set({ ...data, updatedAt: new Date() })
+    .where((trades, { eq }) => eq(trades.id, id))
+    .returning();
   return result;
+}
+
+export async function deleteTrade(id: number) {
+  await db.delete(schema.trades).where((trades, { eq }) => eq(trades.id, id));
+}
+
+export async function getTradesByUser(auth0UserId: string) {
+  return await db.query.trades.findMany({
+    where: (trades, { eq }) => eq(trades.auth0UserId, auth0UserId),
+    orderBy: (trades, { desc }) => desc(trades.createdAt),
+  });
 }

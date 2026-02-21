@@ -6,17 +6,12 @@ export const STORAGE_KEYS = {
   COURSES: 'auraishub_courses',
   SECTIONS: 'auraishub_sections',
   PREFERENCES: 'auraishub_preferences',
-  USER: 'auraishub_user',
-  SELECTIONS: 'auraishub_selections',
-  COURSE_SELECTIONS: 'course-selections',
+  COURSE_SELECTIONS: 'auraishub_course_selections',
   THEME_MODE: 'theme-mode',
-  APP_USER: 'app-user',
 } as const;
 
 // --- PREFERENCES ---
 export const DEFAULT_PREFERENCES: Preferences = {
-  userId: '',
-  displayName: '',
   preferredStartTime: '08:00',
   preferredEndTime: '17:00',
   maxGapMinutes: 60,

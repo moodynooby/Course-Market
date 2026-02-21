@@ -25,8 +25,6 @@ describe('llm', () => {
       };
 
       const preferences: Preferences = {
-        userId: 'u1',
-        displayName: 'Test User',
         preferredStartTime: '08:00',
         preferredEndTime: '17:00',
         maxGapMinutes: 60,
@@ -59,8 +57,6 @@ describe('llm', () => {
       } as Schedule;
 
       const preferences = {
-        userId: 'u1',
-        displayName: 'Test User',
         preferredStartTime: '08:00',
         preferredEndTime: '17:00',
         maxGapMinutes: 60,

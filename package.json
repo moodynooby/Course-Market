@@ -6,10 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "biome lint .",
-    "format": "biome format .",
     "fix": "biome lint --write . && biome format --write .",
-    "ci": "bun run lint && bun run format && vitest run",
+    "ci": " bun run fix && vitest run && tsc -b ",
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",

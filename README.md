@@ -1,4 +1,4 @@
-# 🎓 Course Hub
+# 🎓 AuraIsHub
 
 A comprehensive web application for course management, schedule optimization, and student trading built with React, TypeScript, and Vite.
 
@@ -82,12 +82,78 @@ cp .env.example .env
 Configure environment variables:
 
 ```bash
+# Auth0 Configuration (Required)
+VITE_AUTH0_DOMAIN=your-tenant.auth0.com
+VITE_AUTH0_CLIENT_ID=your_client_id
+VITE_AUTH0_AUDIENCE=https://your-api-identifier
+
 # Netlify function URL (optional)
 VITE_NETLIFY_FUNCTION_URL=https://your-site.netlify.app/.netlify/functions
 
 # Database URL (for Netlify functions)
 DATABASE_URL=your_neon_database_url
 ```
+
+## 🔐 Auth0 Authentication Setup
+
+This application uses Auth0 for user authentication. Follow these steps to configure Auth0 for your project.
+
+### Step 1: Create an Auth0 Account
+
+1. Go to [Auth0](https://auth0.com/) and sign up for a free account
+2. Verify your email address
+3. Create your tenant domain (e.g., `your-app.auth0.com`)
+
+### Step 2: Create a Single Page Application
+
+1. In the Auth0 Dashboard, navigate to **Applications** → **Applications**
+2. Click **Create Application**
+3. Select **Single Page Application** as the application type
+4. Click **Create**
+
+### Step 3: Configure Application Settings
+
+In your application settings, configure the following:
+
+| Setting | Value |
+|---------|-------|
+| **Name** | Course Hub |
+| **Allowed Callback URLs** | `http://localhost:5173/callback` (development), `https://yourdomain.com/callback` (production) |
+| **Allowed Logout URLs** | `http://localhost:5173` (development), `https://yourdomain.com` (production) |
+| **Allowed Web Origins** | `http://localhost:5173` (development), `https://yourdomain.com` (production) |
+| **Refresh Token Rotation** | Enabled |
+
+### Step 4: Create an API (for Token Validation)
+
+1. In the Auth0 Dashboard, navigate to **Applications** → **APIs**
+2. Click **Create API**
+3. Enter the following:
+   - **Name**: Course Hub API
+   - **Identifier**: `https://your-api-identifier` (this becomes your `VITE_AUTH0_AUDIENCE`)
+   - **Signing Algorithm**: RS256
+4. Click **Create**
+
+### Step 5: Update Environment Variables
+
+Add your Auth0 credentials to the `.env` file:
+
+```bash
+VITE_AUTH0_DOMAIN=your-tenant.auth0.com
+VITE_AUTH0_CLIENT_ID=your_client_id
+VITE_AUTH0_AUDIENCE=https://your-api-identifier
+```
+
+You can find these values in your Auth0 application settings:
+- **Domain**: Shown at the top of your application settings
+- **Client ID**: Shown in the "Basic Information" section
+- **Audience**: The identifier you set when creating the API
+
+### Step 6: Test the Integration
+
+1. Start the development server: `npm run dev`
+2. Navigate to `http://localhost:5173`
+3. Click "Sign In" - you should be redirected to Auth0
+4. After signing in, you should be redirected back to the application
 
 ## 📊 CSV Format
 
@@ -235,6 +301,100 @@ The application can be deployed to any static hosting platform:
 - Output: `dist/` directory
 - Functions: Configure for Netlify Functions if needed
 
+### Auth0 Production Configuration
+
+When deploying to production, you must update your Auth0 application settings to match your production domain.
+
+#### Step 1: Update Allowed URLs
+
+In your Auth0 Dashboard, go to **Applications** → **Your Application** → **Settings**:
+
+| Setting | Development | Production |
+|---------|-------------|------------|
+| **Allowed Callback URLs** | `http://localhost:5173/callback` | `https://yourdomain.com/callback` |
+| **Allowed Logout URLs** | `http://localhost:5173` | `https://yourdomain.com` |
+| **Allowed Web Origins** | `http://localhost:5173` | `https://yourdomain.com` |
+
+**Important:** Add both development and production URLs separated by commas if you need to support both environments.
+
+#### Step 2: Configure Production Environment Variables
+
+Set these environment variables in your production deployment platform:
+
+```bash
+# Auth0 Configuration (Production)
+VITE_AUTH0_DOMAIN=your-tenant.auth0.com
+VITE_AUTH0_CLIENT_ID=your_client_id
+VITE_AUTH0_AUDIENCE=https://your-api-identifier
+
+# Optional: Netlify function URL for production
+VITE_NETLIFY_FUNCTION_URL=https://your-site.netlify.app/.netlify/functions
+```
+
+#### Step 3: Update Auth0 API Settings
+
+1. Go to **Applications** → **APIs** → **Your API**
+2. Verify the **Identifier** matches your `VITE_AUTH0_AUDIENCE` exactly
+3. Ensure **Signing Algorithm** is set to RS256
+4. Under **Settings**, verify **Token Expiration** is appropriate (default: 86400 seconds = 24 hours)
+
+#### Step 4: Configure Refresh Token Rotation (Production)
+
+In your Auth0 application settings:
+
+1. Scroll to **Refresh Token Rotation**
+2. Enable **Refresh Token Rotation**
+3. Set **Refresh Token Expiration** (recommended: 1 week for production)
+4. This allows users to stay logged in without re-authenticating frequently
+
+#### Step 5: Production Security Settings
+
+Under **Application Properties** in Auth0:
+
+| Setting | Recommended Value |
+|---------|-------------------|
+| **OIDC Conformant** | Enabled (ON) |
+| **Allow Offline Access** | Enabled (ON) |
+| **Token Endpoint Authentication Method** | `client_secret_basic` or `none` for SPA |
+
+#### Step 6: Test Production Deployment
+
+After configuring Auth0 for production:
+
+1. Deploy your application to production
+2. Clear browser cache and cookies
+3. Navigate to your production URL
+4. Click "Sign In" - should redirect to Auth0 login
+5. After authentication, should redirect back to `/callback` then home
+6. Verify the URL shows your production domain
+7. Test logout functionality
+
+#### Step 7: Monitor Auth0 Dashboard
+
+After going live:
+
+1. Check **Dashboard** → **Analytics** for active users
+2. Monitor **Dashboard** → **Logs** for any errors
+3. Set up alerts for failed login attempts
+4. Review **Users** to see authenticated users
+
+#### Troubleshooting Production Auth0
+
+**Issue:** Users can't log in after deployment
+- Verify all production URLs are in Allowed Callback/Logout/Web Origins
+- Check for typos in environment variables
+- Ensure domain matches exactly (no trailing slashes)
+
+**Issue:** Token validation fails
+- Verify `VITE_AUTH0_AUDIENCE` matches API Identifier exactly
+- Check that API is using RS256 signing algorithm
+- Ensure token hasn't expired
+
+**Issue:** CORS errors in production
+- Add production domain to Allowed Web Origins
+- Do not use wildcards (`*`) in origins
+- Include both `http` and `https` if needed
+
 ## 🔍 Troubleshooting
 
 ### Common Issues
@@ -258,6 +418,43 @@ The application can be deployed to any static hosting platform:
 - Clear node_modules and reinstall dependencies
 - Check TypeScript errors: `npm run lint`
 - Ensure all environment variables are set
+
+### Auth0 Issues
+
+**"Invalid callback URL" error:**
+- Ensure your callback URL is exactly listed in Allowed Callback URLs
+- For local development: `http://localhost:5173/callback`
+- For production: `https://yourdomain.com/callback`
+- No trailing slashes or extra characters
+
+**"Access denied" or login fails:**
+- Check that your application type is set to "Single Page Application"
+- Verify Allowed Web Origins includes your domain
+- Ensure the user has permissions in your Auth0 tenant
+
+**Token validation fails on API calls:**
+- Verify the Audience matches your API identifier exactly
+- Check that the API is set to use RS256 signing algorithm
+- Ensure the token hasn't expired (default is 24 hours)
+
+**Users can't log out:**
+- Add your application's base URL to Allowed Logout URLs
+- Check that the logout redirect works with your domain
+
+**Too many redirects:**
+- Clear browser cookies and local storage
+- Check that redirect_uri matches exactly in your configuration
+- Verify you're not already authenticated in another session
+
+**Auth0 free tier limits:**
+- Free tier includes 7,500 monthly active users (MAU)
+- Monitor usage in Auth0 Dashboard → Analytics
+- Consider upgrading if you expect more users
+
+**CORS errors:**
+- Ensure Allowed Web Origins includes your exact domain
+- For local development, include `http://localhost:5173`
+- Do not use wildcards in origins
 
 ## 🤝 Contributing
 

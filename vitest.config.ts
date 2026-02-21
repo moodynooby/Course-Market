@@ -14,8 +14,11 @@ export default defineConfig({
     globals: true,
     environment: 'happy-dom',
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}', 'netlify/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['node_modules', 'dist', 'e2e'],
+    isolate: true,
+    pool: 'forks',
+    singleFork: true, // Use single fork for faster startup
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

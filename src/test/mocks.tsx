@@ -1,4 +1,18 @@
 import { vi } from 'vitest';
+import type { ReactNode } from 'react';
+
+// Mock Auth0 to avoid network calls and provider overhead
+vi.mock('@auth0/auth0-react', () => ({
+  Auth0Provider: ({ children }: { children: ReactNode }) => children,
+  useAuth0: () => ({
+    isAuthenticated: false,
+    isLoading: false,
+    user: undefined,
+    loginWithRedirect: vi.fn(),
+    logout: vi.fn(),
+    getAccessTokenSilently: vi.fn(),
+  }),
+}));
 
 // Mock lazy-loaded pages to prevent hanging on heavy imports
 vi.mock('./pages/LoginPage', () => ({

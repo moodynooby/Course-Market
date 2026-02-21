@@ -1,13 +1,14 @@
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
 import { Box, CircularProgress } from '@mui/material';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import Layout from './components/Layout';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Lazy load pages for code splitting
 const LoginPage = lazy(() => import('./pages/LoginPage'));
+const CallbackPage = lazy(() => import('./pages/CallbackPage'));
 const CoursesPage = lazy(() => import('./pages/CoursesPage'));
 const SchedulePage = lazy(() => import('./pages/SchedulePage'));
 const TradingPage = lazy(() => import('./pages/TradingPage'));
@@ -21,49 +22,29 @@ function LoadingFallback() {
   );
 }
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return <LoadingFallback />;
-  }
-
-  return user ? (
-    <Suspense fallback={<LoadingFallback />}>{children}</Suspense>
-  ) : (
-    <Navigate to="/login" replace />
-  );
-}
-
-function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return <LoadingFallback />;
-  }
-
-  return user ? (
-    <Navigate to="/" replace />
-  ) : (
-    <Suspense fallback={<LoadingFallback />}>{children}</Suspense>
-  );
-}
-
 const router = createBrowserRouter([
   {
     path: '/login',
     element: (
-      <PublicRoute>
+      <Suspense fallback={<LoadingFallback />}>
         <LoginPage />
-      </PublicRoute>
+      </Suspense>
+    ),
+  },
+  {
+    path: '/callback',
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <CallbackPage />
+      </Suspense>
     ),
   },
   {
     path: '/',
     element: (
-      <PrivateRoute>
+      <ProtectedRoute>
         <Layout />
-      </PrivateRoute>
+      </ProtectedRoute>
     ),
     children: [
       {
@@ -114,9 +95,7 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <AuthProvider>
-          <RouterProvider router={router} />
-        </AuthProvider>
+        <RouterProvider router={router} />
       </ThemeProvider>
     </ErrorBoundary>
   );

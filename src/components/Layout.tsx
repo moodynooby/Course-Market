@@ -31,7 +31,7 @@ import {
   SettingsBrightness,
 } from '@mui/icons-material';
 import { useThemeMode } from '../context/ThemeContext';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { APP_CONFIG } from '../config/appConfig';
 import ImportDialog from './ImportDialog';
 
@@ -189,9 +189,7 @@ export default function Layout() {
           <Box sx={{ overflow: 'hidden' }}>
             <ListItemText
               primary={user?.displayName || 'User'}
-              secondary={user?.phoneNumber}
               primaryTypographyProps={{ variant: 'body2', fontWeight: 600, noWrap: true }}
-              secondaryTypographyProps={{ variant: 'caption', noWrap: true }}
             />
           </Box>
         </Box>
