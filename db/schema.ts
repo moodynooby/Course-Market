@@ -1,4 +1,13 @@
-import { pgTable, serial, varchar, text, timestamp, boolean, integer, jsonb } from 'drizzle-orm/pg-core';
+import {
+  pgTable,
+  serial,
+  varchar,
+  text,
+  timestamp,
+  boolean,
+  integer,
+  jsonb,
+} from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // Users table with OAuth support
@@ -18,7 +27,9 @@ export const users = pgTable('users', {
 // User preferences
 export const userPreferences = pgTable('user_preferences', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').references(() => users.id).notNull(),
+  userId: integer('user_id')
+    .references(() => users.id)
+    .notNull(),
   preferredStartTime: varchar('preferred_start_time', { length: 10 }).default('08:00'),
   preferredEndTime: varchar('preferred_end_time', { length: 10 }).default('17:00'),
   maxGapMinutes: integer('max_gap_minutes').default(60),
@@ -49,7 +60,9 @@ export const courses = pgTable('courses', {
 // Course sections
 export const sections = pgTable('sections', {
   id: serial('id').primaryKey(),
-  courseId: integer('course_id').references(() => courses.id).notNull(),
+  courseId: integer('course_id')
+    .references(() => courses.id)
+    .notNull(),
   sectionNumber: varchar('section_number', { length: 20 }).notNull(),
   instructor: varchar('instructor', { length: 255 }).default('TBA'),
   days: varchar('days', { length: 20 }).notNull(),
@@ -62,15 +75,21 @@ export const sections = pgTable('sections', {
 // User selected sections
 export const userSelections = pgTable('user_selections', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').references(() => users.id).notNull(),
-  sectionId: integer('section_id').references(() => sections.id).notNull(),
+  userId: integer('user_id')
+    .references(() => users.id)
+    .notNull(),
+  sectionId: integer('section_id')
+    .references(() => sections.id)
+    .notNull(),
   selectedAt: timestamp('selected_at').defaultNow().notNull(),
 });
 
 // Trade posts
 export const trades = pgTable('trades', {
   id: serial('id').primaryKey(),
-  userId: integer('user_id').references(() => users.id).notNull(),
+  userId: integer('user_id')
+    .references(() => users.id)
+    .notNull(),
   courseCode: varchar('course_code', { length: 50 }).notNull(),
   courseName: varchar('course_name', { length: 255 }),
   sectionOffered: varchar('section_offered', { length: 20 }).notNull(),
@@ -86,8 +105,12 @@ export const trades = pgTable('trades', {
 // User contact requests
 export const contactRequests = pgTable('contact_requests', {
   id: serial('id').primaryKey(),
-  fromUserId: integer('from_user_id').references(() => users.id).notNull(),
-  toUserId: integer('to_user_id').references(() => users.id).notNull(),
+  fromUserId: integer('from_user_id')
+    .references(() => users.id)
+    .notNull(),
+  toUserId: integer('to_user_id')
+    .references(() => users.id)
+    .notNull(),
   tradeId: integer('trade_id').references(() => trades.id),
   message: text('message'),
   status: varchar('status', { length: 20 }).default('pending'), // 'pending', 'accepted', 'rejected'

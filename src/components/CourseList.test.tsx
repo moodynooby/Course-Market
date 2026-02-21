@@ -5,7 +5,13 @@ import { CourseList } from './CourseList';
 
 describe('CourseList', () => {
   const mockCourses: Course[] = [
-    { id: 'c1', code: 'COM101', name: 'Intro to CS', subject: 'COM', credits: 3 },
+    {
+      id: 'c1',
+      code: 'COM101',
+      name: 'Intro to CS',
+      subject: 'COM',
+      credits: 3,
+    },
   ];
 
   const mockSections: Section[] = [

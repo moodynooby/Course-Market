@@ -58,13 +58,15 @@ export default function Layout() {
     setMobileOpen(!mobileOpen);
   };
 
-
-
   const drawer = (
     <Box sx={{ overflow: 'auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
         <img src="/apple-touch-icon.png" alt="Logo" style={{ width: 32, height: 32 }} />
-        <Typography variant="h6" fontWeight={700} sx={{ color: 'primary.main', fontFamily: '"Zilla Slab", serif' }}>
+        <Typography
+          variant="h6"
+          fontWeight={700}
+          sx={{ color: 'primary.main', fontFamily: '"Zilla Slab", serif' }}
+        >
           AuraIsHub
         </Typography>
       </Box>

@@ -19,10 +19,8 @@ export async function getUserByEmail(email: string) {
 
 export async function getUserByProviderId(provider: string, providerId: string) {
   return await db.query.users.findFirst({
-    where: (users, { and, eq }) => and(
-      eq(users.provider, provider),
-      eq(users.providerId, providerId)
-    ),
+    where: (users, { and, eq }) =>
+      and(eq(users.provider, provider), eq(users.providerId, providerId)),
   });
 }
 
@@ -31,7 +29,10 @@ export async function createUser(data: schema.NewUser) {
   return result;
 }
 
-export async function updateUserPreferences(userId: number, preferences: Partial<schema.UserPreference>) {
+export async function updateUserPreferences(
+  userId: number,
+  preferences: Partial<schema.UserPreference>,
+) {
   const [result] = await db
     .insert(schema.userPreferences)
     .values({ ...preferences, userId })
@@ -49,11 +50,21 @@ export async function getUserPreferences(userId: number) {
   });
 }
 
-export async function createCourseWithSections(userId: number, courseData: schema.Course, sectionsData: schema.Section[]) {
-  const [course] = await db.insert(schema.courses).values({ ...courseData, userId }).returning();
+export async function createCourseWithSections(
+  userId: number,
+  courseData: schema.Course,
+  sectionsData: schema.Section[],
+) {
+  const [course] = await db
+    .insert(schema.courses)
+    .values({ ...courseData, userId })
+    .returning();
 
   if (sectionsData.length > 0) {
-    const sectionsWithCourseId = sectionsData.map(section => ({ ...section, courseId: course.id }));
+    const sectionsWithCourseId = sectionsData.map((section) => ({
+      ...section,
+      courseId: course.id,
+    }));
     await db.insert(schema.sections).values(sectionsWithCourseId);
   }
 

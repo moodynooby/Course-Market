@@ -17,20 +17,9 @@ bun run preview          # Preview production build
 
 # Linting & Formatting
 bun run lint             # Run Biome lint
-bun run lint:fix         # Run Biome lint with --write
-bun run format           # Format code with Biome
-bun run format:check     # Check formatting without modifying
-
-# Database (Drizzle ORM)
-bun run db:generate      # Generate Drizzle schema
-bun run db:migrate       # Run database migrations
-bun run db:studio        # Open Drizzle Studio
-
-# Testing (Vitest + Testing Library)
-bun run test             # Run tests in watch mode
-bun run test:run         # Run tests once (CI)
-bun run test:ui          # Run tests with UI
-bun run test:coverage    # Run tests with coverage report
+bun run format           # Check formatting (no changes)
+bun run fix              # Fix lint & format issues
+bun run ci               # Run lint + format + tests
 ```
 
 ## Code Style Guidelines
@@ -117,13 +106,11 @@ bun run test:ui
 
 ### CI/CD Pipeline
 
-The `ci` script runs all quality checks:
-
 ```bash
-bun run ci  # Runs lint, format:check, and test:run
+bun run ci  # Runs lint, format, and tests
 ```
 
-This should be run in your CI/CD pipeline before merging changes.
+This should be run before merging changes.
 
 ### File Organization
 
@@ -150,9 +137,8 @@ src/
 
 ## Notes for Agents
 
-- Always run `bun run lint:fix` and `bun run format` before committing
-- Check `biome.json` for linting rules
+- Always run `bun run fix` before committing
 - Uses React Compiler (babel-plugin-react-compiler)
-- Test framework: Vitest + Testing Library - keep tests simple yet effective
-- DONT BE AFRAID OF CHANGES OR BACKWARDS COMPATIBILTY THIS IS A TOOL NOT USED BY ANYONE ELSE
-- ALWAYS UPDATE AGENTS.MD AFTER A ARCHITECTRAL CHANGE
+- Test framework: Vitest + Testing Library
+- DONT BE AFRAID OF CHANGES OR BACKWARDS COMPATIBILITY THIS IS A TOOL NOT USED BY ANYONE ELSE
+- ALWAYS UPDATE AGENTS.md AFTER AN ARCHITECTURAL CHANGE

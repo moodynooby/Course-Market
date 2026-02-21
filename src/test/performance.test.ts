@@ -23,8 +23,9 @@ describe('performance', () => {
 
   it('schedule scoring should complete in reasonable time', async () => {
     const { calculateScheduleScore } = await import('../utils/schedule');
-    const { makeSection, makeTimeSlot, basePreferences, makeSchedule } =
-      await import('./performance-helpers');
+    const { makeSection, makeTimeSlot, basePreferences, makeSchedule } = await import(
+      './performance-helpers'
+    );
 
     const sections = [
       makeSection({

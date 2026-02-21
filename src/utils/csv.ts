@@ -124,7 +124,10 @@ function isCourseDirectoryFormat(headers: string[]): boolean {
 
 // --- Standard format helpers ---
 
-function validateHeaders(headers: string[]): { valid: boolean; errors: string[] } {
+function validateHeaders(headers: string[]): {
+  valid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
   const normalizedHeaders = headers.map((h) => h.toLowerCase().trim());
 

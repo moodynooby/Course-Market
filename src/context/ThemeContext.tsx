@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react';
 import { createTheme, ThemeProvider as MuiThemeProvider, CssBaseline } from '@mui/material';
 import { STORAGE_KEYS } from '../config/userConfig';
 
@@ -107,9 +107,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
             styleOverrides: {
               root: {
                 borderRadius: 16,
-                boxShadow: isDark
-                  ? '0 4px 20px rgba(0,0,0,0.4)'
-                  : '0 4px 20px rgba(0,0,0,0.08)',
+                boxShadow: isDark ? '0 4px 20px rgba(0,0,0,0.4)' : '0 4px 20px rgba(0,0,0,0.08)',
               },
             },
           },

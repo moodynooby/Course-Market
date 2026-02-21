@@ -15,7 +15,7 @@ import {
 } from '../config/llmConfig';
 import type { LLMProvider } from '../types';
 
-export { LLMProvider };
+export type { LLMProvider };
 export type LLMConfig = BYOKConfig;
 
 export async function getDefaultModel(provider: 'webllm' | 'wllama'): Promise<string> {
@@ -255,7 +255,7 @@ class UnifiedLLMService {
         };
         break;
 
-      case 'anthropic':
+      case 'anthropic': {
         url = url || LLM_CONSTANTS.API_DEFAULTS.ANTHROPIC;
         headers['x-api-key'] = apiKey;
         headers['anthropic-version'] = LLM_CONSTANTS.ANTHROPIC_API_VERSION;
@@ -271,6 +271,7 @@ class UnifiedLLMService {
           })),
         };
         break;
+      }
 
       case 'custom':
         if (!url) {

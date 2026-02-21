@@ -154,7 +154,8 @@ export function CourseList({
         </div>
 
         <div className="selected-count">
-          Selected: {selectedSections.size} course{selectedSections.size !== 1 ? 's' : ''}
+          Selected: {selectedSections.size} course
+          {selectedSections.size !== 1 ? 's' : ''}
         </div>
       </div>
 

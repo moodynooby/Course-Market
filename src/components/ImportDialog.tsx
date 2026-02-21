@@ -147,7 +147,11 @@ export default function ImportDialog({ open, onClose }: ImportDialogProps) {
     <>
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle
-          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
         >
           Import Courses
           <IconButton onClick={handleClose} disabled={loading} size="small">
@@ -155,7 +159,15 @@ export default function ImportDialog({ open, onClose }: ImportDialogProps) {
           </IconButton>
         </DialogTitle>
         <DialogContent dividers>
-          <Box sx={{ mb: 2, p: 1, borderRadius: 1, borderColor: 'secondary.light', border: 1 }}>
+          <Box
+            sx={{
+              mb: 2,
+              p: 1,
+              borderRadius: 1,
+              borderColor: 'secondary.light',
+              border: 1,
+            }}
+          >
             <Typography variant="body2" color="text.secondary" gutterBottom>
               Supported CSV Formats - Most of Ahmedabad University format
             </Typography>
