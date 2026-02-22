@@ -79,24 +79,35 @@ export default function LoginPage() {
           </Box>
 
           <Stack spacing={2} sx={{ mb: 4 }}>
-            <Button
-              fullWidth
-              variant="contained"
-              size="large"
-              onClick={signIn}
-              sx={{ py: 1.5 }}
-            >
+            <Button fullWidth variant="contained" size="large" onClick={signIn} sx={{ py: 1.5 }}>
               Sign in to Trade & Sync
             </Button>
 
             <Box sx={{ px: 1 }}>
-              <Typography variant="caption" color="text.secondary" component="div" sx={{ mb: 1, fontWeight: 600 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                component="div"
+                sx={{ mb: 1, fontWeight: 600 }}
+              >
                 Why Sign In?
               </Typography>
               <ul style={{ margin: 0, paddingLeft: 18, color: 'text.secondary' }}>
-                <li><Typography variant="caption" color="text.secondary">Swap course sections with other students</Typography></li>
-                <li><Typography variant="caption" color="text.secondary">Sync your schedule across all devices</Typography></li>
-                <li><Typography variant="caption" color="text.secondary">Save your optimization preferences</Typography></li>
+                <li>
+                  <Typography variant="caption" color="text.secondary">
+                    Swap course sections with other students
+                  </Typography>
+                </li>
+                <li>
+                  <Typography variant="caption" color="text.secondary">
+                    Sync your schedule across all devices
+                  </Typography>
+                </li>
+                <li>
+                  <Typography variant="caption" color="text.secondary">
+                    Save your optimization preferences
+                  </Typography>
+                </li>
               </ul>
             </Box>
           </Stack>
@@ -106,13 +117,10 @@ export default function LoginPage() {
               Just Planning?
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-              Continue as a guest to browse courses and use the AI optimizer. No account required to start.
+              Continue as a guest to browse courses and use the AI optimizer. No account required to
+              start.
             </Typography>
-            <Button
-              variant="outlined"
-              onClick={() => navigate('/courses')}
-              fullWidth
-            >
+            <Button variant="outlined" onClick={() => navigate('/courses')} fullWidth>
               Start as Guest
             </Button>
           </Box>

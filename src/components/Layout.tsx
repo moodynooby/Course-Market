@@ -195,12 +195,7 @@ export default function Layout() {
             </Box>
           </Box>
         ) : (
-          <Button
-            variant="contained"
-            fullWidth
-            onClick={signIn}
-            sx={{ mt: 1 }}
-          >
+          <Button variant="contained" fullWidth onClick={signIn} sx={{ mt: 1 }}>
             Sign In
           </Button>
         )}
