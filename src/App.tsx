@@ -41,11 +41,7 @@ const router = createBrowserRouter([
   },
   {
     path: '/',
-    element: (
-      <ProtectedRoute>
-        <Layout />
-      </ProtectedRoute>
-    ),
+    element: <Layout />,
     children: [
       {
         index: true,
@@ -70,17 +66,21 @@ const router = createBrowserRouter([
       {
         path: 'trading',
         element: (
-          <Suspense fallback={<LoadingFallback />}>
-            <TradingPage />
-          </Suspense>
+          <ProtectedRoute>
+            <Suspense fallback={<LoadingFallback />}>
+              <TradingPage />
+            </Suspense>
+          </ProtectedRoute>
         ),
       },
       {
         path: 'settings',
         element: (
-          <Suspense fallback={<LoadingFallback />}>
-            <SettingsPage />
-          </Suspense>
+          <ProtectedRoute>
+            <Suspense fallback={<LoadingFallback />}>
+              <SettingsPage />
+            </Suspense>
+          </ProtectedRoute>
         ),
       },
     ],

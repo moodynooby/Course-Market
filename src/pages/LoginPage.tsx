@@ -8,6 +8,7 @@ import {
   Button,
   CircularProgress,
   Avatar,
+  Stack,
 } from '@mui/material';
 import { School } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
@@ -72,24 +73,49 @@ export default function LoginPage() {
             >
               AuraIsHub
             </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Sign in to access course trading
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+              Optimize your semester with AI
             </Typography>
           </Box>
 
-          <Button
-            fullWidth
-            variant="contained"
-            size="large"
-            onClick={signIn}
-            sx={{ py: 1.5, mb: 2 }}
-          >
-            Sign In with Auth0
-          </Button>
+          <Stack spacing={2} sx={{ mb: 4 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              size="large"
+              onClick={signIn}
+              sx={{ py: 1.5 }}
+            >
+              Sign in to Trade & Sync
+            </Button>
 
-          <Typography variant="caption" color="text.secondary" display="block" textAlign="center">
-            Supports email, Google, and more
-          </Typography>
+            <Box sx={{ px: 1 }}>
+              <Typography variant="caption" color="text.secondary" component="div" sx={{ mb: 1, fontWeight: 600 }}>
+                Why Sign In?
+              </Typography>
+              <ul style={{ margin: 0, paddingLeft: 18, color: 'text.secondary' }}>
+                <li><Typography variant="caption" color="text.secondary">Swap course sections with other students</Typography></li>
+                <li><Typography variant="caption" color="text.secondary">Sync your schedule across all devices</Typography></li>
+                <li><Typography variant="caption" color="text.secondary">Save your optimization preferences</Typography></li>
+              </ul>
+            </Box>
+          </Stack>
+
+          <Box sx={{ bgcolor: 'action.hover', p: 3, borderRadius: 2, textAlign: 'center' }}>
+            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+              Just Planning?
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+              Continue as a guest to browse courses and use the AI optimizer. No account required to start.
+            </Typography>
+            <Button
+              variant="outlined"
+              onClick={() => navigate('/courses')}
+              fullWidth
+            >
+              Start as Guest
+            </Button>
+          </Box>
         </CardContent>
       </Card>
     </Box>

@@ -52,7 +52,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { mode, setMode } = useThemeMode();
-  const { user, signOut } = useAuth();
+  const { user, signOut, signIn } = useAuth();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -170,29 +170,40 @@ export default function Layout() {
           Contact
         </Button>
 
-        <Box
-          sx={{
-            display: 'flex',
-            marginTop: 1,
-            alignItems: 'center',
-            gap: 1.5,
-            p: 1,
-            borderRadius: 2,
-            bgcolor: 'action.hover',
-            cursor: 'pointer',
-          }}
-          onClick={() => navigate('/settings')}
-        >
-          <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main' }}>
-            {user?.displayName?.[0] || 'U'}
-          </Avatar>
-          <Box sx={{ overflow: 'hidden' }}>
-            <ListItemText
-              primary={user?.displayName || 'User'}
-              primaryTypographyProps={{ variant: 'body2', fontWeight: 600, noWrap: true }}
-            />
+        {user ? (
+          <Box
+            sx={{
+              display: 'flex',
+              marginTop: 1,
+              alignItems: 'center',
+              gap: 1.5,
+              p: 1,
+              borderRadius: 2,
+              bgcolor: 'action.hover',
+              cursor: 'pointer',
+            }}
+            onClick={() => navigate('/settings')}
+          >
+            <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main' }}>
+              {user?.displayName?.[0] || 'U'}
+            </Avatar>
+            <Box sx={{ overflow: 'hidden' }}>
+              <ListItemText
+                primary={user?.displayName || 'User'}
+                primaryTypographyProps={{ variant: 'body2', fontWeight: 600, noWrap: true }}
+              />
+            </Box>
           </Box>
-        </Box>
+        ) : (
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={signIn}
+            sx={{ mt: 1 }}
+          >
+            Sign In
+          </Button>
+        )}
       </Box>
     </Box>
   );
