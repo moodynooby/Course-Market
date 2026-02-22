@@ -1,8 +1,17 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
-const JWKS = createRemoteJWKSet(
-  new URL(`https://${process.env.AUTH0_DOMAIN}/.well-known/jwks.json`),
-);
+const domain = process.env.AUTH0_DOMAIN || process.env.VITE_AUTH0_DOMAIN;
+const issuer =
+  process.env.AUTH0_ISSUER ||
+  process.env.AUTH0_ISSUER_BASE_URL ||
+  (domain ? `https://${domain}/` : '');
+const audience = process.env.AUTH0_AUDIENCE || process.env.VITE_AUTH0_AUDIENCE;
+
+if (!issuer || !audience) {
+  console.warn('Auth0 environment variables are missing. Auth might fail.');
+}
+
+const JWKS = issuer ? createRemoteJWKSet(new URL('.well-known/jwks.json', issuer)) : null;
 
 export interface AuthUser {
   sub: string;
@@ -19,9 +28,11 @@ export async function validateToken(authHeader: string | undefined): Promise<Aut
   const token = authHeader.substring(7);
 
   try {
-    const { payload } = await jwtVerify(token, JWKS, {
-      issuer: `https://${process.env.AUTH0_DOMAIN}/`,
-      audience: process.env.AUTH0_AUDIENCE,
+    if (!JWKS) throw new Error('JWKS not initialized. Check environment variables.');
+
+    const { payload } = await jwtVerify(token, JWKS!, {
+      issuer,
+      audience,
     });
 
     return {

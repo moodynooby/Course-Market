@@ -26,7 +26,7 @@ function jsonResponse(statusCode: number, body: object) {
   };
 }
 
-exports.handler = async (event: any) => {
+export const handler = async (event: any) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: corsHeaders, body: '' };
   }
