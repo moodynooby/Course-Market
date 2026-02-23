@@ -62,7 +62,7 @@ export const handler = async (event: any) => {
         contactPhone,
       } = requestBody;
 
-      if (!courseCode || !sectionOffered || !sectionWanted || !action) {
+      if (!courseCode || !sectionOffered || !sectionWanted || !action || !contactPhone) {
         return jsonResponse(400, { error: 'Missing required fields' });
       }
 
@@ -80,7 +80,7 @@ export const handler = async (event: any) => {
           action,
           status: 'open',
           description: description || null,
-          contactPhone: contactPhone || null,
+          contactPhone,
         })
         .returning();
 

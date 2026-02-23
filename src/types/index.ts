@@ -61,7 +61,7 @@ export interface TradePost {
   action: 'offer' | 'request';
   status: 'open' | 'pending' | 'completed' | 'cancelled';
   description?: string;
-  contactPhone?: string;
+  contactPhone: string;
   createdAt: string;
   updatedAt: string;
 }

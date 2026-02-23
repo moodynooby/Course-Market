@@ -18,7 +18,7 @@ export const trades = pgTable('trades', {
   action: varchar('action', { length: 20 }).notNull(),
   status: varchar('status', { length: 20 }).default('open').notNull(),
   description: text('description'),
-  contactPhone: varchar('contact_phone', { length: 20 }),
+  contactPhone: varchar('contact_phone', { length: 20 }).notNull(),
 
   // Timestamps
   createdAt: timestamp('created_at').defaultNow().notNull(),

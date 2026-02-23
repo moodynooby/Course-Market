@@ -445,10 +445,11 @@ export default function TradingPage() {
               fullWidth
             />
             <TextField
-              label="Contact Phone (optional)"
+              label="Contact Phone"
               value={tradeForm.contactPhone}
               onChange={(e) => setTradeForm({ ...tradeForm, contactPhone: e.target.value })}
               placeholder="+1 (555) 123-4567"
+              required
               fullWidth
             />
           </Stack>

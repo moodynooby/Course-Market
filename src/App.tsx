@@ -13,6 +13,7 @@ const CoursesPage = lazy(() => import('./pages/CoursesPage'));
 const SchedulePage = lazy(() => import('./pages/SchedulePage'));
 const TradingPage = lazy(() => import('./pages/TradingPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const LandingPage = lazy(() => import('./pages/LandingPage'));
 
 function LoadingFallback() {
   return (
@@ -45,7 +46,11 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="/courses" replace />,
+        element: (
+          <Suspense fallback={<LoadingFallback />}>
+            <LandingPage />
+          </Suspense>
+        ),
       },
       {
         path: 'courses',
