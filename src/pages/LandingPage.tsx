@@ -1,14 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Typography,
-  Button,
-  Card,
-  CardContent,
-  Stack,
-  Avatar,
-  Chip,
-} from '@mui/material';
+import { Box, Typography, Button, Card, CardContent, Stack, Avatar, Chip } from '@mui/material';
 import {
   School,
   Upload,
@@ -111,7 +102,12 @@ export default function LandingPage() {
         ))}
       </Stack>
 
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center" alignItems="center">
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={2}
+        justifyContent="center"
+        alignItems="center"
+      >
         <Button
           variant="contained"
           size="large"
