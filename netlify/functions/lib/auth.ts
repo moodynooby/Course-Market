@@ -37,8 +37,8 @@ export async function validateToken(authHeader: string | undefined): Promise<Aut
 
     return {
       sub: payload.sub!,
-      email: payload.email as string,
-      name: payload.name as string,
+      email: (payload.email as string) || payload.sub!,
+      name: (payload.name as string) || (payload.email as string) || payload.sub!,
       picture: payload.picture as string | undefined,
     };
   } catch (error) {
