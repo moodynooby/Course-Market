@@ -18,7 +18,7 @@ export default defineConfig({
     exclude: ['node_modules', 'dist', 'e2e'],
     isolate: true,
     pool: 'forks',
-    singleFork: true, // Use single fork for faster startup
+    singleFork: true, 
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

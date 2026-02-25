@@ -20,11 +20,9 @@ export function formatTimeSlots(timeSlots: TimeSlot[]): {
     return { dayDisplay: '', timeDisplay: 'TBA' };
   }
 
-  // Get unique days efficiently
   const uniqueDays = new Set(timeSlots.map((slot) => slot.day));
   const dayDisplay = Array.from(uniqueDays).join('');
 
-  // Use first time slot for display
   const firstSlot = timeSlots[0];
   const timeDisplay = `${formatTime(firstSlot.startTime)} - ${formatTime(firstSlot.endTime)}`;
 

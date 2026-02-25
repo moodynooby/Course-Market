@@ -42,8 +42,8 @@ describe('llm', () => {
       expect(prompt).toContain('Dr. Smith');
       expect(prompt).toContain('08:00');
       expect(prompt).toContain('17:00');
-      expect(prompt).toContain('3'); // credits
-      expect(prompt).toContain('85'); // score
+      expect(prompt).toContain('3'); 
+      expect(prompt).toContain('85'); 
     });
 
     it('handles empty schedule gracefully', () => {

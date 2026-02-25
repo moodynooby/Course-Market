@@ -91,21 +91,18 @@ export default function SchedulePage() {
     refreshSchedule();
     setWebllmAvailable('gpu' in navigator);
 
-    // Listen for storage changes (works across tabs/windows)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === STORAGE_KEYS.COURSE_SELECTIONS) {
         refreshSchedule();
       }
     };
 
-    // Listen for page visibility changes (when user switches tabs/apps)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         refreshSchedule();
       }
     };
 
-    // Listen for focus to refresh when user returns to this tab
     const handleFocus = () => {
       refreshSchedule();
     };

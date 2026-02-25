@@ -16,7 +16,6 @@ describe('generateId', () => {
 
   it('generates IDs with expected format', () => {
     const id = generateId();
-    // Should be alphanumeric (base 36)
     expect(id).toMatch(/^[a-z0-9]+$/);
   });
 });

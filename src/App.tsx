@@ -6,7 +6,6 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
-// Lazy load pages for code splitting
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const CallbackPage = lazy(() => import('./pages/CallbackPage'));
 const CoursesPage = lazy(() => import('./pages/CoursesPage'));

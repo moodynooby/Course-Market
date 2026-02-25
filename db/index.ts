@@ -2,7 +2,6 @@ import { neon } from '@netlify/neon';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from './schema';
 
-// Initialize database connection
 const client = neon();
 
 export const db = drizzle({
@@ -10,7 +9,6 @@ export const db = drizzle({
   client,
 });
 
-// Trade operations
 export async function createTrade(data: schema.NewTrade) {
   const [result] = await db.insert(schema.trades).values(data).returning();
   return result;

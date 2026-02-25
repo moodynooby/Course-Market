@@ -8,7 +8,6 @@ import {
 } from '../config/csvConfig';
 import { generateId } from './id';
 
-// --- Course Directory format helpers ---
 
 const DAY_ABBREV: Record<string, DayOfWeek> = {
   Mon: 'M',
@@ -35,23 +34,19 @@ function parseScheduleColumn(schedule: string): ParsedScheduleSection[] {
   const sections: ParsedScheduleSection[] = [];
   if (!schedule) return sections;
 
-  // Clean up excessive whitespace / tabs
   const cleaned = schedule
     .replace(/\t+/g, '')
     .replace(/\s{2,}/g, ' ')
     .trim();
 
-  // Split on "Section <number>" boundaries
   const sectionChunks = cleaned.split(/(?=Section\s+\d+)/i).filter(Boolean);
 
   for (const chunk of sectionChunks) {
-    // Extract section number: "Section 15  [Bi-Semester]  Tue ..." -> "15"
     const sectionMatch = chunk.match(/^Section\s+(\d+)/i);
     if (!sectionMatch) continue;
 
     const sectionNumber = sectionMatch[1];
 
-    // Find all day [HH:MM to HH:MM] patterns
     const timePattern =
       /(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s*\[(\d{1,2}:\d{2})\s*to\s*(\d{1,2}:\d{2})\]/gi;
     const timeSlots: TimeSlot[] = [];
@@ -104,12 +99,10 @@ function cleanCourseCode(raw: string): string {
  * Handles formats like "COM101" -> "COM" or "COM 101" -> "COM"
  */
 export function extractSubject(courseCode: string): string {
-  // First try removing digits (for formats like "COM101")
   const withoutDigits = courseCode.replace(/\d+/g, '').trim();
   if (withoutDigits) {
     return withoutDigits;
   }
-  // Fallback to first word (for formats like "COM 101")
   return courseCode.split(' ')[0] || courseCode;
 }
 
@@ -122,7 +115,6 @@ function isCourseDirectoryFormat(headers: string[]): boolean {
   return lower.includes('schedule') && lower.includes('course code');
 }
 
-// --- Standard format helpers ---
 
 function validateHeaders(headers: string[]): {
   valid: boolean;
@@ -158,7 +150,6 @@ function mapRow(row: Record<string, string>): Record<string, string> {
   return result;
 }
 
-// --- Main parser ---
 
 export function parseCSV(csvContent: string): CSVParseResult {
   const { data, errors: papaErrors } = Papa.parse<Record<string, string>>(csvContent, {

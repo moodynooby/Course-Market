@@ -10,7 +10,6 @@ export const STORAGE_KEYS = {
   THEME_MODE: 'theme-mode',
 } as const;
 
-// --- PREFERENCES ---
 export const DEFAULT_PREFERENCES: Preferences = {
   preferredStartTime: '08:00',
   preferredEndTime: '17:00',

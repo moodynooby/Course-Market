@@ -43,7 +43,6 @@ export default function CoursesPage() {
     setSections(data.sections);
     setLoading(false);
 
-    // Load selections from localStorage
     const saved = localStorage.getItem(STORAGE_KEYS.COURSE_SELECTIONS);
     if (saved) {
       try {

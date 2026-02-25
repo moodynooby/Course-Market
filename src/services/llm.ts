@@ -1,5 +1,3 @@
-// Unified LLM service for browser-based LLM inference
-// Supports: WebLLM (WebGPU), Wllama (WebAssembly), OpenAI, Anthropic, Custom APIs
 
 import { CreateMLCEngine, type MLCEngineInterface } from '@mlc-ai/web-llm';
 import { Wllama } from '@wllama/wllama';

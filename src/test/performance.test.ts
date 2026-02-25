@@ -24,7 +24,6 @@ describe('performance', () => {
     const score = calculateScheduleScore(schedule, basePreferences);
     const end = performance.now();
 
-    // Should complete in less than 100ms
     expect(end - start).toBeLessThan(100);
     expect(typeof score).toBe('number');
   });

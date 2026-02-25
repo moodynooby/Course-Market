@@ -128,7 +128,6 @@ export default function SettingsPage() {
       </Typography>
 
       <Grid container spacing={3}>
-        {/* Profile Settings */}
         <Grid item xs={12}>
           <Card>
             <CardContent>
@@ -169,7 +168,6 @@ export default function SettingsPage() {
           </Card>
         </Grid>
 
-        {/* Schedule Preferences */}
         <Grid item xs={12}>
           <Card>
             <CardContent>
@@ -284,7 +282,6 @@ export default function SettingsPage() {
           </Card>
         </Grid>
 
-        {/* AI/LLM Settings */}
         <Grid item xs={12}>
           <Card>
             <CardContent>

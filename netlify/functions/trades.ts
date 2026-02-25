@@ -1,5 +1,3 @@
-// Netlify Function for Course Trading Board
-// Uses @netlify/neon (auto-reads NETLIFY_DATABASE_URL) + Drizzle ORM
 
 import { neon } from '@netlify/neon';
 import { drizzle } from 'drizzle-orm/neon-http';
@@ -7,7 +5,6 @@ import { eq, desc } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 import { validateToken } from './lib/auth';
 
-// Initialize database connection once at module level (not per request)
 const client = neon();
 const db = drizzle({ client, schema });
 
@@ -32,7 +29,6 @@ export const handler = async (event: any) => {
   }
 
   try {
-    // Validate Auth0 token
     const user = await validateToken(event.headers.authorization);
 
     const { httpMethod, path, body } = event;
@@ -40,7 +36,6 @@ export const handler = async (event: any) => {
     const pathParts = path.split('/').filter(Boolean);
     const tradeId = pathParts[pathParts.length - 1];
 
-    // GET /trades
     if (httpMethod === 'GET' && path.endsWith('/trades')) {
       const allTrades = await db
         .select()
@@ -50,7 +45,6 @@ export const handler = async (event: any) => {
       return jsonResponse(200, { trades: allTrades });
     }
 
-    // POST /trades
     if (httpMethod === 'POST' && path.endsWith('/trades')) {
       const {
         courseCode,
@@ -87,7 +81,6 @@ export const handler = async (event: any) => {
       return jsonResponse(201, { trade: newTrade });
     }
 
-    // PUT /trades/:id
     if (httpMethod === 'PUT' && tradeId) {
       const {
         status,
@@ -100,7 +93,6 @@ export const handler = async (event: any) => {
         contactPhone,
       } = requestBody;
 
-      // Verify ownership
       const [existingTrade] = await db
         .select()
         .from(schema.trades)
@@ -116,7 +108,6 @@ export const handler = async (event: any) => {
         });
       }
 
-      // Update trade
       const [updatedTrade] = await db
         .update(schema.trades)
         .set({
@@ -136,9 +127,7 @@ export const handler = async (event: any) => {
       return jsonResponse(200, { trade: updatedTrade });
     }
 
-    // DELETE /trades/:id
     if (httpMethod === 'DELETE' && tradeId) {
-      // Verify ownership
       const [existingTrade] = await db
         .select()
         .from(schema.trades)
@@ -163,7 +152,6 @@ export const handler = async (event: any) => {
   } catch (error) {
     console.error('Handler error:', error);
 
-    // Auth errors
     if (error instanceof Error && error.message.includes('authorization')) {
       return jsonResponse(401, {
         error: 'Unauthorized',

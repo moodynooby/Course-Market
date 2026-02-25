@@ -1,10 +1,8 @@
-// Storage service using localStorage (courses & user only — trades use the DB via tradesApi)
 
 import type { Course, Section } from '../types';
 import { STORAGE_KEYS } from './userConfig';
 import { ENV } from './devConfig';
 
-// Courses functions
 export function saveCourses(courses: Course[], sections: Section[]) {
   try {
     localStorage.setItem(STORAGE_KEYS.COURSES, JSON.stringify(courses));

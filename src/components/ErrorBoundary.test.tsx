@@ -3,7 +3,6 @@ import { render, screen } from '@testing-library/react';
 import { ErrorBoundary } from './ErrorBoundary';
 
 describe('ErrorBoundary', () => {
-  // Suppress expected error output during tests
   beforeEach(() => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
