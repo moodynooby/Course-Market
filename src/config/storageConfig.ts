@@ -1,4 +1,3 @@
-
 import type { Course, Section } from '../types';
 import { STORAGE_KEYS } from './userConfig';
 import { ENV } from './devConfig';

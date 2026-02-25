@@ -14,9 +14,15 @@ export default defineConfig(({ mode }) => {
       }),
     ],
     define: {
-      'import.meta.env.VITE_AUTH0_DOMAIN': JSON.stringify(env.VITE_AUTH0_DOMAIN || env.AUTH0_DOMAIN || ''),
-      'import.meta.env.VITE_AUTH0_CLIENT_ID': JSON.stringify(env.VITE_AUTH0_CLIENT_ID || env.AUTH0_CLIENT_ID || ''),
-      'import.meta.env.VITE_AUTH0_AUDIENCE': JSON.stringify(env.VITE_AUTH0_AUDIENCE || env.AUTH0_AUDIENCE || ''),
+      'import.meta.env.VITE_AUTH0_DOMAIN': JSON.stringify(
+        env.VITE_AUTH0_DOMAIN || env.AUTH0_DOMAIN || '',
+      ),
+      'import.meta.env.VITE_AUTH0_CLIENT_ID': JSON.stringify(
+        env.VITE_AUTH0_CLIENT_ID || env.AUTH0_CLIENT_ID || '',
+      ),
+      'import.meta.env.VITE_AUTH0_AUDIENCE': JSON.stringify(
+        env.VITE_AUTH0_AUDIENCE || env.AUTH0_AUDIENCE || '',
+      ),
     },
     resolve: {
       alias: {

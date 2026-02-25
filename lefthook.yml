@@ -1,5 +1,10 @@
 pre-commit:
   commands:
-    lint:
-      glob: "src/**/*.{ts,tsx}"
-      run: "bunx biome lint --write {staged_files} && bunx biome format --write {staged_files}"
+    fix:
+      glob: "{src,netlify/functions}/**/*.{ts,tsx,js,jsx}"
+      run: "bun run fix"
+      stage_fixed: true
+    test:
+      run: "bun run test:run"
+    typecheck:
+      run: "bun run tsc -b"

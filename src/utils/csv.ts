@@ -8,7 +8,6 @@ import {
 } from '../config/csvConfig';
 import { generateId } from './id';
 
-
 const DAY_ABBREV: Record<string, DayOfWeek> = {
   Mon: 'M',
   Tue: 'T',
@@ -115,7 +114,6 @@ function isCourseDirectoryFormat(headers: string[]): boolean {
   return lower.includes('schedule') && lower.includes('course code');
 }
 
-
 function validateHeaders(headers: string[]): {
   valid: boolean;
   errors: string[];
@@ -149,7 +147,6 @@ function mapRow(row: Record<string, string>): Record<string, string> {
 
   return result;
 }
-
 
 export function parseCSV(csvContent: string): CSVParseResult {
   const { data, errors: papaErrors } = Papa.parse<Record<string, string>>(csvContent, {

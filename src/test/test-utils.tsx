@@ -5,7 +5,7 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 const testTheme = createTheme({
   components: {
     MuiCssBaseline: {
-      styleOverrides: '', 
+      styleOverrides: '',
     },
   },
 });
