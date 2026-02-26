@@ -11,12 +11,14 @@ import {
   List,
   ListItem,
   ListItemIcon,
+  Paper,
   ListItemText,
   ListItemSecondaryAction,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  useTheme,
 } from '@mui/material';
 import {
   Upload,
@@ -40,6 +42,8 @@ interface ImportDialogProps {
 }
 
 export default function ImportDialog({ open, onClose }: ImportDialogProps) {
+  const theme = useTheme();
+
   const [files, setFiles] = useState<File[]>([]);
   const [parseResults, setParseResults] = useState<
     {
@@ -159,13 +163,13 @@ export default function ImportDialog({ open, onClose }: ImportDialogProps) {
           </IconButton>
         </DialogTitle>
         <DialogContent dividers>
-          <Box
+          <Paper
+            variant="outlined"
             sx={{
-              mb: 2,
-              p: 1,
-              borderRadius: 1,
-              borderColor: 'secondary.light',
-              border: 1,
+              bgcolor: 'background.paper',
+              overflow: 'scroll',
+              padding: 2,
+              marginBottom: 2,
             }}
           >
             <Typography variant="body2" color="text.secondary" gutterBottom>
@@ -178,10 +182,9 @@ export default function ImportDialog({ open, onClose }: ImportDialogProps) {
               startIcon={<Support />}
               size="small"
             >
-              {' '}
               Still need help?
             </Button>
-          </Box>
+          </Paper>
 
           <Box
             sx={{

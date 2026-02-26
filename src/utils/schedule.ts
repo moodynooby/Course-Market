@@ -1,4 +1,70 @@
-import type { Course, Section, Schedule, TimeSlot, DayOfWeek, Preferences } from '../types';
+import type {
+  Course,
+  DayOfWeek,
+  Preferences,
+  Schedule,
+  Section,
+  TimeSlot,
+  CalendarEvent,
+} from '../types';
+
+const DAY_TO_NUMBER: Record<DayOfWeek, number> = {
+  M: 1,
+  T: 2,
+  W: 3,
+  Th: 4,
+  F: 5,
+  Sa: 6,
+  Su: 0,
+};
+
+function getWeekStartDate(): Date {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  const weekStart = new Date(now.setDate(diff));
+  weekStart.setHours(0, 0, 0, 0);
+  return weekStart;
+}
+
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
+export function sectionsToCalendarEvents(sections: Section[], courses: Course[]): CalendarEvent[] {
+  const events: CalendarEvent[] = [];
+  const weekStart = getWeekStartDate();
+
+  sections.forEach((section) => {
+    const course = courses.find((c) => c.id === section.courseId);
+
+    section.timeSlots.forEach((slot) => {
+      const dayOffset = DAY_TO_NUMBER[slot.day];
+      const startMinutes = timeToMinutes(slot.startTime);
+      const endMinutes = timeToMinutes(slot.endTime);
+
+      const startDate = new Date(weekStart);
+      startDate.setDate(startDate.getDate() + dayOffset);
+      startDate.setHours(Math.floor(startMinutes / 60), startMinutes % 60, 0, 0);
+
+      const endDate = new Date(weekStart);
+      endDate.setDate(endDate.getDate() + dayOffset);
+      endDate.setHours(Math.floor(endMinutes / 60), endMinutes % 60, 0, 0);
+
+      events.push({
+        id: `${section.id}-${slot.day}-${slot.startTime}`,
+        title: `${course?.code || 'Course'} - ${section.sectionNumber}`,
+        start: startDate,
+        end: endDate,
+        allDay: false,
+        resource: { section, course },
+      });
+    });
+  });
+
+  return events;
+}
 
 export function formatTime(time24: string): string {
   const [hours, minutes] = time24.split(':');

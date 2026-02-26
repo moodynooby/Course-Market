@@ -1,36 +1,30 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useMediaQuery } from '@mui/material';
+import { PlayArrow, Psychology, Schedule as ScheduleIcon } from '@mui/icons-material';
 import {
+  Alert,
   Box,
-  Typography,
   Button,
   Card,
   CardContent,
-  Grid,
   Chip,
-  Alert,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  LinearProgress,
-  Divider,
   Dialog,
-  DialogTitle,
-  DialogContent,
   DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Grid,
+  LinearProgress,
+  Stack,
+  Typography,
+  useMediaQuery,
 } from '@mui/material';
-import { PlayArrow, Psychology, Schedule as ScheduleIcon } from '@mui/icons-material';
-import { getCourses } from '../config/storageConfig';
-import { STORAGE_KEYS, DEFAULT_PREFERENCES, getPreferences } from '../config/userConfig';
+import { useCallback, useEffect, useState } from 'react';
+import CalendarView from '../components/CalendarView';
 import { getLlmConfig } from '../config/llmConfig';
+import { getCourses } from '../config/storageConfig';
+import { DEFAULT_PREFERENCES, getPreferences, STORAGE_KEYS } from '../config/userConfig';
 import { optimizeWithLLM } from '../services/llm';
-import type { Course, Section, Schedule, LLMConfig } from '../types';
-import { formatTime, checkConflicts, formatTimeSlots } from '../utils/schedule';
+import type { Course, LLMConfig, Schedule, Section } from '../types';
+import { checkConflicts } from '../utils/schedule';
 
 function generateCurrentSchedule(): Schedule | null {
   const { courses, sections } = getCourses();
@@ -216,44 +210,11 @@ export default function SchedulePage() {
                 </Stack>
               </Stack>
 
-              <TableContainer component={Paper} variant="outlined">
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Course</TableCell>
-                      <TableCell>Section</TableCell>
-                      <TableCell>Schedule</TableCell>
-                      <TableCell>Instructor</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {currentSchedule.sections.map((section) => {
-                      const course = allCourses.find((c) => c.id === section.courseId);
-                      const { dayDisplay, timeDisplay } = formatTimeSlots(section.timeSlots);
-
-                      return (
-                        <TableRow key={section.id}>
-                          <TableCell>
-                            <Typography variant="body2" fontWeight={500}>
-                              {course?.code}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {course?.name}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>{section.sectionNumber}</TableCell>
-                          <TableCell>
-                            <Typography variant="body2">
-                              {dayDisplay} {timeDisplay}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>{section.instructor}</TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <CalendarView
+                sections={currentSchedule.sections}
+                courses={allCourses}
+                conflicts={conflicts}
+              />
             </CardContent>
           </Card>
         </Box>

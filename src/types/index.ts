@@ -84,3 +84,15 @@ export interface LLMConfig {
   apiBaseUrl?: string;
   initProgressCallback?: (progress: { progress: number; text: string }) => void;
 }
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
+  allDay: boolean;
+  resource?: {
+    section: Section;
+    course?: Course;
+  };
+}
