@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { calculateScheduleScore } from '../utils/schedule';
-import { makeSection, makeTimeSlot, basePreferences, makeSchedule } from './performance-helpers';
+import { basePreferences, makeSchedule, makeSection, makeTimeSlot } from './performance-helpers';
 
 describe('performance', () => {
   it('schedule scoring should complete in reasonable time', () => {

@@ -1,6 +1,6 @@
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { type RenderOptions, render } from '@testing-library/react';
 import type { ReactElement } from 'react';
-import { render, type RenderOptions } from '@testing-library/react';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
 
 const testTheme = createTheme({
   components: {

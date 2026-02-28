@@ -1,11 +1,11 @@
 import type {
+  CalendarEvent,
   Course,
   DayOfWeek,
   Preferences,
   Schedule,
   Section,
   TimeSlot,
-  CalendarEvent,
 } from '../types';
 
 const DAY_TO_NUMBER: Record<DayOfWeek, number> = {

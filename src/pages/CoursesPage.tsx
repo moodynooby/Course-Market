@@ -1,28 +1,28 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { ExpandLess, ExpandMore, Person, Schedule, Warning } from '@mui/icons-material';
 import {
-  Box,
-  Typography,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Card,
-  CardContent,
-  CardActions,
-  Button,
-  Chip,
-  Stack,
-  IconButton,
-  Collapse,
   Alert,
+  Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  Chip,
+  Collapse,
+  FormControl,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
   Skeleton,
+  Stack,
+  TextField,
+  Typography,
 } from '@mui/material';
-import { ExpandMore, ExpandLess, Schedule, Person, Warning } from '@mui/icons-material';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCourses } from '../config/storageConfig';
 import { STORAGE_KEYS } from '../config/userConfig';
 import type { Course, Section } from '../types';
-import { formatTime, hasSectionConflict, formatTimeSlots } from '../utils/schedule';
+import { formatTime, formatTimeSlots, hasSectionConflict } from '../utils/schedule';
 
 const INITIAL_VISIBLE_COURSES = 25;
 const VISIBLE_COURSE_STEP = 25;

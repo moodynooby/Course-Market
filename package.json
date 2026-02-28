@@ -5,12 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "start": "npx netlify dev",
     "build": "tsc -b && vite build && echo '/*  /index.html  200' > dist/_redirects",
     "fix": "biome lint --write . && biome format --write .",
     "ci": " bun run fix && vitest run && tsc -b ",
     "preview": "vite preview",
-    "test": "vitest",
     "test:run": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "npx netlify dev:exec drizzle-kit migrate",
@@ -33,14 +31,14 @@
     "react": "^19.2.4",
     "react-big-calendar": "^1.19.4",
     "react-dom": "^19.2.4",
-    "react-router-dom": "^7.13.0"
+    "react-router-dom": "^7.13.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.3",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
-    "@types/node": "^22.19.11",
+    "@types/node": "^22.19.13",
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

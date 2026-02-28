@@ -48,112 +48,80 @@ A comprehensive web application for course management, schedule optimization, an
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 20+ 
-- npm or yarn
-- (Optional) Netlify account for deployment
+- Node.js 20+ (or Bun)
+- Auth0 account (free tier works)
+- Netlify account (free tier works)
 
-### Installation
+### Installation & Setup
 
 1. **Clone and install dependencies:**
    ```bash
    git clone <repository-url>
    cd course-market
-   npm install
+   bun install  # or npm install
    ```
 
-2. **Start development server:**
+2. **Link to Netlify** (required for database):
    ```bash
-   npm run dev
+   netlify login
+   netlify link
+   ```
+   Choose existing site or create new one.
+
+3. **Setup Neon Database** (if not already):
+   ```bash
+   netlify addons:create neon
    ```
 
-3. **Open in browser:**
+4. **Configure environment variables:**
+   ```bash
+   cp .env.example .env
    ```
-   http://localhost:5173
+   Edit `.env` with your Auth0 credentials:
+   ```bash
+   # Frontend (VITE_ prefix)
+   VITE_AUTH0_DOMAIN=your-tenant.auth0.com
+   VITE_AUTH0_CLIENT_ID=your_client_id
+   VITE_AUTH0_AUDIENCE=https://auraishub-api
+
+   # Backend (no prefix)
+   AUTH0_DOMAIN=your-tenant.auth0.com
+   AUTH0_AUDIENCE=https://auraishub-api
    ```
 
-### Environment Configuration
+5. **Run database migrations:**
+   ```bash
+   bun run db:migrate
+   ```
 
-Create a `.env` file in the project root:
+6. **Start development server:**
+   ```bash
+   bun run dev
+   ```
+   Open `http://localhost:3000`
 
-```bash
-cp .env.example .env
-```
+### Auth0 Setup
 
-Configure environment variables:
+Create Auth0 application and API:
 
-```bash
-# Auth0 Configuration (Required)
-VITE_AUTH0_DOMAIN=your-tenant.auth0.com
-VITE_AUTH0_CLIENT_ID=your_client_id
-VITE_AUTH0_AUDIENCE=https://your-api-identifier
+1. **Single Page Application:**
+   - Applications → Create Application → Single Page Application
+   - **Allowed Callback URLs**: `http://localhost:3000/callback`
+   - **Allowed Logout URLs**: `http://localhost:3000`
+   - **Allowed Web Origins**: `http://localhost:3000`
 
-# Netlify function URL (optional)
-VITE_NETLIFY_FUNCTION_URL=https://your-site.netlify.app/.netlify/functions
-
-# Database URL (for Netlify functions)
-DATABASE_URL=your_neon_database_url
-```
-
-## 🔐 Auth0 Authentication Setup
-
-This application uses Auth0 for user authentication. Follow these steps to configure Auth0 for your project.
-
-### Step 1: Create an Auth0 Account
-
-1. Go to [Auth0](https://auth0.com/) and sign up for a free account
-2. Verify your email address
-3. Create your tenant domain (e.g., `your-app.auth0.com`)
-
-### Step 2: Create a Single Page Application
-
-1. In the Auth0 Dashboard, navigate to **Applications** → **Applications**
-2. Click **Create Application**
-3. Select **Single Page Application** as the application type
-4. Click **Create**
-
-### Step 3: Configure Application Settings
-
-In your application settings, configure the following:
-
-| Setting | Value |
-|---------|-------|
-| **Name** | Course Hub |
-| **Allowed Callback URLs** | `http://localhost:5173/callback` (development), `https://yourdomain.com/callback` (production) |
-| **Allowed Logout URLs** | `http://localhost:5173` (development), `https://yourdomain.com` (production) |
-| **Allowed Web Origins** | `http://localhost:5173` (development), `https://yourdomain.com` (production) |
-| **Refresh Token Rotation** | Enabled |
-
-### Step 4: Create an API (for Token Validation)
-
-1. In the Auth0 Dashboard, navigate to **Applications** → **APIs**
-2. Click **Create API**
-3. Enter the following:
+2. **Custom API:**
+   - Applications → APIs → Create API
    - **Name**: Course Hub API
-   - **Identifier**: `https://your-api-identifier` (this becomes your `VITE_AUTH0_AUDIENCE`)
+   - **Identifier**: `https://auraishub-api` (your audience)
    - **Signing Algorithm**: RS256
-4. Click **Create**
 
-### Step 5: Update Environment Variables
+### Test the Integration
 
-Add your Auth0 credentials to the `.env` file:
-
-```bash
-VITE_AUTH0_DOMAIN=your-tenant.auth0.com
-VITE_AUTH0_CLIENT_ID=your_client_id
-VITE_AUTH0_AUDIENCE=https://your-api-identifier
-```
-
-You can find these values in your Auth0 application settings:
-- **Domain**: Shown at the top of your application settings
-- **Client ID**: Shown in the "Basic Information" section
-- **Audience**: The identifier you set when creating the API
-
-### Step 6: Test the Integration
-
-1. Start the development server: `npm run dev`
-2. Navigate to `http://localhost:5173`
-3. Click "Sign In" - you should be redirected to Auth0
-4. After signing in, you should be redirected back to the application
+1. Start development server: `bun run dev`
+2. Navigate to `http://localhost:3000`
+3. Click "Sign In" - should redirect to Auth0
+4. After signing in, should redirect back to application
 
 ## 📊 CSV Format
 
@@ -220,30 +188,40 @@ netlify/functions/
 ### Available Scripts
 
 ```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run preview      # Preview production build
-npm run lint         # Run ESLint
+bun run dev          # Start development server (Vite + Netlify plugin)
+bun run build        # Build for production
+bun run preview      # Preview production build
+bun run test         # Run tests
+bun run fix          # Auto-fix linting/formatting
+bun run typecheck    # Check TypeScript types
+bun run ci           # Full CI check (lint + typecheck + test)
 ```
 
-### Database Setup (Optional)
+### Database Commands
 
-For Netlify deployment with PostgreSQL:
+```bash
+bun run db:generate  # Generate migration from schema changes
+bun run db:migrate   # Apply migrations
+bun run db:studio    # Open Drizzle Studio (DB GUI)
+```
 
-1. **Create Neon database**: https://neon.tech/
-2. **Set environment variables**:
-   ```bash
-   DATABASE_URL=your_neon_connection_string
-   ```
-3. **Deploy to Netlify** with database access
+### Troubleshooting
 
-### Local Storage Fallback
+**"Not linked to a site"**: Run `netlify link` to connect to Netlify site.
 
-The application includes comprehensive local storage fallback:
-- Courses and sections persisted locally
-- User preferences saved across sessions
-- Trading data stored in browser storage
-- No backend required for full functionality
+**"DATABASE_URL not found"**: 
+1. Ensure `netlify link` is run
+2. Check Neon addon: `netlify addons:list`
+3. Try `netlify addons:create neon`
+
+**"Auth0 configuration incomplete"**:
+1. Check `.env` has all required variables
+2. Verify Auth0 domain and audience are correct
+3. Ensure custom API is created (not Management API)
+
+**"Invalid callback URL"**: Update Auth0 settings to include `http://localhost:3000/callback`.
+
+**Port 3000 in use**: `lsof -ti:3000 | xargs kill -9`
 
 ## 📱 Usage Guide
 
@@ -290,110 +268,30 @@ The application includes comprehensive local storage fallback:
 
 ### Netlify Deployment
 
-1. **Connect repository** to Netlify
-2. **Set environment variables** in Netlify dashboard
-3. **Deploy** with automatic builds on push
+1. **Configure Production Auth0**:
+   - **Allowed Callback URLs**: `https://yourdomain.com/callback`
+   - **Allowed Logout URLs**: `https://yourdomain.com`
+   - **Allowed Web Origins**: `https://yourdomain.com`
 
-### Vercel/Other Platforms
+2. **Deploy to Netlify**:
+   ```bash
+   git push origin main
+   ```
+   Netlify will automatically build and deploy.
 
-The application can be deployed to any static hosting platform:
-- Build: `npm run build`
-- Output: `dist/` directory
-- Functions: Configure for Netlify Functions if needed
+### Environment Variables for Production
 
-### Auth0 Production Configuration
-
-When deploying to production, you must update your Auth0 application settings to match your production domain.
-
-#### Step 1: Update Allowed URLs
-
-In your Auth0 Dashboard, go to **Applications** → **Your Application** → **Settings**:
-
-| Setting | Development | Production |
-|---------|-------------|------------|
-| **Allowed Callback URLs** | `http://localhost:5173/callback` | `https://yourdomain.com/callback` |
-| **Allowed Logout URLs** | `http://localhost:5173` | `https://yourdomain.com` |
-| **Allowed Web Origins** | `http://localhost:5173` | `https://yourdomain.com` |
-
-**Important:** Add both development and production URLs separated by commas if you need to support both environments.
-
-#### Step 2: Configure Production Environment Variables
-
-Set these environment variables in your production deployment platform:
-
+Set these in your deployment platform:
 ```bash
-# Auth0 Configuration (Production)
+# Auth0 Configuration
 VITE_AUTH0_DOMAIN=your-tenant.auth0.com
 VITE_AUTH0_CLIENT_ID=your_client_id
-VITE_AUTH0_AUDIENCE=https://your-api-identifier
-
-# Optional: Netlify function URL for production
-VITE_NETLIFY_FUNCTION_URL=https://your-site.netlify.app/.netlify/functions
+VITE_AUTH0_AUDIENCE=https://auraishub-api
+AUTH0_DOMAIN=your-tenant.auth0.com
+AUTH0_AUDIENCE=https://auraishub-api
 ```
 
-#### Step 3: Update Auth0 API Settings
-
-1. Go to **Applications** → **APIs** → **Your API**
-2. Verify the **Identifier** matches your `VITE_AUTH0_AUDIENCE` exactly
-3. Ensure **Signing Algorithm** is set to RS256
-4. Under **Settings**, verify **Token Expiration** is appropriate (default: 86400 seconds = 24 hours)
-
-#### Step 4: Configure Refresh Token Rotation (Production)
-
-In your Auth0 application settings:
-
-1. Scroll to **Refresh Token Rotation**
-2. Enable **Refresh Token Rotation**
-3. Set **Refresh Token Expiration** (recommended: 1 week for production)
-4. This allows users to stay logged in without re-authenticating frequently
-
-#### Step 5: Production Security Settings
-
-Under **Application Properties** in Auth0:
-
-| Setting | Recommended Value |
-|---------|-------------------|
-| **OIDC Conformant** | Enabled (ON) |
-| **Allow Offline Access** | Enabled (ON) |
-| **Token Endpoint Authentication Method** | `client_secret_basic` or `none` for SPA |
-
-#### Step 6: Test Production Deployment
-
-After configuring Auth0 for production:
-
-1. Deploy your application to production
-2. Clear browser cache and cookies
-3. Navigate to your production URL
-4. Click "Sign In" - should redirect to Auth0 login
-5. After authentication, should redirect back to `/callback` then home
-6. Verify the URL shows your production domain
-7. Test logout functionality
-
-#### Step 7: Monitor Auth0 Dashboard
-
-After going live:
-
-1. Check **Dashboard** → **Analytics** for active users
-2. Monitor **Dashboard** → **Logs** for any errors
-3. Set up alerts for failed login attempts
-4. Review **Users** to see authenticated users
-
-#### Troubleshooting Production Auth0
-
-**Issue:** Users can't log in after deployment
-- Verify all production URLs are in Allowed Callback/Logout/Web Origins
-- Check for typos in environment variables
-- Ensure domain matches exactly (no trailing slashes)
-
-**Issue:** Token validation fails
-- Verify `VITE_AUTH0_AUDIENCE` matches API Identifier exactly
-- Check that API is using RS256 signing algorithm
-- Ensure token hasn't expired
-
-**Issue:** CORS errors in production
-- Add production domain to Allowed Web Origins
-- Do not use wildcards (`*`) in origins
-- Include both `http` and `https` if needed
+DATABASE_URL is automatically set by the Neon addon.
 
 ## 🔍 Troubleshooting
 
@@ -416,14 +314,14 @@ After going live:
 
 **Build Issues:**
 - Clear node_modules and reinstall dependencies
-- Check TypeScript errors: `npm run lint`
+- Check TypeScript errors: `bun run typecheck`
 - Ensure all environment variables are set
 
 ### Auth0 Issues
 
 **"Invalid callback URL" error:**
 - Ensure your callback URL is exactly listed in Allowed Callback URLs
-- For local development: `http://localhost:5173/callback`
+- For local development: `http://localhost:3000/callback`
 - For production: `https://yourdomain.com/callback`
 - No trailing slashes or extra characters
 
@@ -441,19 +339,9 @@ After going live:
 - Add your application's base URL to Allowed Logout URLs
 - Check that the logout redirect works with your domain
 
-**Too many redirects:**
-- Clear browser cookies and local storage
-- Check that redirect_uri matches exactly in your configuration
-- Verify you're not already authenticated in another session
-
-**Auth0 free tier limits:**
-- Free tier includes 7,500 monthly active users (MAU)
-- Monitor usage in Auth0 Dashboard → Analytics
-- Consider upgrading if you expect more users
-
 **CORS errors:**
 - Ensure Allowed Web Origins includes your exact domain
-- For local development, include `http://localhost:5173`
+- For local development, include `http://localhost:3000`
 - Do not use wildcards in origins
 
 ## 🤝 Contributing
@@ -468,15 +356,3 @@ After going live:
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
-
-- React 19 with TypeScript
-- Vite build tool
-- WebLLM for browser-based AI
-- Netlify functions for serverless API
-- Neon PostgreSQL for database
-- Modern UI design patterns
-
----
-
-Built with ❤️ for better course scheduling and student collaboration.

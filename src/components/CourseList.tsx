@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { Course, Section } from '../types';
-import { formatTime, hasSectionConflict, formatTimeSlots } from '../utils/schedule';
+import { formatTime, formatTimeSlots, hasSectionConflict } from '../utils/schedule';
 
 interface CourseListProps {
   courses: Course[];

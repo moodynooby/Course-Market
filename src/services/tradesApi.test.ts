@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getTrades, createTrade, updateTrade, deleteTrade } from './tradesApi';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createTrade, deleteTrade, getTrades, updateTrade } from './tradesApi';
 
 vi.mock('../config/devConfig', () => ({
   ENV: {
@@ -61,7 +61,6 @@ describe('tradesApi', () => {
         courseName: 'Intro to CS',
         sectionOffered: 'A',
         sectionWanted: 'B',
-        action: 'offer' as const,
       };
 
       const mockCreatedTrade = { id: '1', ...tradeData, status: 'open' };

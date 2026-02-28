@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import type { Preferences, Schedule } from '../types';
 import { buildScheduleAnalysisPrompt } from './llm';
-import type { Schedule, Preferences } from '../types';
 
 describe('llm', () => {
   describe('buildScheduleAnalysisPrompt', () => {

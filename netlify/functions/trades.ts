@@ -1,6 +1,6 @@
 import { neon } from '@netlify/neon';
+import { desc, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/neon-http';
-import { eq, desc } from 'drizzle-orm';
 import * as schema from '../../db/schema';
 import { validateToken } from './lib/auth';
 
@@ -114,7 +114,6 @@ export const handler = async (event: any) => {
           courseName: courseName ?? existingTrade.courseName,
           sectionOffered: sectionOffered ?? existingTrade.sectionOffered,
           sectionWanted: sectionWanted ?? existingTrade.sectionWanted,
-          action: action ?? existingTrade.action,
           status: status ?? existingTrade.status,
           description: description ?? existingTrade.description,
           contactPhone: contactPhone ?? existingTrade.contactPhone,

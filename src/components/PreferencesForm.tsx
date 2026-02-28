@@ -1,4 +1,4 @@
-import type { Preferences, DayOfWeek } from '../types';
+import type { DayOfWeek, Preferences } from '../types';
 
 interface PreferencesFormProps {
   preferences: Preferences;

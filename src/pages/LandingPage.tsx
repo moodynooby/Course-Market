@@ -1,13 +1,13 @@
-import { useNavigate } from 'react-router-dom';
-import { Box, Typography, Button, Card, CardContent, Stack, Avatar, Chip } from '@mui/material';
 import {
-  School,
-  Upload,
-  CalendarMonth,
-  SwapHoriz,
   ArrowForward,
   AutoAwesome,
+  CalendarMonth,
+  School,
+  SwapHoriz,
+  Upload,
 } from '@mui/icons-material';
+import { Avatar, Box, Button, Card, CardContent, Chip, Stack, Typography } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 const steps = [
   {

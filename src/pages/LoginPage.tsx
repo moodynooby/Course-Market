@@ -1,16 +1,16 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { School } from '@mui/icons-material';
 import {
+  Avatar,
   Box,
+  Button,
   Card,
   CardContent,
-  Typography,
-  Button,
   CircularProgress,
-  Avatar,
   Stack,
+  Typography,
 } from '@mui/material';
-import { School } from '@mui/icons-material';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 export default function LoginPage() {

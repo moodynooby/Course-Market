@@ -306,7 +306,7 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
           }}
         >
           <Calendar
-            localizer={localizer as unknown as {}}
+            localizer={localizer as unknown as object}
             events={events}
             startAccessor="start"
             endAccessor="end"
@@ -336,7 +336,7 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
           Enrolled Courses
         </Typography>
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-          {sections.map((section, index) => {
+          {sections.map((section, _index) => {
             const course = courses.find((c) => c.id === section.courseId);
             const hasConflict = conflicts.some((c) => c.includes(section.sectionNumber));
             const colorIndex =

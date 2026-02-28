@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { parseCSV, extractSubject } from './csv';
+import { describe, expect, it } from 'vitest';
+import { extractSubject, parseCSV } from './csv';
 
 describe('csv', () => {
   it('parses valid CSV', () => {

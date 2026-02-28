@@ -58,7 +58,6 @@ export interface TradePost {
   courseName: string;
   sectionOffered: string;
   sectionWanted: string;
-  action: 'offer' | 'request';
   status: 'open' | 'pending' | 'completed' | 'cancelled';
   description?: string;
   contactPhone: string;

@@ -1,45 +1,45 @@
-import { useState, useEffect, useCallback } from 'react';
+import { CloudOff, DeleteForever, Palette, Psychology, Save } from '@mui/icons-material';
 import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Grid,
-  TextField,
-  Switch,
-  FormControlLabel,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Button,
-  Stack,
   Alert,
   Avatar,
-  Divider,
-  FormHelperText,
+  Box,
+  Button,
+  Card,
+  CardContent,
   Dialog,
-  DialogTitle,
-  DialogContent,
   DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  FormControl,
+  FormControlLabel,
+  FormHelperText,
+  Grid,
+  InputLabel,
+  MenuItem,
+  Select,
+  Stack,
+  Switch,
+  TextField,
+  Typography,
 } from '@mui/material';
-import { Save, Palette, Psychology, CloudOff, DeleteForever } from '@mui/icons-material';
-import { useAuth } from '../hooks/useAuth';
-import { useThemeMode } from '../context/ThemeContext';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type BYOKConfig,
+  DEFAULT_LLM_CONFIG,
+  getLlmConfig,
+  PROVIDER_OPTIONS,
+  saveLlmConfig,
+} from '../config/llmConfig';
 import {
   DEFAULT_PREFERENCES,
-  savePreferences,
   getPreferences,
   STORAGE_KEYS,
+  savePreferences,
 } from '../config/userConfig';
-import {
-  saveLlmConfig,
-  getLlmConfig,
-  DEFAULT_LLM_CONFIG,
-  PROVIDER_OPTIONS,
-  type BYOKConfig,
-} from '../config/llmConfig';
-import type { Preferences, LLMProvider } from '../types';
+import { useThemeMode } from '../context/ThemeContext';
+import { useAuth } from '../hooks/useAuth';
+import type { LLMProvider, Preferences } from '../types';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -74,6 +74,29 @@ export default function SettingsPage() {
     return true;
   }, []);
 
+  // Refs to track latest values and prevent stale closures
+  const preferencesRef = useRef(preferences);
+  const llmConfigRef = useRef(llmConfig);
+  const savePreferencesRef = useRef(savePreferencesHandler);
+  const saveLlmConfigRef = useRef(saveLlmConfigHandler);
+
+  // Update refs when values change
+  useEffect(() => {
+    preferencesRef.current = preferences;
+  }, [preferences]);
+
+  useEffect(() => {
+    llmConfigRef.current = llmConfig;
+  }, [llmConfig]);
+
+  useEffect(() => {
+    savePreferencesRef.current = savePreferencesHandler;
+  }, [savePreferencesHandler]);
+
+  useEffect(() => {
+    saveLlmConfigRef.current = saveLlmConfigHandler;
+  }, [saveLlmConfigHandler]);
+
   useEffect(() => {
     setPreferences(getPreferences());
     setLlmConfig(getLlmConfig());
@@ -81,17 +104,19 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      savePreferencesHandler(preferences);
+      // Use ref to get latest values and prevent stale closure
+      savePreferencesRef.current(preferencesRef.current);
     }, 1000);
     return () => clearTimeout(timer);
-  }, [preferences, savePreferencesHandler]);
+  }, [preferences]); // Only depend on preferences, not the handler
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      saveLlmConfigHandler(llmConfig);
+      // Use ref to get latest values and prevent stale closure
+      saveLlmConfigRef.current(llmConfigRef.current);
     }, 1000);
     return () => clearTimeout(timer);
-  }, [llmConfig, saveLlmConfigHandler]);
+  }, [llmConfig]); // Only depend on llmConfig, not the handler
 
   const handleClearData = () => {
     const APP_KEY_PREFIX = 'auraishub_';

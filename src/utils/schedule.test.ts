@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { formatTime, hasTimeConflict, calculateScheduleScore } from './schedule';
-import type { Schedule, Preferences } from '../types';
+import { describe, expect, it } from 'vitest';
+import type { Preferences, Schedule } from '../types';
+import { calculateScheduleScore, formatTime, hasTimeConflict } from './schedule';
 
 describe('schedule', () => {
   it('formats time correctly', () => {

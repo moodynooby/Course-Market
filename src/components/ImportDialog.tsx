@@ -1,40 +1,39 @@
-import { useCallback, useState } from 'react';
 import {
-  Box,
-  Typography,
-  Button,
+  CheckCircle,
+  Close,
+  CloudUpload,
+  Delete,
+  Description,
+  Support,
+  Upload,
+  Warning,
+} from '@mui/icons-material';
+import {
   Alert,
+  Box,
+  Button,
   Chip,
-  Stack,
-  LinearProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
+  LinearProgress,
   List,
   ListItem,
   ListItemIcon,
-  Paper,
-  ListItemText,
   ListItemSecondaryAction,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  ListItemText,
+  Paper,
+  Stack,
+  Typography,
   useTheme,
 } from '@mui/material';
-import {
-  Upload,
-  Support,
-  Description,
-  Delete,
-  CheckCircle,
-  Warning,
-  CloudUpload,
-  Close,
-} from '@mui/icons-material';
-import { parseCSV } from '../utils/csv';
-import { saveCourses } from '../config/storageConfig';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { APP_CONFIG } from '../config/appConfig';
+import { saveCourses } from '../config/storageConfig';
 import type { Course, Section } from '../types';
+import { parseCSV } from '../utils/csv';
 
 interface ImportDialogProps {
   open: boolean;
@@ -176,7 +175,7 @@ export default function ImportDialog({ open, onClose }: ImportDialogProps) {
               Supported CSV Formats - Most of Ahmedabad University format
             </Typography>
             <Button
-              href={`mailto:${APP_CONFIG.SUPPORT_EMAIL}`}
+              href={`mailto:doshimanas27@gmail.com`}
               variant="contained"
               component="label"
               startIcon={<Support />}

@@ -38,7 +38,6 @@ export async function createTrade(
     courseName: string;
     sectionOffered: string;
     sectionWanted: string;
-    action: 'offer' | 'request';
     description?: string;
     contactPhone?: string;
   },
@@ -58,7 +57,6 @@ export async function updateTrade(
     courseName?: string;
     sectionOffered?: string;
     sectionWanted?: string;
-    action?: 'offer' | 'request';
     status?: 'open' | 'pending' | 'completed' | 'cancelled';
     description?: string;
     contactPhone?: string;

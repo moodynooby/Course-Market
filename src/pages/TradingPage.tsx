@@ -1,86 +1,134 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  CardActions,
-  Button,
-  TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  MenuItem,
-  Chip,
-  Stack,
+  Add,
+  ArrowBack,
+  ArrowForward,
+  CheckCircle,
+  Close,
+  ContactPhone,
+  ContentCopy,
+  Description,
+  HourglassEmpty,
+  Phone,
+  School,
+  Search,
+  SwapHoriz,
+  SwapVert,
+} from '@mui/icons-material';
+import {
   Alert,
-  IconButton,
   Avatar,
-  Fab,
+  Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Fab,
+  IconButton,
+  InputAdornment,
+  MenuItem,
   Skeleton,
+  Snackbar,
+  Stack,
+  TextField,
+  Typography,
 } from '@mui/material';
-import { Add, SwapHoriz, Phone, Search } from '@mui/icons-material';
-import {
-  getTrades as fetchTrades,
-  createTrade,
-  updateTrade,
-  deleteTrade,
-} from '../services/tradesApi';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import {
+  createTrade,
+  deleteTrade,
+  getTrades as fetchTrades,
+  updateTrade,
+} from '../services/tradesApi';
 import type { TradePost } from '../types';
+import { timeAgo } from '../utils';
 
 function TradeCard({
   trade,
   onUpdate,
   onDelete,
   onEdit,
+  onContact,
 }: {
   trade: TradePost;
   onUpdate: (id: string, updates: Partial<TradePost>) => void;
   onDelete: (id: string) => void;
   onEdit: (trade: TradePost) => void;
+  onContact: (phone: string) => void;
 }) {
   const { user } = useAuth();
   const isOwner = user && trade.auth0UserId === user.id;
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const statusConfig = {
+    open: { color: 'success' as const, icon: <CheckCircle fontSize="small" /> },
+    pending: { color: 'warning' as const, icon: <HourglassEmpty fontSize="small" /> },
+    completed: { color: 'info' as const, icon: <CheckCircle fontSize="small" /> },
+    cancelled: { color: 'default' as const, icon: <Close fontSize="small" /> },
+  };
 
   return (
-    <Card>
+    <Card
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      sx={{
+        transition: 'all 0.2s ease-in-out',
+        transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
+        boxShadow: isHovered ? 6 : 1,
+        opacity: trade.status === 'cancelled' ? 0.7 : 1,
+        '&:hover .owner-actions': {
+          opacity: 1,
+        },
+      }}
+    >
       <CardContent>
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
-          <Stack direction="row" alignItems="center" spacing={1}>
-            <Avatar sx={{ width: 32, height: 32 }}>{trade.userDisplayName[0] || 'U'}</Avatar>
-            <Typography variant="body2" color="text.secondary">
-              {trade.userDisplayName}
-            </Typography>
+          <Stack direction="row" alignItems="center" spacing={1.5}>
+            <Avatar
+              src={trade.userAvatarUrl}
+              sx={{ width: 40, height: 40, bgcolor: 'primary.main' }}
+            >
+              {trade.userDisplayName[0] || 'U'}
+            </Avatar>
+            <Box>
+              <Typography variant="body2" fontWeight={600}>
+                {trade.userDisplayName}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {timeAgo(trade.createdAt)}
+              </Typography>
+            </Box>
           </Stack>
-          <Stack direction="row" spacing={1}>
-            <Chip
-              size="small"
-              label={trade.action === 'offer' ? 'Offering' : 'Looking for'}
-              color={trade.action === 'offer' ? 'primary' : 'secondary'}
-            />
-            <Chip
-              size="small"
-              label={trade.status}
-              color={
-                trade.status === 'open'
-                  ? 'success'
-                  : trade.status === 'pending'
-                    ? 'warning'
-                    : trade.status === 'completed'
-                      ? 'info'
-                      : 'default'
-              }
-            />
-          </Stack>
+          <Chip
+            size="small"
+            icon={statusConfig[trade.status].icon}
+            label={trade.status.charAt(0).toUpperCase() + trade.status.slice(1)}
+            color={statusConfig[trade.status].color}
+          />
         </Stack>
 
-        <Typography variant="h6" gutterBottom fontWeight={600}>
-          {trade.courseCode}
-        </Typography>
+        <Box
+          sx={{
+            display: 'inline-block',
+            bgcolor: 'primary.main',
+            color: 'white',
+            px: 1.5,
+            py: 0.5,
+            borderRadius: 1,
+            mb: 1.5,
+          }}
+        >
+          <Typography variant="subtitle2" fontWeight={600}>
+            {trade.courseCode}
+          </Typography>
+        </Box>
         {trade.courseName && (
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             {trade.courseName}
@@ -89,43 +137,59 @@ function TradeCard({
 
         <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
           <Chip
-            icon={<SwapHoriz />}
+            icon={<ArrowForward />}
             label={`Has: ${trade.sectionOffered}`}
             size="small"
             color="success"
+            variant="outlined"
           />
           <Chip
-            icon={<SwapHoriz />}
+            icon={<ArrowBack />}
             label={`Wants: ${trade.sectionWanted}`}
             size="small"
-            color="info"
+            color="primary"
+            variant="outlined"
           />
         </Stack>
 
         {trade.description && (
-          <Typography variant="body2" sx={{ mb: 2 }}>
+          <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
             {trade.description}
           </Typography>
         )}
 
         <Stack direction="row" alignItems="center" justifyContent="space-between">
-          <Typography variant="caption" color="text.secondary">
-            {new Date(trade.createdAt).toLocaleDateString()}
-          </Typography>
-
-          {trade.contactPhone && (
-            <Stack direction="row" alignItems="center" spacing={0.5}>
-              <Phone sx={{ fontSize: 16, color: 'text.secondary' }} />
-              <Typography variant="caption" color="text.secondary">
-                {trade.contactPhone}
-              </Typography>
-            </Stack>
+          {!isOwner && (
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<ContactPhone />}
+              onClick={() => onContact(trade.contactPhone)}
+              sx={{ borderRadius: 2 }}
+            >
+              Contact
+            </Button>
           )}
+          {isOwner && <Box />}
+          <Typography variant="caption" color="text.secondary">
+            Posted {timeAgo(trade.createdAt)}
+          </Typography>
         </Stack>
       </CardContent>
 
       {isOwner && (
-        <CardActions>
+        <Box
+          className="owner-actions"
+          sx={{
+            opacity: isHovered ? 1 : 0,
+            transition: 'opacity 0.2s',
+            bgcolor: 'action.hover',
+            py: 1,
+            px: 2,
+            display: 'flex',
+            gap: 1,
+          }}
+        >
           <Button size="small" onClick={() => onEdit(trade)}>
             Edit
           </Button>
@@ -140,7 +204,7 @@ function TradeCard({
           <Button size="small" color="error" onClick={() => setConfirmDeleteOpen(true)}>
             Delete
           </Button>
-        </CardActions>
+        </Box>
       )}
 
       <Dialog open={confirmDeleteOpen} onClose={() => setConfirmDeleteOpen(false)}>
@@ -177,12 +241,17 @@ export default function TradingPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [editingTrade, setEditingTrade] = useState<TradePost | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({
+    open: false,
+    message: '',
+  });
+
   const [tradeForm, setTradeForm] = useState({
     courseCode: '',
     courseName: '',
     sectionOffered: '',
     sectionWanted: '',
-    action: 'offer' as 'offer' | 'request',
     description: '',
     contactPhone: '',
   });
@@ -212,7 +281,6 @@ export default function TradingPage() {
       courseName: trade.courseName || '',
       sectionOffered: trade.sectionOffered,
       sectionWanted: trade.sectionWanted,
-      action: trade.action,
       description: trade.description || '',
       contactPhone: trade.contactPhone || '',
     });
@@ -222,6 +290,7 @@ export default function TradingPage() {
   const handleSubmit = async () => {
     if (!user) return;
 
+    setSubmitting(true);
     try {
       const token = await getToken();
 
@@ -238,13 +307,24 @@ export default function TradingPage() {
         courseName: '',
         sectionOffered: '',
         sectionWanted: '',
-        action: 'offer',
         description: '',
         contactPhone: '',
       });
       await loadTrades();
+      setSnackbar({ open: true, message: 'Trade posted successfully!' });
     } catch (e) {
       setError((e as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleContact = async (phone: string) => {
+    try {
+      await navigator.clipboard.writeText(phone);
+      setSnackbar({ open: true, message: 'Phone number copied to clipboard!' });
+    } catch {
+      setSnackbar({ open: true, message: `Phone: ${phone}` });
     }
   };
 
@@ -373,6 +453,7 @@ export default function TradingPage() {
               onUpdate={handleUpdate}
               onDelete={handleDelete}
               onEdit={handleEdit}
+              onContact={handleContact}
             />
           ))}
         </Stack>
@@ -397,64 +478,125 @@ export default function TradingPage() {
       >
         <DialogTitle>{editingTrade ? 'Edit Trade' : 'Post a Trade'}</DialogTitle>
         <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              label="Course Code *"
-              value={tradeForm.courseCode}
-              onChange={(e) => setTradeForm({ ...tradeForm, courseCode: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="Course Name"
-              value={tradeForm.courseName}
-              onChange={(e) => setTradeForm({ ...tradeForm, courseName: e.target.value })}
-              fullWidth
-            />
-            <Stack direction="row" spacing={2}>
+          <Stack spacing={2.5} sx={{ mt: 1 }}>
+            <Box>
+              <Typography variant="subtitle2" color="primary" fontWeight={600} sx={{ mb: 1 }}>
+                Course Details
+              </Typography>
               <TextField
-                label="Section Offering *"
-                value={tradeForm.sectionOffered}
-                onChange={(e) => setTradeForm({ ...tradeForm, sectionOffered: e.target.value })}
+                label="Course Code"
+                placeholder="e.g., CS 301"
+                value={tradeForm.courseCode}
+                onChange={(e) => setTradeForm({ ...tradeForm, courseCode: e.target.value })}
                 fullWidth
+                required
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <School fontSize="small" />
+                    </InputAdornment>
+                  ),
+                }}
+                helperText="Enter the course code (e.g., CS 301)"
               />
               <TextField
-                label="Section Wanted *"
-                value={tradeForm.sectionWanted}
-                onChange={(e) => setTradeForm({ ...tradeForm, sectionWanted: e.target.value })}
+                label="Course Name"
+                placeholder="e.g., Data Structures"
+                value={tradeForm.courseName}
+                onChange={(e) => setTradeForm({ ...tradeForm, courseName: e.target.value })}
                 fullWidth
+                sx={{ mt: 1.5 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <School fontSize="small" />
+                    </InputAdornment>
+                  ),
+                }}
               />
-            </Stack>
-            <TextField
-              select
-              label="Trade Type *"
-              value={tradeForm.action}
-              onChange={(e) =>
-                setTradeForm({ ...tradeForm, action: e.target.value as 'offer' | 'request' })
-              }
-              fullWidth
-            >
-              <MenuItem value="offer">I can offer</MenuItem>
-              <MenuItem value="request">I'm looking for</MenuItem>
-            </TextField>
+            </Box>
+
+            <Box>
+              <Typography variant="subtitle2" color="primary" fontWeight={600} sx={{ mb: 1 }}>
+                Trade Details
+              </Typography>
+              <Stack direction="row" spacing={2}>
+                <TextField
+                  label="Section You Have"
+                  placeholder="e.g., A1"
+                  value={tradeForm.sectionOffered}
+                  onChange={(e) => setTradeForm({ ...tradeForm, sectionOffered: e.target.value })}
+                  fullWidth
+                  required
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <ArrowForward fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  helperText="Your section"
+                />
+                <TextField
+                  label="Section You Want"
+                  placeholder="e.g., A2"
+                  value={tradeForm.sectionWanted}
+                  onChange={(e) => setTradeForm({ ...tradeForm, sectionWanted: e.target.value })}
+                  fullWidth
+                  required
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <ArrowBack fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  helperText="Desired section"
+                />
+              </Stack>
+            </Box>
+
             <TextField
               label="Description"
+              placeholder="Any additional details about your trade..."
               value={tradeForm.description}
               onChange={(e) => setTradeForm({ ...tradeForm, description: e.target.value })}
               multiline
               rows={3}
               fullWidth
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Description fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
             />
-            <TextField
-              label="Contact Phone"
-              value={tradeForm.contactPhone}
-              onChange={(e) => setTradeForm({ ...tradeForm, contactPhone: e.target.value })}
-              placeholder="+1 (555) 123-4567"
-              required
-              fullWidth
-            />
+
+            <Box>
+              <Typography variant="subtitle2" color="primary" fontWeight={600} sx={{ mb: 1 }}>
+                Contact Information
+              </Typography>
+              <TextField
+                label="Phone Number"
+                placeholder="+1 (555) 123-4567"
+                value={tradeForm.contactPhone}
+                onChange={(e) => setTradeForm({ ...tradeForm, contactPhone: e.target.value })}
+                required
+                fullWidth
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <ContactPhone fontSize="small" />
+                    </InputAdornment>
+                  ),
+                }}
+                helperText="Other traders will use this to contact you"
+              />
+            </Box>
           </Stack>
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button
             onClick={() => {
               setDialogOpen(false);
@@ -467,13 +609,25 @@ export default function TradingPage() {
             onClick={handleSubmit}
             variant="contained"
             disabled={
-              !tradeForm.courseCode || !tradeForm.sectionOffered || !tradeForm.sectionWanted
+              !tradeForm.courseCode ||
+              !tradeForm.sectionOffered ||
+              !tradeForm.sectionWanted ||
+              submitting
             }
+            startIcon={submitting ? <CircularProgress size={20} color="inherit" /> : undefined}
           >
             {editingTrade ? 'Save Changes' : 'Post Trade'}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        message={snackbar.message}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
     </Box>
   );
 }

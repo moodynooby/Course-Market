@@ -1,16 +1,15 @@
 import { CreateMLCEngine, type MLCEngineInterface } from '@mlc-ai/web-llm';
 import { Wllama } from '@wllama/wllama';
 import { getGPUTier } from 'detect-gpu';
-import type { Schedule, Preferences } from '../types';
 import { ENV } from '../config/devConfig';
 import {
-  LLM_MODELS,
-  LLM_CONSTANTS,
+  type BYOKConfig,
   DEFAULT_LLM_CONFIG,
   getDefaultModel as getModelFromConfig,
-  type BYOKConfig,
+  LLM_CONSTANTS,
+  LLM_MODELS,
 } from '../config/llmConfig';
-import type { LLMProvider } from '../types';
+import type { LLMProvider, Preferences, Schedule } from '../types';
 
 export type { LLMProvider };
 export type LLMConfig = BYOKConfig;

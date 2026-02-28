@@ -1,11 +1,8 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
-const domain = process.env.AUTH0_DOMAIN || process.env.VITE_AUTH0_DOMAIN;
-const issuer =
-  process.env.AUTH0_ISSUER ||
-  process.env.AUTH0_ISSUER_BASE_URL ||
-  (domain ? `https://${domain}/` : '');
-const audience = process.env.AUTH0_AUDIENCE || process.env.VITE_AUTH0_AUDIENCE;
+const domain = process.env.AUTH0_DOMAIN;
+const issuer = process.env.AUTH0_ISSUER || (domain ? `https://${domain}/` : '');
+const audience = process.env.AUTH0_AUDIENCE;
 
 if (!issuer || !audience) {
   console.warn('Auth0 environment variables are missing. Auth might fail.');
@@ -38,7 +35,7 @@ export async function validateToken(authHeader: string | undefined): Promise<Aut
     return {
       sub: payload.sub!,
       email: (payload.email as string) || payload.sub!,
-      name: (payload.name as string) || (payload.email as string) || payload.sub!,
+      name: (payload.name as string) || 'Anonymous Trader',
       picture: payload.picture as string | undefined,
     };
   } catch (error) {

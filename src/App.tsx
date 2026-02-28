@@ -1,10 +1,10 @@
+import { Box, CircularProgress } from '@mui/material';
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
-import { ThemeProvider } from './context/ThemeContext';
-import { Box, CircularProgress } from '@mui/material';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { ThemeProvider } from './context/ThemeContext';
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const CallbackPage = lazy(() => import('./pages/CallbackPage'));

@@ -1,5 +1,5 @@
-import { vi } from 'vitest';
 import type { ReactNode } from 'react';
+import { vi } from 'vitest';
 
 vi.mock('@auth0/auth0-react', () => ({
   Auth0Provider: ({ children }: { children: ReactNode }) => children,

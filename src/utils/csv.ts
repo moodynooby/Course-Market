@@ -1,11 +1,11 @@
 import Papa from 'papaparse';
-import type { Course, Section, CSVParseResult, TimeSlot, DayOfWeek } from '../types';
 import {
-  REQUIRED_HEADERS_LOWERCASE,
   HEADER_MAPPING,
   parseDays,
   parseTime,
+  REQUIRED_HEADERS_LOWERCASE,
 } from '../config/csvConfig';
+import type { Course, CSVParseResult, DayOfWeek, Section, TimeSlot } from '../types';
 import { generateId } from './id';
 
 const DAY_ABBREV: Record<string, DayOfWeek> = {

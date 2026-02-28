@@ -1,4 +1,4 @@
-import type { Schedule, Preferences, Section, TimeSlot, DayOfWeek } from '../types';
+import type { DayOfWeek, Preferences, Schedule, Section, TimeSlot } from '../types';
 
 export const makeTimeSlot = (day: DayOfWeek, startTime: string, endTime: string): TimeSlot => ({
   day,

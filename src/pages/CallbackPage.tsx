@@ -1,7 +1,7 @@
 import { useAuth0 } from '@auth0/auth0-react';
+import { Box, CircularProgress, Typography } from '@mui/material';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, CircularProgress, Typography } from '@mui/material';
 
 export default function CallbackPage() {
   const { isAuthenticated, isLoading, error } = useAuth0();
