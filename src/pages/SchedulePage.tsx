@@ -266,11 +266,13 @@ export default function SchedulePage() {
                 {webllmAvailable ? (
                   <Stack direction="row" alignItems="center" spacing={1}>
                     <Psychology color="primary" />
-                    <Typography variant="body2">WebLLM (Browser-based AI) available</Typography>
+                    <Typography variant="body2">
+                      AI optimized scheduling is ready to help!
+                    </Typography>
                   </Stack>
                 ) : (
                   <Alert severity="warning">
-                    WebGPU not supported. Use Chrome 113+ or Firefox 141+ for WebLLM.
+                    For the best AI experience, use Chrome, Edge, or Firefox on a desktop computer.
                   </Alert>
                 )}
 
@@ -297,11 +299,11 @@ export default function SchedulePage() {
       </Stack>
 
       <Dialog open={webgpuWarningOpen} onClose={() => setWebgpuWarningOpen(false)}>
-        <DialogTitle>WebGPU Not Supported</DialogTitle>
+        <DialogTitle>AI Performance Notice</DialogTitle>
         <DialogContent>
           <Typography>
-            Your browser does not support WebGPU, which is required for optimal AI optimization. For
-            the best experience, please use Chrome 113+ or Firefox 141+ on a desktop computer.
+            For the best AI experience, we recommend using Chrome, Edge, or Firefox on a desktop
+            computer. You can still proceed, but it may be slower.
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -313,7 +315,7 @@ export default function SchedulePage() {
               handleOptimize();
             }}
           >
-            Go Ahead Anyway
+            Continue Anyway
           </Button>
         </DialogActions>
       </Dialog>

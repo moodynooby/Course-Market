@@ -1,4 +1,13 @@
-import { CloudOff, DeleteForever, Palette, Psychology, Save } from '@mui/icons-material';
+import {
+  Balance,
+  CloudOff,
+  DeleteForever,
+  Palette,
+  Psychology,
+  Save,
+  Speed,
+  Star,
+} from '@mui/icons-material';
 import {
   Alert,
   Avatar,
@@ -6,6 +15,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -16,6 +26,7 @@ import {
   FormHelperText,
   Grid,
   InputLabel,
+  Link,
   MenuItem,
   Select,
   Stack,
@@ -28,6 +39,7 @@ import {
   type BYOKConfig,
   DEFAULT_LLM_CONFIG,
   getLlmConfig,
+  MODEL_OPTIONS,
   PROVIDER_OPTIONS,
   saveLlmConfig,
 } from '../config/llmConfig';
@@ -330,16 +342,30 @@ export default function SettingsPage() {
                   >
                     {PROVIDER_OPTIONS.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
-                        {option.label}
+                        <Box>
+                          <Typography variant="body1">{option.label}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {option.description}
+                          </Typography>
+                        </Box>
                       </MenuItem>
                     ))}
                   </Select>
                   <FormHelperText>
-                    {llmConfig.provider === 'webllm'
-                      ? 'Runs locally in your browser using WebGPU. No API key needed.'
-                      : llmConfig.provider === 'wllama'
-                        ? 'Fallback option that works without WebGPU. May be slower.'
-                        : 'Cloud-based API. Requires valid API key.'}
+                    {selectedOption?.description}
+                    {selectedOption?.learnMoreUrl && (
+                      <>
+                        {' '}
+                        <Link
+                          href={selectedOption.learnMoreUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          underline="hover"
+                        >
+                          Learn more
+                        </Link>
+                      </>
+                    )}
                   </FormHelperText>
                 </FormControl>
 
@@ -372,18 +398,66 @@ export default function SettingsPage() {
 
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      label="Model"
-                      value={llmConfig.model}
-                      onChange={(e) => setLlmConfig({ ...llmConfig, model: e.target.value })}
-                      placeholder={selectedOption?.defaultModel}
-                      helperText={
-                        llmConfig.provider === 'webllm'
-                          ? 'WebLLM model to load'
-                          : 'Model name for API'
-                      }
-                    />
+                    {(llmConfig.provider === 'webllm' ||
+                      llmConfig.provider === 'wllama' ||
+                      llmConfig.provider === 'openai' ||
+                      llmConfig.provider === 'anthropic') &&
+                    MODEL_OPTIONS[llmConfig.provider] ? (
+                      <FormControl fullWidth>
+                        <InputLabel>Model</InputLabel>
+                        <Select
+                          value={llmConfig.model || ''}
+                          label="Model"
+                          onChange={(e) => setLlmConfig({ ...llmConfig, model: e.target.value })}
+                        >
+                          {MODEL_OPTIONS[llmConfig.provider].map((model) => (
+                            <MenuItem key={model.value} value={model.value}>
+                              <Box>
+                                <Stack direction="row" alignItems="center" spacing={1}>
+                                  <Typography variant="body2">{model.label}</Typography>
+                                  {model.recommendedFor === 'balanced' && (
+                                    <Chip
+                                      icon={<Balance sx={{ fontSize: 14 }} />}
+                                      label="Recommended"
+                                      size="small"
+                                      color="primary"
+                                    />
+                                  )}
+                                  {model.recommendedFor === 'speed' && (
+                                    <Chip
+                                      icon={<Speed sx={{ fontSize: 14 }} />}
+                                      label="Fast"
+                                      size="small"
+                                      color="success"
+                                    />
+                                  )}
+                                  {model.recommendedFor === 'quality' && (
+                                    <Chip
+                                      icon={<Star sx={{ fontSize: 14 }} />}
+                                      label="Best Quality"
+                                      size="small"
+                                      color="secondary"
+                                    />
+                                  )}
+                                </Stack>
+                                <Typography variant="caption" color="text.secondary">
+                                  {model.description}
+                                </Typography>
+                              </Box>
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    ) : (
+                      <TextField
+                        fullWidth
+                        label="Model"
+                        value={llmConfig.model}
+                        onChange={(e) => setLlmConfig({ ...llmConfig, model: e.target.value })}
+                        placeholder={selectedOption?.defaultModel}
+                        helperText="Model name for API"
+                      />
+                    )}
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <TextField
@@ -418,17 +492,17 @@ export default function SettingsPage() {
                 <Divider />
 
                 {(llmConfig.provider === 'webllm' || llmConfig.provider === 'wllama') && (
-                  <Alert severity="info" icon={<CloudOff />}>
+                  <Alert severity="info">
                     {llmConfig.provider === 'webllm' ? (
                       <>
-                        <strong>WebLLM Mode:</strong> Runs entirely in your browser using WebGPU.
-                        Requires Chrome 113+ or Firefox 141+. First load may take longer as the
-                        model downloads.
+                        <strong>Local AI Mode:</strong> Your AI runs completely on your device. Your
+                        schedule data never leaves your computer. First load may take 1-2 minutes as
+                        the model downloads.
                       </>
                     ) : (
                       <>
-                        <strong>Wllama Mode:</strong> Fallback option that works without WebGPU. May
-                        be slower but works on more browsers.
+                        <strong>Universal AI Mode:</strong> Reliable backup that works on any
+                        browser. May be slower but always available.
                       </>
                     )}
                   </Alert>
