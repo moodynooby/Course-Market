@@ -9,7 +9,7 @@ import {
   LLM_CONSTANTS,
   LLM_MODELS,
 } from '../config/llmConfig';
-import type { LLMProvider, Preferences, Schedule } from '../types';
+import type { LLMProvider, Preferences, Schedule, Section } from '../types';
 
 export type { LLMProvider };
 export type LLMConfig = BYOKConfig;
@@ -25,7 +25,11 @@ interface LLMMessage {
   content: string;
 }
 
-export function buildScheduleAnalysisPrompt(schedule: Schedule, preferences: Preferences): string {
+export function buildScheduleAnalysisPrompt(
+  schedule: Schedule,
+  preferences: Preferences,
+  allSections?: Section[],
+): string {
   if (!schedule || !schedule.sections) {
     return 'Analyze this course schedule and provide recommendations.';
   }
@@ -41,7 +45,26 @@ export function buildScheduleAnalysisPrompt(schedule: Schedule, preferences: Pre
     })
     .join('\n');
 
-  return `You are a helpful academic advisor assistant. Analyze schedules and provide concise, actionable recommendations.
+  let availableSectionsInfo = '';
+  if (allSections && allSections.length > 0) {
+    const sectionsByCourse = new Map<string, Section[]>();
+    allSections.forEach((s) => {
+      const existing = sectionsByCourse.get(s.courseId) || [];
+      existing.push(s);
+      sectionsByCourse.set(s.courseId, existing);
+    });
+
+    availableSectionsInfo = '\n**Available Alternative Sections:**\n';
+    availableSectionsInfo += '| Course | Section | Instructor | Time | Days |\n';
+    availableSectionsInfo += '|--------|---------|------------|------|------|\n';
+    allSections.forEach((s) => {
+      const timeStr =
+        s.timeSlots?.map((t) => `${t.day} ${t.startTime}-${t.endTime}`).join(', ') || 'TBA';
+      availableSectionsInfo += `| ${s.courseId} | ${s.sectionNumber} | ${s.instructor || 'TBA'} | ${timeStr} |\n`;
+    });
+  }
+
+  return `You are a helpful academic advisor assistant. Analyze schedules and provide concise, actionable recommendations in markdown format.
 
 Analyze this course schedule and provide recommendations:
 
@@ -52,18 +75,24 @@ Analyze this course schedule and provide recommendations:
 
 **Time Slots:**
 ${timeSlotsInfo}
-
+${availableSectionsInfo}
 **User Preferences:**
 - Preferred time: ${preferences?.preferredStartTime || '08:00'} - ${preferences?.preferredEndTime || '17:00'}
 - Max gap between classes: ${preferences?.maxGapMinutes || 60} minutes
 - Prefer ${preferences?.preferMorning ? 'morning' : preferences?.preferAfternoon ? 'afternoon' : 'any'} classes
 - Avoid days: ${preferences?.avoidDays?.join(', ') || 'None'}
 
-Provide:
-1. Schedule score assessment (is it good?)
-2. Key strengths
-3. Areas for improvement
-4. Specific recommendations (max 3)`;
+Provide your response in markdown format with:
+1. **Schedule Score Assessment** - Is the schedule good? (brief 1-2 sentence verdict)
+2. **Key Strengths** - What's working well (bullet points)
+3. **Areas for Improvement** - What could be better (bullet points)
+4. **Section Change Recommendations** - If there are better alternatives available, provide a table:
+
+| Current Section | Suggested Section | Reason |
+|-----------------|-------------------|--------|
+| CS 101-001 | CS 101-002 | Better time fit |
+
+5. **Final Tips** - 1-2 actionable tips (numbered list)`;
 }
 
 class UnifiedLLMService {
@@ -115,9 +144,24 @@ class UnifiedLLMService {
 
     const model = this.config.model || (await getDefaultModel('webllm'));
 
-    this.engine = await CreateMLCEngine(model, {
-      initProgressCallback: this.config.initProgressCallback,
-    });
+    try {
+      this.engine = await CreateMLCEngine(model, {
+        initProgressCallback: this.config.initProgressCallback,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (
+        errorMessage.includes('out of memory') ||
+        errorMessage.includes('GPUDeviceLostInfo') ||
+        errorMessage.includes('Not enough memory') ||
+        errorMessage.includes('Device was lost')
+      ) {
+        throw new Error(
+          'GPU ran out of memory. This model requires more GPU memory than available. Try using a smaller model (like Phi or Llama variants with fewer parameters) or switch to an external API (OpenAI/Anthropic) in Settings.',
+        );
+      }
+      throw error;
+    }
 
     this.isInitialized = true;
     if (ENV.IS_DEV) {
@@ -137,16 +181,30 @@ class UnifiedLLMService {
       'multi-thread/wllama.wasm': LLM_CONSTANTS.WLLAMA_WASM['multi-thread'],
     });
 
-    await this.wllama.loadModelFromUrl(modelPath, {
-      progressCallback: (progress: { loaded: number; total: number }) => {
-        if (this.config.initProgressCallback) {
-          this.config.initProgressCallback({
-            progress: progress.loaded / progress.total,
-            text: `Loaded ${progress.loaded} of ${progress.total} bytes`,
-          });
-        }
-      },
-    });
+    try {
+      await this.wllama.loadModelFromUrl(modelPath, {
+        progressCallback: (progress: { loaded: number; total: number }) => {
+          if (this.config.initProgressCallback) {
+            this.config.initProgressCallback({
+              progress: progress.loaded / progress.total,
+              text: `Loaded ${progress.loaded} of ${progress.total} bytes`,
+            });
+          }
+        },
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (
+        errorMessage.includes('out of memory') ||
+        errorMessage.includes('memory') ||
+        errorMessage.includes('failed to allocate')
+      ) {
+        throw new Error(
+          'Not enough memory to load this model. Try using a smaller model or switch to an external API (OpenAI/Anthropic) in Settings.',
+        );
+      }
+      throw error;
+    }
 
     this.isInitialized = true;
     if (ENV.IS_DEV) {
@@ -307,8 +365,12 @@ class UnifiedLLMService {
     return data.choices?.[0]?.message?.content || 'No response generated';
   }
 
-  async analyzeSchedule(schedule: Schedule, preferences: Preferences): Promise<string> {
-    const prompt = buildScheduleAnalysisPrompt(schedule, preferences);
+  async analyzeSchedule(
+    schedule: Schedule,
+    preferences: Preferences,
+    allSections?: Section[],
+  ): Promise<string> {
+    const prompt = buildScheduleAnalysisPrompt(schedule, preferences, allSections);
     return this.generateCompletion(prompt);
   }
 
@@ -342,6 +404,7 @@ export async function optimizeWithLLM(
   schedules: Schedule[],
   preferences: Preferences,
   config?: Partial<LLMConfig>,
+  allSections?: Section[],
 ): Promise<{
   schedules: Schedule[];
   bestSchedule: Schedule | null;
@@ -361,7 +424,7 @@ export async function optimizeWithLLM(
     };
   }
 
-  const analysis = await llmService.analyzeSchedule(schedules[0], preferences);
+  const analysis = await llmService.analyzeSchedule(schedules[0], preferences, allSections);
 
   return {
     schedules,

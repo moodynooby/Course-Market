@@ -18,11 +18,12 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import CalendarView from '../components/CalendarView';
 import { getLlmConfig } from '../config/llmConfig';
 import { getCourses } from '../config/storageConfig';
 import { DEFAULT_PREFERENCES, getPreferences, STORAGE_KEYS } from '../config/userConfig';
-import { optimizeWithLLM } from '../services/llm';
 import type { Course, LLMConfig, Schedule, Section } from '../types';
 import { checkConflicts } from '../utils/schedule';
 
@@ -71,6 +72,7 @@ export default function SchedulePage() {
   const [initProgress, setInitProgress] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [allCourses, setAllCourses] = useState<Course[]>([]);
+  const [allSections, setAllSections] = useState<Section[]>([]);
   const isMobile = useMediaQuery('(max-width:899px)');
   const [dismissedMobileWarning, setDismissedMobileWarning] = useState(false);
   const [webgpuWarningOpen, setWebgpuWarningOpen] = useState(false);
@@ -78,7 +80,9 @@ export default function SchedulePage() {
   const refreshSchedule = useCallback(() => {
     const schedule = generateCurrentSchedule();
     setCurrentSchedule(schedule);
-    setAllCourses(getCourses().courses);
+    const { courses, sections } = getCourses();
+    setAllCourses(courses);
+    setAllSections(sections);
   }, []);
 
   useEffect(() => {
@@ -123,6 +127,7 @@ export default function SchedulePage() {
     setInitProgress('');
 
     try {
+      const { optimizeWithLLM } = await import('../services/llm');
       const preferences = getPreferences();
 
       const llmConfig: LLMConfig = {
@@ -144,10 +149,15 @@ export default function SchedulePage() {
           );
         };
       }
-      const result = await optimizeWithLLM([currentSchedule], preferences, {
-        provider: llmConfig.provider as 'webllm' | 'wllama' | 'openai' | 'anthropic' | 'custom',
-        ...config,
-      });
+      const result = await optimizeWithLLM(
+        [currentSchedule],
+        preferences,
+        {
+          provider: llmConfig.provider as 'webllm' | 'wllama' | 'openai' | 'anthropic' | 'custom',
+          ...config,
+        },
+        allSections,
+      );
 
       if (result.bestSchedule) {
         setCurrentSchedule(result.bestSchedule);
@@ -281,13 +291,41 @@ export default function SchedulePage() {
                     <Typography variant="subtitle2" gutterBottom>
                       AI Analysis
                     </Typography>
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ whiteSpace: 'pre-line' }}
+                    <Box
+                      sx={{
+                        '& table': {
+                          width: '100%',
+                          borderCollapse: 'collapse',
+                          mb: 2,
+                        },
+                        '& th, & td': {
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          px: 1,
+                          py: 0.5,
+                          textAlign: 'left',
+                        },
+                        '& th': {
+                          bgcolor: 'action.hover',
+                          fontWeight: 600,
+                        },
+                        '& ul, & ol': {
+                          pl: 2,
+                          mb: 1,
+                        },
+                        '& li': {
+                          mb: 0.5,
+                        },
+                        '& p': {
+                          mb: 1,
+                        },
+                        '& strong': {
+                          fontWeight: 600,
+                        },
+                      }}
                     >
-                      {aiAnalysis}
-                    </Typography>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiAnalysis}</ReactMarkdown>
+                    </Box>
                   </Box>
                 )}
 

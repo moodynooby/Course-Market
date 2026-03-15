@@ -1,14 +1,12 @@
 import netlify from '@netlify/vite-plugin';
-import react from '@vitejs/plugin-react';
+import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [
     react({
-      babel: {
-        plugins: [['babel-plugin-react-compiler']],
-      },
+      ...reactCompilerPreset(),
     }),
     netlify(),
   ],
@@ -31,14 +29,9 @@ export default defineConfig({
     host: true,
   },
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks: {
-          'web-llm': ['@mlc-ai/web-llm', 'detect-gpu'],
-          wllama: ['@wllama/wllama'],
-          'mui-material': ['@mui/material'],
-          'mui-icons': ['@mui/icons-material'],
-        },
+        codeSplitting: true,
       },
     },
   },

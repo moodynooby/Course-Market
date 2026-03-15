@@ -165,7 +165,7 @@ export default function SettingsPage() {
       </Typography>
 
       <Grid container spacing={3}>
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Card>
             <CardContent>
               <Stack direction="row" alignItems="center" spacing={2} mb={2}>
@@ -181,7 +181,7 @@ export default function SettingsPage() {
               </Stack>
 
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <FormControl fullWidth>
                     <InputLabel>Theme</InputLabel>
                     <Select
@@ -205,7 +205,7 @@ export default function SettingsPage() {
           </Card>
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Card>
             <CardContent>
               <Stack direction="row" alignItems="center" spacing={1} mb={2}>
@@ -214,7 +214,7 @@ export default function SettingsPage() {
               </Stack>
 
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Preferred Start Time"
                     type="time"
@@ -226,7 +226,7 @@ export default function SettingsPage() {
                     InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Preferred End Time"
                     type="time"
@@ -238,7 +238,7 @@ export default function SettingsPage() {
                     InputLabelProps={{ shrink: true }}
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <TextField
                     label="Min Credits"
                     type="number"
@@ -249,7 +249,7 @@ export default function SettingsPage() {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <TextField
                     label="Max Credits"
                     type="number"
@@ -260,7 +260,7 @@ export default function SettingsPage() {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12} sm={4}>
+                <Grid size={{ xs: 12, sm: 4 }}>
                   <TextField
                     label="Max Gap (minutes)"
                     type="number"
@@ -274,7 +274,7 @@ export default function SettingsPage() {
                     fullWidth
                   />
                 </Grid>
-                <Grid item xs={12}>
+                <Grid size={{ xs: 12 }}>
                   <Stack direction="row" spacing={2} flexWrap="wrap">
                     <FormControlLabel
                       control={
@@ -319,7 +319,7 @@ export default function SettingsPage() {
           </Card>
         </Grid>
 
-        <Grid item xs={12}>
+        <Grid size={{ xs: 12 }}>
           <Card>
             <CardContent>
               <Stack direction="row" alignItems="center" spacing={1} mb={2}>
@@ -397,7 +397,7 @@ export default function SettingsPage() {
                 )}
 
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     {(llmConfig.provider === 'webllm' ||
                       llmConfig.provider === 'wllama' ||
                       llmConfig.provider === 'openai' ||
@@ -459,7 +459,7 @@ export default function SettingsPage() {
                       />
                     )}
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
                     <TextField
                       fullWidth
                       type="number"
