@@ -13,6 +13,7 @@ import {
   Search,
   SwapHoriz,
   SwapVert,
+  AutoAwesome,
 } from '@mui/icons-material';
 import {
   Alert,
@@ -46,6 +47,8 @@ import {
   getTrades as fetchTrades,
   updateTrade,
 } from '../services/tradesApi';
+import { llmService } from '../services/llm';
+import { getLlmConfig } from '../config/llmConfig';
 import type { TradePost } from '../types';
 import { timeAgo } from '../utils';
 
@@ -55,12 +58,14 @@ function TradeCard({
   onDelete,
   onEdit,
   onContact,
+  onDraftAi,
 }: {
   trade: TradePost;
   onUpdate: (id: string, updates: Partial<TradePost>) => void;
   onDelete: (id: string) => void;
   onEdit: (trade: TradePost) => void;
   onContact: (phone: string) => void;
+  onDraftAi: (trade: TradePost) => void;
 }) {
   const { user } = useAuth();
   const isOwner = user && trade.auth0UserId === user.id;
@@ -159,18 +164,30 @@ function TradeCard({
         )}
 
         <Stack direction="row" alignItems="center" justifyContent="space-between">
-          {!isOwner && (
-            <Button
-              size="small"
-              variant="contained"
-              startIcon={<ContactPhone />}
-              onClick={() => onContact(trade.contactPhone)}
-              sx={{ borderRadius: 2 }}
-            >
-              Contact
-            </Button>
-          )}
-          {isOwner && <Box />}
+          <Stack direction="row" spacing={1}>
+            {!isOwner && (
+              <>
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<ContactPhone />}
+                  onClick={() => onContact(trade.contactPhone)}
+                  sx={{ borderRadius: 2 }}
+                >
+                  Contact
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<AutoAwesome />}
+                  onClick={() => onDraftAi(trade)}
+                  sx={{ borderRadius: 2 }}
+                >
+                  Draft Message
+                </Button>
+              </>
+            )}
+          </Stack>
           <Typography variant="caption" color="text.secondary">
             Posted {timeAgo(trade.createdAt)}
           </Typography>
@@ -246,6 +263,11 @@ export default function TradingPage() {
     open: false,
     message: '',
   });
+
+  // AI states
+  const [aiDraftOpen, setAiDraftOpen] = useState(false);
+  const [aiDrafting, setAiDrafting] = useState(false);
+  const [aiDraftText, setAiDraftText] = useState('');
 
   const [tradeForm, setTradeForm] = useState({
     courseCode: '',
@@ -325,6 +347,33 @@ export default function TradingPage() {
       setSnackbar({ open: true, message: 'Phone number copied to clipboard!' });
     } catch {
       setSnackbar({ open: true, message: `Phone: ${phone}` });
+    }
+  };
+
+  const handleDraftAi = async (trade: TradePost) => {
+    setAiDraftOpen(true);
+    setAiDrafting(true);
+    setAiDraftText('');
+
+    try {
+      await llmService.initialize(getLlmConfig(), 'DRAFT');
+      const draft = await llmService.draftTradeMessage(trade);
+      setAiDraftText(draft);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate AI draft');
+      setAiDraftOpen(false);
+    } finally {
+      setAiDrafting(false);
+    }
+  };
+
+  const copyDraftToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(aiDraftText);
+      setSnackbar({ open: true, message: 'Draft copied to clipboard!' });
+      setAiDraftOpen(false);
+    } catch (e) {
+      setSnackbar({ open: true, message: 'Failed to copy text' });
     }
   };
 
@@ -454,6 +503,7 @@ export default function TradingPage() {
               onDelete={handleDelete}
               onEdit={handleEdit}
               onContact={handleContact}
+              onDraftAi={handleDraftAi}
             />
           ))}
         </Stack>
@@ -617,6 +667,52 @@ export default function TradingPage() {
             startIcon={submitting ? <CircularProgress size={20} color="inherit" /> : undefined}
           >
             {editingTrade ? 'Save Changes' : 'Post Trade'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={aiDraftOpen}
+        onClose={() => !aiDrafting && setAiDraftOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <AutoAwesome color="primary" /> AI Message Draft
+        </DialogTitle>
+        <DialogContent>
+          {aiDrafting ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 3 }}>
+              <CircularProgress size={40} />
+              <Typography sx={{ mt: 2 }}>Generating draft...</Typography>
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                bgcolor: 'action.hover',
+                p: 2,
+                borderRadius: 1,
+                border: '1px dashed',
+                borderColor: 'divider',
+              }}
+            >
+              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', fontStyle: 'italic' }}>
+                "{aiDraftText}"
+              </Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAiDraftOpen(false)} disabled={aiDrafting}>
+            Cancel
+          </Button>
+          <Button
+            onClick={copyDraftToClipboard}
+            variant="contained"
+            disabled={aiDrafting || !aiDraftText}
+            startIcon={<ContentCopy />}
+          >
+            Copy Draft
           </Button>
         </DialogActions>
       </Dialog>

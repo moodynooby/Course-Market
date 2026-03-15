@@ -1,13 +1,4 @@
-import {
-  Balance,
-  CloudOff,
-  DeleteForever,
-  Palette,
-  Psychology,
-  Save,
-  Speed,
-  Star,
-} from '@mui/icons-material';
+import { AutoAwesome, DeleteForever, Info, Palette, Psychology } from '@mui/icons-material';
 import {
   Alert,
   Avatar,
@@ -15,7 +6,6 @@ import {
   Button,
   Card,
   CardContent,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -39,7 +29,6 @@ import {
   type BYOKConfig,
   DEFAULT_LLM_CONFIG,
   getLlmConfig,
-  MODEL_OPTIONS,
   PROVIDER_OPTIONS,
   saveLlmConfig,
 } from '../config/llmConfig';
@@ -74,7 +63,9 @@ export default function SettingsPage() {
   );
 
   const saveLlmConfigHandler = useCallback((config: BYOKConfig) => {
-    if (config.provider !== 'webllm' && !config.apiKey) {
+    // Local providers don't need API keys
+    const isLocal = config.provider === 'webllm' || config.provider === 'wllama';
+    if (!isLocal && !config.apiKey) {
       return false;
     }
     if (config.provider === 'custom' && !config.apiBaseUrl) {
@@ -147,16 +138,19 @@ export default function SettingsPage() {
 
   const handleProviderChange = (provider: LLMProvider) => {
     const option = PROVIDER_OPTIONS.find((o) => o.value === provider);
+    const isLocal = provider === 'webllm' || provider === 'wllama';
+
     setLlmConfig({
       ...llmConfig,
       provider,
-      apiKey: provider === 'webllm' ? '' : llmConfig.apiKey,
-      apiBaseUrl: provider === 'webllm' ? '' : option?.urlPlaceholder || '',
+      apiKey: isLocal ? '' : llmConfig.apiKey,
+      apiBaseUrl: isLocal ? '' : option?.urlPlaceholder || '',
       model: option?.defaultModel || '',
     });
   };
 
   const selectedOption = PROVIDER_OPTIONS.find((o) => o.value === llmConfig.provider);
+  const isLocalProvider = llmConfig.provider === 'webllm' || llmConfig.provider === 'wllama';
 
   return (
     <Box>
@@ -369,7 +363,7 @@ export default function SettingsPage() {
                   </FormHelperText>
                 </FormControl>
 
-                {llmConfig.provider !== 'webllm' && llmConfig.provider !== 'wllama' && (
+                {!isLocalProvider && (
                   <>
                     <TextField
                       fullWidth
@@ -398,56 +392,19 @@ export default function SettingsPage() {
 
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12, sm: 6 }}>
-                    {(llmConfig.provider === 'webllm' ||
-                      llmConfig.provider === 'wllama' ||
-                      llmConfig.provider === 'openai' ||
-                      llmConfig.provider === 'anthropic') &&
-                    MODEL_OPTIONS[llmConfig.provider] ? (
-                      <FormControl fullWidth>
-                        <InputLabel>Model</InputLabel>
-                        <Select
-                          value={llmConfig.model || ''}
-                          label="Model"
-                          onChange={(e) => setLlmConfig({ ...llmConfig, model: e.target.value })}
-                        >
-                          {MODEL_OPTIONS[llmConfig.provider].map((model) => (
-                            <MenuItem key={model.value} value={model.value}>
-                              <Box>
-                                <Stack direction="row" alignItems="center" spacing={1}>
-                                  <Typography variant="body2">{model.label}</Typography>
-                                  {model.recommendedFor === 'balanced' && (
-                                    <Chip
-                                      icon={<Balance sx={{ fontSize: 14 }} />}
-                                      label="Recommended"
-                                      size="small"
-                                      color="primary"
-                                    />
-                                  )}
-                                  {model.recommendedFor === 'speed' && (
-                                    <Chip
-                                      icon={<Speed sx={{ fontSize: 14 }} />}
-                                      label="Fast"
-                                      size="small"
-                                      color="success"
-                                    />
-                                  )}
-                                  {model.recommendedFor === 'quality' && (
-                                    <Chip
-                                      icon={<Star sx={{ fontSize: 14 }} />}
-                                      label="Best Quality"
-                                      size="small"
-                                      color="secondary"
-                                    />
-                                  )}
-                                </Stack>
-                                <Typography variant="caption" color="text.secondary">
-                                  {model.description}
-                                </Typography>
-                              </Box>
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
+                    {isLocalProvider ? (
+                      <TextField
+                        fullWidth
+                        label="Model"
+                        value="Task-Optimized (Auto)"
+                        disabled
+                        helperText="The app automatically selects the best model for each task."
+                        InputProps={{
+                          startAdornment: (
+                            <AutoAwesome sx={{ mr: 1, color: 'primary.main', fontSize: 18 }} />
+                          ),
+                        }}
+                      />
                     ) : (
                       <TextField
                         fullWidth
@@ -491,18 +448,18 @@ export default function SettingsPage() {
 
                 <Divider />
 
-                {(llmConfig.provider === 'webllm' || llmConfig.provider === 'wllama') && (
-                  <Alert severity="info">
+                {isLocalProvider && (
+                  <Alert severity="info" icon={<Info />}>
                     {llmConfig.provider === 'webllm' ? (
                       <>
-                        <strong>Local AI Mode:</strong> Your AI runs completely on your device. Your
-                        schedule data never leaves your computer. First load may take 1-2 minutes as
-                        the model downloads.
+                        <strong>Fast Local AI (GPU):</strong> Your AI runs completely on your device
+                        using hardware acceleration. First load may take a minute to download the
+                        model.
                       </>
                     ) : (
                       <>
-                        <strong>Universal AI Mode:</strong> Reliable backup that works on any
-                        browser. May be slower but always available.
+                        <strong>Universal AI (CPU):</strong> A compatible backup that works on any
+                        browser without needing a powerful GPU.
                       </>
                     )}
                   </Alert>
@@ -522,6 +479,11 @@ export default function SettingsPage() {
         >
           Clear All Data
         </Button>
+        {saved && (
+          <Typography variant="body2" color="success.main" fontWeight={600}>
+            Settings saved automatically!
+          </Typography>
+        )}
       </Stack>
 
       <Dialog open={clearDataOpen} onClose={() => setClearDataOpen(false)}>

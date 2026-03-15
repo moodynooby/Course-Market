@@ -1,4 +1,12 @@
-import { ExpandLess, ExpandMore, Person, Schedule, Warning } from '@mui/icons-material';
+import {
+  ExpandLess,
+  ExpandMore,
+  Person,
+  Schedule,
+  Warning,
+  AutoAwesome,
+  Clear,
+} from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -17,10 +25,14 @@ import {
   Stack,
   TextField,
   Typography,
+  InputAdornment,
+  CircularProgress,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCourses } from '../config/storageConfig';
 import { STORAGE_KEYS } from '../config/userConfig';
+import { getLlmConfig } from '../config/llmConfig';
+import { llmService } from '../services/llm';
 import type { Course, Section } from '../types';
 import { formatTime, formatTimeSlots, hasSectionConflict } from '../utils/schedule';
 
@@ -32,10 +44,16 @@ export default function CoursesPage() {
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedSections, setSelectedSections] = useState<Map<string, string>>(new Map());
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [subject, setSubject] = useState('all');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COURSES);
+
+  // AI Search states
+  const [aiSearching, setAiSearching] = useState(false);
+  const [aiResults, setAiResults] = useState<Course[] | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   useEffect(() => {
     const data = getCourses();
@@ -52,6 +70,14 @@ export default function CoursesPage() {
     }
   }, []);
 
+  // Debounce search to prevent UI lag
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   useEffect(() => {
     localStorage.setItem(
       STORAGE_KEYS.COURSE_SELECTIONS,
@@ -64,8 +90,34 @@ export default function CoursesPage() {
     return Array.from(subs).sort();
   }, [courses]);
 
+  const handleAiSearch = async () => {
+    if (!search.trim()) return;
+
+    setAiSearching(true);
+    setAiError(null);
+
+    try {
+      await llmService.initialize(getLlmConfig(), 'SEARCH');
+      const results = await llmService.searchCourses(search, courses);
+      setAiResults(results);
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'AI search failed');
+    } finally {
+      setAiSearching(false);
+    }
+  };
+
+  const handleClearAiSearch = () => {
+    setAiResults(null);
+    setAiError(null);
+    setSearch('');
+    setDebouncedSearch('');
+  };
+
   const filteredCourses = useMemo(() => {
-    const loweredSearch = search.toLowerCase();
+    if (aiResults) return aiResults;
+
+    const loweredSearch = debouncedSearch.toLowerCase();
 
     return courses.filter((course) => {
       const matchesSearch =
@@ -74,11 +126,11 @@ export default function CoursesPage() {
       const matchesSubject = subject === 'all' || course.subject === subject;
       return matchesSearch && matchesSubject;
     });
-  }, [courses, search, subject]);
+  }, [courses, debouncedSearch, subject, aiResults]);
 
   useEffect(() => {
     setVisibleCount(INITIAL_VISIBLE_COURSES);
-  }, [search, subject]);
+  }, [debouncedSearch, subject, aiResults]);
 
   const courseSectionsMap = useMemo(() => {
     const map = new Map<string, Section[]>();
@@ -193,13 +245,33 @@ export default function CoursesPage() {
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
         <TextField
-          placeholder="Search courses..."
+          placeholder="Search courses or describe what you're looking for..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           sx={{ flex: 1 }}
           size="small"
+          onKeyPress={(e) => e.key === 'Enter' && handleAiSearch()}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                {search && (
+                  <IconButton size="small" onClick={handleClearAiSearch} sx={{ mr: 0.5 }}>
+                    <Clear fontSize="small" />
+                  </IconButton>
+                )}
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={handleAiSearch}
+                  disabled={aiSearching || !search.trim()}
+                >
+                  {aiSearching ? <CircularProgress size={20} /> : <AutoAwesome />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
-        <FormControl sx={{ minWidth: 150 }} size="small">
+        <FormControl sx={{ minWidth: 200 }} size="small">
           <InputLabel>Subject</InputLabel>
           <Select value={subject} label="Subject" onChange={(e) => setSubject(e.target.value)}>
             <MenuItem value="all">All Subjects</MenuItem>
@@ -210,19 +282,33 @@ export default function CoursesPage() {
             ))}
           </Select>
         </FormControl>
+        {selectedSections.size > 0 && (
+          <Button variant="outlined" color="error" onClick={handleClearAll} size="small">
+            Clear ({selectedSections.size})
+          </Button>
+        )}
       </Stack>
 
-      <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
-        <Chip
-          icon={<Schedule />}
-          label={`${selectedSections.size} selected`}
-          color="primary"
-          variant="outlined"
-        />
-        <Button size="small" onClick={handleClearAll} disabled={selectedSections.size === 0}>
-          Clear All
-        </Button>
-      </Stack>
+      {aiError && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setAiError(null)}>
+          {aiError}
+        </Alert>
+      )}
+
+      {aiResults && (
+        <Alert
+          severity="success"
+          icon={<AutoAwesome />}
+          sx={{ mb: 2 }}
+          action={
+            <Button color="inherit" size="small" onClick={handleClearAiSearch}>
+              Clear Results
+            </Button>
+          }
+        >
+          AI found {aiResults.length} relevant courses for your query.
+        </Alert>
+      )}
 
       {visibleCourses.map((course) => {
         const sectionList = courseSections(course.id);
