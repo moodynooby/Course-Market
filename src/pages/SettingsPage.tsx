@@ -203,7 +203,7 @@ export default function SettingsPage() {
           <Card>
             <CardContent>
               <Stack direction="row" alignItems="center" spacing={1} mb={2}>
-                <Palette color="primary" />
+                <Palette color="accent" />
                 <Typography variant="h6">Schedule Preferences</Typography>
               </Stack>
 
@@ -317,7 +317,7 @@ export default function SettingsPage() {
           <Card>
             <CardContent>
               <Stack direction="row" alignItems="center" spacing={1} mb={2}>
-                <Psychology color="primary" />
+                <Psychology color="accent" />
                 <Typography variant="h6">AI Optimization Settings</Typography>
               </Stack>
 
@@ -332,7 +332,7 @@ export default function SettingsPage() {
                     value={llmConfig.provider}
                     label="AI Provider"
                     onChange={(e) => handleProviderChange(e.target.value as LLMProvider)}
-                    startAdornment={<Psychology sx={{ mr: 1, color: 'primary.main' }} />}
+                    startAdornment={<Psychology sx={{ mr: 1, color: 'accent.main' }} />}
                   >
                     {PROVIDER_OPTIONS.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
@@ -401,7 +401,7 @@ export default function SettingsPage() {
                         helperText="The app automatically selects the best model for each task."
                         InputProps={{
                           startAdornment: (
-                            <AutoAwesome sx={{ mr: 1, color: 'primary.main', fontSize: 18 }} />
+                            <AutoAwesome sx={{ mr: 1, color: 'accent.main', fontSize: 18 }} />
                           ),
                         }}
                       />

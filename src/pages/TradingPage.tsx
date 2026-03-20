@@ -170,6 +170,7 @@ function TradeCard({
                 <Button
                   size="small"
                   variant="contained"
+                  color="accent"
                   startIcon={<ContactPhone />}
                   onClick={() => onContact(trade.contactPhone)}
                   sx={{ borderRadius: 2 }}
@@ -179,6 +180,7 @@ function TradeCard({
                 <Button
                   size="small"
                   variant="outlined"
+                  color="accent"
                   startIcon={<AutoAwesome />}
                   onClick={() => onDraftAi(trade)}
                   sx={{ borderRadius: 2 }}
@@ -510,7 +512,7 @@ export default function TradingPage() {
       )}
 
       <Fab
-        color="primary"
+        color="accent"
         sx={{ position: 'fixed', bottom: 16, right: 16 }}
         onClick={() => setDialogOpen(true)}
       >

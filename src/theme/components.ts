@@ -1,0 +1,102 @@
+import type { Theme, Components } from '@mui/material/styles';
+
+export const getComponents = (isDark: boolean): Components<Omit<Theme, 'components'>> => ({
+  MuiCssBaseline: {
+    styleOverrides: {
+      body: {
+        transition: 'background-color 0.3s ease, color 0.3s ease',
+      },
+    },
+  },
+  MuiButton: {
+    defaultProps: {
+      disableElevation: false,
+    },
+    styleOverrides: {
+      root: {
+        borderRadius: 9999,
+        padding: '10px 24px',
+      },
+      containedSecondary: {
+        background: isDark ? '#2c2c2c' : '#dcdbd9',
+        color: isDark ? '#e7e5e4' : '#191a1a',
+        '&:hover': {
+          background: isDark ? '#3c3c3c' : '#c8c7c5',
+        },
+      },
+    },
+    variants: [
+      {
+        props: { variant: 'contained', color: 'accent' },
+        style: {
+          background: '#ffb148',
+          color: '#573500',
+          '&:hover': {
+            background: '#f8a010',
+          },
+        },
+      },
+      {
+        props: { variant: 'outlined', color: 'accent' },
+        style: {
+          borderColor: '#ffb148',
+          color: '#ffb148',
+          '&:hover': {
+            backgroundColor: 'rgba(255, 177, 72, 0.08)',
+            borderColor: '#f8a010',
+          },
+        },
+      },
+    ],
+  },
+  MuiCard: {
+    styleOverrides: {
+      root: {
+        borderRadius: 24,
+        backgroundColor: isDark ? '#191a1a' : '#ffffff',
+        backgroundImage: 'none',
+        border: '1px solid',
+        borderColor: isDark ? 'rgba(72, 72, 72, 0.15)' : 'rgba(0, 0, 0, 0.05)',
+        boxShadow: isDark ? 'none' : '0px 4px 20px rgba(0, 0, 0, 0.03)',
+        transition: 'all 0.3s ease',
+      },
+    },
+  },
+  MuiPaper: {
+    styleOverrides: {
+      root: {
+        backgroundImage: 'none',
+        backgroundColor: isDark ? '#131313' : '#f4f3f2',
+        transition: 'background-color 0.3s ease',
+      },
+    },
+  },
+  MuiChip: {
+    styleOverrides: {
+      root: {
+        borderRadius: 9999,
+        fontWeight: 600,
+      },
+    },
+  },
+  MuiTextField: {
+    styleOverrides: {
+      root: {
+        '& .MuiOutlinedInput-root': {
+          borderRadius: 16,
+          backgroundColor: isDark ? '#1f2020' : '#ffffff',
+          transition: 'all 0.3s ease',
+          '& fieldset': {
+            borderColor: isDark ? 'rgba(72, 72, 72, 0.15)' : 'rgba(0, 0, 0, 0.08)',
+          },
+          '&:hover fieldset': {
+            borderColor: isDark ? 'rgba(72, 72, 72, 0.3)' : 'rgba(0, 0, 0, 0.15)',
+          },
+          '&.Mui-focused fieldset': {
+            borderColor: '#ffb148',
+          },
+        },
+      },
+    },
+  },
+});

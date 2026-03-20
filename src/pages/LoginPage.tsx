@@ -57,7 +57,7 @@ export default function LoginPage() {
               sx={{
                 width: 72,
                 height: 72,
-                bgcolor: 'primary.main',
+                bgcolor: 'accent.main',
                 mx: 'auto',
                 mb: 2,
               }}
@@ -79,7 +79,14 @@ export default function LoginPage() {
           </Box>
 
           <Stack spacing={2} sx={{ mb: 4 }}>
-            <Button fullWidth variant="contained" size="large" onClick={signIn} sx={{ py: 1.5 }}>
+            <Button
+              fullWidth
+              variant="contained"
+              color="accent"
+              size="large"
+              onClick={signIn}
+              sx={{ py: 1.5 }}
+            >
               Sign in to Trade & Sync
             </Button>
 

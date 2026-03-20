@@ -9,8 +9,10 @@ import {
   Stack,
   Typography,
   useTheme,
+  alpha,
 } from '@mui/material';
 import { addWeeks, format, getDay, parse, startOfWeek, subWeeks } from 'date-fns';
+
 import { enUS } from 'date-fns/locale/en-US';
 import { useMemo, useState } from 'react';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
@@ -173,11 +175,12 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
   return (
     <Box>
       <Paper
-        variant="outlined"
+        elevation={0}
         sx={{
-          borderRadius: '5%',
-          bgcolor: 'background.paper',
+          borderRadius: 4,
+          bgcolor: 'background.default',
           overflow: 'hidden',
+          border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
         }}
       >
         <Box
@@ -260,8 +263,7 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
               fontWeight: 500,
             },
             '& .rbc-today': {
-              bgcolor:
-                theme.palette.mode === 'dark' ? 'rgba(200,122,42,0.1)' : 'rgba(200,122,42,0.08)',
+              bgcolor: alpha(theme.palette.secondary.main, 0.08),
             },
             '& .rbc-toolbar': {
               display: 'none',

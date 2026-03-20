@@ -1,227 +1,347 @@
 import {
-  CalendarMonth,
   DarkMode,
   LightMode,
-  Menu as MenuIcon,
-  School,
   Settings,
   SettingsBrightness,
-  SwapHoriz,
   Upload,
+  Logout,
+  HelpOutline,
 } from '@mui/icons-material';
 import {
   Avatar,
   Box,
   Button,
   Divider,
-  Drawer,
   IconButton,
-  List,
-  ListItem,
-  ListItemButton,
+  Menu,
+  MenuItem,
+  Typography,
+  useTheme,
   ListItemIcon,
   ListItemText,
-  SvgIcon,
-  ToggleButton,
-  ToggleButtonGroup,
-  Typography,
-  useMediaQuery,
-  useTheme,
 } from '@mui/material';
 import { useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
 import { useThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../hooks/useAuth';
 import ImportDialog from './ImportDialog';
-
-const drawerWidth = 240;
-
-const navItems = [
-  { text: 'Courses', icon: <School />, path: '/courses' },
-  { text: 'Schedule', icon: <CalendarMonth />, path: '/schedule' },
-  { text: 'Trading', icon: <SwapHoriz />, path: '/trading' },
-  { text: 'Settings', icon: <Settings />, path: '/settings' },
-];
+import HelpDialog from './HelpDialog';
 
 export default function Layout() {
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
   const { mode, setMode } = useThemeMode();
   const { user, signOut, signIn } = useAuth();
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+  const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
   };
 
-  const drawer = (
-    <Box sx={{ overflow: 'auto', height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <img src="/apple-touch-icon.png" alt="Logo" style={{ width: 32, height: 32 }} />
-        <Typography
-          variant="h6"
-          fontWeight={700}
-          sx={{ color: 'primary.main', fontFamily: '"Zilla Slab", serif' }}
-        >
-          AuraIsHub
-        </Typography>
-      </Box>
-      <Divider />
-      <List sx={{ flex: 1 }}>
-        <ListItem disablePadding>
-          <ListItemButton
-            onClick={() => {
-              setImportOpen(true);
-              if (isMobile) setMobileOpen(false);
-            }}
-            sx={{ mx: 1, my: 0.5, borderRadius: 2 }}
-          >
-            <ListItemIcon sx={{ minWidth: 40 }}>
-              <Upload />
-            </ListItemIcon>
-            <ListItemText primary="Import" />
-          </ListItemButton>
-        </ListItem>
-        <Divider sx={{ mx: 2, my: 0.5 }} />
-        {navItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton
-              selected={location.pathname === item.path}
-              onClick={() => {
-                navigate(item.path);
-                if (isMobile) setMobileOpen(false);
-              }}
-              sx={{
-                mx: 1,
-                my: 0.5,
-                borderRadius: 2,
-                '&.Mui-selected': {
-                  bgcolor: 'primary.main',
-                  color: 'white',
-                  '&:hover': {
-                    bgcolor: 'primary.dark',
-                  },
-                  '& .MuiListItemIcon-root': {
-                    color: 'white',
-                  },
-                },
-              }}
-            >
-              <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-      <Divider />
-      <Box sx={{ p: 2 }}>
-        <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-          Theme
-        </Typography>
-        <ToggleButtonGroup
-          value={mode}
-          exclusive
-          onChange={(_, newMode) => newMode && setMode(newMode)}
-          size="small"
-          fullWidth
-        >
-          <ToggleButton value="light" sx={{ py: 1 }}>
-            <LightMode sx={{ mr: 0.5 }} />
-          </ToggleButton>
-          <ToggleButton value="dark" sx={{ py: 1 }}>
-            <DarkMode sx={{ mr: 0.5 }} />
-          </ToggleButton>
-          <ToggleButton value="system" sx={{ py: 1 }}>
-            <SettingsBrightness sx={{ mr: 0.5 }} />
-          </ToggleButton>
-        </ToggleButtonGroup>
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
 
-        {user ? (
-          <Box
-            sx={{
-              display: 'flex',
-              marginTop: 1,
-              alignItems: 'center',
-              gap: 1.5,
-              p: 1,
-              borderRadius: 2,
-              bgcolor: 'action.hover',
-              cursor: 'pointer',
-            }}
-            onClick={() => navigate('/settings')}
-          >
-            <Avatar sx={{ width: 36, height: 36, bgcolor: 'primary.main' }}>
-              {user?.displayName?.[0] || 'U'}
-            </Avatar>
-            <Box sx={{ overflow: 'hidden' }}>
-              <ListItemText
-                primary={user?.displayName || 'User'}
-                primaryTypographyProps={{ variant: 'body2', fontWeight: 600, noWrap: true }}
-              />
-            </Box>
-          </Box>
-        ) : (
-          <Button variant="contained" fullWidth onClick={signIn} sx={{ mt: 1 }}>
-            Sign In
-          </Button>
-        )}
+  const toggleMode = () => {
+    if (mode === 'light') setMode('dark');
+    else if (mode === 'dark') setMode('system');
+    else setMode('light');
+  };
+
+  const ModeIcon =
+    mode === 'light' ? (
+      <LightMode fontSize="small" />
+    ) : mode === 'dark' ? (
+      <DarkMode fontSize="small" />
+    ) : (
+      <SettingsBrightness fontSize="small" />
+    );
+
+  const NavLink = ({
+    to,
+    label,
+    primary = false,
+  }: {
+    to: string;
+    label: string;
+    primary?: boolean;
+  }) => {
+    const isActive = location.pathname === to || (to !== '/' && location.pathname.startsWith(to));
+
+    if (primary) {
+      return (
+        <Box
+          component={Link}
+          to={to}
+          sx={{
+            textDecoration: 'none',
+            fontWeight: 700,
+            height: 64,
+            display: 'flex',
+            alignItems: 'center',
+            px: 1,
+            color: isActive ? 'accent.main' : 'text.secondary',
+            borderBottom: isActive ? '2px solid' : '2px solid transparent',
+            borderColor: isActive ? 'accent.main' : 'transparent',
+            transition: 'all 0.2s',
+            '&:hover': {
+              color: isActive ? 'accent.main' : 'text.primary',
+            },
+            '&:active': {
+              transform: 'scale(0.95)',
+            },
+          }}
+        >
+          {label}
+        </Box>
+      );
+    }
+
+    return (
+      <Box
+        component={Link}
+        to={to}
+        sx={{
+          textDecoration: 'none',
+          fontSize: '0.75rem',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          color: isActive ? 'text.primary' : 'text.secondary',
+          transition: 'color 0.2s',
+          '&:hover': {
+            color: 'text.primary',
+          },
+        }}
+      >
+        {label}
       </Box>
-    </Box>
-  );
+    );
+  };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-      <Box component="nav" sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}>
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{ keepMounted: true }}
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh',
+        bgcolor: 'background.default',
+      }}
+    >
+      <Box
+        component="nav"
+        sx={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 50,
+          bgcolor: 'background.paper',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+        }}
+      >
+        <Box
           sx={{
-            display: { xs: 'block', md: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+            maxWidth: 1280,
+            mx: 'auto',
+            px: { xs: 2, sm: 3 },
+            height: 64,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
           }}
         >
-          {drawer}
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', md: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-          open
-        >
-          {drawer}
-        </Drawer>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, md: 4 } }}>
+            <Typography
+              component={Link}
+              to="/"
+              variant="h6"
+              sx={{
+                fontWeight: 900,
+                color: 'accent.main',
+                textDecoration: 'none',
+                letterSpacing: '-0.02em',
+                fontFamily: '"Zilla Slab", serif',
+                display: { xs: 'none', sm: 'block' },
+              }}
+            >
+              AuraIsHub
+            </Typography>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 3 } }}>
+              <NavLink to="/" label="Dashboard" primary />
+              <NavLink to="/trading" label="Trading" primary />
+            </Box>
+
+            {!location.pathname.startsWith('/trading') && (
+              <Box
+                sx={{
+                  display: { xs: 'none', md: 'flex' },
+                  alignItems: 'center',
+                  gap: 3,
+                  ml: 2,
+                  pl: 4,
+                  borderLeft: '1px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <NavLink to="/courses" label="Courses" />
+              </Box>
+            )}
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton
+              onClick={() => setHelpOpen(true)}
+              size="small"
+              sx={{ color: 'text.secondary' }}
+            >
+              <HelpOutline fontSize="small" />
+            </IconButton>
+            <IconButton onClick={toggleMode} size="small" sx={{ color: 'text.secondary' }}>
+              {ModeIcon}
+            </IconButton>
+
+            <IconButton
+              onClick={() => navigate('/settings')}
+              size="small"
+              sx={{ color: 'text.secondary', display: { xs: 'flex', md: 'none' } }}
+            >
+              <Settings fontSize="small" />
+            </IconButton>
+
+            {user ? (
+              <Box sx={{ ml: 1 }}>
+                <Button
+                  onClick={handleMenu}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    pl: 1,
+                    pr: 0.5,
+                    py: 0.5,
+                    borderRadius: 9999,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    bgcolor: 'action.hover',
+                    textTransform: 'none',
+                    color: 'text.primary',
+                    '&:hover': { bgcolor: 'action.selected' },
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    fontWeight={600}
+                    sx={{ pl: 1, display: { xs: 'none', sm: 'block' } }}
+                  >
+                    {user.displayName || 'User'}
+                  </Typography>
+                  <Avatar
+                    sx={{ width: 32, height: 32, border: '1px solid', borderColor: 'accent.main' }}
+                  >
+                    {user.displayName?.[0] || 'U'}
+                  </Avatar>
+                </Button>
+                <Menu
+                  anchorEl={anchorEl}
+                  open={Boolean(anchorEl)}
+                  onClose={handleClose}
+                  PaperProps={{
+                    sx: {
+                      mt: 1.5,
+                      minWidth: 200,
+                      borderRadius: '16px',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      boxShadow: theme.shadows[4],
+                      backgroundImage: 'none',
+                    },
+                  }}
+                  transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                  anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      handleClose();
+                      navigate('/settings');
+                    }}
+                  >
+                    <ListItemIcon>
+                      <Settings fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Settings</ListItemText>
+                  </MenuItem>
+                  <Divider sx={{ my: 0.5 }} />
+                  <MenuItem
+                    onClick={() => {
+                      handleClose();
+                      signOut();
+                    }}
+                    sx={{ color: 'error.main' }}
+                  >
+                    <ListItemIcon>
+                      <Logout fontSize="small" color="error" />
+                    </ListItemIcon>
+                    <ListItemText>Logout</ListItemText>
+                  </MenuItem>
+                </Menu>
+              </Box>
+            ) : (
+              <Button
+                variant="contained"
+                color="accent"
+                size="small"
+                onClick={signIn}
+                sx={{ borderRadius: 9999, ml: 1 }}
+              >
+                Sign In
+              </Button>
+            )}
+          </Box>
+        </Box>
       </Box>
+
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
-          width: { md: `calc(100% - ${drawerWidth}px)` },
-          bgcolor: 'background.default',
-          minHeight: '100vh',
+          maxWidth: 1280,
+          mx: 'auto',
+          width: '100%',
+          px: { xs: 2, sm: 3 },
+          py: 4,
         }}
       >
-        {isMobile && (
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mb: 2 }}
-          >
-            <MenuIcon />
-          </IconButton>
-        )}
         <Outlet />
       </Box>
+
+      {/* FAB (Import Actions) */}
+      <Box sx={{ position: 'fixed', bottom: 32, right: 32, zIndex: 50 }}>
+        <IconButton
+          sx={{
+            bgcolor: 'accent.main',
+            color: 'accent.contrastText',
+            width: 56,
+            height: 56,
+            boxShadow: theme.shadows[8],
+            transition: 'transform 0.2s',
+            '&:hover': {
+              bgcolor: 'accent.dark',
+              transform: 'rotate(90deg) scale(1.1)',
+            },
+          }}
+          onClick={() => setImportOpen(true)}
+        >
+          <Upload />
+        </IconButton>
+      </Box>
+
       <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
+      <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
     </Box>
   );
 }

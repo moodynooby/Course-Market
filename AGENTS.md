@@ -11,7 +11,7 @@
 ```bash
 bun run dev  # Vite + Netlify Backend
 bun run build # Build + SPA _redirects generation
-bun run ci    # Fix + Test + TSC check
+bun run check    # Fix + Test + TSC check
 ```
 
 ## Code Standards

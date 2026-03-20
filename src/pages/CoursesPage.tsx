@@ -27,6 +27,8 @@ import {
   Typography,
   InputAdornment,
   CircularProgress,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCourses } from '../config/storageConfig';
@@ -201,12 +203,19 @@ export default function CoursesPage() {
     setSelectedSections(new Map());
   };
 
+  const theme = useTheme();
+
   if (loading) {
     return (
       <Box>
-        <Typography variant="h4" gutterBottom fontWeight={700}>
-          Course Browser
-        </Typography>
+        <header style={{ marginBottom: '40px' }}>
+          <Typography variant="h4" fontWeight={800} gutterBottom sx={{ letterSpacing: '-0.02em' }}>
+            Course Browser
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Loading your courses...
+          </Typography>
+        </header>
         <Stack spacing={2}>
           {[1, 2, 3].map((i) => (
             <Card key={i}>
@@ -225,9 +234,11 @@ export default function CoursesPage() {
   if (courses.length === 0) {
     return (
       <Box>
-        <Typography variant="h4" gutterBottom fontWeight={700}>
-          Course Browser
-        </Typography>
+        <header style={{ marginBottom: '40px' }}>
+          <Typography variant="h4" fontWeight={800} gutterBottom sx={{ letterSpacing: '-0.02em' }}>
+            Course Browser
+          </Typography>
+        </header>
         <Alert severity="info" sx={{ mb: 3 }}>
           No courses imported yet. Import a CSV file to get started.
         </Alert>
@@ -237,11 +248,14 @@ export default function CoursesPage() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
-        <Typography variant="h4" fontWeight={700}>
+      <header style={{ marginBottom: '40px' }}>
+        <Typography variant="h4" fontWeight={800} gutterBottom sx={{ letterSpacing: '-0.02em' }}>
           Course Browser
         </Typography>
-      </Stack>
+        <Typography variant="body1" color="text.secondary">
+          Search courses, view sections, and select your preferred classes.
+        </Typography>
+      </header>
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
         <TextField
@@ -356,19 +370,23 @@ export default function CoursesPage() {
                         variant="outlined"
                         sx={{
                           cursor: 'pointer',
+                          transition: 'all 0.2s',
                           borderColor: isSelected
                             ? 'success.main'
                             : conflict
                               ? 'error.main'
-                              : 'divider',
-                          bgcolor: isSelected
-                            ? 'success.main'
-                            : conflict
-                              ? 'error.main'
                               : 'transparent',
-                          color: isSelected || conflict ? 'white' : 'inherit',
+                          bgcolor: isSelected
+                            ? alpha(theme.palette.success.main, 0.1)
+                            : conflict
+                              ? alpha(theme.palette.error.main, 0.1)
+                              : 'action.hover',
+                          color: isSelected ? 'success.main' : conflict ? 'error.main' : 'inherit',
                           '&:hover': {
-                            borderColor: 'primary.main',
+                            borderColor: isSelected ? 'success.main' : 'secondary.main',
+                            bgcolor: isSelected
+                              ? alpha(theme.palette.success.main, 0.15)
+                              : 'action.selected',
                           },
                         }}
                         onClick={() => handleSelectSection(course.id, section.id)}
