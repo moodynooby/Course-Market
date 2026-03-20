@@ -741,7 +741,6 @@ export default function TradingPage() {
       <ApiKeyDialog
         open={apiKeyDialogOpen}
         onClose={() => setApiKeyDialogOpen(false)}
-        provider={getLlmConfig().provider}
         onSave={(key) => {
           const config = getLlmConfig();
           saveLlmConfig({ ...config, apiKey: key });

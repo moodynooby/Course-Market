@@ -6,6 +6,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [
     react({
+      jsxRuntime: 'automatic',
       ...reactCompilerPreset(),
     }),
     netlify(),
@@ -30,13 +31,6 @@ export default defineConfig({
     headers: {
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
-  },
-  build: {
-    rolldownOptions: {
-      output: {
-        codeSplitting: true,
-      },
     },
   },
 });

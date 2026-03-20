@@ -1,34 +1,33 @@
-import { AutoAwesome, Upload, ArrowForward, PlayArrow, Psychology } from '@mui/icons-material';
+import { ArrowForward, AutoAwesome, Psychology, Upload } from '@mui/icons-material';
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
-  Typography,
-  Stack,
-  Alert,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
   Grid,
   LinearProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Divider,
+  Stack,
+  Typography,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { useNavigate } from 'react-router-dom';
 import remarkGfm from 'remark-gfm';
+import ApiKeyDialog from '../components/ApiKeyDialog';
 import CalendarView from '../components/CalendarView';
+import ImportDialog from '../components/ImportDialog';
+import { getLlmConfig, saveLlmConfig } from '../config/llmConfig';
 import { getCourses } from '../config/storageConfig';
 import { STORAGE_KEYS } from '../config/userConfig';
-import { getLlmConfig } from '../config/llmConfig';
-import { checkConflicts } from '../utils/schedule';
-import ImportDialog from '../components/ImportDialog';
-import ApiKeyDialog from '../components/ApiKeyDialog';
 import { useAuth } from '../hooks/useAuth';
-import { saveLlmConfig } from '../config/llmConfig';
-import type { Course, LLMConfig, Schedule, Section } from '../types';
+import type { Course, Schedule, Section } from '../types';
+import { checkConflicts } from '../utils/schedule';
 
 function generateCurrentSchedule(): Schedule | null {
   const { courses, sections } = getCourses();
@@ -111,14 +110,6 @@ export default function LandingPage() {
       return;
     }
 
-    const llmConfigObj = getLlmConfig();
-    const isCloud = ['openai', 'anthropic', 'groq'].includes(llmConfigObj.provider);
-
-    if (isCloud && !llmConfigObj.apiKey) {
-      setApiKeyDialogOpen(true);
-      return;
-    }
-
     setOptimizing(true);
     setError('');
     setInitProgress('');
@@ -128,34 +119,21 @@ export default function LandingPage() {
       const { getPreferences } = await import('../config/userConfig');
       const preferences = getPreferences();
 
-      const llmConfig: LLMConfig = {
-        ...getLlmConfig(),
-        initProgressCallback: (report) => {
-          setInitProgress(`${report.text} (${report.progress.toFixed(0)}%)`);
-        },
-      };
-
-      const config: Record<string, unknown> = {
-        model: llmConfig.model,
-        temperature: llmConfig.temperature,
-        maxTokens: llmConfig.maxTokens,
-      };
-      if (llmConfig.provider === 'wllama') {
-        config.initProgressCallback = (progress: { loaded: number; total: number }) => {
-          setInitProgress(
-            `Downloading model... ${Math.round((progress.loaded / progress.total) * 100)}%`,
-          );
-        };
-      }
-
+      const currentLlmConfig = getLlmConfig();
       const token = await getToken();
+
       const result = await optimizeWithLLM(
         [schedule],
         preferences,
-        token,
+        token || '',
         {
-          provider: llmConfig.provider as 'webllm' | 'wllama' | 'openai' | 'anthropic' | 'groq',
-          ...config,
+          provider: currentLlmConfig.provider as 'webllm' | 'groq',
+          model: currentLlmConfig.model,
+          temperature: currentLlmConfig.temperature,
+          maxTokens: currentLlmConfig.maxTokens,
+          initProgressCallback: (report) => {
+            setInitProgress(`${report.text} (${Math.round(report.progress * 100)}%)`);
+          },
         },
         allSections,
       );
@@ -175,7 +153,13 @@ export default function LandingPage() {
 
       setAiAnalysis(result.aiAnalysis || 'Schedule optimized successfully.');
     } catch (err) {
-      setError(`Optimization failed: ${(err as Error).message}`);
+      const error = err as Error & { code?: string };
+      const code = error.code;
+      if (code === 'KEY_REQUIRED') {
+        setApiKeyDialogOpen(true);
+      } else {
+        setError(`Optimization failed: ${error.message}`);
+      }
     } finally {
       setOptimizing(false);
     }
@@ -426,7 +410,6 @@ export default function LandingPage() {
       <ApiKeyDialog
         open={apiKeyDialogOpen}
         onClose={() => setApiKeyDialogOpen(false)}
-        provider={getLlmConfig().provider}
         onSave={(key) => {
           const config = getLlmConfig();
           saveLlmConfig({ ...config, apiKey: key });

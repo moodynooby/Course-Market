@@ -45,17 +45,21 @@ const router = createBrowserRouter([
       {
         index: true,
         element: (
-          <Suspense fallback={<LoadingFallback />}>
-            <LandingPage />
-          </Suspense>
+          <ProtectedRoute>
+            <Suspense fallback={<LoadingFallback />}>
+              <LandingPage />
+            </Suspense>
+          </ProtectedRoute>
         ),
       },
       {
         path: 'courses',
         element: (
-          <Suspense fallback={<LoadingFallback />}>
-            <CoursesPage />
-          </Suspense>
+          <ProtectedRoute>
+            <Suspense fallback={<LoadingFallback />}>
+              <CoursesPage />
+            </Suspense>
+          </ProtectedRoute>
         ),
       },
       {

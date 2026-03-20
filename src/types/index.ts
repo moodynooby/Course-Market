@@ -72,17 +72,7 @@ export interface CSVParseResult {
   warnings: string[];
 }
 
-export type LLMProvider = 'webllm' | 'wllama' | 'openai' | 'anthropic' | 'groq';
-
-export interface LLMConfig {
-  provider: LLMProvider;
-  model?: string;
-  temperature?: number;
-  maxTokens?: number;
-  apiKey?: string;
-  apiBaseUrl?: string;
-  initProgressCallback?: (progress: { progress: number; text: string }) => void;
-}
+export type LLMProvider = 'webllm' | 'groq';
 
 export interface CalendarEvent {
   id: string;

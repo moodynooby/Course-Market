@@ -1,29 +1,25 @@
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Alert,
+  Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Link,
   TextField,
   Typography,
-  Link,
-  Box,
-  Alert,
 } from '@mui/material';
-import { useState, useEffect } from 'react';
-import type { LLMProvider } from '../types';
-import { PROVIDER_OPTIONS } from '../config/llmConfig';
+import { useEffect, useState } from 'react';
 
 interface ApiKeyDialogProps {
   open: boolean;
   onClose: () => void;
-  provider: LLMProvider;
   onSave: (key: string) => void;
 }
 
-export default function ApiKeyDialog({ open, onClose, provider, onSave }: ApiKeyDialogProps) {
+export default function ApiKeyDialog({ open, onClose, onSave }: ApiKeyDialogProps) {
   const [apiKey, setApiKey] = useState('');
-  const option = PROVIDER_OPTIONS.find((o) => o.value === provider);
 
   useEffect(() => {
     if (open) setApiKey('');
@@ -36,64 +32,34 @@ export default function ApiKeyDialog({ open, onClose, provider, onSave }: ApiKey
     }
   };
 
-  const getProviderInfo = () => {
-    switch (provider) {
-      case 'groq':
-        return {
-          name: 'Groq',
-          url: 'https://console.groq.com/keys',
-          placeholder: 'gsk_...',
-        };
-      case 'openai':
-        return {
-          name: 'OpenAI',
-          url: 'https://platform.openai.com/api-keys',
-          placeholder: 'sk-...',
-        };
-      case 'anthropic':
-        return {
-          name: 'Anthropic',
-          url: 'https://console.anthropic.com/settings/keys',
-          placeholder: 'sk-ant-...',
-        };
-      default:
-        return {
-          name: 'Cloud AI',
-          url: '#',
-          placeholder: 'Enter API key',
-        };
-    }
-  };
-
-  const info = getProviderInfo();
-
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ fontWeight: 800 }}>Enter {info.name} API Key</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 800 }}>Enter Groq API Key</DialogTitle>
       <DialogContent>
         <Box sx={{ mt: 1 }}>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            To use {info.name}, you need a valid API key. You can get one from{' '}
-            <Link href={info.url} target="_blank" rel="noopener">
-              {info.name} Console
+            A shared API key is used by default. If you prefer to use your own key, you can provide
+            it here. Get one from{' '}
+            <Link href="https://console.groq.com/keys" target="_blank" rel="noopener">
+              Groq Console
             </Link>
             .
           </Typography>
           <TextField
             autoFocus
             margin="dense"
-            label={`${info.name} API Key`}
+            label="Groq API Key (Optional)"
             type="password"
             fullWidth
             variant="outlined"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder={info.placeholder}
+            placeholder="gsk_..."
             sx={{ mt: 2 }}
           />
           <Alert severity="info" sx={{ mt: 2 }}>
-            Your key is stored locally in your browser and is only sent to our secure backend proxy
-            to communicate with {info.name}.
+            Your API key is encrypted and stored securely on our servers. It will be used when the
+            shared key is unavailable.
           </Alert>
         </Box>
       </DialogContent>

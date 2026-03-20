@@ -63,11 +63,6 @@ export default function SettingsPage() {
   );
 
   const saveLlmConfigHandler = useCallback((config: BYOKConfig) => {
-    // Local providers don't need API keys
-    const isLocal = config.provider === 'webllm' || config.provider === 'wllama';
-    if (!isLocal && !config.apiKey) {
-      return false;
-    }
     saveLlmConfig(config);
     setLlmSaved(true);
     setTimeout(() => setLlmSaved(false), 3000);
@@ -135,19 +130,16 @@ export default function SettingsPage() {
 
   const handleProviderChange = (provider: LLMProvider) => {
     const option = PROVIDER_OPTIONS.find((o) => o.value === provider);
-    const isLocal = provider === 'webllm' || provider === 'wllama';
 
     setLlmConfig({
       ...llmConfig,
       provider,
-      apiKey: isLocal ? '' : llmConfig.apiKey,
-      apiBaseUrl: isLocal ? '' : option?.urlPlaceholder || '',
       model: option?.defaultModel || '',
     });
   };
 
   const selectedOption = PROVIDER_OPTIONS.find((o) => o.value === llmConfig.provider);
-  const isLocalProvider = llmConfig.provider === 'webllm' || llmConfig.provider === 'wllama';
+  const isLocalProvider = llmConfig.provider === 'webllm';
 
   return (
     <Box>
@@ -361,31 +353,15 @@ export default function SettingsPage() {
                 </FormControl>
 
                 {!isLocalProvider && (
-                  <>
-                    <TextField
-                      fullWidth
-                      label="API Key"
-                      type="password"
-                      value={llmConfig.apiKey}
-                      onChange={(e) => setLlmConfig({ ...llmConfig, apiKey: e.target.value })}
-                      placeholder={
-                        llmConfig.provider === 'anthropic'
-                          ? 'sk-ant-...'
-                          : llmConfig.provider === 'groq'
-                            ? 'gsk_...'
-                            : 'sk-...'
-                      }
-                      helperText="Your API key is stored locally and never sent to our servers"
-                    />
-
-                    <TextField
-                      fullWidth
-                      label="API Base URL"
-                      value={llmConfig.apiBaseUrl}
-                      onChange={(e) => setLlmConfig({ ...llmConfig, apiBaseUrl: e.target.value })}
-                      placeholder={selectedOption?.urlPlaceholder}
-                    />
-                  </>
+                  <TextField
+                    fullWidth
+                    label="API Key (Optional)"
+                    type="password"
+                    value={llmConfig.apiKey}
+                    onChange={(e) => setLlmConfig({ ...llmConfig, apiKey: e.target.value })}
+                    placeholder="gsk_..."
+                    helperText="Optional. A shared key is used by default for Groq."
+                  />
                 )}
 
                 <Grid container spacing={2}>
@@ -448,18 +424,8 @@ export default function SettingsPage() {
 
                 {isLocalProvider && (
                   <Alert severity="info" icon={<Info />}>
-                    {llmConfig.provider === 'webllm' ? (
-                      <>
-                        <strong>Fast Local AI (GPU):</strong> Your AI runs completely on your device
-                        using hardware acceleration. First load may take a minute to download the
-                        model.
-                      </>
-                    ) : (
-                      <>
-                        <strong>Universal AI (CPU):</strong> A compatible backup that works on any
-                        browser without needing a powerful GPU.
-                      </>
-                    )}
+                    <strong>Fast Local AI (GPU):</strong> Your AI runs completely on your device
+                    using hardware acceleration. First load may take a minute to download the model.
                   </Alert>
                 )}
               </Stack>

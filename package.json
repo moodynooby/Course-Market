@@ -11,25 +11,21 @@
     "check": "bun run fix && tsc -b && vitest run",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "netlify dev:exec drizzle-kit migrate",
-    "db:studio": "netlify dev:exec drizzle-kit studio"
+    "db:migrate": "bunx netlify dev:exec drizzle-kit migrate",
+    "db:studio": "bunx netlify dev:exec drizzle-kit studio"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.58",
     "@ai-sdk/groq": "^3.0.29",
-    "@ai-sdk/openai": "^3.0.41",
     "@auth0/auth0-react": "^2.15.1",
+    "@browser-ai/web-llm": "^2.1.7",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@mlc-ai/web-llm": "^0.2.82",
     "@mui/icons-material": "^7.3.9",
     "@mui/material": "^7.3.9",
     "@netlify/neon": "^0.1.2",
     "@netlify/vite-plugin": "^2.11.2",
-    "@wllama/wllama": "^2.3.7",
     "ai": "^6.0.116",
     "date-fns": "^4.1.0",
-    "detect-gpu": "^5.0.70",
     "drizzle-orm": "^0.45.1",
     "jose": "^6.2.2",
     "papaparse": "^5.5.3",
@@ -38,7 +34,8 @@
     "react-dom": "^19.2.4",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.13.1",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.7",

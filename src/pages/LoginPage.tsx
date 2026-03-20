@@ -87,7 +87,7 @@ export default function LoginPage() {
               onClick={signIn}
               sx={{ py: 1.5 }}
             >
-              Sign in to Trade & Sync
+              Sign in
             </Button>
 
             <Box sx={{ px: 1 }}>
@@ -115,22 +115,15 @@ export default function LoginPage() {
                     Save your optimization preferences
                   </Typography>
                 </li>
+                <li>
+                  <Typography variant="caption" color="text.secondary">
+                    Get Free AI ADVICE totally private if you device supports it or a free of cost
+                    ai service
+                  </Typography>
+                </li>
               </ul>
             </Box>
           </Stack>
-
-          <Box sx={{ bgcolor: 'action.hover', p: 3, borderRadius: 2, textAlign: 'center' }}>
-            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
-              Just Planning?
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-              Continue as a guest to browse courses and use the AI optimizer. No account required to
-              start.
-            </Typography>
-            <Button variant="outlined" onClick={() => navigate('/courses')} fullWidth>
-              Start as Guest
-            </Button>
-          </Box>
         </CardContent>
       </Card>
     </Box>

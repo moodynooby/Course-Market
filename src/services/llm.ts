@@ -1,21 +1,20 @@
-import { CreateMLCEngine, type MLCEngineInterface } from '@mlc-ai/web-llm';
-import { Wllama } from '@wllama/wllama';
+import { webLLM } from '@browser-ai/web-llm';
+import { generateObject, generateText } from 'ai';
+import { z } from 'zod';
 import { ENV } from '../config/devConfig';
 import {
   type BYOKConfig,
   DEFAULT_LLM_CONFIG,
   getDefaultModel,
-  LLM_CONSTANTS,
   type LLMTask,
 } from '../config/llmConfig';
-import type { Course, LLMProvider, Preferences, Schedule, Section, TradePost } from '../types';
+import type { Course, Preferences, Schedule, Section, TradePost } from '../types';
 
-type LLMConfig = BYOKConfig;
+export const CourseSearchSchema = z.object({
+  courseIds: z.array(z.string()).describe('Top 5-10 most relevant course IDs'),
+});
 
-interface LLMMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
+export type CourseSearchResponse = z.infer<typeof CourseSearchSchema>;
 
 export function buildScheduleAnalysisPrompt(
   schedule: Schedule,
@@ -43,13 +42,11 @@ export function buildScheduleAnalysisPrompt(
   if (allSections && allSections.length > 0) {
     const currentCourseIds = new Set(schedule.sections.map((s) => s.courseId));
 
-    // Group sections by course, only for courses in the current schedule
     const sectionsByCourse = new Map<string, Section[]>();
     allSections.forEach((s) => {
       if (currentCourseIds.has(s.courseId)) {
         const existing = sectionsByCourse.get(s.courseId) || [];
         if (existing.length < 5) {
-          // Limit to 5 alternatives per course to save tokens
           existing.push(s);
           sectionsByCourse.set(s.courseId, existing);
         }
@@ -113,9 +110,7 @@ export function buildSearchCoursesPrompt(query: string, courses: Course[]): stri
 Here is the list of available courses:
 ${coursesCtx}
 
-Identify the top 5-10 most relevant courses that match the user's intent. 
-Return ONLY a valid JSON array of course IDs, like this: ["id1", "id2", "id3"]
-Do not include any other text or explanation.`;
+Identify the top 5-10 most relevant courses that match the user's intent.`;
 }
 
 export function buildTradeMessagePrompt(trade: TradePost): string {
@@ -133,12 +128,11 @@ Keep it concise (under 100 words).`;
 }
 
 class UnifiedLLMService {
-  private engine: MLCEngineInterface | null = null;
-  private wllama: Wllama | null = null;
   private isInitialized = false;
   private isLoading = false;
+  private isFallbackMode = false;
   private lastInitPromise: Promise<boolean> | null = null;
-  private config: LLMConfig = DEFAULT_LLM_CONFIG;
+  private config: BYOKConfig = DEFAULT_LLM_CONFIG;
   private analysisCache: Map<string, string> = new Map();
   private token: string | null = null;
 
@@ -146,7 +140,7 @@ class UnifiedLLMService {
     this.token = token;
   }
 
-  async initialize(config?: Partial<LLMConfig>, task: LLMTask = 'DEFAULT'): Promise<boolean> {
+  async initialize(config?: Partial<BYOKConfig>, task: LLMTask = 'DEFAULT'): Promise<boolean> {
     if (this.isLoading && this.lastInitPromise) {
       return this.lastInitPromise;
     }
@@ -156,23 +150,22 @@ class UnifiedLLMService {
   }
 
   private async performInitialization(
-    config?: Partial<LLMConfig>,
+    config?: Partial<BYOKConfig>,
     task: LLMTask = 'DEFAULT',
   ): Promise<boolean> {
     const targetConfig = { ...this.config, ...config };
     const targetProvider = targetConfig.provider;
     const targetModel = await getDefaultModel(targetProvider, task);
 
-    // If already initialized with a different model or provider, destroy first
     if (
       this.isInitialized &&
       (this.config.model !== targetModel || this.config.provider !== targetProvider)
     ) {
-      if (ENV.IS_DEV) console.log('Model/Provider change detected, re-initializing LLM...');
-      await this.destroy();
+      if (ENV.IS_DEV) console.log('Model/Provider change detected, re-initializing...');
+      this.isInitialized = false;
     }
 
-    if (this.isInitialized) {
+    if (this.isInitialized && this.config.provider !== 'webllm') {
       return true;
     }
 
@@ -181,212 +174,92 @@ class UnifiedLLMService {
     try {
       this.config = { ...this.config, ...config, model: targetModel };
 
-      switch (this.config.provider) {
-        case 'webllm':
-          try {
-            return await this.initializeWebLLM();
-          } catch (error) {
-            if (ENV.IS_DEV) {
-              console.error('WebLLM initialization failed, falling back to Wllama:', error);
-            }
-
-            // Clean up any partial state before falling back
-            await this.destroy();
-
-            // Report fallback to user
-            if (this.config.initProgressCallback) {
-              this.config.initProgressCallback({
-                progress: 0,
-                text: 'WebGPU failed or out of memory. Falling back to Universal AI (CPU)...',
-              });
-            }
-
-            // Switch provider in config so future calls use Wllama
-            this.config.provider = 'wllama';
-            this.config.model = await getDefaultModel('wllama', task);
-            return await this.initializeWllama();
-          }
-        case 'wllama':
-          return await this.initializeWllama();
-        default:
-          this.isInitialized = true;
-          if (ENV.IS_DEV) {
-            console.warn(`${this.config.provider} configured`);
-          }
-          return true;
+      if (this.config.provider === 'webllm') {
+        if (!('gpu' in navigator) || !navigator.gpu) {
+          throw new Error('WebGPU not supported');
+        }
+        // @browser-ai/web-llm handles initialization lazily
+        this.isInitialized = true;
+        return true;
       }
+
+      this.isInitialized = true;
+      return true;
     } catch (error) {
-      if (ENV.IS_DEV) {
-        console.error('Failed to initialize LLM:', error);
-      }
-      await this.destroy();
+      if (ENV.IS_DEV) console.error('Failed to initialize LLM:', error);
+      this.isInitialized = false;
       return false;
     } finally {
       this.isLoading = false;
       this.lastInitPromise = null;
     }
   }
+  private async getModel(task: LLMTask = 'DEFAULT') {
+    const { provider } = this.config;
+    const model = await getDefaultModel(provider, task);
 
-  private async initializeWebLLM(): Promise<boolean> {
-    if (!('gpu' in navigator) || !navigator.gpu) {
-      throw new Error(
-        'WebGPU is not supported in this browser. Please use Chrome 113+, Edge 113+, or Firefox 141+.',
-      );
-    }
-
-    const model = this.config.model!;
-
-    try {
-      this.engine = await CreateMLCEngine(model, {
+    if (provider === 'webllm' && !this.isFallbackMode) {
+      return webLLM(model, {
         initProgressCallback: this.config.initProgressCallback,
       });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const isOOM =
-        errorMessage.includes('out of memory') ||
-        errorMessage.includes('GPUDeviceLostInfo') ||
-        errorMessage.includes('Not enough memory') ||
-        errorMessage.includes('Device was lost') ||
-        errorMessage.includes('failed to allocate') ||
-        errorMessage.includes('buffer');
+    }
 
-      if (isOOM) {
-        throw new Error(
-          `GPU memory error: ${errorMessage}. This model might be too large for your GPU. Try switching to Universal AI (CPU) or an external API in Settings.`,
+    // Proxy "model" as a custom provider
+    return {
+      modelId: model,
+      specificationVersion: 'v1' as const,
+      defaultObjectGenerationMode: 'json' as const,
+      doGenerate: async (params: any) => {
+        const text = await this.callExternalAPI(
+          params.prompt || params.messages[params.messages.length - 1].content,
+          params.system,
         );
-      }
-      throw error;
-    }
-
-    this.isInitialized = true;
-    if (ENV.IS_DEV) {
-      console.warn('WebLLM initialized with model:', model);
-    }
-    return true;
-  }
-
-  private async initializeWllama(): Promise<boolean> {
-    const model = this.config.model!;
-    const modelPath = this.getWllamaModelPath(model);
-
-    this.wllama = new Wllama({
-      'single-thread/wllama.wasm': LLM_CONSTANTS.WLLAMA_WASM['single-thread'],
-      'multi-thread/wllama.wasm': LLM_CONSTANTS.WLLAMA_WASM['multi-thread'],
-    });
-
-    try {
-      const nThreads = Math.min(8, navigator.hardwareConcurrency || 4);
-      await this.wllama.loadModelFromUrl(modelPath, {
-        n_ctx: 8192,
-        progressCallback: (progress: { loaded: number; total: number }) => {
-          if (this.config.initProgressCallback) {
-            this.config.initProgressCallback({
-              progress: progress.loaded / progress.total,
-              text: `Loaded ${progress.loaded} of ${progress.total} bytes`,
-            });
-          }
-        },
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (
-        errorMessage.includes('out of memory') ||
-        errorMessage.includes('memory') ||
-        errorMessage.includes('failed to allocate')
-      ) {
-        throw new Error(
-          'Not enough memory to load this model. Try using a smaller model or switch to an external API (OpenAI/Anthropic) in Settings.',
-        );
-      }
-      throw error;
-    }
-
-    this.isInitialized = true;
-    if (ENV.IS_DEV) {
-      console.warn('Wllama initialized with model:', model);
-    }
-    return true;
-  }
-
-  private getWllamaModelPath(modelName: string): string {
-    return modelName; // New config uses full URLs directly
+        return {
+          text,
+          finishReason: 'stop' as const,
+          usage: { promptTokens: 0, completionTokens: 0 },
+        };
+      },
+    } as any;
   }
 
   async generateCompletion(prompt: string, systemPrompt?: string): Promise<string> {
-    if (!this.isInitialized) {
-      throw new Error('LLM service not initialized');
-    }
-
     try {
-      switch (this.config.provider) {
-        case 'webllm':
-          return await this.generateWebLLMCompletion(prompt, systemPrompt);
-        case 'wllama':
-          return await this.generateWllamaCompletion(prompt, systemPrompt);
-        default:
-          return await this.callExternalAPI(prompt, systemPrompt);
+      if (this.config.provider === 'webllm' && !this.isFallbackMode) {
+        try {
+          const { text } = await generateText({
+            model: await this.getModel(),
+            prompt,
+            system: systemPrompt,
+            temperature: this.config.temperature,
+          });
+          return text;
+        } catch (error) {
+          if (ENV.IS_DEV) console.error('WebLLM generation failed, trying cloud fallback:', error);
+          this.isFallbackMode = true;
+          this.config.provider = 'groq';
+          this.config.model = await getDefaultModel('groq');
+        }
       }
+
+      return await this.callExternalAPI(prompt, systemPrompt);
     } catch (error) {
       if (ENV.IS_DEV) {
         console.error('LLM completion failed:', error);
       }
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      throw new Error(`Failed to generate completion: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown cloud error';
+      throw new Error(errorMessage);
     }
-  }
-
-  private async generateWebLLMCompletion(prompt: string, systemPrompt?: string): Promise<string> {
-    if (!this.engine) {
-      throw new Error('WebLLM engine not initialized');
-    }
-
-    const messages: LLMMessage[] = [];
-    if (systemPrompt) {
-      messages.push({ role: 'system', content: systemPrompt });
-    }
-    messages.push({ role: 'user', content: prompt });
-
-    const reply = await this.engine.chat.completions.create({
-      messages,
-      temperature: this.config.temperature,
-      max_tokens: this.config.maxTokens,
-    });
-
-    return reply.choices[0]?.message?.content || 'No response generated';
-  }
-
-  private async generateWllamaCompletion(prompt: string, systemPrompt?: string): Promise<string> {
-    if (!this.wllama) {
-      throw new Error('Wllama not initialized');
-    }
-
-    const messages = [];
-    if (systemPrompt) {
-      messages.push({ role: 'system' as const, content: systemPrompt });
-    }
-    messages.push({ role: 'user' as const, content: prompt });
-
-    const response = await this.wllama.createChatCompletion(messages, {
-      nPredict: this.config.maxTokens || 1024,
-      sampling: {
-        temp: this.config.temperature || 0.7,
-      },
-    });
-    return response || 'No response generated';
   }
 
   private async callExternalAPI(prompt: string, systemPrompt?: string): Promise<string> {
-    const { provider, apiKey, apiBaseUrl, model, temperature, maxTokens } = this.config;
+    const { model, temperature, maxTokens } = this.config;
 
     if (!this.token) {
       throw new Error('Authentication required for cloud AI');
     }
 
-    if (!apiKey) {
-      throw new Error(`API key required for ${provider}`);
-    }
-
-    const messages: LLMMessage[] = [];
+    const messages = [];
     if (systemPrompt) {
       messages.push({ role: 'system', content: systemPrompt });
     }
@@ -399,27 +272,27 @@ class UnifiedLLMService {
         Authorization: `Bearer ${this.token}`,
       },
       body: JSON.stringify({
-        provider,
+        provider: 'groq',
         model,
         messages,
         temperature,
-        maxTokens,
-        apiKey,
-        apiBaseUrl,
+        maxOutputTokens: maxTokens,
       }),
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Cloud AI error (${response.status}): ${error}`);
+      const errorData = await response.json().catch(() => ({}));
+      const error = new Error(
+        errorData.message || errorData.error || `Cloud AI error (${response.status})`,
+      ) as Error & { code?: string };
+      if (errorData.code) {
+        error.code = errorData.code;
+      }
+      throw error;
     }
 
     const data = await response.json();
     return data.text || 'No response generated';
-  }
-
-  private generateCacheKey(schedule: Schedule, preferences: Preferences): string {
-    return `${schedule.id}-${JSON.stringify(preferences)}`;
   }
 
   async analyzeSchedule(
@@ -427,55 +300,33 @@ class UnifiedLLMService {
     preferences: Preferences,
     allSections?: Section[],
   ): Promise<string> {
-    const cacheKey = this.generateCacheKey(schedule, preferences);
-    if (this.analysisCache.has(cacheKey)) {
-      if (ENV.IS_DEV) console.log('Serving analysis from cache');
-      return this.analysisCache.get(cacheKey)!;
-    }
+    const cacheKey = `${schedule.id}-${JSON.stringify(preferences)}`;
+    if (this.analysisCache.has(cacheKey)) return this.analysisCache.get(cacheKey)!;
 
-    const prompt = buildScheduleAnalysisPrompt(schedule, preferences, allSections);
-    const result = await this.generateCompletion(prompt);
-
+    const result = await this.generateCompletion(
+      buildScheduleAnalysisPrompt(schedule, preferences, allSections),
+    );
     this.analysisCache.set(cacheKey, result);
     return result;
   }
 
   async searchCourses(query: string, courses: Course[]): Promise<Course[]> {
-    // Simple hybrid approach: keyword filter first to stay within context limits
-    const keywords = query
-      .toLowerCase()
-      .split(' ')
-      .filter((k) => k.length > 2);
-    let candidates = courses.filter((c) =>
-      keywords.some(
-        (k) =>
-          c.name.toLowerCase().includes(k) ||
-          c.code.toLowerCase().includes(k) ||
-          c.description?.toLowerCase().includes(k),
-      ),
-    );
-
-    // If too many, take top 25 to avoid token limits and context overflow
-    if (candidates.length > 25) {
-      candidates = candidates.slice(0, 25);
-    }
-
-    // If no keyword matches, use a smaller subset for performance
-    if (candidates.length === 0) {
-      candidates = courses.slice(0, 15);
-    }
-
-    const prompt = buildSearchCoursesPrompt(query, candidates);
-    const response = await this.generateCompletion(prompt);
+    const candidates = courses
+      .filter((c) =>
+        [c.name, c.code, c.description].some((v) => v?.toLowerCase().includes(query.toLowerCase())),
+      )
+      .slice(0, 25);
 
     try {
-      // Extract JSON from response (handling potential markdown code blocks)
-      const jsonStr = response.match(/\[.*\]/s)?.[0] || '[]';
-      const selectedIds: string[] = JSON.parse(jsonStr);
-      return candidates.filter((c) => selectedIds.includes(c.id));
+      const { object } = await generateObject({
+        model: await this.getModel('SEARCH'),
+        schema: CourseSearchSchema,
+        prompt: buildSearchCoursesPrompt(query, candidates),
+      });
+      return candidates.filter((c) => object.courseIds.includes(c.id));
     } catch (e) {
-      if (ENV.IS_DEV) console.error('Failed to parse search results:', e);
-      return candidates.slice(0, 5); // Fallback
+      if (ENV.IS_DEV) console.error('Search failed:', e);
+      return candidates.slice(0, 5);
     }
   }
 
@@ -485,10 +336,7 @@ class UnifiedLLMService {
   }
 
   isSupported(): boolean {
-    if (this.config.provider === 'webllm') {
-      return 'gpu' in navigator;
-    }
-    return true;
+    return this.config.provider !== 'webllm' || 'gpu' in navigator;
   }
 
   isReady(): boolean {
@@ -496,16 +344,9 @@ class UnifiedLLMService {
   }
 
   async destroy(): Promise<void> {
-    if (this.engine) {
-      await this.engine.unload();
-    }
-    if (this.wllama) {
-      await this.wllama.exit();
-    }
-    this.engine = null;
-    this.wllama = null;
     this.analysisCache.clear();
     this.isInitialized = false;
+    this.isFallbackMode = false;
   }
 }
 
@@ -515,7 +356,7 @@ export async function optimizeWithLLM(
   schedules: Schedule[],
   preferences: Preferences,
   token: string,
-  config?: Partial<LLMConfig>,
+  config?: Partial<BYOKConfig>,
   allSections?: Section[],
 ): Promise<{
   schedules: Schedule[];

@@ -1,23 +1,26 @@
 import {
+  AutoAwesome,
+  Clear,
   ExpandLess,
   ExpandMore,
   Person,
   Schedule,
   Warning,
-  AutoAwesome,
-  Clear,
 } from '@mui/icons-material';
 import {
   Alert,
+  alpha,
   Box,
   Button,
   Card,
   CardActions,
   CardContent,
   Chip,
+  CircularProgress,
   Collapse,
   FormControl,
   IconButton,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Select,
@@ -25,18 +28,15 @@ import {
   Stack,
   TextField,
   Typography,
-  InputAdornment,
-  CircularProgress,
   useTheme,
-  alpha,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import ApiKeyDialog from '../components/ApiKeyDialog';
+import { getLlmConfig, saveLlmConfig } from '../config/llmConfig';
 import { getCourses } from '../config/storageConfig';
 import { STORAGE_KEYS } from '../config/userConfig';
-import { getLlmConfig, saveLlmConfig } from '../config/llmConfig';
-import { llmService } from '../services/llm';
 import { useAuth } from '../hooks/useAuth';
-import ApiKeyDialog from '../components/ApiKeyDialog';
+import { llmService } from '../services/llm';
 import type { Course, Section } from '../types';
 import { formatTime, formatTimeSlots, hasSectionConflict } from '../utils/schedule';
 
@@ -462,7 +462,6 @@ export default function CoursesPage() {
       <ApiKeyDialog
         open={apiKeyDialogOpen}
         onClose={() => setApiKeyDialogOpen(false)}
-        provider={getLlmConfig().provider}
         onSave={(key) => {
           const config = getLlmConfig();
           saveLlmConfig({ ...config, apiKey: key });

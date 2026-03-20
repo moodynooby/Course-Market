@@ -27,7 +27,6 @@
         "npm:@types/react-dom@^19.2.3",
         "npm:@types/react@^19.2.14",
         "npm:@vitejs/plugin-react@^5.1.4",
-        "npm:@wllama/wllama@^2.3.7",
         "npm:babel-plugin-react-compiler@1",
         "npm:date-fns@^4.1.0",
         "npm:detect-gpu@^5.0.70",

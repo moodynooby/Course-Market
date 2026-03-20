@@ -23,3 +23,15 @@ export const trades = pgTable('trades', {
 
 export type Trade = typeof trades.$inferSelect;
 export type NewTrade = typeof trades.$inferInsert;
+
+export const userLlmKeys = pgTable('user_llm_keys', {
+  auth0UserId: varchar('auth0_user_id', { length: 255 }).primaryKey(),
+  provider: varchar('provider', { length: 50 }).notNull(),
+  encryptedKey: text('encrypted_key').notNull(),
+  iv: varchar('iv', { length: 64 }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type UserLlmKey = typeof userLlmKeys.$inferSelect;
+export type NewUserLlmKey = typeof userLlmKeys.$inferInsert;
