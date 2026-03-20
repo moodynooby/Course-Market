@@ -1,4 +1,5 @@
 import { useAuth0 } from '@auth0/auth0-react';
+import { useCallback } from 'react';
 
 export interface AppUser {
   id: string;
@@ -26,21 +27,24 @@ export function useAuth() {
       }
     : null;
 
-  const signIn = () => loginWithRedirect();
+  const signIn = useCallback(() => loginWithRedirect(), [loginWithRedirect]);
 
-  const signOut = () =>
-    logout({
-      logoutParams: { returnTo: window.location.origin },
-    });
+  const signOut = useCallback(
+    () =>
+      logout({
+        logoutParams: { returnTo: window.location.origin },
+      }),
+    [logout],
+  );
 
-  const getToken = async () => {
+  const getToken = useCallback(async () => {
     try {
       return await getAccessTokenSilently();
     } catch (error) {
       console.error('Failed to get access token:', error);
       throw error;
     }
-  };
+  }, [getAccessTokenSilently]);
 
   return {
     user,

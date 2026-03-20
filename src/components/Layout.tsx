@@ -26,7 +26,9 @@ import { useThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../hooks/useAuth';
 import ImportDialog from './ImportDialog';
 import HelpDialog from './HelpDialog';
-
+import callMissedIcon from '../assets/3dicons-call-missed-dynamic-color.png';
+import lockIcon from '../assets/3dicons-locker-dynamic-premium.png';
+import logoIcon from '../assets/logo.png';
 export default function Layout() {
   const [importOpen, setImportOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -155,25 +157,45 @@ export default function Layout() {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, md: 4 } }}>
-            <Typography
-              component={Link}
-              to="/"
-              variant="h6"
+            <Box
               sx={{
-                fontWeight: 900,
-                color: 'accent.main',
-                textDecoration: 'none',
-                letterSpacing: '-0.02em',
-                fontFamily: '"Zilla Slab", serif',
-                display: { xs: 'none', sm: 'block' },
+                display: 'flex',
+                alignItems: 'center',
+                gap: { xs: 0, sm: 1 },
+                pl: 1,
+                marginRight: 1,
+                borderLeft: '1px solid',
+                borderColor: 'divider',
               }}
             >
-              AuraIsHub
-            </Typography>
+              <img src={logoIcon} alt="Logo" width={32} height={32} />{' '}
+              <Typography
+                component={Link}
+                to="/"
+                variant="h6"
+                sx={{
+                  fontWeight: 900,
+                  color: 'accent.main',
+                  textDecoration: 'none',
+                  letterSpacing: '-0.02em',
+                  fontFamily: '"Zilla Slab", serif',
+                  display: { xs: 'none', sm: 'block' },
+                }}
+              >
+                AuraIsHub
+              </Typography>
+            </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 3 } }}>
-              <NavLink to="/" label="Dashboard" primary />
-              <NavLink to="/trading" label="Trading" primary />
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, sm: 4 } }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {' '}
+                <img src={callMissedIcon} alt="Call Missed" width={24} height={24} />
+                <NavLink to="/" label="Dashboard" primary />
+              </Box>{' '}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <img src={lockIcon} alt="Lock" width={24} height={24} />
+                <NavLink to="/trading" label="Trading" primary />
+              </Box>
             </Box>
 
             {!location.pathname.startsWith('/trading') && (

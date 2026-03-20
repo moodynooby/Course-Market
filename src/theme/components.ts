@@ -1,10 +1,10 @@
-import type { Theme, Components } from '@mui/material/styles';
+import type { Components, Theme } from '@mui/material/styles';
 
 export const getComponents = (isDark: boolean): Components<Omit<Theme, 'components'>> => ({
   MuiCssBaseline: {
     styleOverrides: {
       body: {
-        transition: 'background-color 0.3s ease, color 0.3s ease',
+        transition: 'none',
       },
     },
   },
@@ -58,7 +58,6 @@ export const getComponents = (isDark: boolean): Components<Omit<Theme, 'componen
         border: '1px solid',
         borderColor: isDark ? 'rgba(72, 72, 72, 0.15)' : 'rgba(0, 0, 0, 0.05)',
         boxShadow: isDark ? 'none' : '0px 4px 20px rgba(0, 0, 0, 0.03)',
-        transition: 'all 0.3s ease',
       },
     },
   },
@@ -67,7 +66,6 @@ export const getComponents = (isDark: boolean): Components<Omit<Theme, 'componen
       root: {
         backgroundImage: 'none',
         backgroundColor: isDark ? '#131313' : '#f4f3f2',
-        transition: 'background-color 0.3s ease',
       },
     },
   },
@@ -85,7 +83,6 @@ export const getComponents = (isDark: boolean): Components<Omit<Theme, 'componen
         '& .MuiOutlinedInput-root': {
           borderRadius: 16,
           backgroundColor: isDark ? '#1f2020' : '#ffffff',
-          transition: 'all 0.3s ease',
           '& fieldset': {
             borderColor: isDark ? 'rgba(72, 72, 72, 0.15)' : 'rgba(0, 0, 0, 0.08)',
           },

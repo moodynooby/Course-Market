@@ -1,5 +1,4 @@
 import {
-  Add,
   ArrowBack,
   ArrowForward,
   AutoAwesome,
@@ -27,7 +26,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Fab,
   IconButton,
   InputAdornment,
   MenuItem,
@@ -465,9 +463,19 @@ export default function TradingPage() {
         <Typography variant="h4" fontWeight={700}>
           Course Trading
         </Typography>
-        <Button variant="outlined" onClick={loadTrades} disabled={loading}>
-          Refresh
-        </Button>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" onClick={loadTrades} disabled={loading}>
+            Refresh
+          </Button>
+          <Button
+            variant="contained"
+            color="accent"
+            startIcon={<SwapHoriz />}
+            onClick={() => setDialogOpen(true)}
+          >
+            Post Trade
+          </Button>
+        </Stack>
       </Stack>
 
       {error && (
@@ -486,7 +494,12 @@ export default function TradingPage() {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               Be the first to post a course trade
             </Typography>
-            <Button variant="contained" startIcon={<Add />} onClick={() => setDialogOpen(true)}>
+            <Button
+              variant="contained"
+              color="accent"
+              startIcon={<SwapHoriz />}
+              onClick={() => setDialogOpen(true)}
+            >
               Post Trade
             </Button>
           </CardContent>
@@ -522,14 +535,6 @@ export default function TradingPage() {
           ))}
         </Stack>
       )}
-
-      <Fab
-        color="accent"
-        sx={{ position: 'fixed', bottom: 16, right: 16 }}
-        onClick={() => setDialogOpen(true)}
-      >
-        <Add />
-      </Fab>
 
       <Dialog
         open={dialogOpen}
