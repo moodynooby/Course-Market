@@ -63,7 +63,7 @@ bun run check    # Fix + Test + TSC check
 
 - **Framework**: Vitest + Testing Library
 - **Strategy**: Test core logic (csv, schedule utils), async states, error boundaries
-- **Run**: `bun run test` (watch) or `bun run test:run` (CI)
+- **Run**: `bun run test` (watch)
 - **Coverage**: Focus on business logic, not UI snapshots
 
 ## Critical Rules for Agents

@@ -2,18 +2,16 @@ import {
   Add,
   ArrowBack,
   ArrowForward,
+  AutoAwesome,
   CheckCircle,
   Close,
   ContactPhone,
   ContentCopy,
   Description,
   HourglassEmpty,
-  Phone,
   School,
   Search,
   SwapHoriz,
-  SwapVert,
-  AutoAwesome,
 } from '@mui/icons-material';
 import {
   Alert,
@@ -40,15 +38,16 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import ApiKeyDialog from '../components/ApiKeyDialog';
+import { getLlmConfig, saveLlmConfig } from '../config/llmConfig';
 import { useAuth } from '../hooks/useAuth';
+import { llmService } from '../services/llm';
 import {
   createTrade,
   deleteTrade,
   getTrades as fetchTrades,
   updateTrade,
 } from '../services/tradesApi';
-import { llmService } from '../services/llm';
-import { getLlmConfig } from '../config/llmConfig';
 import type { TradePost } from '../types';
 import { timeAgo } from '../utils';
 
@@ -270,6 +269,8 @@ export default function TradingPage() {
   const [aiDraftOpen, setAiDraftOpen] = useState(false);
   const [aiDrafting, setAiDrafting] = useState(false);
   const [aiDraftText, setAiDraftText] = useState('');
+  const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false);
+  const [pendingDraftTrade, setPendingDraftTrade] = useState<TradePost | null>(null);
 
   const [tradeForm, setTradeForm] = useState({
     courseCode: '',
@@ -353,12 +354,23 @@ export default function TradingPage() {
   };
 
   const handleDraftAi = async (trade: TradePost) => {
+    const llmConfig = getLlmConfig();
+    const isCloud = ['openai', 'anthropic', 'groq'].includes(llmConfig.provider);
+
+    if (isCloud && !llmConfig.apiKey) {
+      setPendingDraftTrade(trade);
+      setApiKeyDialogOpen(true);
+      return;
+    }
+
     setAiDraftOpen(true);
     setAiDrafting(true);
     setAiDraftText('');
 
     try {
-      await llmService.initialize(getLlmConfig(), 'DRAFT');
+      const token = await getToken();
+      llmService.setToken(token);
+      await llmService.initialize(llmConfig, 'DRAFT');
       const draft = await llmService.draftTradeMessage(trade);
       setAiDraftText(draft);
     } catch (err) {
@@ -725,6 +737,19 @@ export default function TradingPage() {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         message={snackbar.message}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      />
+      <ApiKeyDialog
+        open={apiKeyDialogOpen}
+        onClose={() => setApiKeyDialogOpen(false)}
+        provider={getLlmConfig().provider}
+        onSave={(key) => {
+          const config = getLlmConfig();
+          saveLlmConfig({ ...config, apiKey: key });
+          if (pendingDraftTrade) {
+            handleDraftAi(pendingDraftTrade);
+            setPendingDraftTrade(null);
+          }
+        }}
       />
     </Box>
   );

@@ -68,9 +68,6 @@ export default function SettingsPage() {
     if (!isLocal && !config.apiKey) {
       return false;
     }
-    if (config.provider === 'custom' && !config.apiBaseUrl) {
-      return false;
-    }
     saveLlmConfig(config);
     setLlmSaved(true);
     setTimeout(() => setLlmSaved(false), 3000);
@@ -371,7 +368,13 @@ export default function SettingsPage() {
                       type="password"
                       value={llmConfig.apiKey}
                       onChange={(e) => setLlmConfig({ ...llmConfig, apiKey: e.target.value })}
-                      placeholder={llmConfig.provider === 'anthropic' ? 'sk-ant-...' : 'sk-...'}
+                      placeholder={
+                        llmConfig.provider === 'anthropic'
+                          ? 'sk-ant-...'
+                          : llmConfig.provider === 'groq'
+                            ? 'gsk_...'
+                            : 'sk-...'
+                      }
                       helperText="Your API key is stored locally and never sent to our servers"
                     />
 
@@ -381,11 +384,6 @@ export default function SettingsPage() {
                       value={llmConfig.apiBaseUrl}
                       onChange={(e) => setLlmConfig({ ...llmConfig, apiBaseUrl: e.target.value })}
                       placeholder={selectedOption?.urlPlaceholder}
-                      helperText={
-                        llmConfig.provider === 'custom'
-                          ? 'Required for custom providers'
-                          : 'Optional - uses default if empty'
-                      }
                     />
                   </>
                 )}

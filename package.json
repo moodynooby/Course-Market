@@ -15,6 +15,9 @@
     "db:studio": "netlify dev:exec drizzle-kit studio"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.58",
+    "@ai-sdk/groq": "^3.0.29",
+    "@ai-sdk/openai": "^3.0.41",
     "@auth0/auth0-react": "^2.15.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
@@ -24,6 +27,7 @@
     "@netlify/neon": "^0.1.2",
     "@netlify/vite-plugin": "^2.11.2",
     "@wllama/wllama": "^2.3.7",
+    "ai": "^6.0.116",
     "date-fns": "^4.1.0",
     "detect-gpu": "^5.0.70",
     "drizzle-orm": "^0.45.1",

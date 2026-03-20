@@ -12,14 +12,22 @@ export const LLM_TASK_MODELS = {
   SEARCH: {
     webllm: 'Qwen2-0.5B-Instruct-q4f16_1-MLC',
     wllama: SMOLLM2_135M_GGUF,
+    groq: 'llama-3.1-8b-instant',
   },
   OPTIMIZE: {
     webllm: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
     wllama: LLAMA_1B_GGUF,
+    groq: 'llama-3.3-70b-versatile',
+  },
+  DRAFT: {
+    webllm: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
+    wllama: SMOLLM2_135M_GGUF,
+    groq: 'llama-3.1-8b-instant',
   },
   DEFAULT: {
     webllm: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
     wllama: SMOLLM2_135M_GGUF,
+    groq: 'llama-3.1-8b-instant',
   },
 } as const;
 
@@ -33,12 +41,13 @@ export const LLM_CONSTANTS = {
   API_DEFAULTS: {
     OPENAI: 'https://api.openai.com/v1/chat/completions',
     ANTHROPIC: 'https://api.anthropic.com/v1/messages',
+    GROQ: 'https://api.groq.com/openai/v1/chat/completions',
   },
   DEFAULT_MODELS: {
     OPENAI: 'gpt-4o-mini',
     ANTHROPIC: 'claude-3-haiku-20240307',
+    GROQ: 'llama-3.3-70b-versatile',
   },
-  ANTHROPIC_API_VERSION: '2023-06-01',
 } as const;
 
 // --- Config Types ---
@@ -83,18 +92,25 @@ export function saveLlmConfig(config: BYOKConfig): void {
   }
 }
 
-export function clearLlmConfig(): void {
-  localStorage.removeItem(LLM_CONFIG_STORAGE_KEY);
-}
-
 // --- Helpers ---
 export async function getDefaultModel(
-  provider: 'webllm' | 'wllama',
+  provider: LLMProvider,
   task: LLMTask = 'DEFAULT',
 ): Promise<string> {
   const taskKey = (task in LLM_TASK_MODELS ? task : 'DEFAULT') as keyof typeof LLM_TASK_MODELS;
 
-  // Hardware detection
+  // Cloud providers: Always task-optimized
+  if (provider === 'groq') return LLM_TASK_MODELS[taskKey].groq;
+  if (provider === 'openai') {
+    return taskKey === 'OPTIMIZE' ? 'gpt-4o' : LLM_CONSTANTS.DEFAULT_MODELS.OPENAI;
+  }
+  if (provider === 'anthropic') {
+    return taskKey === 'OPTIMIZE'
+      ? 'claude-3-5-sonnet-20240620'
+      : LLM_CONSTANTS.DEFAULT_MODELS.ANTHROPIC;
+  }
+
+  // Hardware detection for local providers
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
     navigator.userAgent,
   );
@@ -143,6 +159,14 @@ export const PROVIDER_OPTIONS: ProviderOption[] = [
     urlPlaceholder: 'Not required',
   },
   {
+    value: 'groq',
+    label: 'Groq (High-Speed Fallback)',
+    description: 'Lightning-fast cloud inference. Requires Groq API key.',
+    learnMoreUrl: 'https://groq.com/',
+    defaultModel: LLM_TASK_MODELS.DEFAULT.groq,
+    urlPlaceholder: LLM_CONSTANTS.API_DEFAULTS.GROQ,
+  },
+  {
     value: 'openai',
     label: 'OpenAI (GPT-4o Mini)',
     description: 'Cloud API. Best quality, requires API key.',
@@ -157,12 +181,5 @@ export const PROVIDER_OPTIONS: ProviderOption[] = [
     learnMoreUrl: 'https://anthropic.com/api/',
     defaultModel: LLM_CONSTANTS.DEFAULT_MODELS.ANTHROPIC,
     urlPlaceholder: LLM_CONSTANTS.API_DEFAULTS.ANTHROPIC,
-  },
-  {
-    value: 'custom',
-    label: 'Custom AI (OpenAI Compatible)',
-    description: 'Use any local or remote server (Ollama, vLLM, etc.).',
-    defaultModel: 'model-name',
-    urlPlaceholder: 'http://localhost:11434/v1/chat/completions',
   },
 ] as const;

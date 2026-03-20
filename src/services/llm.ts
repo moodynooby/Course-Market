@@ -7,12 +7,10 @@ import {
   getDefaultModel,
   LLM_CONSTANTS,
   type LLMTask,
-  LLM_TASK_MODELS,
 } from '../config/llmConfig';
 import type { Course, LLMProvider, Preferences, Schedule, Section, TradePost } from '../types';
 
-export type { LLMProvider };
-export type LLMConfig = BYOKConfig;
+type LLMConfig = BYOKConfig;
 
 interface LLMMessage {
   role: 'system' | 'user' | 'assistant';
@@ -142,6 +140,11 @@ class UnifiedLLMService {
   private lastInitPromise: Promise<boolean> | null = null;
   private config: LLMConfig = DEFAULT_LLM_CONFIG;
   private analysisCache: Map<string, string> = new Map();
+  private token: string | null = null;
+
+  setToken(token: string) {
+    this.token = token;
+  }
 
   async initialize(config?: Partial<LLMConfig>, task: LLMTask = 'DEFAULT'): Promise<boolean> {
     if (this.isLoading && this.lastInitPromise) {
@@ -156,7 +159,8 @@ class UnifiedLLMService {
     config?: Partial<LLMConfig>,
     task: LLMTask = 'DEFAULT',
   ): Promise<boolean> {
-    const targetProvider = (config?.provider || this.config.provider) as 'webllm' | 'wllama';
+    const targetConfig = { ...this.config, ...config };
+    const targetProvider = targetConfig.provider;
     const targetModel = await getDefaultModel(targetProvider, task);
 
     // If already initialized with a different model or provider, destroy first
@@ -374,6 +378,10 @@ class UnifiedLLMService {
   private async callExternalAPI(prompt: string, systemPrompt?: string): Promise<string> {
     const { provider, apiKey, apiBaseUrl, model, temperature, maxTokens } = this.config;
 
+    if (!this.token) {
+      throw new Error('Authentication required for cloud AI');
+    }
+
     if (!apiKey) {
       throw new Error(`API key required for ${provider}`);
     }
@@ -384,78 +392,30 @@ class UnifiedLLMService {
     }
     messages.push({ role: 'user', content: prompt });
 
-    let url = apiBaseUrl;
-    let body: unknown;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    switch (provider) {
-      case 'openai':
-        url = url || LLM_CONSTANTS.API_DEFAULTS.OPENAI;
-        headers['Authorization'] = `Bearer ${apiKey}`;
-        body = {
-          model: model || LLM_CONSTANTS.DEFAULT_MODELS.OPENAI,
-          messages,
-          temperature,
-          max_tokens: maxTokens,
-        };
-        break;
-
-      case 'anthropic': {
-        url = url || LLM_CONSTANTS.API_DEFAULTS.ANTHROPIC;
-        headers['x-api-key'] = apiKey;
-        headers['anthropic-version'] = LLM_CONSTANTS.ANTHROPIC_API_VERSION;
-        const systemMessage = messages.find((m) => m.role === 'system');
-        const userMessages = messages.filter((m) => m.role !== 'system');
-        body = {
-          model: model || LLM_CONSTANTS.DEFAULT_MODELS.ANTHROPIC,
-          max_tokens: maxTokens || 1024,
-          system: systemMessage?.content,
-          messages: userMessages.map((m) => ({
-            role: m.role === 'assistant' ? 'assistant' : 'user',
-            content: m.content,
-          })),
-        };
-        break;
-      }
-
-      case 'custom':
-        if (!url) {
-          throw new Error('Custom API URL required');
-        }
-        if (apiKey) {
-          headers['Authorization'] = `Bearer ${apiKey}`;
-        }
-        body = {
-          model: model,
-          messages,
-          temperature,
-          max_tokens: maxTokens,
-        };
-        break;
-
-      default:
-        throw new Error(`Unsupported provider: ${provider}`);
-    }
-
-    const response = await fetch(url!, {
+    const response = await fetch('/.netlify/functions/llm-proxy', {
       method: 'POST',
-      headers,
-      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${this.token}`,
+      },
+      body: JSON.stringify({
+        provider,
+        model,
+        messages,
+        temperature,
+        maxTokens,
+        apiKey,
+        apiBaseUrl,
+      }),
     });
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`API error (${response.status}): ${error}`);
+      throw new Error(`Cloud AI error (${response.status}): ${error}`);
     }
 
     const data = await response.json();
-
-    if (provider === 'anthropic') {
-      return data.content?.[0]?.text || 'No response generated';
-    }
-    return data.choices?.[0]?.message?.content || 'No response generated';
+    return data.text || 'No response generated';
   }
 
   private generateCacheKey(schedule: Schedule, preferences: Preferences): string {
@@ -554,6 +514,7 @@ export const llmService = new UnifiedLLMService();
 export async function optimizeWithLLM(
   schedules: Schedule[],
   preferences: Preferences,
+  token: string,
   config?: Partial<LLMConfig>,
   allSections?: Section[],
 ): Promise<{
@@ -561,6 +522,7 @@ export async function optimizeWithLLM(
   bestSchedule: Schedule | null;
   aiAnalysis: string;
 }> {
+  llmService.setToken(token);
   await llmService.initialize(config, 'OPTIMIZE');
 
   if (!llmService.isReady()) {

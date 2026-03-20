@@ -72,7 +72,7 @@ export interface CSVParseResult {
   warnings: string[];
 }
 
-export type LLMProvider = 'webllm' | 'wllama' | 'openai' | 'anthropic' | 'custom';
+export type LLMProvider = 'webllm' | 'wllama' | 'openai' | 'anthropic' | 'groq';
 
 export interface LLMConfig {
   provider: LLMProvider;

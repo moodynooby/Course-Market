@@ -33,8 +33,10 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getCourses } from '../config/storageConfig';
 import { STORAGE_KEYS } from '../config/userConfig';
-import { getLlmConfig } from '../config/llmConfig';
+import { getLlmConfig, saveLlmConfig } from '../config/llmConfig';
 import { llmService } from '../services/llm';
+import { useAuth } from '../hooks/useAuth';
+import ApiKeyDialog from '../components/ApiKeyDialog';
 import type { Course, Section } from '../types';
 import { formatTime, formatTimeSlots, hasSectionConflict } from '../utils/schedule';
 
@@ -42,6 +44,7 @@ const INITIAL_VISIBLE_COURSES = 25;
 const VISIBLE_COURSE_STEP = 25;
 
 export default function CoursesPage() {
+  const { getToken } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedSections, setSelectedSections] = useState<Map<string, string>>(new Map());
@@ -56,6 +59,7 @@ export default function CoursesPage() {
   const [aiSearching, setAiSearching] = useState(false);
   const [aiResults, setAiResults] = useState<Course[] | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false);
 
   useEffect(() => {
     const data = getCourses();
@@ -95,11 +99,21 @@ export default function CoursesPage() {
   const handleAiSearch = async () => {
     if (!search.trim()) return;
 
+    const llmConfig = getLlmConfig();
+    const isCloud = ['openai', 'anthropic', 'groq'].includes(llmConfig.provider);
+
+    if (isCloud && !llmConfig.apiKey) {
+      setApiKeyDialogOpen(true);
+      return;
+    }
+
     setAiSearching(true);
     setAiError(null);
 
     try {
-      await llmService.initialize(getLlmConfig(), 'SEARCH');
+      const token = await getToken();
+      llmService.setToken(token);
+      await llmService.initialize(llmConfig, 'SEARCH');
       const results = await llmService.searchCourses(search, courses);
       setAiResults(results);
     } catch (err) {
@@ -445,6 +459,16 @@ export default function CoursesPage() {
           </Button>
         </Box>
       )}
+      <ApiKeyDialog
+        open={apiKeyDialogOpen}
+        onClose={() => setApiKeyDialogOpen(false)}
+        provider={getLlmConfig().provider}
+        onSave={(key) => {
+          const config = getLlmConfig();
+          saveLlmConfig({ ...config, apiKey: key });
+          handleAiSearch();
+        }}
+      />
     </Box>
   );
 }

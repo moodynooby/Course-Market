@@ -25,6 +25,9 @@ import { STORAGE_KEYS } from '../config/userConfig';
 import { getLlmConfig } from '../config/llmConfig';
 import { checkConflicts } from '../utils/schedule';
 import ImportDialog from '../components/ImportDialog';
+import ApiKeyDialog from '../components/ApiKeyDialog';
+import { useAuth } from '../hooks/useAuth';
+import { saveLlmConfig } from '../config/llmConfig';
 import type { Course, LLMConfig, Schedule, Section } from '../types';
 
 function generateCurrentSchedule(): Schedule | null {
@@ -66,6 +69,7 @@ function generateCurrentSchedule(): Schedule | null {
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { getToken } = useAuth();
   const [coursesImported, setCoursesImported] = useState(false);
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [allCourses, setAllCourses] = useState<Course[]>([]);
@@ -79,6 +83,7 @@ export default function LandingPage() {
   const [initProgress, setInitProgress] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [webgpuWarningOpen, setWebgpuWarningOpen] = useState(false);
+  const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false);
 
   useEffect(() => {
     const checkData = () => {
@@ -103,6 +108,14 @@ export default function LandingPage() {
   const handleOptimize = async () => {
     if (!schedule) {
       setError('No courses selected. Please select some courses first.');
+      return;
+    }
+
+    const llmConfigObj = getLlmConfig();
+    const isCloud = ['openai', 'anthropic', 'groq'].includes(llmConfigObj.provider);
+
+    if (isCloud && !llmConfigObj.apiKey) {
+      setApiKeyDialogOpen(true);
       return;
     }
 
@@ -134,11 +147,14 @@ export default function LandingPage() {
           );
         };
       }
+
+      const token = await getToken();
       const result = await optimizeWithLLM(
         [schedule],
         preferences,
+        token,
         {
-          provider: llmConfig.provider as 'webllm' | 'wllama' | 'openai' | 'anthropic' | 'custom',
+          provider: llmConfig.provider as 'webllm' | 'wllama' | 'openai' | 'anthropic' | 'groq',
           ...config,
         },
         allSections,
@@ -407,6 +423,16 @@ export default function LandingPage() {
         </DialogActions>
       </Dialog>
       <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
+      <ApiKeyDialog
+        open={apiKeyDialogOpen}
+        onClose={() => setApiKeyDialogOpen(false)}
+        provider={getLlmConfig().provider}
+        onSave={(key) => {
+          const config = getLlmConfig();
+          saveLlmConfig({ ...config, apiKey: key });
+          handleOptimize();
+        }}
+      />
     </Box>
   );
 }
