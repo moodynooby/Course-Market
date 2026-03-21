@@ -24,7 +24,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   type BYOKConfig,
   DEFAULT_LLM_CONFIG,
@@ -69,29 +69,6 @@ export default function SettingsPage() {
     return true;
   }, []);
 
-  // Refs to track latest values and prevent stale closures
-  const preferencesRef = useRef(preferences);
-  const llmConfigRef = useRef(llmConfig);
-  const savePreferencesRef = useRef(savePreferencesHandler);
-  const saveLlmConfigRef = useRef(saveLlmConfigHandler);
-
-  // Update refs when values change
-  useEffect(() => {
-    preferencesRef.current = preferences;
-  }, [preferences]);
-
-  useEffect(() => {
-    llmConfigRef.current = llmConfig;
-  }, [llmConfig]);
-
-  useEffect(() => {
-    savePreferencesRef.current = savePreferencesHandler;
-  }, [savePreferencesHandler]);
-
-  useEffect(() => {
-    saveLlmConfigRef.current = saveLlmConfigHandler;
-  }, [saveLlmConfigHandler]);
-
   useEffect(() => {
     setPreferences(getPreferences());
     setLlmConfig(getLlmConfig());
@@ -99,19 +76,17 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Use ref to get latest values and prevent stale closure
-      savePreferencesRef.current(preferencesRef.current);
+      savePreferencesHandler(preferences);
     }, 1000);
     return () => clearTimeout(timer);
-  }, [preferences]); // Only depend on preferences, not the handler
+  }, [preferences, savePreferencesHandler]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Use ref to get latest values and prevent stale closure
-      saveLlmConfigRef.current(llmConfigRef.current);
+      saveLlmConfigHandler(llmConfig);
     }, 1000);
     return () => clearTimeout(timer);
-  }, [llmConfig]); // Only depend on llmConfig, not the handler
+  }, [llmConfig, saveLlmConfigHandler]);
 
   const handleClearData = () => {
     const APP_KEY_PREFIX = 'auraishub_';

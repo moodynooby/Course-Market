@@ -1,5 +1,5 @@
 import { useAuth0 } from '@auth0/auth0-react';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 export interface AppUser {
   id: string;
@@ -18,14 +18,18 @@ export function useAuth() {
     getAccessTokenSilently,
   } = useAuth0();
 
-  const user: AppUser | null = auth0User
-    ? {
-        id: auth0User.sub!,
-        email: auth0User.email!,
-        displayName: auth0User.name || auth0User.email!,
-        avatarUrl: auth0User.picture,
-      }
-    : null;
+  const user: AppUser | null = useMemo(
+    () =>
+      auth0User
+        ? {
+            id: auth0User.sub!,
+            email: auth0User.email!,
+            displayName: auth0User.name || auth0User.email!,
+            avatarUrl: auth0User.picture,
+          }
+        : null,
+    [auth0User],
+  );
 
   const signIn = useCallback(() => loginWithRedirect(), [loginWithRedirect]);
 

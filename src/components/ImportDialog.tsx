@@ -142,9 +142,9 @@ export default function ImportDialog({ open, onClose }: ImportDialogProps) {
     setFiles((prev) => [...prev, ...droppedFiles]);
   }, []);
 
-  const handleDragOver = (event: React.DragEvent) => {
+  const handleDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
-  };
+  }, []);
 
   return (
     <>

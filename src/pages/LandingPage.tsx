@@ -15,7 +15,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
 import remarkGfm from 'remark-gfm';
@@ -29,43 +29,6 @@ import { useAuth } from '../hooks/useAuth';
 import type { Course, Schedule, Section } from '../types';
 import { checkConflicts } from '../utils/schedule';
 
-function generateCurrentSchedule(): Schedule | null {
-  const { courses, sections } = getCourses();
-  const saved = localStorage.getItem(STORAGE_KEYS.COURSE_SELECTIONS);
-
-  if (!saved) return null;
-
-  try {
-    const selections = JSON.parse(saved);
-    const selectedSections: Section[] = [];
-    const courseIds = new Set(Object.keys(selections));
-
-    courseIds.forEach((courseId) => {
-      const sectionId = selections[courseId];
-      const section = sections.find((s) => s.id === sectionId);
-      if (section) selectedSections.push(section);
-    });
-
-    if (selectedSections.length === 0) return null;
-
-    const totalCredits = selectedSections.reduce((sum, s) => {
-      const course = courses.find((c) => c.id === s.courseId);
-      return sum + (course?.credits || 3);
-    }, 0);
-
-    return {
-      id: 'current',
-      name: 'Current Selection',
-      sections: selectedSections,
-      totalCredits,
-      score: 0,
-      conflicts: [],
-    };
-  } catch {
-    return null;
-  }
-}
-
 export default function LandingPage() {
   const navigate = useNavigate();
   const { getToken } = useAuth();
@@ -74,6 +37,45 @@ export default function LandingPage() {
   const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [allSections, setAllSections] = useState<Section[]>([]);
   const [importOpen, setImportOpen] = useState(false);
+
+  const loadData = useCallback(() => {
+    const { courses, sections } = getCourses();
+    setAllCourses(courses);
+    setAllSections(sections);
+    setCoursesImported(courses.length > 0);
+
+    const saved = localStorage.getItem(STORAGE_KEYS.COURSE_SELECTIONS);
+    if (!saved) {
+      setSchedule(null);
+      return;
+    }
+    try {
+      const selections = JSON.parse(saved);
+      const selectedSections: Section[] = [];
+      Object.keys(selections).forEach((courseId) => {
+        const section = sections.find((s) => s.id === selections[courseId]);
+        if (section) selectedSections.push(section);
+      });
+      if (selectedSections.length === 0) {
+        setSchedule(null);
+        return;
+      }
+      const totalCredits = selectedSections.reduce((sum, s) => {
+        const course = courses.find((c) => c.id === s.courseId);
+        return sum + (course?.credits || 3);
+      }, 0);
+      setSchedule({
+        id: 'current',
+        name: 'Current Selection',
+        sections: selectedSections,
+        totalCredits,
+        score: 0,
+        conflicts: [],
+      });
+    } catch {
+      setSchedule(null);
+    }
+  }, []);
 
   // Optimization States
   const [optimizing, setOptimizing] = useState(false);
@@ -85,24 +87,11 @@ export default function LandingPage() {
   const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false);
 
   useEffect(() => {
-    const checkData = () => {
-      const { courses, sections } = getCourses();
-      setAllCourses(courses);
-      setAllSections(sections);
-      setCoursesImported(courses.length > 0);
-      setSchedule(generateCurrentSchedule());
-    };
-
-    checkData();
+    loadData();
     setWebllmAvailable('gpu' in navigator);
-
-    const handleStorageChange = () => {
-      checkData();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [importOpen]);
+    window.addEventListener('storage', loadData);
+    return () => window.removeEventListener('storage', loadData);
+  }, [loadData, importOpen]);
 
   const handleOptimize = async () => {
     if (!schedule) {

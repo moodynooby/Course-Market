@@ -61,10 +61,7 @@ export function saveLlmConfig(config: BYOKConfig): void {
   }
 }
 
-export async function getDefaultModel(
-  provider: LLMProvider,
-  task: LLMTask = 'DEFAULT',
-): Promise<string> {
+export function getDefaultModel(provider: LLMProvider, task: LLMTask = 'DEFAULT'): string {
   const taskKey = (task in LLM_TASK_MODELS ? task : 'DEFAULT') as keyof typeof LLM_TASK_MODELS;
 
   if (provider === 'groq') return LLM_TASK_MODELS[taskKey].groq;

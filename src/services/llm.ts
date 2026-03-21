@@ -155,7 +155,7 @@ class UnifiedLLMService {
   ): Promise<boolean> {
     const targetConfig = { ...this.config, ...config };
     const targetProvider = targetConfig.provider;
-    const targetModel = await getDefaultModel(targetProvider, task);
+    const targetModel = getDefaultModel(targetProvider, task);
 
     if (
       this.isInitialized &&
@@ -196,7 +196,7 @@ class UnifiedLLMService {
   }
   private async getModel(task: LLMTask = 'DEFAULT') {
     const { provider } = this.config;
-    const model = await getDefaultModel(provider, task);
+    const model = getDefaultModel(provider, task);
 
     if (provider === 'webllm' && !this.isFallbackMode) {
       return webLLM(model, {
@@ -238,7 +238,7 @@ class UnifiedLLMService {
           if (ENV.IS_DEV) console.error('WebLLM generation failed, trying cloud fallback:', error);
           this.isFallbackMode = true;
           this.config.provider = 'groq';
-          this.config.model = await getDefaultModel('groq');
+          this.config.model = getDefaultModel('groq');
         }
       }
 

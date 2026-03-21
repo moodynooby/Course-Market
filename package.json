@@ -11,11 +11,11 @@
     "check": "bun run fix && tsc -b && vitest run",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "bunx netlify dev:exec drizzle-kit migrate",
-    "db:studio": "bunx netlify dev:exec drizzle-kit studio"
+    "db:migrate": " netlify dev:exec drizzle-kit migrate",
+    "db:studio": " netlify dev:exec drizzle-kit studio"
   },
   "dependencies": {
-    "@ai-sdk/groq": "^3.0.29",
+    "@ai-sdk/groq": "^3.0.31",
     "@auth0/auth0-react": "^2.15.1",
     "@browser-ai/web-llm": "^2.1.7",
     "@emotion/react": "^11.14.0",
@@ -24,7 +24,7 @@
     "@mui/material": "^7.3.9",
     "@netlify/neon": "^0.1.2",
     "@netlify/vite-plugin": "^2.11.2",
-    "ai": "^6.0.116",
+    "ai": "^6.0.134",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.1",
     "jose": "^6.2.2",

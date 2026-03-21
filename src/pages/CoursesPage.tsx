@@ -96,7 +96,7 @@ export default function CoursesPage() {
     return Array.from(subs).sort();
   }, [courses]);
 
-  const handleAiSearch = async () => {
+  const handleAiSearch = useCallback(async () => {
     if (!search.trim()) return;
 
     const llmConfig = getLlmConfig();
@@ -121,14 +121,14 @@ export default function CoursesPage() {
     } finally {
       setAiSearching(false);
     }
-  };
+  }, [search, courses, getToken]);
 
-  const handleClearAiSearch = () => {
+  const handleClearAiSearch = useCallback(() => {
     setAiResults(null);
     setAiError(null);
     setSearch('');
     setDebouncedSearch('');
-  };
+  }, []);
 
   const filteredCourses = useMemo(() => {
     if (aiResults) return aiResults;
@@ -179,21 +179,25 @@ export default function CoursesPage() {
     [selectedSections, sectionsById],
   );
 
-  const handleSelectSection = (courseId: string, sectionId: string) => {
-    const newMap = new Map(selectedSections);
-    if (newMap.get(courseId) === sectionId) {
-      newMap.delete(courseId);
-    } else {
-      newMap.set(courseId, sectionId);
-    }
-    setSelectedSections(newMap);
-  };
+  const handleSelectSection = useCallback((courseId: string, sectionId: string) => {
+    setSelectedSections((prev) => {
+      const newMap = new Map(prev);
+      if (newMap.get(courseId) === sectionId) {
+        newMap.delete(courseId);
+      } else {
+        newMap.set(courseId, sectionId);
+      }
+      return newMap;
+    });
+  }, []);
 
-  const handleDeselectCourse = (courseId: string) => {
-    const newMap = new Map(selectedSections);
-    newMap.delete(courseId);
-    setSelectedSections(newMap);
-  };
+  const handleDeselectCourse = useCallback((courseId: string) => {
+    setSelectedSections((prev) => {
+      const newMap = new Map(prev);
+      newMap.delete(courseId);
+      return newMap;
+    });
+  }, []);
 
   const selectedSectionList = useMemo(() => {
     const ids = new Set(selectedSections.values());
@@ -213,9 +217,9 @@ export default function CoursesPage() {
     [selectedSectionList],
   );
 
-  const handleClearAll = () => {
+  const handleClearAll = useCallback(() => {
     setSelectedSections(new Map());
-  };
+  }, []);
 
   const theme = useTheme();
 

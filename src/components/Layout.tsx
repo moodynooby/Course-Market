@@ -20,8 +20,69 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
+
+interface NavLinkProps {
+  to: string;
+  label: string;
+  primary?: boolean;
+  currentPath: string;
+}
+
+function NavLink({ to, label, primary = false, currentPath }: NavLinkProps) {
+  const isActive = currentPath === to || (to !== '/' && currentPath.startsWith(to));
+
+  if (primary) {
+    return (
+      <Box
+        component={Link}
+        to={to}
+        sx={{
+          textDecoration: 'none',
+          fontWeight: 700,
+          height: 64,
+          display: 'flex',
+          alignItems: 'center',
+          px: 1,
+          color: isActive ? 'accent.main' : 'text.secondary',
+          borderBottom: isActive ? '2px solid' : '2px solid transparent',
+          borderColor: isActive ? 'accent.main' : 'transparent',
+          transition: 'all 0.2s',
+          '&:hover': {
+            color: isActive ? 'accent.main' : 'text.primary',
+          },
+          '&:active': {
+            transform: 'scale(0.95)',
+          },
+        }}
+      >
+        {label}
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      component={Link}
+      to={to}
+      sx={{
+        textDecoration: 'none',
+        fontSize: '0.75rem',
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+        color: isActive ? 'text.primary' : 'text.secondary',
+        transition: 'color 0.2s',
+        '&:hover': {
+          color: 'text.primary',
+        },
+      }}
+    >
+      {label}
+    </Box>
+  );
+}
 import { useThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../hooks/useAuth';
 import ImportDialog from './ImportDialog';
@@ -47,11 +108,11 @@ export default function Layout() {
     setAnchorEl(null);
   };
 
-  const toggleMode = () => {
+  const toggleMode = useCallback(() => {
     if (mode === 'light') setMode('dark');
     else if (mode === 'dark') setMode('system');
     else setMode('light');
-  };
+  }, [mode, setMode]);
 
   const ModeIcon =
     mode === 'light' ? (
@@ -61,68 +122,6 @@ export default function Layout() {
     ) : (
       <SettingsBrightness fontSize="small" />
     );
-
-  const NavLink = ({
-    to,
-    label,
-    primary = false,
-  }: {
-    to: string;
-    label: string;
-    primary?: boolean;
-  }) => {
-    const isActive = location.pathname === to || (to !== '/' && location.pathname.startsWith(to));
-
-    if (primary) {
-      return (
-        <Box
-          component={Link}
-          to={to}
-          sx={{
-            textDecoration: 'none',
-            fontWeight: 700,
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            px: 1,
-            color: isActive ? 'accent.main' : 'text.secondary',
-            borderBottom: isActive ? '2px solid' : '2px solid transparent',
-            borderColor: isActive ? 'accent.main' : 'transparent',
-            transition: 'all 0.2s',
-            '&:hover': {
-              color: isActive ? 'accent.main' : 'text.primary',
-            },
-            '&:active': {
-              transform: 'scale(0.95)',
-            },
-          }}
-        >
-          {label}
-        </Box>
-      );
-    }
-
-    return (
-      <Box
-        component={Link}
-        to={to}
-        sx={{
-          textDecoration: 'none',
-          fontSize: '0.75rem',
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          color: isActive ? 'text.primary' : 'text.secondary',
-          transition: 'color 0.2s',
-          '&:hover': {
-            color: 'text.primary',
-          },
-        }}
-      >
-        {label}
-      </Box>
-    );
-  };
 
   return (
     <Box
@@ -190,11 +189,11 @@ export default function Layout() {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 {' '}
                 <img src={callMissedIcon} alt="Call Missed" width={24} height={24} />
-                <NavLink to="/" label="Dashboard" primary />
+                <NavLink to="/" label="Dashboard" primary currentPath={location.pathname} />
               </Box>{' '}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <img src={lockIcon} alt="Lock" width={24} height={24} />
-                <NavLink to="/trading" label="Trading" primary />
+                <NavLink to="/trading" label="Trading" primary currentPath={location.pathname} />
               </Box>
             </Box>
 
@@ -210,7 +209,7 @@ export default function Layout() {
                   borderColor: 'divider',
                 }}
               >
-                <NavLink to="/courses" label="Courses" />
+                <NavLink to="/courses" label="Courses" currentPath={location.pathname} />
               </Box>
             )}
           </Box>

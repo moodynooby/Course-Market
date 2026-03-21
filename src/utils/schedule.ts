@@ -122,12 +122,10 @@ export function checkConflicts(sections: Section[]): string[] {
 
 export function hasTimeConflict(slot1: TimeSlot, slot2: TimeSlot): boolean {
   if (slot1.day !== slot2.day) return false;
-
-  const start1 = parseInt(slot1.startTime.replace(':', ''), 10);
-  const end1 = parseInt(slot1.endTime.replace(':', ''), 10);
-  const start2 = parseInt(slot2.startTime.replace(':', ''), 10);
-  const end2 = parseInt(slot2.endTime.replace(':', ''), 10);
-
+  const start1 = timeToMinutes(slot1.startTime);
+  const end1 = timeToMinutes(slot1.endTime);
+  const start2 = timeToMinutes(slot2.startTime);
+  const end2 = timeToMinutes(slot2.endTime);
   return start1 < end2 && start2 < end1;
 }
 
@@ -159,18 +157,18 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
     }
   });
 
-  const preferredStart = parseInt(preferences.preferredStartTime.replace(':', ''), 10);
-  const preferredEnd = parseInt(preferences.preferredEndTime.replace(':', ''), 10);
+  const preferredStart = timeToMinutes(preferences.preferredStartTime);
+  const preferredEnd = timeToMinutes(preferences.preferredEndTime);
 
   sections.forEach((section) => {
     section.timeSlots.forEach((slot) => {
-      const startTime = parseInt(slot.startTime.replace(':', ''), 10);
-      const endTime = parseInt(slot.endTime.replace(':', ''), 10);
+      const startTime = timeToMinutes(slot.startTime);
+      const endTime = timeToMinutes(slot.endTime);
 
-      if (preferences.preferMorning && startTime < 1200 && startTime >= 800) {
+      if (preferences.preferMorning && startTime < 720 && startTime >= 480) {
         score += 5;
       }
-      if (preferences.preferAfternoon && startTime >= 1200 && startTime < 1700) {
+      if (preferences.preferAfternoon && startTime >= 720 && startTime < 1020) {
         score += 5;
       }
       if (startTime < preferredStart || endTime > preferredEnd) {
@@ -211,8 +209,8 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
       section.timeSlots.forEach((slot) => {
         allSlots.push({
           day: slot.day,
-          start: parseInt(slot.startTime.replace(':', ''), 10),
-          end: parseInt(slot.endTime.replace(':', ''), 10),
+          start: timeToMinutes(slot.startTime),
+          end: timeToMinutes(slot.endTime),
         });
       });
     });
@@ -224,7 +222,7 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
 
     for (let i = 0; i < allSlots.length - 1; i++) {
       if (allSlots[i].day === allSlots[i + 1].day) {
-        const gapMinutes = ((allSlots[i + 1].start - allSlots[i].end) * 60) / 100;
+        const gapMinutes = allSlots[i + 1].start - allSlots[i].end;
         if (gapMinutes > preferences.maxGapMinutes) {
           score -= Math.floor(gapMinutes / 30) * 3;
         }

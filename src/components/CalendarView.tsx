@@ -14,7 +14,7 @@ import {
 import { addWeeks, format, getDay, parse, startOfWeek, subWeeks } from 'date-fns';
 
 import { enUS } from 'date-fns/locale/en-US';
-import { useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import type { CalendarEvent, Course, Section } from '../types';
 import { sectionsToCalendarEvents } from '../utils/schedule';
@@ -52,7 +52,7 @@ const COURSE_COLORS = [
   '#be185d',
 ];
 
-function EventComponent({ event }: EventProps) {
+const EventComponent = memo(function EventComponent({ event }: EventProps) {
   const theme = useTheme();
   const courseCode = event.resource?.course?.code || '';
   const colorIndex = courseCode.length > 0 ? courseCode.charCodeAt(0) % COURSE_COLORS.length : 0;
@@ -92,7 +92,7 @@ function EventComponent({ event }: EventProps) {
       </Typography>
     </Box>
   );
-}
+});
 
 export default function CalendarView({ sections, courses, conflicts }: CalendarViewProps) {
   const theme = useTheme();
@@ -121,27 +121,31 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
     setDate(view === Views.WEEK ? addWeeks(date, 1) : new Date(date.setDate(date.getDate() + 1)));
   };
 
-  const eventStyleGetter = (_event: CalendarEvent) => {
-    const isConflicted = conflicts.some((c) =>
-      c.includes(_event.resource?.section?.sectionNumber || ''),
-    );
+  const eventStyleGetter = useCallback(
+    (_event: CalendarEvent) => {
+      const isConflicted = conflicts.some((c) =>
+        c.includes(_event.resource?.section?.sectionNumber || ''),
+      );
 
-    const courseCode = _event.resource?.course?.code || '';
-    const colorIndex = courseCode.length > 0 ? courseCode.charCodeAt(0) % COURSE_COLORS.length : 0;
-    const backgroundColor = isConflicted ? theme.palette.error.main : COURSE_COLORS[colorIndex];
+      const courseCode = _event.resource?.course?.code || '';
+      const colorIndex =
+        courseCode.length > 0 ? courseCode.charCodeAt(0) % COURSE_COLORS.length : 0;
+      const backgroundColor = isConflicted ? theme.palette.error.main : COURSE_COLORS[colorIndex];
 
-    return {
-      style: {
-        backgroundColor,
-        color: '#fff',
-        border: 'none',
-        borderRadius: '6px',
-        fontSize: '0.7rem',
-        fontWeight: 500,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-      },
-    };
-  };
+      return {
+        style: {
+          backgroundColor,
+          color: '#fff',
+          border: 'none',
+          borderRadius: '6px',
+          fontSize: '0.7rem',
+          fontWeight: 500,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+        },
+      };
+    },
+    [conflicts, theme.palette.error.main],
+  );
 
   const formats = useMemo(
     () => ({
@@ -177,7 +181,7 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
       <Paper
         elevation={0}
         sx={{
-          borderRadius: 4,
+          borderRadius: 2,
           bgcolor: 'background.default',
           overflow: 'hidden',
           border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,

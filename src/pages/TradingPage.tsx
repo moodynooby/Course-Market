@@ -35,7 +35,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, memo } from 'react';
 import ApiKeyDialog from '../components/ApiKeyDialog';
 import { getLlmConfig, saveLlmConfig } from '../config/llmConfig';
 import { useAuth } from '../hooks/useAuth';
@@ -49,7 +49,7 @@ import {
 import type { TradePost } from '../types';
 import { timeAgo } from '../utils';
 
-function TradeCard({
+const TradeCard = memo(function TradeCard({
   trade,
   onUpdate,
   onDelete,
@@ -246,7 +246,7 @@ function TradeCard({
       </Dialog>
     </Card>
   );
-}
+});
 
 export default function TradingPage() {
   const { user, getToken } = useAuth();
@@ -297,7 +297,7 @@ export default function TradingPage() {
     loadTrades();
   }, [loadTrades]);
 
-  const handleEdit = (trade: TradePost) => {
+  const handleEdit = useCallback((trade: TradePost) => {
     setEditingTrade(trade);
     setTradeForm({
       courseCode: trade.courseCode,
@@ -308,7 +308,7 @@ export default function TradingPage() {
       contactPhone: trade.contactPhone || '',
     });
     setDialogOpen(true);
-  };
+  }, []);
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -342,42 +342,45 @@ export default function TradingPage() {
     }
   };
 
-  const handleContact = async (phone: string) => {
+  const handleContact = useCallback(async (phone: string) => {
     try {
       await navigator.clipboard.writeText(phone);
       setSnackbar({ open: true, message: 'Phone number copied to clipboard!' });
     } catch {
       setSnackbar({ open: true, message: `Phone: ${phone}` });
     }
-  };
+  }, []);
 
-  const handleDraftAi = async (trade: TradePost) => {
-    const llmConfig = getLlmConfig();
-    const isCloud = ['openai', 'anthropic', 'groq'].includes(llmConfig.provider);
+  const handleDraftAi = useCallback(
+    async (trade: TradePost) => {
+      const llmConfig = getLlmConfig();
+      const isCloud = ['openai', 'anthropic', 'groq'].includes(llmConfig.provider);
 
-    if (isCloud && !llmConfig.apiKey) {
-      setPendingDraftTrade(trade);
-      setApiKeyDialogOpen(true);
-      return;
-    }
+      if (isCloud && !llmConfig.apiKey) {
+        setPendingDraftTrade(trade);
+        setApiKeyDialogOpen(true);
+        return;
+      }
 
-    setAiDraftOpen(true);
-    setAiDrafting(true);
-    setAiDraftText('');
+      setAiDraftOpen(true);
+      setAiDrafting(true);
+      setAiDraftText('');
 
-    try {
-      const token = await getToken();
-      llmService.setToken(token);
-      await llmService.initialize(llmConfig, 'DRAFT');
-      const draft = await llmService.draftTradeMessage(trade);
-      setAiDraftText(draft);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to generate AI draft');
-      setAiDraftOpen(false);
-    } finally {
-      setAiDrafting(false);
-    }
-  };
+      try {
+        const token = await getToken();
+        llmService.setToken(token);
+        await llmService.initialize(llmConfig, 'DRAFT');
+        const draft = await llmService.draftTradeMessage(trade);
+        setAiDraftText(draft);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to generate AI draft');
+        setAiDraftOpen(false);
+      } finally {
+        setAiDrafting(false);
+      }
+    },
+    [getToken],
+  );
 
   const copyDraftToClipboard = async () => {
     try {
@@ -389,25 +392,31 @@ export default function TradingPage() {
     }
   };
 
-  const handleUpdate = async (id: string, updates: Partial<TradePost>) => {
-    try {
-      const token = await getToken();
-      await updateTrade(token, id, updates);
-      await loadTrades();
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  };
+  const handleUpdate = useCallback(
+    async (id: string, updates: Partial<TradePost>) => {
+      try {
+        const token = await getToken();
+        const updated = await updateTrade(token, id, updates);
+        setTrades((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      } catch (e) {
+        setError((e as Error).message);
+      }
+    },
+    [getToken],
+  );
 
-  const handleDelete = async (id: string) => {
-    try {
-      const token = await getToken();
-      await deleteTrade(token, id);
-      await loadTrades();
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  };
+  const handleDelete = useCallback(
+    async (id: string) => {
+      try {
+        const token = await getToken();
+        await deleteTrade(token, id);
+        setTrades((prev) => prev.filter((t) => t.id !== id));
+      } catch (e) {
+        setError((e as Error).message);
+      }
+    },
+    [getToken],
+  );
 
   const filteredTrades = useMemo(() => {
     if (!search.trim()) return trades;
