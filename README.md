@@ -1,7 +1,9 @@
 # 🎓 AuraIsHub
 
 A comprehensive web application for course management, schedule optimization, and student trading built with React, TypeScript, and Vite.
-
+## Links
+WEBSITE - https://aurais.netlify.app/
+GITHUB - https://github.com/moodynooby/Course-Market
 ## ✨ Features
 
 ### 📥 CSV Course Import
