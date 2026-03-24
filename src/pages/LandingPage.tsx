@@ -22,11 +22,17 @@ import remarkGfm from 'remark-gfm';
 import ApiKeyDialog from '../components/ApiKeyDialog';
 import CalendarView from '../components/CalendarView';
 import ImportDialog from '../components/ImportDialog';
+import { PreferencesForm } from '../components/PreferencesForm';
 import { getLlmConfig, saveLlmConfig } from '../config/llmConfig';
 import { getCourses } from '../config/storageConfig';
-import { STORAGE_KEYS } from '../config/userConfig';
+import {
+  DEFAULT_PREFERENCES,
+  getPreferences,
+  savePreferences,
+  STORAGE_KEYS,
+} from '../config/userConfig';
 import { useAuth } from '../hooks/useAuth';
-import type { Course, Schedule, Section } from '../types';
+import type { Course, Preferences, Schedule, Section } from '../types';
 import { checkConflicts } from '../utils/schedule';
 
 export default function LandingPage() {
@@ -37,6 +43,7 @@ export default function LandingPage() {
   const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [allSections, setAllSections] = useState<Section[]>([]);
   const [importOpen, setImportOpen] = useState(false);
+  const [preferences, setPreferences] = useState<Preferences>(DEFAULT_PREFERENCES);
 
   const loadData = useCallback(() => {
     const { courses, sections } = getCourses();
@@ -366,6 +373,19 @@ export default function LandingPage() {
 
                     {error && <Alert severity="error">{error}</Alert>}
                   </Stack>
+                </CardContent>
+              </Card>
+
+              <Card sx={{ border: '1px solid', borderColor: 'divider' }}>
+                <CardContent>
+                  <PreferencesForm
+                    preferences={preferences}
+                    onUpdate={(key, value) => {
+                      const updated = { ...preferences, [key]: value };
+                      setPreferences(updated);
+                      savePreferences(updated);
+                    }}
+                  />
                 </CardContent>
               </Card>
             </Stack>

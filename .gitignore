@@ -137,3 +137,7 @@ dist
 
 # Husky
 .husky/_
+
+
+*-lock*
+pnpm-*

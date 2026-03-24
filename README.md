@@ -48,7 +48,7 @@ A comprehensive web application for course management, schedule optimization, an
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 20+ (or Bun)
+- Node.js 20+ (or pnpm)
 - Auth0 account (free tier works)
 - Netlify account (free tier works)
 
@@ -58,7 +58,7 @@ A comprehensive web application for course management, schedule optimization, an
    ```bash
    git clone <repository-url>
    cd course-market
-   bun install  # or npm install
+   pnpm install  # or npm install
    ```
 
 2. **Link to Netlify** (required for database):
@@ -91,12 +91,12 @@ A comprehensive web application for course management, schedule optimization, an
 
 5. **Run database migrations:**
    ```bash
-   bun run db:migrate
+   pnpm run db:migrate
    ```
 
 6. **Start development server:**
    ```bash
-   bun run dev
+   pnpm run dev
    ```
    Open `http://localhost:3000`
 
@@ -118,7 +118,7 @@ Create Auth0 application and API:
 
 ### Test the Integration
 
-1. Start development server: `bun run dev`
+1. Start development server: `pnpm run dev`
 2. Navigate to `http://localhost:3000`
 3. Click "Sign In" - should redirect to Auth0
 4. After signing in, should redirect back to application
@@ -188,21 +188,21 @@ netlify/functions/
 ### Available Scripts
 
 ```bash
-bun run dev          # Start development server (Vite + Netlify plugin)
-bun run build        # Build for production
-bun run preview      # Preview production build
-bun run test         # Run tests
-bun run fix          # Auto-fix linting/formatting
-bun run typecheck    # Check TypeScript types
-bun run ci           # Full CI check (lint + typecheck + test)
+pnpm run dev          # Start development server (Vite + Netlify plugin)
+pnpm run build        # Build for production
+pnpm run preview      # Preview production build
+pnpm run test         # Run tests
+pnpm run fix          # Auto-fix linting/formatting
+pnpm run typecheck    # Check TypeScript types
+pnpm run ci           # Full CI check (lint + typecheck + test)
 ```
 
 ### Database Commands
 
 ```bash
-bun run db:generate  # Generate migration from schema changes
-bun run db:migrate   # Apply migrations
-bun run db:studio    # Open Drizzle Studio (DB GUI)
+pnpm run db:generate  # Generate migration from schema changes
+pnpm run db:migrate   # Apply migrations
+pnpm run db:studio    # Open Drizzle Studio (DB GUI)
 ```
 
 ### Troubleshooting
@@ -314,7 +314,7 @@ DATABASE_URL is automatically set by the Neon addon.
 
 **Build Issues:**
 - Clear node_modules and reinstall dependencies
-- Check TypeScript errors: `bun run typecheck`
+- Check TypeScript errors: `pnpm run typecheck`
 - Ensure all environment variables are set
 
 ### Auth0 Issues

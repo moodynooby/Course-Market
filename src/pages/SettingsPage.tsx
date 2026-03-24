@@ -1,4 +1,4 @@
-import { AutoAwesome, DeleteForever, Info, Palette, Psychology } from '@mui/icons-material';
+import { AutoAwesome, DeleteForever, Info, Psychology } from '@mui/icons-material';
 import {
   Alert,
   Avatar,
@@ -35,8 +35,8 @@ import {
 import {
   DEFAULT_PREFERENCES,
   getPreferences,
-  STORAGE_KEYS,
   savePreferences,
+  STORAGE_KEYS,
 } from '../config/userConfig';
 import { useThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../hooks/useAuth';
@@ -157,120 +157,6 @@ export default function SettingsPage() {
                       <MenuItem value="system">System</MenuItem>
                     </Select>
                   </FormControl>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid size={{ xs: 12 }}>
-          <Card>
-            <CardContent>
-              <Stack direction="row" alignItems="center" spacing={1} mb={2}>
-                <Palette color="accent" />
-                <Typography variant="h6">Schedule Preferences</Typography>
-              </Stack>
-
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    label="Preferred Start Time"
-                    type="time"
-                    value={preferences.preferredStartTime}
-                    onChange={(e) =>
-                      setPreferences({ ...preferences, preferredStartTime: e.target.value })
-                    }
-                    fullWidth
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <TextField
-                    label="Preferred End Time"
-                    type="time"
-                    value={preferences.preferredEndTime}
-                    onChange={(e) =>
-                      setPreferences({ ...preferences, preferredEndTime: e.target.value })
-                    }
-                    fullWidth
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 4 }}>
-                  <TextField
-                    label="Min Credits"
-                    type="number"
-                    value={preferences.minCredits}
-                    onChange={(e) =>
-                      setPreferences({ ...preferences, minCredits: parseInt(e.target.value) || 0 })
-                    }
-                    fullWidth
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 4 }}>
-                  <TextField
-                    label="Max Credits"
-                    type="number"
-                    value={preferences.maxCredits}
-                    onChange={(e) =>
-                      setPreferences({ ...preferences, maxCredits: parseInt(e.target.value) || 24 })
-                    }
-                    fullWidth
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, sm: 4 }}>
-                  <TextField
-                    label="Max Gap (minutes)"
-                    type="number"
-                    value={preferences.maxGapMinutes}
-                    onChange={(e) =>
-                      setPreferences({
-                        ...preferences,
-                        maxGapMinutes: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    fullWidth
-                  />
-                </Grid>
-                <Grid size={{ xs: 12 }}>
-                  <Stack direction="row" spacing={2} flexWrap="wrap">
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={preferences.preferMorning}
-                          onChange={(e) =>
-                            setPreferences({ ...preferences, preferMorning: e.target.checked })
-                          }
-                        />
-                      }
-                      label="Prefer Morning Classes"
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={preferences.preferAfternoon}
-                          onChange={(e) =>
-                            setPreferences({ ...preferences, preferAfternoon: e.target.checked })
-                          }
-                        />
-                      }
-                      label="Prefer Afternoon Classes"
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={preferences.preferConsecutiveDays}
-                          onChange={(e) =>
-                            setPreferences({
-                              ...preferences,
-                              preferConsecutiveDays: e.target.checked,
-                            })
-                          }
-                        />
-                      }
-                      label="Prefer Consecutive Days"
-                    />
-                  </Stack>
                 </Grid>
               </Grid>
             </CardContent>

@@ -1,3 +1,17 @@
+import { AccessTime, CalendarToday, RemoveCircleOutline, School, Timer } from '@mui/icons-material';
+import {
+  Box,
+  Chip,
+  Divider,
+  FormControlLabel,
+  Grid,
+  Slider,
+  Stack,
+  Switch,
+  TextField,
+  Typography,
+  useTheme,
+} from '@mui/material';
 import type { DayOfWeek, Preferences } from '../types';
 
 interface PreferencesFormProps {
@@ -16,6 +30,8 @@ const DAYS: { value: DayOfWeek; label: string }[] = [
 ];
 
 export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps) {
+  const theme = useTheme();
+
   const handleDayToggle = (day: DayOfWeek) => {
     const current = preferences.avoidDays;
     const updated = current.includes(day) ? current.filter((d) => d !== day) : [...current, day];
@@ -30,153 +46,205 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
     onUpdate('excludeInstructors', instructors);
   };
 
+  const handleCreditsChange = (type: 'min' | 'max', value: number) => {
+    const clampedValue = Math.max(0, Math.min(24, value));
+    if (type === 'min') {
+      onUpdate('minCredits', Math.min(clampedValue, preferences.maxCredits));
+    } else {
+      onUpdate('maxCredits', Math.max(clampedValue, preferences.minCredits));
+    }
+  };
+
   return (
-    <div className="preferences-form">
-      <h2>⚙️ Schedule Preferences</h2>
+    <Box>
+      <Stack direction="row" alignItems="center" spacing={1} mb={2}>
+        <AccessTime sx={{ color: 'accent.main', fontSize: 20 }} />
+        <Typography variant="h6" fontWeight={700}>
+          Schedule Preferences
+        </Typography>
+      </Stack>
 
-      <div className="form-section">
-        <h3>⏰ Time Preferences</h3>
+      <Stack spacing={3}>
+        {/* Time Preferences */}
+        <Box>
+          <Stack direction="row" alignItems="center" spacing={0.5} mb={1.5}>
+            <Timer fontSize="small" sx={{ color: 'text.secondary' }} />
+            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+              TIME PREFERENCES
+            </Typography>
+          </Stack>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="preferredStartTime">Preferred Start Time</label>
-            <input
-              id="preferredStartTime"
-              type="time"
-              value={preferences.preferredStartTime}
-              onChange={(e) => onUpdate('preferredStartTime', e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="preferredEndTime">Preferred End Time</label>
-            <input
-              id="preferredEndTime"
-              type="time"
-              value={preferences.preferredEndTime}
-              onChange={(e) => onUpdate('preferredEndTime', e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label>Time of Day Preference</label>
-          <div className="checkbox-group">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={preferences.preferMorning}
-                onChange={(e) => onUpdate('preferMorning', e.target.checked)}
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 6 }}>
+              <TextField
+                fullWidth
+                size="small"
+                type="time"
+                label="Start Time"
+                value={preferences.preferredStartTime}
+                onChange={(e) => onUpdate('preferredStartTime', e.target.value)}
+                InputLabelProps={{ shrink: true }}
               />
-              🌅 Prefer Morning (before noon)
-            </label>
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={preferences.preferAfternoon}
-                onChange={(e) => onUpdate('preferAfternoon', e.target.checked)}
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField
+                fullWidth
+                size="small"
+                type="time"
+                label="End Time"
+                value={preferences.preferredEndTime}
+                onChange={(e) => onUpdate('preferredEndTime', e.target.value)}
+                InputLabelProps={{ shrink: true }}
               />
-              🌇 Prefer Afternoon (noon - 5pm)
-            </label>
-          </div>
-        </div>
-      </div>
+            </Grid>
+          </Grid>
 
-      <div className="form-section">
-        <h3>📅 Schedule Preferences</h3>
+          <Stack direction="row" spacing={1} mt={2}>
+            <Chip
+              label="🌅 Morning"
+              onClick={() => onUpdate('preferMorning', !preferences.preferMorning)}
+              color={preferences.preferMorning ? 'primary' : 'default'}
+              variant={preferences.preferMorning ? 'filled' : 'outlined'}
+              sx={{ fontSize: '0.75rem' }}
+            />
+            <Chip
+              label="🌇 Afternoon"
+              onClick={() => onUpdate('preferAfternoon', !preferences.preferAfternoon)}
+              color={preferences.preferAfternoon ? 'primary' : 'default'}
+              variant={preferences.preferAfternoon ? 'filled' : 'outlined'}
+              sx={{ fontSize: '0.75rem' }}
+            />
+          </Stack>
+        </Box>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label>Minimum Credits</label>
-            <input
-              type="number"
-              min="0"
-              max="24"
-              value={preferences.minCredits}
-              onChange={(e) => {
-                const raw = Number(e.target.value);
-                const value = Number.isNaN(raw) ? 0 : Math.max(0, Math.min(24, raw));
-                onUpdate('minCredits', value);
+        <Divider />
+
+        {/* Credit & Schedule */}
+        <Box>
+          <Stack direction="row" alignItems="center" spacing={0.5} mb={1.5}>
+            <CalendarToday fontSize="small" sx={{ color: 'text.secondary' }} />
+            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+              SCHEDULE
+            </Typography>
+          </Stack>
+
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 6 }}>
+              <TextField
+                fullWidth
+                size="small"
+                type="number"
+                label="Min Credits"
+                value={preferences.minCredits}
+                onChange={(e) => handleCreditsChange('min', parseInt(e.target.value) || 0)}
+                inputProps={{ min: 0, max: 24 }}
+              />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField
+                fullWidth
+                size="small"
+                type="number"
+                label="Max Credits"
+                value={preferences.maxCredits}
+                onChange={(e) => handleCreditsChange('max', parseInt(e.target.value) || 0)}
+                inputProps={{ min: 0, max: 24 }}
+              />
+            </Grid>
+          </Grid>
+
+          <Box mt={2}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+              <Typography variant="caption" color="text.secondary">
+                Max Gap Between Classes
+              </Typography>
+              <Typography variant="caption" fontWeight={600} color="accent.main">
+                {preferences.maxGapMinutes} min
+              </Typography>
+            </Stack>
+            <Slider
+              value={preferences.maxGapMinutes}
+              onChange={(_, value) => onUpdate('maxGapMinutes', value as number)}
+              min={0}
+              max={180}
+              step={15}
+              valueLabelDisplay="off"
+              sx={{
+                '& .MuiSlider-thumb': {
+                  width: 16,
+                  height: 16,
+                },
               }}
             />
-          </div>
+          </Box>
 
-          <div className="form-group">
-            <label>Maximum Credits</label>
-            <input
-              type="number"
-              min="0"
-              max="24"
-              value={preferences.maxCredits}
-              onChange={(e) => {
-                const raw = Number(e.target.value);
-                const value = Number.isNaN(raw)
-                  ? preferences.minCredits
-                  : Math.max(preferences.minCredits, Math.min(24, raw));
-                onUpdate('maxCredits', value);
-              }}
-            />
-          </div>
-        </div>
+          <Box mt={2}>
+            <Typography variant="caption" color="text.secondary" mb={1} display="block">
+              Days to Avoid
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              {DAYS.map((day) => {
+                const isActive = preferences.avoidDays.includes(day.value);
+                return (
+                  <Chip
+                    key={day.value}
+                    label={day.label}
+                    onClick={() => handleDayToggle(day.value)}
+                    color={isActive ? 'error' : 'default'}
+                    variant={isActive ? 'filled' : 'outlined'}
+                    size="small"
+                    sx={{
+                      fontWeight: isActive ? 600 : 400,
+                    }}
+                  />
+                );
+              })}
+            </Stack>
+          </Box>
 
-        <div className="form-group">
-          <label>Max Gap Between Classes (minutes)</label>
-          <input
-            type="range"
-            min="0"
-            max="180"
-            step="15"
-            value={preferences.maxGapMinutes}
-            onChange={(e) => {
-              const raw = Number(e.target.value);
-              const value = Number.isNaN(raw) ? 0 : Math.max(0, Math.min(180, raw));
-              onUpdate('maxGapMinutes', value);
-            }}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={preferences.preferConsecutiveDays}
+                onChange={(e) => onUpdate('preferConsecutiveDays', e.target.checked)}
+                size="small"
+              />
+            }
+            label={
+              <Typography variant="body2" color="text.secondary">
+                Prefer consecutive days (MWF or TTh)
+              </Typography>
+            }
+            sx={{ mt: 1, ml: 0 }}
           />
-          <span className="range-value">{preferences.maxGapMinutes} minutes</span>
-        </div>
+        </Box>
 
-        <div className="form-group">
-          <label>Days to Avoid</label>
-          <div className="day-buttons">
-            {DAYS.map((day) => (
-              <button
-                key={day.value}
-                type="button"
-                className={`day-btn ${preferences.avoidDays.includes(day.value) ? 'active' : ''}`}
-                onClick={() => handleDayToggle(day.value)}
-              >
-                {day.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <Divider />
 
-        <div className="form-group">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={preferences.preferConsecutiveDays}
-              onChange={(e) => onUpdate('preferConsecutiveDays', e.target.checked)}
-            />
-            Prefer Consecutive Days (e.g., MWF or TTh)
-          </label>
-        </div>
-      </div>
+        {/* Instructor Preferences */}
+        <Box>
+          <Stack direction="row" alignItems="center" spacing={0.5} mb={1.5}>
+            <School fontSize="small" sx={{ color: 'text.secondary' }} />
+            <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+              INSTRUCTORS
+            </Typography>
+          </Stack>
 
-      <div className="form-section">
-        <h3>👨‍🏫 Instructor Preferences</h3>
-
-        <div className="form-group">
-          <label>Instructors to Exclude (comma-separated)</label>
-          <input
-            type="text"
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Dr. Smith, Prof. Jones"
             value={preferences.excludeInstructors.join(', ')}
             onChange={(e) => handleInstructorChange(e.target.value)}
-            placeholder="Dr. Smith, Prof. Jones"
+            InputProps={{
+              startAdornment: (
+                <RemoveCircleOutline fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
+              ),
+            }}
+            helperText="Separate multiple names with commas"
           />
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Stack>
+    </Box>
   );
 }

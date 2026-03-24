@@ -2,9 +2,9 @@ pre-commit:
   commands:
     fix:
       glob: "{src,netlify/functions}/**/*.{ts,tsx,js,jsx}"
-      run: "bun run fix"
+      run: "pnpm run lint"
       stage_fixed: true
     test:
-      run: "bun run test"
+      run: "pnpm run test"
     typecheck:
-      run: "bun run tsc -b"
+      run: "pnpm run typecheck"

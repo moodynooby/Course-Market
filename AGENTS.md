@@ -9,9 +9,8 @@
 
 ## Commands
 ```bash
-bun run dev  # Vite + Netlify Backend
-bun run build # Build + SPA _redirects generation
-bun run check    # Fix + Test + TSC check
+pnpm run dev  # Vite + Netlify Backend
+pnpm run build # Build + SPA _redirects generation
 ```
 
 ## Code Standards
@@ -30,7 +29,7 @@ bun run check    # Fix + Test + TSC check
 - **Identity**: Track users via `auth0UserId` (Auth0 `sub` claim), no local users table
 - **Functions**: `netlify/functions/*.ts` - Use `export const handler` (ESM format)
 - **Database Access**: `@netlify/neon` package with `neon()` - DATABASE_URL auto-injected by addon
-- **Migrations**: NEVER edit SQL manually - use `bun run db:generate` then `bun run db:migrate`
+- **Migrations**: NEVER edit SQL manually - use `pnpm run db:generate` then `pnpm run db:migrate`
 
 ### Environment Variables
 
@@ -51,8 +50,8 @@ bun run check    # Fix + Test + TSC check
 1. **Link to Netlify**: `netlify link` (REQUIRED for DATABASE_URL)
 2. **Install Neon addon**: `netlify addons:create neon` (if not already installed)
 3. **Configure .env**: Copy `.env.example` and fill in Auth0 credentials
-4. **Run migrations**: `bun run db:migrate`
-5. **Start dev server**: `bun run dev`
+4. **Run migrations**: `pnpm run db:migrate`
+5. **Start dev server**: `pnpm run dev`
 
 ### Routing & Deployment
 
@@ -63,26 +62,22 @@ bun run check    # Fix + Test + TSC check
 
 - **Framework**: Vitest + Testing Library
 - **Strategy**: Test core logic (csv, schedule utils), async states, error boundaries
-- **Run**: `bun run test` (watch)
+- **Run**: `pnpm run test` (watch)
 - **Coverage**: Focus on business logic, not UI snapshots
 
 ## Critical Rules for Agents
 
-1. **Always use `bun run dev`** for full stack development (not `dev:vite`)
+1. **Always use `pnpm run dev`** for full stack development (not `dev:vite`)
    - Reason: Vite plugin handles both frontend and Netlify Functions
 
 2. **Never edit migrations manually**
-   - Use `bun run db:generate` after schema changes
-   - Then `bun run db:migrate` to apply
+   - Use `pnpm run db:generate` after schema changes
+   - Then `pnpm run db:migrate` to apply
 
 3. **Identity is Auth0-based**
    - Track users via `auth0UserId` (sub claim)
    - No local users table
    - All API calls require Bearer token in Authorization header
-
-4. **Run `bun run fix` before commits**
-   - Auto-fixes linting and formatting issues
-   - Biome is configured, don't fight it
 
 5. **Environment variables are in .env only**
    - Frontend: VITE_ prefix

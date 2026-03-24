@@ -5,8 +5,6 @@ const auth0Audience = import.meta.env.VITE_AUTH0_AUDIENCE || '';
 
 if (!auth0Domain || !auth0ClientId) {
   console.warn('Auth0 configuration is incomplete. Authentication will fail.');
-  console.debug('Auth0 Domain:', auth0Domain);
-  console.debug('Auth0 Client ID:', auth0ClientId);
 }
 
 export const ENV = {
