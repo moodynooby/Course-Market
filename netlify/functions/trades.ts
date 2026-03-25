@@ -87,7 +87,6 @@ export const handler = async (event: any) => {
         courseName,
         sectionOffered,
         sectionWanted,
-        action,
         description,
         contactPhone,
       } = requestBody;

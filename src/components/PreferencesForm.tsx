@@ -10,7 +10,6 @@ import {
   Switch,
   TextField,
   Typography,
-  useTheme,
 } from '@mui/material';
 import type { DayOfWeek, Preferences } from '../types';
 
@@ -30,8 +29,6 @@ const DAYS: { value: DayOfWeek; label: string }[] = [
 ];
 
 export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps) {
-  const theme = useTheme();
-
   const handleDayToggle = (day: DayOfWeek) => {
     const current = preferences.avoidDays;
     const updated = current.includes(day) ? current.filter((d) => d !== day) : [...current, day];

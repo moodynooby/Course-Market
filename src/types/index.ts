@@ -65,13 +65,6 @@ export interface TradePost {
   updatedAt: string;
 }
 
-export interface CSVParseResult {
-  courses: Course[];
-  sections: Section[];
-  errors: string[];
-  warnings: string[];
-}
-
 export type LLMProvider = 'webllm' | 'groq';
 
 export interface CalendarEvent {

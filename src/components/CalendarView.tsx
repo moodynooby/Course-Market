@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, ViewDay, ViewWeek } from '@mui/icons-material';
 import {
+  alpha,
   Box,
   Button,
   ButtonGroup,
@@ -9,7 +10,6 @@ import {
   Stack,
   Typography,
   useTheme,
-  alpha,
 } from '@mui/material';
 import { addWeeks, format, getDay, parse, startOfWeek, subWeeks } from 'date-fns';
 
@@ -53,7 +53,6 @@ const COURSE_COLORS = [
 ];
 
 const EventComponent = memo(function EventComponent({ event }: EventProps) {
-  const theme = useTheme();
   const courseCode = event.resource?.course?.code || '';
   const colorIndex = courseCode.length > 0 ? courseCode.charCodeAt(0) % COURSE_COLORS.length : 0;
   const backgroundColor = COURSE_COLORS[colorIndex];

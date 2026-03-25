@@ -2,7 +2,6 @@ import { neon } from '@netlify/neon';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/neon-http';
 import { userLlmKeys } from '../../../db/schema';
-import { decrypt, encrypt } from './encryption';
 
 const client = neon();
 const db = drizzle({ client, schema: { userLlmKeys } });
@@ -14,20 +13,11 @@ export async function getUserKey(auth0UserId: string, provider: string): Promise
     .where(eq(userLlmKeys.auth0UserId, auth0UserId))
     .limit(1);
 
-  if (result.length === 0) {
+  if (result.length === 0 || result[0].provider !== provider) {
     return null;
   }
 
-  const record = result[0];
-  if (record.provider !== provider) {
-    return null;
-  }
-
-  try {
-    return decrypt(record.encryptedKey, record.iv);
-  } catch {
-    return null;
-  }
+  return result[0].apiKey;
 }
 
 export async function saveUserKey(
@@ -35,21 +25,17 @@ export async function saveUserKey(
   provider: string,
   apiKey: string,
 ): Promise<void> {
-  const { encrypted, iv } = encrypt(apiKey);
-
   await db
     .insert(userLlmKeys)
     .values({
       auth0UserId,
       provider,
-      encryptedKey: encrypted,
-      iv,
+      apiKey,
     })
     .onConflictDoUpdate({
       target: userLlmKeys.auth0UserId,
       set: {
-        encryptedKey: encrypted,
-        iv,
+        apiKey,
         provider,
         updatedAt: new Date(),
       },

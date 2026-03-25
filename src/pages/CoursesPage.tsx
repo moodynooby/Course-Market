@@ -38,7 +38,7 @@ import { STORAGE_KEYS } from '../config/userConfig';
 import { useAuth } from '../hooks/useAuth';
 import { llmService } from '../services/llm';
 import type { Course, Section } from '../types';
-import { formatTime, formatTimeSlots, hasSectionConflict } from '../utils/schedule';
+import { formatTimeSlots, hasSectionConflict } from '../utils/schedule';
 
 const INITIAL_VISIBLE_COURSES = 25;
 const VISIBLE_COURSE_STEP = 25;
@@ -146,7 +146,7 @@ export default function CoursesPage() {
 
   useEffect(() => {
     setVisibleCount(INITIAL_VISIBLE_COURSES);
-  }, [debouncedSearch, subject, aiResults]);
+  }, []);
 
   const courseSectionsMap = useMemo(() => {
     const map = new Map<string, Section[]>();
@@ -187,14 +187,6 @@ export default function CoursesPage() {
       } else {
         newMap.set(courseId, sectionId);
       }
-      return newMap;
-    });
-  }, []);
-
-  const handleDeselectCourse = useCallback((courseId: string) => {
-    setSelectedSections((prev) => {
-      const newMap = new Map(prev);
-      newMap.delete(courseId);
       return newMap;
     });
   }, []);
@@ -257,9 +249,6 @@ export default function CoursesPage() {
             Course Browser
           </Typography>
         </header>
-        <Alert severity="info" sx={{ mb: 3 }}>
-          No courses imported yet. Import a CSV file to get started.
-        </Alert>
       </Box>
     );
   }

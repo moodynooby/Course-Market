@@ -29,7 +29,7 @@ pnpm run build # Build + SPA _redirects generation
 - **Identity**: Track users via `auth0UserId` (Auth0 `sub` claim), no local users table
 - **Functions**: `netlify/functions/*.ts` - Use `export const handler` (ESM format)
 - **Database Access**: `@netlify/neon` package with `neon()` - DATABASE_URL auto-injected by addon
-- **Migrations**: NEVER edit SQL manually - use `pnpm run db:generate` then `pnpm run db:migrate`
+- **Schema Sync**: Use `pnpm run db:push` to sync schema (uses drizzle-kit push, not migrations)
 
 ### Environment Variables
 
@@ -50,7 +50,7 @@ pnpm run build # Build + SPA _redirects generation
 1. **Link to Netlify**: `netlify link` (REQUIRED for DATABASE_URL)
 2. **Install Neon addon**: `netlify addons:create neon` (if not already installed)
 3. **Configure .env**: Copy `.env.example` and fill in Auth0 credentials
-4. **Run migrations**: `pnpm run db:migrate`
+4. **Push schema**: `pnpm run db:push`
 5. **Start dev server**: `pnpm run dev`
 
 ### Routing & Deployment
@@ -72,7 +72,7 @@ pnpm run build # Build + SPA _redirects generation
 
 2. **Never edit migrations manually**
    - Use `pnpm run db:generate` after schema changes
-   - Then `pnpm run db:migrate` to apply
+   - Then `pnpm run db:push` to sync schema to database
 
 3. **Identity is Auth0-based**
    - Track users via `auth0UserId` (sub claim)
@@ -108,7 +108,6 @@ src/
 
 netlify/functions/   # Serverless functions
 db/                  # Database schema + helpers
-migrations/          # Drizzle migrations (auto-generated)
 ```
 
 ## Useful Links

@@ -2,7 +2,6 @@ import { CalendarToday, CloudUpload, Folder } from '@mui/icons-material';
 import {
   Alert,
   Box,
-  Button,
   Card,
   CardContent,
   CircularProgress,
@@ -10,9 +9,9 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
-import { getSemesters } from '../../services/onboardingApi';
+import { useCallback, useEffect, useState } from 'react';
 import { getSemesterData } from '../../services/coursesApi';
+import { getSemesters } from '../../services/onboardingApi';
 import type { Semester } from '../../types';
 
 interface StepSemesterSelectionProps {
@@ -29,11 +28,7 @@ export function StepSemesterSelection({
   const [selecting, setSelecting] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadSemesters();
-  }, []);
-
-  const loadSemesters = async () => {
+  const loadSemesters = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getSemesters();
@@ -44,14 +39,17 @@ export function StepSemesterSelection({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadSemesters();
+  }, [loadSemesters]);
 
   const handleSelectSemester = async (semesterId: string) => {
     try {
       setSelecting(semesterId);
       setError(null);
 
-      // Verify the semester data is accessible
       await getSemesterData(semesterId);
 
       onComplete(semesterId);

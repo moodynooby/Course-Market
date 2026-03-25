@@ -1,5 +1,5 @@
 import { neon } from '@netlify/neon';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '../../db/schema';
 

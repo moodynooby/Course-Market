@@ -1,4 +1,4 @@
-import { AutoAwesome, DeleteForever, Info, Psychology, CalendarToday } from '@mui/icons-material';
+import { AutoAwesome, CalendarToday, DeleteForever, Info, Psychology } from '@mui/icons-material';
 import {
   Alert,
   Avatar,
@@ -6,13 +6,13 @@ import {
   Button,
   Card,
   CardContent,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Divider,
   FormControl,
-  FormControlLabel,
   FormHelperText,
   Grid,
   InputLabel,
@@ -20,10 +20,8 @@ import {
   MenuItem,
   Select,
   Stack,
-  Switch,
   TextField,
   Typography,
-  CircularProgress,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -36,8 +34,8 @@ import {
 import {
   DEFAULT_PREFERENCES,
   getPreferences,
-  savePreferences,
   STORAGE_KEYS,
+  savePreferences,
 } from '../config/userConfig';
 import { useThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../hooks/useAuth';
@@ -48,7 +46,7 @@ export default function SettingsPage() {
   const { user, getToken } = useAuth();
   const { mode, setMode } = useThemeMode();
   const [saved, setSaved] = useState(false);
-  const [llmSaved, setLlmSaved] = useState(false);
+  const [_llmSaved, setLlmSaved] = useState(false);
   const [clearDataOpen, setClearDataOpen] = useState(false);
   const [semesterDialogOpen, setSemesterDialogOpen] = useState(false);
   const [semesters, setSemesters] = useState<Semester[]>([]);
@@ -75,18 +73,11 @@ export default function SettingsPage() {
     return true;
   }, []);
 
-  useEffect(() => {
-    setPreferences(getPreferences());
-    setLlmConfig(getLlmConfig());
-    loadSemesters();
-  }, []);
-
-  const loadSemesters = async () => {
+  const loadSemesters = useCallback(async () => {
     try {
       setLoadingSemesters(true);
       const data = await getSemesters();
       setSemesters(data);
-      // Get current semester from user profile (stored in localStorage for now)
       const savedSemester = localStorage.getItem('auraishub_semester') || '';
       setCurrentSemester(savedSemester);
     } catch (error) {
@@ -94,7 +85,13 @@ export default function SettingsPage() {
     } finally {
       setLoadingSemesters(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    setPreferences(getPreferences());
+    setLlmConfig(getLlmConfig());
+    loadSemesters();
+  }, [loadSemesters]);
 
   const handleSemesterChange = async (semesterId: string) => {
     try {
@@ -103,7 +100,6 @@ export default function SettingsPage() {
       localStorage.setItem('auraishub_semester', semesterId);
       setCurrentSemester(semesterId);
       setSemesterDialogOpen(false);
-      // Reload page to apply new semester
       window.location.reload();
     } catch (error) {
       console.error('Error changing semester:', error);
@@ -374,7 +370,6 @@ export default function SettingsPage() {
         </DialogActions>
       </Dialog>
 
-      {/* Semester Change Dialog */}
       <Dialog open={semesterDialogOpen} onClose={() => setSemesterDialogOpen(false)}>
         <DialogTitle>Change Semester</DialogTitle>
         <DialogContent sx={{ minWidth: 400 }}>

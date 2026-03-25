@@ -1,6 +1,6 @@
 import { School } from '@mui/icons-material';
 import { Avatar, Box, CircularProgress, Container, Stack, Typography } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { OnboardingWizard } from '../components/onboarding/OnboardingWizard';
 import { useAuth } from '../hooks/useAuth';
@@ -19,29 +19,16 @@ export default function OnboardingPage() {
     preferences?: Preferences;
   }>({});
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-
-    if (isAuthenticated) {
-      loadUserProfile();
-    }
-  }, [isAuthenticated, authLoading]);
-
-  const loadUserProfile = async () => {
+  const loadUserProfile = useCallback(async () => {
     try {
       const token = await getToken();
       const profile = await getUserProfile(token);
 
       if (profile?.onboardingCompleted) {
-        // Already completed onboarding
         navigate('/');
         return;
       }
 
-      // Load existing profile data as initial state
       if (profile) {
         setInitialData({
           displayName: profile.displayName,
@@ -53,11 +40,21 @@ export default function OnboardingPage() {
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
-      // Continue with empty initial data
     } finally {
       setLoading(false);
     }
-  };
+  }, [getToken, navigate]);
+
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    if (isAuthenticated) {
+      loadUserProfile();
+    }
+  }, [isAuthenticated, authLoading, navigate, loadUserProfile]);
 
   if (authLoading || loading) {
     return (
@@ -90,7 +87,6 @@ export default function OnboardingPage() {
     >
       <Container maxWidth="lg">
         <Stack alignItems="center" spacing={4}>
-          {/* Header */}
           <Stack alignItems="center" spacing={2}>
             <Avatar
               sx={{
@@ -113,7 +109,6 @@ export default function OnboardingPage() {
             </Typography>
           </Stack>
 
-          {/* Wizard */}
           <Box sx={{ width: '100%' }}>
             <OnboardingWizard initialData={initialData} />
           </Box>

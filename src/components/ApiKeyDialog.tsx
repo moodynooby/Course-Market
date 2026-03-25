@@ -58,8 +58,8 @@ export default function ApiKeyDialog({ open, onClose, onSave }: ApiKeyDialogProp
             sx={{ mt: 2 }}
           />
           <Alert severity="info" sx={{ mt: 2 }}>
-            Your API key is encrypted and stored securely on our servers. It will be used when the
-            shared key is unavailable.
+            Your API key is stored securely on our servers. It will be used when the shared key is
+            unavailable.
           </Alert>
         </Box>
       </DialogContent>

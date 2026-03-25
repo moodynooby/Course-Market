@@ -12,5 +12,5 @@ export default {
    * There are scripts in the package.json "db:generate" and "db:migrate" to handle this.
    */
   verbose: true,
-  strict: true,
+  strict: false,
 } satisfies Config;

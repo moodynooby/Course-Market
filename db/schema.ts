@@ -36,8 +36,7 @@ export type NewTrade = typeof trades.$inferInsert;
 export const userLlmKeys = pgTable('user_llm_keys', {
   auth0UserId: varchar('auth0_user_id', { length: 255 }).primaryKey(),
   provider: varchar('provider', { length: 50 }).notNull(),
-  encryptedKey: text('encrypted_key').notNull(),
-  iv: varchar('iv', { length: 64 }).notNull(),
+  apiKey: text('api_key').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

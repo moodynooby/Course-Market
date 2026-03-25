@@ -1,14 +1,13 @@
-import { useAuth } from '../hooks/useAuth';
+import { Box, CircularProgress } from '@mui/material';
+import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { CircularProgress, Box } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { getUserProfile } from '../services/onboardingApi';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
-// Routes that don't require onboarding check
 const SKIP_ONBOARDING_ROUTES = ['/onboarding', '/callback', '/login'];
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
@@ -17,34 +16,31 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [onboardingCompleted, setOnboardingCompleted] = useState(true);
 
-  useEffect(() => {
-    if (!isAuthenticated || loading) {
-      return;
-    }
-
-    // Skip onboarding check for certain routes
-    if (SKIP_ONBOARDING_ROUTES.some((route) => location.pathname.startsWith(route))) {
-      setOnboardingChecked(true);
-      return;
-    }
-
-    // Check onboarding status
-    checkOnboardingStatus();
-  }, [isAuthenticated, loading, location.pathname]);
-
-  const checkOnboardingStatus = async () => {
+  const checkOnboardingStatus = useCallback(async () => {
     try {
       const token = await getToken();
       const profile = await getUserProfile(token);
       setOnboardingCompleted(!!profile?.onboardingCompleted);
     } catch (error) {
       console.error('Error checking onboarding status:', error);
-      // If check fails, allow access (don't block user)
       setOnboardingCompleted(true);
     } finally {
       setOnboardingChecked(true);
     }
-  };
+  }, [getToken]);
+
+  useEffect(() => {
+    if (!isAuthenticated || loading) {
+      return;
+    }
+
+    if (SKIP_ONBOARDING_ROUTES.some((route) => location.pathname.startsWith(route))) {
+      setOnboardingChecked(true);
+      return;
+    }
+
+    checkOnboardingStatus();
+  }, [isAuthenticated, loading, location.pathname, checkOnboardingStatus]);
 
   if (loading || !onboardingChecked) {
     return (

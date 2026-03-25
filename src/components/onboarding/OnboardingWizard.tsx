@@ -5,11 +5,10 @@ import {
   Card,
   CardContent,
   MobileStepper,
-  Stack,
   Step,
-  stepClasses,
   StepLabel,
   Stepper,
+  stepClasses,
   Typography,
   useMediaQuery,
   useTheme,
@@ -72,7 +71,7 @@ export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
       setError(null);
 
       const token = await getToken();
-      const profile = await saveUserProfile(token, data);
+      await saveUserProfile(token, data);
 
       setUserData((prev) => ({
         ...prev,
@@ -95,7 +94,7 @@ export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
       setError(null);
 
       const token = await getToken();
-      const profile = await saveUserProfile(token, { semesterId });
+      await saveUserProfile(token, { semesterId });
 
       setUserData((prev) => ({
         ...prev,

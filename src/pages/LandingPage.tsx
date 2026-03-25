@@ -9,7 +9,6 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
   Grid,
   LinearProgress,
   Stack,
@@ -24,12 +23,7 @@ import CalendarView from '../components/CalendarView';
 import { PreferencesForm } from '../components/PreferencesForm';
 import { getLlmConfig, saveLlmConfig } from '../config/llmConfig';
 import { getCourses } from '../config/storageConfig';
-import {
-  DEFAULT_PREFERENCES,
-  getPreferences,
-  savePreferences,
-  STORAGE_KEYS,
-} from '../config/userConfig';
+import { DEFAULT_PREFERENCES, STORAGE_KEYS, savePreferences } from '../config/userConfig';
 import { useAuth } from '../hooks/useAuth';
 import type { Course, Preferences, Schedule, Section } from '../types';
 import { checkConflicts } from '../utils/schedule';

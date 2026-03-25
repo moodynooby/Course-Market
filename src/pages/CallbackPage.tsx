@@ -1,6 +1,6 @@
 import { useAuth0 } from '@auth0/auth0-react';
 import { Box, CircularProgress, Typography } from '@mui/material';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getUserProfile } from '../services/onboardingApi';
@@ -10,18 +10,7 @@ export default function CallbackPage() {
   const { getToken } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!isLoading) {
-      if (isAuthenticated) {
-        checkOnboardingStatus();
-      } else if (error) {
-        console.error('Auth error:', error);
-        navigate('/login');
-      }
-    }
-  }, [isAuthenticated, isLoading, error, navigate]);
-
-  const checkOnboardingStatus = async () => {
+  const checkOnboardingStatus = useCallback(async () => {
     try {
       const token = await getToken();
       const profile = await getUserProfile(token);
@@ -33,10 +22,20 @@ export default function CallbackPage() {
       }
     } catch (err) {
       console.error('Error checking profile:', err);
-      // If profile doesn't exist yet, go to onboarding
       navigate('/onboarding');
     }
-  };
+  }, [getToken, navigate]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      if (isAuthenticated) {
+        checkOnboardingStatus();
+      } else if (error) {
+        console.error('Auth error:', error);
+        navigate('/login');
+      }
+    }
+  }, [isAuthenticated, isLoading, error, navigate, checkOnboardingStatus]);
 
   return (
     <Box

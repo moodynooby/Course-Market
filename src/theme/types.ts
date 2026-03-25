@@ -1,11 +1,19 @@
-import type { Palette, PaletteOptions } from '@mui/material/styles';
-
 declare module '@mui/material/styles' {
   interface Palette {
-    accent: Palette['primary'];
+    accent: {
+      main: string;
+      light: string;
+      dark: string;
+      contrastText: string;
+    };
   }
   interface PaletteOptions {
-    accent?: PaletteOptions['primary'];
+    accent?: {
+      main?: string;
+      light?: string;
+      dark?: string;
+      contrastText?: string;
+    };
   }
 }
 

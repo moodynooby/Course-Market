@@ -18,7 +18,6 @@ import {
   Box,
   Button,
   Card,
-  CardActions,
   CardContent,
   Chip,
   CircularProgress,
@@ -26,16 +25,14 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  IconButton,
   InputAdornment,
-  MenuItem,
   Skeleton,
   Snackbar,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
-import { useCallback, useEffect, useMemo, useState, memo } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import ApiKeyDialog from '../components/ApiKeyDialog';
 import { getLlmConfig, saveLlmConfig } from '../config/llmConfig';
 import { useAuth } from '../hooks/useAuth';
@@ -387,7 +384,7 @@ export default function TradingPage() {
       await navigator.clipboard.writeText(aiDraftText);
       setSnackbar({ open: true, message: 'Draft copied to clipboard!' });
       setAiDraftOpen(false);
-    } catch (e) {
+    } catch {
       setSnackbar({ open: true, message: 'Failed to copy text' });
     }
   };

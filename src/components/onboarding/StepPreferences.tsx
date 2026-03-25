@@ -1,8 +1,8 @@
 import { CheckCircle } from '@mui/icons-material';
-import { Alert, Box, Button, CircularProgress, Paper, Stack, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Paper, Typography } from '@mui/material';
 import { useState } from 'react';
-import { PreferencesForm } from '../PreferencesForm';
 import type { Preferences } from '../../types';
+import { PreferencesForm } from '../PreferencesForm';
 
 interface StepPreferencesProps {
   onComplete: (preferences: Preferences) => void;

@@ -77,7 +77,6 @@ function NavLink({ to, label, primary = false, currentPath }: NavLinkProps) {
     </Box>
   );
 }
-import HelpDialog from './HelpDialog';
 import callMissedIcon from '../assets/3dicons-call-missed-dynamic-color.png';
 import lockIcon from '../assets/3dicons-locker-dynamic-premium.png';
 import logoIcon from '../assets/logo.png';
