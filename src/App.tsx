@@ -8,6 +8,7 @@ import { ThemeProvider } from './context/ThemeContext';
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const CallbackPage = lazy(() => import('./pages/CallbackPage'));
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 const CoursesPage = lazy(() => import('./pages/CoursesPage'));
 const TradingPage = lazy(() => import('./pages/TradingPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
@@ -35,6 +36,14 @@ const router = createBrowserRouter([
     element: (
       <Suspense fallback={<LoadingFallback />}>
         <CallbackPage />
+      </Suspense>
+    ),
+  },
+  {
+    path: '/onboarding',
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <OnboardingPage />
       </Suspense>
     ),
   },

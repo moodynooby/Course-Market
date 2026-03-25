@@ -1,4 +1,4 @@
-import { ArrowForward, AutoAwesome, Psychology, Upload } from '@mui/icons-material';
+import { ArrowForward, AutoAwesome, Psychology } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -21,7 +21,6 @@ import { useNavigate } from 'react-router-dom';
 import remarkGfm from 'remark-gfm';
 import ApiKeyDialog from '../components/ApiKeyDialog';
 import CalendarView from '../components/CalendarView';
-import ImportDialog from '../components/ImportDialog';
 import { PreferencesForm } from '../components/PreferencesForm';
 import { getLlmConfig, saveLlmConfig } from '../config/llmConfig';
 import { getCourses } from '../config/storageConfig';
@@ -42,7 +41,6 @@ export default function LandingPage() {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [allSections, setAllSections] = useState<Section[]>([]);
-  const [importOpen, setImportOpen] = useState(false);
   const [preferences, setPreferences] = useState<Preferences>(DEFAULT_PREFERENCES);
 
   const loadData = useCallback(() => {
@@ -98,7 +96,7 @@ export default function LandingPage() {
     setWebllmAvailable('gpu' in navigator);
     window.addEventListener('storage', loadData);
     return () => window.removeEventListener('storage', loadData);
-  }, [loadData, importOpen]);
+  }, [loadData]);
 
   const handleOptimize = async () => {
     if (!schedule) {
@@ -189,17 +187,17 @@ export default function LandingPage() {
             Ready to get started?
           </Typography>
           <Typography color="text.secondary" mb={4} maxWidth={600} mx="auto">
-            Your dashboard is empty because you haven't imported any courses yet. Download your
-            courses CSV and import it to assemble your perfect schedule.
+            Start by browsing and selecting courses from your semester to build your perfect
+            schedule.
           </Typography>
           <Button
             variant="contained"
             color="accent"
             size="large"
-            onClick={() => setImportOpen(true)}
-            startIcon={<Upload />}
+            onClick={() => navigate('/courses')}
+            startIcon={<ArrowForward />}
           >
-            Import Courses CSV
+            Browse Courses
           </Button>
         </Card>
       ) : (
@@ -415,7 +413,6 @@ export default function LandingPage() {
           </Button>
         </DialogActions>
       </Dialog>
-      <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
       <ApiKeyDialog
         open={apiKeyDialogOpen}
         onClose={() => setApiKeyDialogOpen(false)}

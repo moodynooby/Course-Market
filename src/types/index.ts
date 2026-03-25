@@ -85,3 +85,54 @@ export interface CalendarEvent {
     course?: Course;
   };
 }
+
+// Onboarding and User Profile types
+export interface UserProfile {
+  auth0UserId: string;
+  displayName: string;
+  email: string;
+  phone: string;
+  semesterId?: string;
+  onboardingCompleted: boolean;
+  preferences?: Preferences;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Semester {
+  id: string;
+  name: string;
+  jsonUrl?: string;
+  isActive: boolean;
+}
+
+// JSON file structure for semester data (hybrid approach)
+export interface SemesterJSON {
+  version: string;
+  semesterId: string;
+  semesterName: string;
+  exportedAt: string;
+  sections: SectionJSON[];
+  metadata: {
+    totalSections: number;
+    totalCourses: number;
+    subjects: string[];
+    creditsRange: {
+      min: number;
+      max: number;
+    };
+  };
+}
+
+export interface SectionJSON {
+  id: string;
+  courseCode: string;
+  courseName: string;
+  sectionNumber: string;
+  instructor: string;
+  credits: number;
+  subject: string;
+  capacity: number;
+  enrolled: number;
+  timeSlots: TimeSlot[];
+}

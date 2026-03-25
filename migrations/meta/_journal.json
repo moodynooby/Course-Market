@@ -15,6 +15,20 @@
       "when": 1774027066342,
       "tag": "0001_big_romulus",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774418832730,
+      "tag": "0002_overrated_puppet_master",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774420745873,
+      "tag": "0003_violet_phil_sheldon",
+      "breakpoints": true
     }
   ]
 }

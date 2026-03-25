@@ -1,4 +1,4 @@
-import { AutoAwesome, DeleteForever, Info, Psychology } from '@mui/icons-material';
+import { AutoAwesome, DeleteForever, Info, Psychology, CalendarToday } from '@mui/icons-material';
 import {
   Alert,
   Avatar,
@@ -23,6 +23,7 @@ import {
   Switch,
   TextField,
   Typography,
+  CircularProgress,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -40,14 +41,19 @@ import {
 } from '../config/userConfig';
 import { useThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../hooks/useAuth';
-import type { LLMProvider, Preferences } from '../types';
+import { getSemesters, saveUserProfile } from '../services/onboardingApi';
+import type { LLMProvider, Preferences, Semester } from '../types';
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, getToken } = useAuth();
   const { mode, setMode } = useThemeMode();
   const [saved, setSaved] = useState(false);
   const [llmSaved, setLlmSaved] = useState(false);
   const [clearDataOpen, setClearDataOpen] = useState(false);
+  const [semesterDialogOpen, setSemesterDialogOpen] = useState(false);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [currentSemester, setCurrentSemester] = useState<string>('');
+  const [loadingSemesters, setLoadingSemesters] = useState(false);
 
   const [preferences, setPreferences] = useState<Preferences>(DEFAULT_PREFERENCES);
   const [llmConfig, setLlmConfig] = useState<BYOKConfig>(DEFAULT_LLM_CONFIG);
@@ -72,7 +78,37 @@ export default function SettingsPage() {
   useEffect(() => {
     setPreferences(getPreferences());
     setLlmConfig(getLlmConfig());
+    loadSemesters();
   }, []);
+
+  const loadSemesters = async () => {
+    try {
+      setLoadingSemesters(true);
+      const data = await getSemesters();
+      setSemesters(data);
+      // Get current semester from user profile (stored in localStorage for now)
+      const savedSemester = localStorage.getItem('auraishub_semester') || '';
+      setCurrentSemester(savedSemester);
+    } catch (error) {
+      console.error('Error loading semesters:', error);
+    } finally {
+      setLoadingSemesters(false);
+    }
+  };
+
+  const handleSemesterChange = async (semesterId: string) => {
+    try {
+      const token = await getToken();
+      await saveUserProfile(token, { semesterId });
+      localStorage.setItem('auraishub_semester', semesterId);
+      setCurrentSemester(semesterId);
+      setSemesterDialogOpen(false);
+      // Reload page to apply new semester
+      window.location.reload();
+    } catch (error) {
+      console.error('Error changing semester:', error);
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -157,6 +193,17 @@ export default function SettingsPage() {
                       <MenuItem value="system">System</MenuItem>
                     </Select>
                   </FormControl>
+                </Grid>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    startIcon={<CalendarToday />}
+                    onClick={() => setSemesterDialogOpen(true)}
+                    sx={{ height: 56 }}
+                  >
+                    {currentSemester ? `Current: ${currentSemester}` : 'Change Semester'}
+                  </Button>
                 </Grid>
               </Grid>
             </CardContent>
@@ -324,6 +371,60 @@ export default function SettingsPage() {
           <Button color="error" onClick={handleClearData}>
             Clear All Data
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Semester Change Dialog */}
+      <Dialog open={semesterDialogOpen} onClose={() => setSemesterDialogOpen(false)}>
+        <DialogTitle>Change Semester</DialogTitle>
+        <DialogContent sx={{ minWidth: 400 }}>
+          {loadingSemesters ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : semesters.length === 0 ? (
+            <Alert severity="warning">No semesters available. Please contact support.</Alert>
+          ) : (
+            <Stack spacing={2} sx={{ py: 2 }}>
+              {semesters.map((semester) => (
+                <Card
+                  key={semester.id}
+                  sx={{
+                    cursor: 'pointer',
+                    border: currentSemester === semester.id ? 2 : 1,
+                    borderColor: currentSemester === semester.id ? 'accent.main' : 'divider',
+                    '&:hover': {
+                      borderColor: 'accent.main',
+                      boxShadow: 2,
+                    },
+                  }}
+                  onClick={() => handleSemesterChange(semester.id)}
+                >
+                  <CardContent>
+                    <Stack direction="row" alignItems="center" spacing={2}>
+                      <CalendarToday
+                        color={currentSemester === semester.id ? 'accent' : 'action'}
+                      />
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight={600}>
+                          {semester.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {currentSemester === semester.id ? 'Current semester' : 'Click to select'}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              ))}
+            </Stack>
+          )}
+          <Alert severity="info" sx={{ mt: 2 }}>
+            Changing your semester will reload the page with the new course data.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSemesterDialogOpen(false)}>Cancel</Button>
         </DialogActions>
       </Dialog>
     </Box>

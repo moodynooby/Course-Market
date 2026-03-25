@@ -1,12 +1,4 @@
-import {
-  DarkMode,
-  LightMode,
-  Settings,
-  SettingsBrightness,
-  Upload,
-  Logout,
-  HelpOutline,
-} from '@mui/icons-material';
+import { DarkMode, LightMode, Settings, SettingsBrightness, Logout } from '@mui/icons-material';
 import {
   Avatar,
   Box,
@@ -22,6 +14,8 @@ import {
 } from '@mui/material';
 import { useState, useCallback } from 'react';
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
+import { useThemeMode } from '../context/ThemeContext';
+import { useAuth } from '../hooks/useAuth';
 
 interface NavLinkProps {
   to: string;
@@ -83,16 +77,11 @@ function NavLink({ to, label, primary = false, currentPath }: NavLinkProps) {
     </Box>
   );
 }
-import { useThemeMode } from '../context/ThemeContext';
-import { useAuth } from '../hooks/useAuth';
-import ImportDialog from './ImportDialog';
 import HelpDialog from './HelpDialog';
 import callMissedIcon from '../assets/3dicons-call-missed-dynamic-color.png';
 import lockIcon from '../assets/3dicons-locker-dynamic-premium.png';
 import logoIcon from '../assets/logo.png';
 export default function Layout() {
-  const [importOpen, setImportOpen] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
   const navigate = useNavigate();
@@ -215,13 +204,6 @@ export default function Layout() {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton
-              onClick={() => setHelpOpen(true)}
-              size="small"
-              sx={{ color: 'text.secondary' }}
-            >
-              <HelpOutline fontSize="small" />
-            </IconButton>
             <IconButton onClick={toggleMode} size="small" sx={{ color: 'text.secondary' }}>
               {ModeIcon}
             </IconButton>
@@ -339,30 +321,6 @@ export default function Layout() {
       >
         <Outlet />
       </Box>
-
-      {/* FAB (Import Actions) */}
-      <Box sx={{ position: 'fixed', bottom: 32, right: 32, zIndex: 50 }}>
-        <IconButton
-          sx={{
-            bgcolor: 'accent.main',
-            color: 'accent.contrastText',
-            width: 56,
-            height: 56,
-            boxShadow: theme.shadows[8],
-            transition: 'transform 0.2s',
-            '&:hover': {
-              bgcolor: 'accent.dark',
-              transform: 'rotate(90deg) scale(1.1)',
-            },
-          }}
-          onClick={() => setImportOpen(true)}
-        >
-          <Upload />
-        </IconButton>
-      </Box>
-
-      <ImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
-      <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
     </Box>
   );
 }

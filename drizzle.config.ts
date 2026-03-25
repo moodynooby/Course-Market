@@ -5,7 +5,7 @@ export default {
   schema: './db/schema.ts',
   out: './migrations',
   dbCredentials: {
-    url: process.env.NETLIFY_DATABASE_URL!,
+    url: process.env.DATABASE_URL || process.env.NETLIFY_DATABASE_URL!,
   },
   /**
    * Never edit the migrations directly, only use drizzle.
