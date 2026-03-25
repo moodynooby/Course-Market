@@ -10,7 +10,8 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
-import { getSemesterData } from '../../services/coursesApi';
+import { saveCourses } from '../../config/storageConfig';
+import { getCoursesBySubject, getSemesterData } from '../../services/coursesApi';
 import { getSemesters } from '../../services/onboardingApi';
 import type { Semester } from '../../types';
 
@@ -50,7 +51,13 @@ export function StepSemesterSelection({
       setSelecting(semesterId);
       setError(null);
 
-      await getSemesterData(semesterId);
+      const semesterData = await getSemesterData(semesterId);
+
+      // Transform and save courses to localStorage for Course Browser
+      const coursesBySubject = getCoursesBySubject(semesterData);
+      const allCourses = Object.values(coursesBySubject).flat();
+      const allSections = semesterData.sections;
+      saveCourses(allCourses, allSections);
 
       onComplete(semesterId);
     } catch (err) {

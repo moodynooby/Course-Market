@@ -1,33 +1,8 @@
 import type { TradePost } from '../types';
-import { ENV } from '../config/devConfig';
-
-const NETLIFY_FUNCTION_URL = ENV.NETLIFY_FUNCTION_URL;
-
-function getBaseUrl(): string {
-  if (NETLIFY_FUNCTION_URL) return NETLIFY_FUNCTION_URL;
-  return '/.netlify/functions';
-}
-
-async function fetchApi(path: string, token: string, options: RequestInit = {}): Promise<any> {
-  const response = await fetch(`${getBaseUrl()}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    throw new Error(`API error ${response.status}: ${errorBody}`);
-  }
-
-  return response.json();
-}
+import { api } from './apiClient';
 
 export async function getTrades(token: string): Promise<TradePost[]> {
-  const result = await fetchApi('/trades', token);
+  const result = await api.get<{ trades: TradePost[] }>('/trades', token);
   return result.trades || [];
 }
 
@@ -42,10 +17,7 @@ export async function createTrade(
     contactPhone?: string;
   },
 ): Promise<TradePost> {
-  const result = await fetchApi('/trades', token, {
-    method: 'POST',
-    body: JSON.stringify(tradeData),
-  });
+  const result = await api.post<{ trade: TradePost }>('/trades', tradeData, token);
   return result.trade;
 }
 
@@ -62,15 +34,10 @@ export async function updateTrade(
     contactPhone?: string;
   },
 ): Promise<TradePost> {
-  const result = await fetchApi(`/trades/${tradeId}`, token, {
-    method: 'PUT',
-    body: JSON.stringify(updates),
-  });
+  const result = await api.put<{ trade: TradePost }>(`/trades/${tradeId}`, updates, token);
   return result.trade;
 }
 
 export async function deleteTrade(token: string, tradeId: string): Promise<void> {
-  await fetchApi(`/trades/${tradeId}`, token, {
-    method: 'DELETE',
-  });
+  await api.delete(`/trades/${tradeId}`, token);
 }

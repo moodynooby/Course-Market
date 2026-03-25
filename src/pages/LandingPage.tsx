@@ -22,6 +22,7 @@ import ApiKeyDialog from '../components/ApiKeyDialog';
 import CalendarView from '../components/CalendarView';
 import { PreferencesForm } from '../components/PreferencesForm';
 import { getLlmConfig, saveLlmConfig } from '../config/llmConfig';
+import { storage } from '../config/storage';
 import { getCourses } from '../config/storageConfig';
 import { DEFAULT_PREFERENCES, STORAGE_KEYS, savePreferences } from '../config/userConfig';
 import { useAuth } from '../hooks/useAuth';
@@ -43,13 +44,12 @@ export default function LandingPage() {
     setAllSections(sections);
     setCoursesImported(courses.length > 0);
 
-    const saved = localStorage.getItem(STORAGE_KEYS.COURSE_SELECTIONS);
-    if (!saved) {
+    const selections = storage.get<Record<string, string>>(STORAGE_KEYS.COURSE_SELECTIONS, {});
+    if (Object.keys(selections).length === 0) {
       setSchedule(null);
       return;
     }
     try {
-      const selections = JSON.parse(saved);
       const selectedSections: Section[] = [];
       Object.keys(selections).forEach((courseId) => {
         const section = sections.find((s) => s.id === selections[courseId]);
@@ -135,7 +135,7 @@ export default function LandingPage() {
           },
           {} as Record<string, string>,
         );
-        localStorage.setItem(STORAGE_KEYS.COURSE_SELECTIONS, JSON.stringify(selections));
+        storage.set(STORAGE_KEYS.COURSE_SELECTIONS, selections);
         window.dispatchEvent(new Event('storage'));
       }
 

@@ -1,8 +1,9 @@
-import { Box, CircularProgress } from '@mui/material';
+import { Box } from '@mui/material';
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import Layout from './components/Layout';
+import { LoadingSpinner } from './components/LoadingSpinner';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ThemeProvider } from './context/ThemeContext';
 
@@ -17,7 +18,7 @@ const LandingPage = lazy(() => import('./pages/LandingPage'));
 function LoadingFallback() {
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-      <CircularProgress />
+      <LoadingSpinner />
     </Box>
   );
 }

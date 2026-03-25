@@ -1,8 +1,8 @@
-import { Box, CircularProgress } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getUserProfile } from '../services/onboardingApi';
+import { LoadingSpinner } from './LoadingSpinner';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -21,8 +21,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       const token = await getToken();
       const profile = await getUserProfile(token);
       setOnboardingCompleted(!!profile?.onboardingCompleted);
-    } catch (error) {
-      console.error('Error checking onboarding status:', error);
+    } catch {
       setOnboardingCompleted(true);
     } finally {
       setOnboardingChecked(true);
@@ -43,13 +42,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }, [isAuthenticated, loading, location.pathname, checkOnboardingStatus]);
 
   if (loading || !onboardingChecked) {
-    return (
-      <Box
-        sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}
-      >
-        <CircularProgress />
-      </Box>
-    );
+    return <LoadingSpinner fullScreen />;
   }
 
   if (!isAuthenticated) {

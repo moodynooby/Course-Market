@@ -1,14 +1,7 @@
 import type { Preferences } from '../types';
-import { ENV } from './devConfig';
+import { STORAGE_KEYS, type StorageKey, storage } from './storage';
 
-// --- STORAGE KEYS ---
-export const STORAGE_KEYS = {
-  COURSES: 'auraishub_courses',
-  SECTIONS: 'auraishub_sections',
-  PREFERENCES: 'auraishub_preferences',
-  COURSE_SELECTIONS: 'auraishub_course_selections',
-  THEME_MODE: 'theme-mode',
-} as const;
+export { STORAGE_KEYS, type StorageKey };
 
 export const DEFAULT_PREFERENCES: Preferences = {
   preferredStartTime: '08:00',
@@ -21,30 +14,17 @@ export const DEFAULT_PREFERENCES: Preferences = {
   minCredits: 12,
   avoidDays: [],
   excludeInstructors: [],
+  theme: 'system',
 };
 
-const PREFERENCES_STORAGE_KEY = STORAGE_KEYS.PREFERENCES;
-
 export function getPreferences(): Preferences {
-  try {
-    const savedPrefs = localStorage.getItem(PREFERENCES_STORAGE_KEY);
-    if (savedPrefs) {
-      return { ...DEFAULT_PREFERENCES, ...JSON.parse(savedPrefs) };
-    }
-  } catch (error) {
-    if (ENV.IS_DEV) console.error('Failed to parse preferences from localStorage:', error);
-  }
-  return DEFAULT_PREFERENCES;
+  return storage.get(STORAGE_KEYS.PREFERENCES, DEFAULT_PREFERENCES);
 }
 
 export function savePreferences(preferences: Preferences): void {
-  try {
-    localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(preferences));
-  } catch (error) {
-    if (ENV.IS_DEV) console.error('Failed to save preferences to localStorage:', error);
-  }
+  storage.set(STORAGE_KEYS.PREFERENCES, preferences);
 }
 
 export function clearPreferences(): void {
-  localStorage.removeItem(PREFERENCES_STORAGE_KEY);
+  storage.remove(STORAGE_KEYS.PREFERENCES);
 }

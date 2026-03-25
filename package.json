@@ -14,7 +14,8 @@
     "db:generate": "netlify dev:exec drizzle-kit generate",
     "db:push": "netlify dev:exec drizzle-kit push",
     "db:check": "netlify dev:exec drizzle-kit check",
-    "db:studio": "netlify dev:exec drizzle-kit studio"
+    "db:studio": "netlify dev:exec drizzle-kit studio",
+    "load-semester": "netlify dev:exec tsx scripts/load-semester.ts"
   },
   "dependencies": {
     "@ai-sdk/groq": "^3.0.31",
@@ -50,6 +51,7 @@
     "drizzle-kit": "^0.31.10",
     "happy-dom": "^20.8.8",
     "lefthook": "^2.1.4",
+    "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "vite": "^8.0.2",
     "vitest": "^4.1.1"

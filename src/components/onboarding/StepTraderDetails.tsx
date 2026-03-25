@@ -1,4 +1,4 @@
-import { Person, Email, Phone } from '@mui/icons-material';
+import { Email, Person, Phone } from '@mui/icons-material';
 import { Box, Button, CircularProgress, Stack, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';

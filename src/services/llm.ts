@@ -1,6 +1,5 @@
 import { webLLM } from '@browser-ai/web-llm';
-import { generateObject, generateText } from 'ai';
-import { z } from 'zod';
+import { generateText } from 'ai';
 import { ENV } from '../config/devConfig';
 import {
   type BYOKConfig,
@@ -8,13 +7,7 @@ import {
   getDefaultModel,
   type LLMTask,
 } from '../config/llmConfig';
-import type { Course, Preferences, Schedule, Section, TradePost } from '../types';
-
-export const CourseSearchSchema = z.object({
-  courseIds: z.array(z.string()).describe('Top 5-10 most relevant course IDs'),
-});
-
-export type CourseSearchResponse = z.infer<typeof CourseSearchSchema>;
+import type { Preferences, Schedule, Section, TradePost } from '../types';
 
 export function buildScheduleAnalysisPrompt(
   schedule: Schedule,
@@ -93,24 +86,6 @@ Provide your analysis using this Markdown structure:
 3. **Improvements**: Bullet points of specific issues or conflicts with preferences.
 4. **Recommendations**: If better alternatives exist, provide a table comparing the current vs suggested section with a brief reason.
 5. **Actionable Tips**: 1-2 specific tips for the user.`;
-}
-
-export function buildSearchCoursesPrompt(query: string, courses: Course[]): string {
-  const coursesCtx = courses
-    .map((c) => {
-      const desc = c.description
-        ? ` (${c.description.slice(0, 150)}${c.description.length > 150 ? '...' : ''})`
-        : '';
-      return `- ${c.id}: ${c.code} - ${c.name}${desc}`;
-    })
-    .join('\n');
-
-  return `You are a course discovery assistant. A user is looking for courses with this query: "${query}"
-
-Here is the list of available courses:
-${coursesCtx}
-
-Identify the top 5-10 most relevant courses that match the user's intent.`;
 }
 
 export function buildTradeMessagePrompt(trade: TradePost): string {
@@ -308,26 +283,6 @@ class UnifiedLLMService {
     );
     this.analysisCache.set(cacheKey, result);
     return result;
-  }
-
-  async searchCourses(query: string, courses: Course[]): Promise<Course[]> {
-    const candidates = courses
-      .filter((c) =>
-        [c.name, c.code, c.description].some((v) => v?.toLowerCase().includes(query.toLowerCase())),
-      )
-      .slice(0, 25);
-
-    try {
-      const { object } = await generateObject({
-        model: await this.getModel('SEARCH'),
-        schema: CourseSearchSchema,
-        prompt: buildSearchCoursesPrompt(query, candidates),
-      });
-      return candidates.filter((c) => object.courseIds.includes(c.id));
-    } catch (e) {
-      if (ENV.IS_DEV) console.error('Search failed:', e);
-      return candidates.slice(0, 5);
-    }
   }
 
   async draftTradeMessage(trade: TradePost): Promise<string> {

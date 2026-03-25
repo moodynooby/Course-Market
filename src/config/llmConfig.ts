@@ -1,5 +1,5 @@
 import type { LLMProvider } from '../types';
-import { ENV } from './devConfig';
+import { STORAGE_KEYS, storage } from './storage';
 
 export type LLMTask = 'SEARCH' | 'OPTIMIZE' | 'DRAFT' | 'DEFAULT';
 
@@ -39,26 +39,12 @@ export const DEFAULT_LLM_CONFIG: BYOKConfig = {
   maxTokens: 1024,
 };
 
-const LLM_CONFIG_STORAGE_KEY = 'llm-byok-config';
-
 export function getLlmConfig(): BYOKConfig {
-  try {
-    const savedLlm = localStorage.getItem(LLM_CONFIG_STORAGE_KEY);
-    if (savedLlm) {
-      return { ...DEFAULT_LLM_CONFIG, ...JSON.parse(savedLlm) };
-    }
-  } catch (error) {
-    if (ENV.IS_DEV) console.error('Failed to parse LLM config from localStorage:', error);
-  }
-  return DEFAULT_LLM_CONFIG;
+  return storage.get(STORAGE_KEYS.LLM_CONFIG, DEFAULT_LLM_CONFIG);
 }
 
 export function saveLlmConfig(config: BYOKConfig): void {
-  try {
-    localStorage.setItem(LLM_CONFIG_STORAGE_KEY, JSON.stringify(config));
-  } catch (error) {
-    if (ENV.IS_DEV) console.error('Failed to save LLM config to localStorage:', error);
-  }
+  storage.set(STORAGE_KEYS.LLM_CONFIG, config);
 }
 
 export function getDefaultModel(provider: LLMProvider, task: LLMTask = 'DEFAULT'): string {

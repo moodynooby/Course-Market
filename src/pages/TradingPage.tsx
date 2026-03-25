@@ -1,11 +1,9 @@
 import {
   ArrowBack,
   ArrowForward,
-  AutoAwesome,
   CheckCircle,
   Close,
   ContactPhone,
-  ContentCopy,
   Description,
   HourglassEmpty,
   School,
@@ -20,7 +18,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -33,10 +30,7 @@ import {
   Typography,
 } from '@mui/material';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import ApiKeyDialog from '../components/ApiKeyDialog';
-import { getLlmConfig, saveLlmConfig } from '../config/llmConfig';
 import { useAuth } from '../hooks/useAuth';
-import { llmService } from '../services/llm';
 import {
   createTrade,
   deleteTrade,
@@ -52,14 +46,12 @@ const TradeCard = memo(function TradeCard({
   onDelete,
   onEdit,
   onContact,
-  onDraftAi,
 }: {
   trade: TradePost;
   onUpdate: (id: string, updates: Partial<TradePost>) => void;
   onDelete: (id: string) => void;
   onEdit: (trade: TradePost) => void;
   onContact: (phone: string) => void;
-  onDraftAi: (trade: TradePost) => void;
 }) {
   const { user } = useAuth();
   const isOwner = user && trade.auth0UserId === user.id;
@@ -160,28 +152,16 @@ const TradeCard = memo(function TradeCard({
         <Stack direction="row" alignItems="center" justifyContent="space-between">
           <Stack direction="row" spacing={1}>
             {!isOwner && (
-              <>
-                <Button
-                  size="small"
-                  variant="contained"
-                  color="accent"
-                  startIcon={<ContactPhone />}
-                  onClick={() => onContact(trade.contactPhone)}
-                  sx={{ borderRadius: 2 }}
-                >
-                  Contact
-                </Button>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="accent"
-                  startIcon={<AutoAwesome />}
-                  onClick={() => onDraftAi(trade)}
-                  sx={{ borderRadius: 2 }}
-                >
-                  Draft Message
-                </Button>
-              </>
+              <Button
+                size="small"
+                variant="contained"
+                color="accent"
+                startIcon={<ContactPhone />}
+                onClick={() => onContact(trade.contactPhone)}
+                sx={{ borderRadius: 2 }}
+              >
+                Contact
+              </Button>
             )}
           </Stack>
           <Typography variant="caption" color="text.secondary">
@@ -259,13 +239,6 @@ export default function TradingPage() {
     open: false,
     message: '',
   });
-
-  // AI states
-  const [aiDraftOpen, setAiDraftOpen] = useState(false);
-  const [aiDrafting, setAiDrafting] = useState(false);
-  const [aiDraftText, setAiDraftText] = useState('');
-  const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false);
-  const [pendingDraftTrade, setPendingDraftTrade] = useState<TradePost | null>(null);
 
   const [tradeForm, setTradeForm] = useState({
     courseCode: '',
@@ -347,47 +320,6 @@ export default function TradingPage() {
       setSnackbar({ open: true, message: `Phone: ${phone}` });
     }
   }, []);
-
-  const handleDraftAi = useCallback(
-    async (trade: TradePost) => {
-      const llmConfig = getLlmConfig();
-      const isCloud = ['openai', 'anthropic', 'groq'].includes(llmConfig.provider);
-
-      if (isCloud && !llmConfig.apiKey) {
-        setPendingDraftTrade(trade);
-        setApiKeyDialogOpen(true);
-        return;
-      }
-
-      setAiDraftOpen(true);
-      setAiDrafting(true);
-      setAiDraftText('');
-
-      try {
-        const token = await getToken();
-        llmService.setToken(token);
-        await llmService.initialize(llmConfig, 'DRAFT');
-        const draft = await llmService.draftTradeMessage(trade);
-        setAiDraftText(draft);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to generate AI draft');
-        setAiDraftOpen(false);
-      } finally {
-        setAiDrafting(false);
-      }
-    },
-    [getToken],
-  );
-
-  const copyDraftToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(aiDraftText);
-      setSnackbar({ open: true, message: 'Draft copied to clipboard!' });
-      setAiDraftOpen(false);
-    } catch {
-      setSnackbar({ open: true, message: 'Failed to copy text' });
-    }
-  };
 
   const handleUpdate = useCallback(
     async (id: string, updates: Partial<TradePost>) => {
@@ -536,7 +468,6 @@ export default function TradingPage() {
               onDelete={handleDelete}
               onEdit={handleEdit}
               onContact={handleContact}
-              onDraftAi={handleDraftAi}
             />
           ))}
         </Stack>
@@ -689,55 +620,9 @@ export default function TradingPage() {
               !tradeForm.sectionWanted ||
               submitting
             }
-            startIcon={submitting ? <CircularProgress size={20} color="inherit" /> : undefined}
+            loading={submitting}
           >
             {editingTrade ? 'Save Changes' : 'Post Trade'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
-        open={aiDraftOpen}
-        onClose={() => !aiDrafting && setAiDraftOpen(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <AutoAwesome color="primary" /> AI Message Draft
-        </DialogTitle>
-        <DialogContent>
-          {aiDrafting ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 3 }}>
-              <CircularProgress size={40} />
-              <Typography sx={{ mt: 2 }}>Generating draft...</Typography>
-            </Box>
-          ) : (
-            <Box
-              sx={{
-                bgcolor: 'action.hover',
-                p: 2,
-                borderRadius: 1,
-                border: '1px dashed',
-                borderColor: 'divider',
-              }}
-            >
-              <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', fontStyle: 'italic' }}>
-                "{aiDraftText}"
-              </Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAiDraftOpen(false)} disabled={aiDrafting}>
-            Cancel
-          </Button>
-          <Button
-            onClick={copyDraftToClipboard}
-            variant="contained"
-            disabled={aiDrafting || !aiDraftText}
-            startIcon={<ContentCopy />}
-          >
-            Copy Draft
           </Button>
         </DialogActions>
       </Dialog>
@@ -748,18 +633,6 @@ export default function TradingPage() {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         message={snackbar.message}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      />
-      <ApiKeyDialog
-        open={apiKeyDialogOpen}
-        onClose={() => setApiKeyDialogOpen(false)}
-        onSave={(key) => {
-          const config = getLlmConfig();
-          saveLlmConfig({ ...config, apiKey: key });
-          if (pendingDraftTrade) {
-            handleDraftAi(pendingDraftTrade);
-            setPendingDraftTrade(null);
-          }
-        }}
       />
     </Box>
   );

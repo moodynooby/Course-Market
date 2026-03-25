@@ -1,6 +1,7 @@
 import { CheckCircle } from '@mui/icons-material';
 import { Alert, Box, Button, CircularProgress, Paper, Typography } from '@mui/material';
 import { useState } from 'react';
+import { DEFAULT_PREFERENCES } from '../../config/userConfig';
 import type { Preferences } from '../../types';
 import { PreferencesForm } from '../PreferencesForm';
 
@@ -8,20 +9,6 @@ interface StepPreferencesProps {
   onComplete: (preferences: Preferences) => void;
   initialPreferences?: Preferences;
 }
-
-const DEFAULT_PREFERENCES: Preferences = {
-  preferredStartTime: '08:00',
-  preferredEndTime: '18:00',
-  maxGapMinutes: 60,
-  preferConsecutiveDays: true,
-  preferMorning: false,
-  preferAfternoon: false,
-  maxCredits: 18,
-  minCredits: 12,
-  avoidDays: [],
-  excludeInstructors: [],
-  theme: 'system',
-};
 
 export function StepPreferences({ onComplete, initialPreferences }: StepPreferencesProps) {
   const [preferences, setPreferences] = useState<Preferences>(

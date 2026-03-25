@@ -1,12 +1,4 @@
-import {
-  AutoAwesome,
-  Clear,
-  ExpandLess,
-  ExpandMore,
-  Person,
-  Schedule,
-  Warning,
-} from '@mui/icons-material';
+import { Clear, ExpandLess, ExpandMore, Person, Schedule, Warning } from '@mui/icons-material';
 import {
   Alert,
   alpha,
@@ -16,7 +8,6 @@ import {
   CardActions,
   CardContent,
   Chip,
-  CircularProgress,
   Collapse,
   FormControl,
   IconButton,
@@ -31,12 +22,9 @@ import {
   useTheme,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import ApiKeyDialog from '../components/ApiKeyDialog';
-import { getLlmConfig, saveLlmConfig } from '../config/llmConfig';
+import { storage } from '../config/storage';
 import { getCourses } from '../config/storageConfig';
 import { STORAGE_KEYS } from '../config/userConfig';
-import { useAuth } from '../hooks/useAuth';
-import { llmService } from '../services/llm';
 import type { Course, Section } from '../types';
 import { formatTimeSlots, hasSectionConflict } from '../utils/schedule';
 
@@ -44,7 +32,6 @@ const INITIAL_VISIBLE_COURSES = 25;
 const VISIBLE_COURSE_STEP = 25;
 
 export default function CoursesPage() {
-  const { getToken } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedSections, setSelectedSections] = useState<Map<string, string>>(new Map());
@@ -55,28 +42,18 @@ export default function CoursesPage() {
   const [loading, setLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COURSES);
 
-  // AI Search states
-  const [aiSearching, setAiSearching] = useState(false);
-  const [aiResults, setAiResults] = useState<Course[] | null>(null);
-  const [aiError, setAiError] = useState<string | null>(null);
-  const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false);
-
   useEffect(() => {
     const data = getCourses();
     setCourses(data.courses);
     setSections(data.sections);
     setLoading(false);
 
-    const saved = localStorage.getItem(STORAGE_KEYS.COURSE_SELECTIONS);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setSelectedSections(new Map(Object.entries(parsed)));
-      } catch {}
+    const saved = storage.get<Record<string, string>>(STORAGE_KEYS.COURSE_SELECTIONS, {});
+    if (Object.keys(saved).length > 0) {
+      setSelectedSections(new Map(Object.entries(saved)));
     }
   }, []);
 
-  // Debounce search to prevent UI lag
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
@@ -85,10 +62,7 @@ export default function CoursesPage() {
   }, [search]);
 
   useEffect(() => {
-    localStorage.setItem(
-      STORAGE_KEYS.COURSE_SELECTIONS,
-      JSON.stringify(Object.fromEntries(selectedSections)),
-    );
+    storage.set(STORAGE_KEYS.COURSE_SELECTIONS, Object.fromEntries(selectedSections));
   }, [selectedSections]);
 
   const subjects = useMemo(() => {
@@ -96,43 +70,7 @@ export default function CoursesPage() {
     return Array.from(subs).sort();
   }, [courses]);
 
-  const handleAiSearch = useCallback(async () => {
-    if (!search.trim()) return;
-
-    const llmConfig = getLlmConfig();
-    const isCloud = ['openai', 'anthropic', 'groq'].includes(llmConfig.provider);
-
-    if (isCloud && !llmConfig.apiKey) {
-      setApiKeyDialogOpen(true);
-      return;
-    }
-
-    setAiSearching(true);
-    setAiError(null);
-
-    try {
-      const token = await getToken();
-      llmService.setToken(token);
-      await llmService.initialize(llmConfig, 'SEARCH');
-      const results = await llmService.searchCourses(search, courses);
-      setAiResults(results);
-    } catch (err) {
-      setAiError(err instanceof Error ? err.message : 'AI search failed');
-    } finally {
-      setAiSearching(false);
-    }
-  }, [search, courses, getToken]);
-
-  const handleClearAiSearch = useCallback(() => {
-    setAiResults(null);
-    setAiError(null);
-    setSearch('');
-    setDebouncedSearch('');
-  }, []);
-
   const filteredCourses = useMemo(() => {
-    if (aiResults) return aiResults;
-
     const loweredSearch = debouncedSearch.toLowerCase();
 
     return courses.filter((course) => {
@@ -142,7 +80,7 @@ export default function CoursesPage() {
       const matchesSubject = subject === 'all' || course.subject === subject;
       return matchesSearch && matchesSubject;
     });
-  }, [courses, debouncedSearch, subject, aiResults]);
+  }, [courses, debouncedSearch, subject]);
 
   useEffect(() => {
     setVisibleCount(INITIAL_VISIBLE_COURSES);
@@ -266,28 +204,19 @@ export default function CoursesPage() {
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
         <TextField
-          placeholder="Search courses or describe what you're looking for..."
+          placeholder="Search courses..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           sx={{ flex: 1 }}
           size="small"
-          onKeyPress={(e) => e.key === 'Enter' && handleAiSearch()}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
                 {search && (
-                  <IconButton size="small" onClick={handleClearAiSearch} sx={{ mr: 0.5 }}>
+                  <IconButton size="small" onClick={() => setSearch('')} sx={{ mr: 0.5 }}>
                     <Clear fontSize="small" />
                   </IconButton>
                 )}
-                <IconButton
-                  size="small"
-                  color="primary"
-                  onClick={handleAiSearch}
-                  disabled={aiSearching || !search.trim()}
-                >
-                  {aiSearching ? <CircularProgress size={20} /> : <AutoAwesome />}
-                </IconButton>
               </InputAdornment>
             ),
           }}
@@ -310,25 +239,8 @@ export default function CoursesPage() {
         )}
       </Stack>
 
-      {aiError && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setAiError(null)}>
-          {aiError}
-        </Alert>
-      )}
-
-      {aiResults && (
-        <Alert
-          severity="success"
-          icon={<AutoAwesome />}
-          sx={{ mb: 2 }}
-          action={
-            <Button color="inherit" size="small" onClick={handleClearAiSearch}>
-              Clear Results
-            </Button>
-          }
-        >
-          AI found {aiResults.length} relevant courses for your query.
-        </Alert>
+      {filteredCourses.length === 0 && (
+        <Alert severity="info">No courses found matching your criteria.</Alert>
       )}
 
       {visibleCourses.map((course) => {
@@ -438,10 +350,6 @@ export default function CoursesPage() {
         );
       })}
 
-      {filteredCourses.length === 0 && (
-        <Alert severity="info">No courses found matching your criteria.</Alert>
-      )}
-
       {hasMoreCourses && (
         <Box display="flex" justifyContent="center" mt={2}>
           <Button
@@ -452,15 +360,6 @@ export default function CoursesPage() {
           </Button>
         </Box>
       )}
-      <ApiKeyDialog
-        open={apiKeyDialogOpen}
-        onClose={() => setApiKeyDialogOpen(false)}
-        onSave={(key) => {
-          const config = getLlmConfig();
-          saveLlmConfig({ ...config, apiKey: key });
-          handleAiSearch();
-        }}
-      />
     </Box>
   );
 }

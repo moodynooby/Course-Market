@@ -15,6 +15,8 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { savePreferences } from '../../config/userConfig';
+import { useThemeMode } from '../../context/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
 import { completeOnboarding, saveUserProfile } from '../../services/onboardingApi';
 import type { Preferences } from '../../types';
@@ -44,6 +46,7 @@ export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
   const theme = useTheme();
   const navigate = useNavigate();
   const { getToken } = useAuth();
+  const { setMode } = useThemeMode();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [activeStep, setActiveStep] = useState<OnboardingStep>(
@@ -123,6 +126,14 @@ export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
         ...prev,
         preferences,
       }));
+
+      // Save preferences to localStorage for immediate use
+      savePreferences(preferences);
+
+      // Apply theme preference after onboarding completes
+      if (preferences.theme) {
+        setMode(preferences.theme);
+      }
 
       // Onboarding complete - redirect to dashboard
       navigate('/');

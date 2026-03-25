@@ -8,6 +8,7 @@
 - **Goal**: Course marketplace for trading sections based on Auth0 identity
 
 ## Commands
+
 ```bash
 pnpm run dev  # Vite + Netlify Backend
 pnpm run build # Build + SPA _redirects generation
@@ -34,11 +35,13 @@ pnpm run build # Build + SPA _redirects generation
 ### Environment Variables
 
 **Frontend** (browser access requires VITE_ prefix):
+
 - `VITE_AUTH0_DOMAIN`
 - `VITE_AUTH0_CLIENT_ID`
 - `VITE_AUTH0_AUDIENCE`
 
 **Backend** (Netlify Functions, reads from .env file):
+
 - `AUTH0_DOMAIN`
 - `AUTH0_AUDIENCE`
 - `DATABASE_URL` (auto-injected by Neon addon)
@@ -58,13 +61,6 @@ pnpm run build # Build + SPA _redirects generation
 - **SPA Routing**: `_redirects` file generated in `dist/` at build time
 - **Protected routes**: Use `<ProtectedRoute>` component for auth-required pages
 
-## Testing
-
-- **Framework**: Vitest + Testing Library
-- **Strategy**: Test core logic (csv, schedule utils), async states, error boundaries
-- **Run**: `pnpm run test` (watch)
-- **Coverage**: Focus on business logic, not UI snapshots
-
 ## Critical Rules for Agents
 
 1. **Always use `pnpm run dev`** for full stack development (not `dev:vite`)
@@ -79,20 +75,19 @@ pnpm run build # Build + SPA _redirects generation
    - No local users table
    - All API calls require Bearer token in Authorization header
 
-5. **Environment variables are in .env only**
+4. **Environment variables are in .env only**
    - Frontend: VITE_ prefix
    - Backend: No prefix
    - Vite plugin loads both from .env file
    - No need for Netlify env vars with Vite plugin
 
-6. **Database connection is automatic**
+5. **Database connection is automatic**
    - `neon()` with no args reads DATABASE_URL from environment
    - Netlify addon injects this automatically
    - Must run `netlify link` first for local dev
 
-7. **Update this file after architectural changes**
+6. **Update this file after architectural changes**
    - Keep it current for future agents and developers
-
 
 ## File Structure
 
@@ -102,7 +97,7 @@ src/
 ├── hooks/           # Custom hooks (useAuth, etc.)
 ├── pages/           # Route pages
 ├── services/        # API clients (tradesApi, llm)
-├── utils/           # Pure functions (csv, schedule)
+├── utils/           # Pure functions 
 ├── types/           # TypeScript definitions
 └── config/          # App configuration
 

@@ -122,13 +122,10 @@ export default function SettingsPage() {
 
   const handleClearData = () => {
     const APP_KEY_PREFIX = 'auraishub_';
-    const APP_SPECIFIC_KEYS = new Set<string>([
-      STORAGE_KEYS.COURSE_SELECTIONS,
-      STORAGE_KEYS.THEME_MODE,
-    ]);
+    const APP_SPECIFIC_KEYS = [STORAGE_KEYS.COURSE_SELECTIONS, STORAGE_KEYS.THEME_MODE];
 
     Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith(APP_KEY_PREFIX) || APP_SPECIFIC_KEYS.has(key)) {
+      if (key.startsWith(APP_KEY_PREFIX) || APP_SPECIFIC_KEYS.includes(key as any)) {
         localStorage.removeItem(key);
       }
     });

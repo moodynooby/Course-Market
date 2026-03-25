@@ -1,6 +1,35 @@
-import type { Components, Theme } from '@mui/material/styles';
+import { createTheme, type ThemeOptions } from '@mui/material/styles';
 
-export const getComponents = (isDark: boolean): Components<Omit<Theme, 'components'>> => ({
+const getPalette = (isDark: boolean): ThemeOptions['palette'] => ({
+  mode: isDark ? 'dark' : 'light',
+  primary: {
+    main: isDark ? '#c6c6c6' : '#3f4041',
+    contrastText: isDark ? '#3f4041' : '#fcf9f8',
+  },
+  secondary: {
+    main: isDark ? '#2c2c2c' : '#dcdbd9',
+    contrastText: isDark ? '#e7e5e4' : '#191a1a',
+  },
+  accent: {
+    main: '#ffb148',
+    contrastText: '#573500',
+  },
+  background: {
+    default: isDark ? '#0e0e0e' : '#fcf9f8',
+    paper: isDark ? '#131313' : '#f4f3f2',
+  },
+  text: {
+    primary: isDark ? '#e7e5e4' : '#191a1a',
+    secondary: isDark ? '#acabaa' : '#565555',
+  },
+  action: {
+    hover: isDark ? '#1f2020' : '#e8e7e6',
+    selected: isDark ? '#2c2c2c' : '#dcdbd9',
+  },
+  divider: isDark ? 'rgba(72, 72, 72, 0.15)' : 'rgba(0, 0, 0, 0.08)',
+});
+
+const getComponents = (isDark: boolean): ThemeOptions['components'] => ({
   MuiCssBaseline: {
     styleOverrides: {
       body: {
@@ -97,3 +126,26 @@ export const getComponents = (isDark: boolean): Components<Omit<Theme, 'componen
     },
   },
 });
+
+export const createAppTheme = (isDark: boolean) => {
+  return createTheme({
+    palette: getPalette(isDark),
+    typography: {
+      fontFamily: '"Plus Jakarta Sans", "Inter", sans-serif',
+      h1: { fontWeight: 700, letterSpacing: '-0.02em' },
+      h2: { fontWeight: 600, letterSpacing: '-0.01em' },
+      h3: { fontWeight: 600 },
+      h4: { fontWeight: 700 },
+      h5: { fontWeight: 600 },
+      h6: { fontWeight: 600 },
+      button: {
+        textTransform: 'none',
+        fontWeight: 600,
+      },
+    },
+    shape: {
+      borderRadius: 16,
+    },
+    components: getComponents(isDark),
+  });
+};

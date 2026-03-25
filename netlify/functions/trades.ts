@@ -45,17 +45,10 @@ export const handler = async (event: any) => {
     }
 
     if (httpMethod === 'POST' && path.endsWith('/trades')) {
-      const {
-        courseCode,
-        courseName,
-        sectionOffered,
-        sectionWanted,
-        action,
-        description,
-        contactPhone,
-      } = requestBody;
+      const { courseCode, courseName, sectionOffered, sectionWanted, description, contactPhone } =
+        requestBody;
 
-      if (!courseCode || !sectionOffered || !sectionWanted || !action || !contactPhone) {
+      if (!courseCode || !sectionOffered || !sectionWanted || !contactPhone) {
         return jsonResponse(400, { error: 'Missing required fields' });
       }
 
@@ -70,7 +63,6 @@ export const handler = async (event: any) => {
           courseName: courseName || null,
           sectionOffered,
           sectionWanted,
-          action,
           status: 'open',
           description: description || null,
           contactPhone,

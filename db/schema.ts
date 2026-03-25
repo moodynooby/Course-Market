@@ -21,7 +21,6 @@ export const trades = pgTable('trades', {
   courseName: varchar('course_name', { length: 255 }),
   sectionOffered: varchar('section_offered', { length: 20 }).notNull(),
   sectionWanted: varchar('section_wanted', { length: 20 }).notNull(),
-  action: varchar('action', { length: 20 }).notNull(),
   status: varchar('status', { length: 20 }).default('open').notNull(),
   description: text('description'),
   contactPhone: varchar('contact_phone', { length: 20 }).notNull(),

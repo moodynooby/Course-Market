@@ -52,21 +52,21 @@ export const handler = async (event: any) => {
       const { displayName, email, phone, semesterId, preferences, onboardingCompleted } =
         requestBody;
 
-      // Validate required fields
-      if (!displayName || !email || !phone) {
-        return jsonResponse(400, { error: 'Missing required fields: displayName, email, phone' });
-      }
-
       // Check if profile exists
       const [existingProfile] = await db
         .select()
         .from(schema.userProfiles)
         .where(eq(schema.userProfiles.auth0UserId, user.sub));
 
+      // Validate required fields only for new profiles
+      if (!existingProfile && (!displayName || !email || !phone)) {
+        return jsonResponse(400, { error: 'Missing required fields: displayName, email, phone' });
+      }
+
       let profile;
 
       if (existingProfile) {
-        // Update existing profile
+        // Update existing profile - only update provided fields
         [profile] = await db
           .update(schema.userProfiles)
           .set({
@@ -81,14 +81,14 @@ export const handler = async (event: any) => {
           .where(eq(schema.userProfiles.auth0UserId, user.sub))
           .returning();
       } else {
-        // Create new profile
+        // Create new profile - all required fields must be present
         [profile] = await db
           .insert(schema.userProfiles)
           .values({
             auth0UserId: user.sub,
-            displayName,
-            email,
-            phone,
+            displayName: displayName!,
+            email: email!,
+            phone: phone!,
             semesterId: semesterId || null,
             preferences: preferences || null,
             onboardingCompleted: onboardingCompleted ?? false,
