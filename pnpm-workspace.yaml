@@ -1,6 +1,0 @@
-allowBuilds:
-  '@parcel/watcher': true
-  browser-tabs-lock: true
-  esbuild: true
-  lefthook: true
-  sharp: true
