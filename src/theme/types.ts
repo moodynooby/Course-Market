@@ -6,6 +6,14 @@ declare module '@mui/material/styles' {
       dark: string;
       contrastText: string;
     };
+    surface: {
+      default: string;
+      containerLow: string;
+      containerLowest: string;
+      containerHigh: string;
+      containerHighest: string;
+      bright: string;
+    };
   }
   interface PaletteOptions {
     accent?: {
@@ -13,6 +21,14 @@ declare module '@mui/material/styles' {
       light?: string;
       dark?: string;
       contrastText?: string;
+    };
+    surface?: {
+      default?: string;
+      containerLow?: string;
+      containerLowest?: string;
+      containerHigh?: string;
+      containerHighest?: string;
+      bright?: string;
     };
   }
 }

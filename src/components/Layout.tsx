@@ -11,6 +11,7 @@ import {
   MenuItem,
   Typography,
   useTheme,
+  alpha,
 } from '@mui/material';
 import { useCallback, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -121,16 +122,17 @@ export default function Layout() {
         bgcolor: 'background.default',
       }}
     >
+      {/* Glassmorphic Navigation Bar - Per DESIGN.md */}
       <Box
         component="nav"
         sx={{
           position: 'sticky',
           top: 0,
           zIndex: 50,
-          bgcolor: 'background.paper',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+          bgcolor: alpha(theme.palette.surface?.containerHigh || '#1f2020', 0.7),
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: 'none',
         }}
       >
         <Box
@@ -152,8 +154,7 @@ export default function Layout() {
                 gap: { xs: 0, sm: 1 },
                 pl: 1,
                 marginRight: 1,
-                borderLeft: '1px solid',
-                borderColor: 'divider',
+                borderLeft: 'none',
               }}
             >
               <img src={logoIcon} alt="Logo" width={32} height={32} />{' '}
@@ -207,8 +208,7 @@ export default function Layout() {
                   gap: 3,
                   ml: 2,
                   pl: 4,
-                  borderLeft: '1px solid',
-                  borderColor: 'divider',
+                  borderLeft: 'none',
                 }}
               >
                 <NavLink to="/courses" label="Courses" currentPath={location.pathname} />
@@ -241,12 +241,11 @@ export default function Layout() {
                     pr: 0.5,
                     py: 0.5,
                     borderRadius: 9999,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    bgcolor: 'action.hover',
+                    border: 'none',
+                    bgcolor: alpha(theme.palette.action.hover, 0.5),
                     textTransform: 'none',
                     color: 'text.primary',
-                    '&:hover': { bgcolor: 'action.selected' },
+                    '&:hover': { bgcolor: alpha(theme.palette.action.selected, 0.5) },
                   }}
                 >
                   <Typography
@@ -260,7 +259,7 @@ export default function Layout() {
                     sx={{
                       width: 32,
                       height: 32,
-                      border: '2px solid',
+                      border: `2px solid`,
                       borderColor: 'accent.main',
                       bgcolor: 'primary.main',
                       color: 'primary.contrastText',
@@ -277,11 +276,11 @@ export default function Layout() {
                     sx: {
                       mt: 1.5,
                       minWidth: 200,
-                      borderRadius: '16px',
-                      border: '1px solid',
-                      borderColor: 'divider',
+                      borderRadius: '24px',
+                      border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
                       boxShadow: theme.shadows[4],
                       backgroundImage: 'none',
+                      bgcolor: theme.palette.surface?.containerHigh || '#1f2020',
                     },
                   }}
                   transformOrigin={{ horizontal: 'right', vertical: 'top' }}
@@ -298,7 +297,7 @@ export default function Layout() {
                     </ListItemIcon>
                     <ListItemText>Settings</ListItemText>
                   </MenuItem>
-                  <Divider sx={{ my: 0.5 }} />
+                  <Divider sx={{ my: 0.5, borderColor: alpha(theme.palette.divider, 0.5) }} />
                   <MenuItem
                     onClick={() => {
                       handleClose();

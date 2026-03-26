@@ -75,12 +75,13 @@ const TradeCard = memo(function TradeCard({
       sx={{
         transition: 'transform 0.2s ease, box-shadow 0.2s ease',
         transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
-        boxShadow: isHovered ? 4 : 1,
+        boxShadow: isHovered ? 4 : 'none',
         opacity: trade.status === 'cancelled' ? 0.75 : 1,
         '&:hover .owner-actions': {
           opacity: 1,
           visibility: 'visible',
         },
+        bgcolor: 'surface.containerHighest',
       }}
     >
       <CardContent>
@@ -186,7 +187,7 @@ const TradeCard = memo(function TradeCard({
             px: 2,
             display: 'flex',
             gap: 1,
-            borderTop: `1px solid ${theme.palette.divider}`,
+            borderTop: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
           }}
         >
           <Button size="small" onClick={() => onEdit(trade)}>

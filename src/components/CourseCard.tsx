@@ -74,7 +74,7 @@ export const CourseCard = memo(
 
         <Collapse in={isExpanded} timeout="auto" unmountOnExit>
           <CardContent sx={{ pt: 0, px: 2, pb: 2 }}>
-            <Stack spacing={1.5} sx={{ width: '100%' }}>
+            <Stack spacing={2} sx={{ width: '100%' }}>
               {sections.map((section) => {
                 const isSelected = selectedSectionId === section.id;
                 const conflict = hasConflict(section);
@@ -87,22 +87,17 @@ export const CourseCard = memo(
                     sx={{
                       cursor: 'pointer',
                       transition:
-                        'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
-                      borderColor: isSelected
-                        ? 'success.main'
-                        : conflict
-                          ? 'error.main'
-                          : 'divider',
+                        'transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease',
+                      borderRadius: 3,
+                      border: 'none',
                       bgcolor: isSelected
                         ? alpha(theme.palette.success.main, 0.08)
                         : conflict
                           ? alpha(theme.palette.error.main, 0.08)
-                          : 'background.paper',
+                          : 'surface.containerHighest',
                       color: isSelected ? 'success.main' : conflict ? 'error.main' : 'inherit',
                       '&:hover': {
                         transform: 'translateY(-2px)',
-                        boxShadow: theme.shadows[2],
-                        borderColor: isSelected ? 'success.main' : 'secondary.main',
                         bgcolor: isSelected
                           ? alpha(theme.palette.success.main, 0.12)
                           : alpha(theme.palette.action.hover, 0.5),

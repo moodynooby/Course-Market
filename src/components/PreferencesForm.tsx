@@ -59,9 +59,6 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
     <Box>
       <Stack direction="row" alignItems="center" spacing={1} mb={2}>
         <AccessTime sx={{ color: 'accent.main', fontSize: 20 }} />
-        <Typography variant="h6" fontWeight={700}>
-          Schedule Preferences
-        </Typography>
       </Stack>
 
       <Stack spacing={3}>

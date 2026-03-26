@@ -7,10 +7,7 @@ export async function getTrades(token: string): Promise<TradePost[]> {
   return result.trades || [];
 }
 
-export async function createTrade(
-  token: string,
-  tradeData: TradeInput,
-): Promise<TradePost> {
+export async function createTrade(token: string, tradeData: TradeInput): Promise<TradePost> {
   const result = await api.post<{ trade: TradePost }>('/trades', tradeData, token);
   return result.trade;
 }

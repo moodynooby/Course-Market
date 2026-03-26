@@ -16,7 +16,11 @@ export class ApiError extends Error {
   }
 
   static fromResponse(status: number, body: unknown): ApiError {
-    const data = body as { error?: string; message?: string; details?: { field: string; message: string }[] };
+    const data = body as {
+      error?: string;
+      message?: string;
+      details?: { field: string; message: string }[];
+    };
     const message = data.error || data.message || `API error ${status}`;
     return new ApiError(status, message, data.details);
   }
