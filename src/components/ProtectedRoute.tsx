@@ -21,8 +21,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       const token = await getToken();
       const profile = await getUserProfile(token);
       setOnboardingCompleted(!!profile?.onboardingCompleted);
-    } catch {
-      setOnboardingCompleted(true);
+    } catch (error) {
+      console.error('[ProtectedRoute] Failed to check onboarding status:', error);
+      setOnboardingCompleted(false);
     } finally {
       setOnboardingChecked(true);
     }

@@ -97,6 +97,10 @@ export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
       setSaving(true);
       setError(null);
 
+      if (!semesterId || typeof semesterId !== 'string') {
+        throw new Error('Invalid semester ID');
+      }
+
       const token = await getToken();
       await saveUserProfile(token, { semesterId });
 
@@ -105,11 +109,10 @@ export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
         semesterId,
       }));
 
-      // Move to next step
       setActiveStep('preferences');
     } catch (err) {
       setError('Failed to save semester selection. Please try again.');
-      console.error('Error saving semester:', err);
+      console.error('[OnboardingWizard] Error saving semester:', err);
     } finally {
       setSaving(false);
     }

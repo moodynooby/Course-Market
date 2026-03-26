@@ -16,13 +16,13 @@ export default function CallbackPage() {
       const profile = await getUserProfile(token);
 
       if (profile?.onboardingCompleted) {
-        navigate('/');
+        navigate('/', { replace: true });
       } else {
-        navigate('/onboarding');
+        navigate('/onboarding', { replace: true });
       }
     } catch (err) {
-      console.error('Error checking profile:', err);
-      navigate('/onboarding');
+      console.error('[CallbackPage] Error checking profile:', err);
+      navigate('/onboarding', { replace: true });
     }
   }, [getToken, navigate]);
 

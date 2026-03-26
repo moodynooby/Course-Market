@@ -1,4 +1,4 @@
-import { CalendarToday, Clear } from '@mui/icons-material';
+import { CalendarToday, Clear, KeyboardArrowDown } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -9,6 +9,7 @@ import {
   IconButton,
   InputAdornment,
   InputLabel,
+  Menu,
   MenuItem,
   Select,
   Skeleton,
@@ -46,6 +47,13 @@ export default function CoursesPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState('Loading courses...');
   const [error, setError] = useState<string | null>(null);
+  const [currentSemesterId, setCurrentSemesterId] = useState<string>('');
+  const [currentSemesterName, setCurrentSemesterName] = useState<string>('');
+  const [semesterMenuAnchor, setSemesterMenuAnchor] = useState<null | HTMLElement>(null);
+  const [availableSemesters, setAvailableSemesters] = useState<
+    Array<{ id: string; name: string; jsonUrl: string; isActive: boolean }>
+  >([]);
+  const [loadingSemesters, setLoadingSemesters] = useState(false);
 
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -186,17 +194,6 @@ export default function CoursesPage() {
       return;
     }
 
-    const cachedData = await getCachedSemesterData('current');
-
-    if (cachedData && cachedData.courses.length > 0) {
-      setCourses(cachedData.courses);
-      setSections(cachedData.sections);
-      searchIndex.buildIndex(cachedData.courses, cachedData.sections);
-      setLoading(false);
-      console.log('[CoursesPage] Loaded from IndexedDB cache');
-      return;
-    }
-
     try {
       setLoadingMessage('Checking your profile...');
       const token = await getToken();
@@ -217,6 +214,22 @@ export default function CoursesPage() {
         }
       }
 
+      // Try cache first before fetching
+      if (selectedSemester?.id) {
+        setCurrentSemesterId(selectedSemester.id);
+        setCurrentSemesterName(selectedSemester.name);
+
+        const cachedData = await getCachedSemesterData(selectedSemester.id);
+        if (cachedData && cachedData.courses.length > 0) {
+          setCourses(cachedData.courses);
+          setSections(cachedData.sections);
+          searchIndex.buildIndex(cachedData.courses, cachedData.sections);
+          setLoading(false);
+          console.log('[CoursesPage] Loaded from IndexedDB cache for', selectedSemester.id);
+          return;
+        }
+      }
+
       if (selectedSemester?.jsonUrl) {
         await loadCoursesFromSemester(selectedSemester.jsonUrl, selectedSemester.name);
       } else {
@@ -224,7 +237,7 @@ export default function CoursesPage() {
         setLoading(false);
       }
     } catch (err) {
-      console.error('Error auto-loading courses:', err);
+      console.error('[CoursesPage] Error auto-loading courses:', err);
       setError('Failed to load courses. Please try again later.');
       setLoading(false);
     }
@@ -323,6 +336,59 @@ export default function CoursesPage() {
     setExpanded((prev) => (prev === courseId ? null : courseId));
   }, []);
 
+  const handleSemesterMenuOpen = useCallback(
+    async (event: React.MouseEvent<HTMLElement>) => {
+      setSemesterMenuAnchor(event.currentTarget);
+      if (availableSemesters.length === 0 && !loadingSemesters) {
+        setLoadingSemesters(true);
+        try {
+          const { semesters } = await getSemesters();
+          setAvailableSemesters(semesters);
+        } catch (err) {
+          console.error('Failed to load semesters:', err);
+        } finally {
+          setLoadingSemesters(false);
+        }
+      }
+    },
+    [availableSemesters, loadingSemesters],
+  );
+
+  const handleSemesterMenuClose = useCallback(() => {
+    setSemesterMenuAnchor(null);
+  }, []);
+
+  const handleSemesterChange = useCallback(
+    async (semesterId: string, jsonUrl: string, semesterName: string) => {
+      setSemesterMenuAnchor(null);
+      if (semesterId === currentSemesterId) return;
+
+      setLoading(true);
+      setLoadingMessage(`Loading ${semesterName} courses...`);
+      setCurrentSemesterId(semesterId);
+      setCurrentSemesterName(semesterName);
+
+      try {
+        const cachedData = await getCachedSemesterData(semesterId);
+        if (cachedData && cachedData.courses.length > 0) {
+          setCourses(cachedData.courses);
+          setSections(cachedData.sections);
+          searchIndex.buildIndex(cachedData.courses, cachedData.sections);
+          setLoading(false);
+          console.log('[CoursesPage] Switched to semester from IndexedDB cache:', semesterId);
+          return;
+        }
+
+        fetchAndParse(jsonUrl, semesterName, semesterName);
+      } catch (err) {
+        console.error('Error switching semester:', err);
+        setError('Failed to load semester courses. Please try again.');
+        setLoading(false);
+      }
+    },
+    [currentSemesterId, fetchAndParse],
+  );
+
   // Virtualizer with dynamic measurement
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -413,13 +479,77 @@ export default function CoursesPage() {
   return (
     <Box>
       <Box component="header" sx={{ mb: 3 }}>
-        <Typography variant="h4" fontWeight={800} gutterBottom sx={{ letterSpacing: '-0.02em' }}>
-          Course Browser
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
-          Search courses, view sections, and select your preferred classes.
-        </Typography>
+        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+          <Box>
+            <Typography
+              variant="h4"
+              fontWeight={800}
+              gutterBottom
+              sx={{ letterSpacing: '-0.02em' }}
+            >
+              Course Browser
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Search courses, view sections, and select your preferred classes.
+            </Typography>
+          </Box>
+          <Button
+            variant="outlined"
+            onClick={handleSemesterMenuOpen}
+            disabled={loadingSemesters}
+            startIcon={<CalendarToday />}
+            endIcon={<KeyboardArrowDown />}
+            sx={{ minWidth: 200 }}
+          >
+            {loadingSemesters ? 'Loading...' : currentSemesterName || 'Select Semester'}
+          </Button>
+        </Stack>
       </Box>
+
+      <Menu
+        anchorEl={semesterMenuAnchor}
+        open={Boolean(semesterMenuAnchor)}
+        onClose={handleSemesterMenuClose}
+      >
+        {loadingSemesters ? (
+          <MenuItem disabled>
+            <Typography variant="body2" color="text.secondary">
+              Loading semesters...
+            </Typography>
+          </MenuItem>
+        ) : availableSemesters.length === 0 ? (
+          <MenuItem disabled>
+            <Typography variant="body2" color="text.secondary">
+              No semesters available
+            </Typography>
+          </MenuItem>
+        ) : (
+          availableSemesters.map((semester) => (
+            <MenuItem
+              key={semester.id}
+              onClick={() => handleSemesterChange(semester.id, semester.jsonUrl, semester.name)}
+              selected={currentSemesterId === semester.id}
+            >
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <CalendarToday
+                  fontSize="small"
+                  color={currentSemesterId === semester.id ? 'action' : 'disabled'}
+                />
+                <Box>
+                  <Typography variant="body2" fontWeight={600}>
+                    {semester.name}
+                  </Typography>
+                  {currentSemesterId === semester.id && (
+                    <Typography variant="caption" color="text.secondary">
+                      Current
+                    </Typography>
+                  )}
+                </Box>
+              </Stack>
+            </MenuItem>
+          ))
+        )}
+      </Menu>
 
       {error && (
         <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setError(null)}>

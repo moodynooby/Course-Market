@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { getCoursesBySubject, getSemesterData, getSemesters } from '../../services/coursesApi';
-import { cacheSemesterData } from '../../services/dbCache';
+import { getCachedSemesterData } from '../../services/dbCache';
 import type { Course, Section, Semester } from '../../types';
 
 interface StepSemesterSelectionProps {
@@ -35,7 +35,7 @@ export function StepSemesterSelection({
       setSemesters(response.semesters);
     } catch (err) {
       setError('Failed to load semesters. Please try again.');
-      console.error('Error loading semesters:', err);
+      console.error('[StepSemesterSelection] Error loading semesters:', err);
     } finally {
       setLoading(false);
     }
@@ -50,6 +50,15 @@ export function StepSemesterSelection({
       setSelecting(semesterId);
       setError(null);
 
+      // Check cache first to avoid redundant fetch
+      const cachedData = await getCachedSemesterData(semesterId);
+      if (cachedData) {
+        console.log('[StepSemesterSelection] Using cached semester data');
+        onComplete(semesterId);
+        return;
+      }
+
+      // Fetch fresh data if not cached
       const semesterData = await getSemesterData(semesterId);
 
       const coursesBySubject = getCoursesBySubject(semesterData);
@@ -65,12 +74,14 @@ export function StepSemesterSelection({
         enrolled: s.enrolled,
       }));
 
+      // Cache the data for CoursesPage to use
+      const { cacheSemesterData } = await import('../../services/dbCache');
       await cacheSemesterData(semesterId, allCourses, allSections, semesterData.version);
 
       onComplete(semesterId);
     } catch (err) {
       setError(`Failed to load semester data. Please try again or contact support.`);
-      console.error('Error loading semester data:', err);
+      console.error('[StepSemesterSelection] Error loading semester data:', err);
     } finally {
       setSelecting(null);
     }
