@@ -1,14 +1,10 @@
-import { Clear, ExpandLess, ExpandMore, Person, Schedule, Warning } from '@mui/icons-material';
+import { CalendarToday, Clear } from '@mui/icons-material';
 import {
   Alert,
-  alpha,
   Box,
   Button,
   Card,
-  CardActions,
   CardContent,
-  Chip,
-  Collapse,
   FormControl,
   IconButton,
   InputAdornment,
@@ -16,54 +12,234 @@ import {
   MenuItem,
   Select,
   Skeleton,
+  Snackbar,
   Stack,
   TextField,
   Typography,
-  useTheme,
 } from '@mui/material';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { CourseCard } from '../components/CourseCard';
 import { storage } from '../config/storage';
-import { getCourses } from '../config/storageConfig';
 import { STORAGE_KEYS } from '../config/userConfig';
+import { useAuth } from '../hooks/useAuth';
+import { useSemesterParser } from '../hooks/useSemesterParser';
+import { getSemesters } from '../services/coursesApi';
+import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
+import { getUserProfile } from '../services/onboardingApi';
+import { searchIndex } from '../services/searchIndex';
 import type { Course, Section } from '../types';
-import { formatTimeSlots, hasSectionConflict } from '../utils/schedule';
+import { hasSectionConflict } from '../utils/schedule';
 
-const INITIAL_VISIBLE_COURSES = 25;
-const VISIBLE_COURSE_STEP = 25;
+const SEARCH_DEBOUNCE_MS = 150;
+const SAVE_DEBOUNCE_MS = 500;
+const INITIAL_ESTIMATE_SIZE = 200;
 
 export default function CoursesPage() {
+  const { isAuthenticated, getToken } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
-  const [selectedSections, setSelectedSections] = useState<Map<string, string>>(new Map());
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [subject, setSubject] = useState('all');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COURSES);
+  const [loadingMessage, setLoadingMessage] = useState('Loading courses...');
+  const [error, setError] = useState<string | null>(null);
+
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity?: 'success' | 'info' | 'warning' | 'error';
+  }>({
+    open: false,
+    message: '',
+    severity: 'success',
+  });
+
+  const { progress, result: parsedResult, error: parseError, fetchAndParse } = useSemesterParser();
+
+  const [selectedSections, setSelectedSections] = useState<Map<string, string>>(() => {
+    const saved = storage.get<Record<string, string>>(STORAGE_KEYS.COURSE_SELECTIONS, {});
+    return new Map(Object.entries(saved));
+  });
+
+  const previousSelectionsRef = useRef<Map<string, string>>(new Map());
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const saveSelections = useCallback((selections: Map<string, string>) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      const saved = Object.fromEntries(selections);
+      storage.set(STORAGE_KEYS.COURSE_SELECTIONS, saved);
+      console.log(
+        `[CoursesPage] Saved ${selections.size} course selection(s) to localStorage`,
+        saved,
+      );
+      window.dispatchEvent(new Event('storage'));
+    }, SAVE_DEBOUNCE_MS);
+  }, []);
 
   useEffect(() => {
-    const data = getCourses();
-    setCourses(data.courses);
-    setSections(data.sections);
-    setLoading(false);
+    const prev = previousSelectionsRef.current;
+    const curr = selectedSections;
 
-    const saved = storage.get<Record<string, string>>(STORAGE_KEYS.COURSE_SELECTIONS, {});
-    if (Object.keys(saved).length > 0) {
-      setSelectedSections(new Map(Object.entries(saved)));
+    const added: string[] = [];
+    const removed: string[] = [];
+
+    curr.forEach((sectionId, courseId) => {
+      if (!prev.has(courseId) || prev.get(courseId) !== sectionId) {
+        added.push(courseId);
+      }
+    });
+
+    prev.forEach((_, courseId) => {
+      if (!curr.has(courseId)) {
+        removed.push(courseId);
+      }
+    });
+
+    if (added.length > 0) {
+      setSnackbar({
+        open: true,
+        message: `Selected ${added.length} course${added.length > 1 ? 's' : ''}`,
+        severity: 'success',
+      });
+    } else if (removed.length > 0) {
+      setSnackbar({
+        open: true,
+        message: `Deselected ${removed.length} course${removed.length > 1 ? 's' : ''}`,
+        severity: 'info',
+      });
     }
-  }, []);
+
+    previousSelectionsRef.current = new Map(curr);
+  }, [selectedSections]);
+
+  useEffect(() => {
+    saveSelections(selectedSections);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [selectedSections, saveSelections]);
+
+  const loadCoursesFromSemester = useCallback(
+    async (jsonUrl: string, semesterName: string) => {
+      try {
+        setLoadingMessage(`Loading ${semesterName} courses...`);
+        fetchAndParse(jsonUrl, semesterName, semesterName);
+      } catch (err) {
+        console.error('Error loading courses:', err);
+        setError('Failed to load courses. Please try again.');
+        setLoading(false);
+      }
+    },
+    [fetchAndParse],
+  );
+
+  useEffect(() => {
+    if (parsedResult) {
+      const semesterId = parsedResult.semesterId.toLowerCase();
+
+      cacheSemesterData(
+        semesterId,
+        parsedResult.courses,
+        parsedResult.sections,
+        parsedResult.version,
+      );
+      searchIndex.buildIndex(parsedResult.courses, parsedResult.sections);
+
+      setCourses(parsedResult.courses);
+      setSections(parsedResult.sections);
+      setError(null);
+      setLoading(false);
+
+      console.log(
+        `[Performance] Parsed ${parsedResult.courses.length} courses, ${parsedResult.sections.length} sections in ${parsedResult.parseTime.toFixed(2)}ms`,
+      );
+    }
+  }, [parsedResult]);
+
+  useEffect(() => {
+    if (parseError) {
+      console.error('Parse error:', parseError);
+      setError(`Failed to parse course data: ${parseError.message}`);
+      setLoading(false);
+    }
+  }, [parseError]);
+
+  useEffect(() => {
+    if (progress) {
+      setLoadingMessage(`${progress.message} (${progress.progress}%)`);
+    }
+  }, [progress]);
+
+  const autoLoadCourses = useCallback(async () => {
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
+
+    const cachedData = await getCachedSemesterData('current');
+
+    if (cachedData && cachedData.courses.length > 0) {
+      setCourses(cachedData.courses);
+      setSections(cachedData.sections);
+      searchIndex.buildIndex(cachedData.courses, cachedData.sections);
+      setLoading(false);
+      console.log('[CoursesPage] Loaded from IndexedDB cache');
+      return;
+    }
+
+    try {
+      setLoadingMessage('Checking your profile...');
+      const token = await getToken();
+      const profile = await getUserProfile(token);
+
+      let selectedSemester: { id: string; name: string; jsonUrl: string } | null = null;
+
+      if (profile?.semesterId) {
+        const { semesters } = await getSemesters();
+        const normalizedId = profile.semesterId.toLowerCase();
+        selectedSemester = semesters.find((s) => s.id === normalizedId) || null;
+      }
+
+      if (!selectedSemester) {
+        const { semesters } = await getSemesters();
+        if (semesters.length > 0) {
+          selectedSemester = semesters[0];
+        }
+      }
+
+      if (selectedSemester?.jsonUrl) {
+        await loadCoursesFromSemester(selectedSemester.jsonUrl, selectedSemester.name);
+      } else {
+        setError('No semester data available. Please complete onboarding first.');
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('Error auto-loading courses:', err);
+      setError('Failed to load courses. Please try again later.');
+      setLoading(false);
+    }
+  }, [isAuthenticated, getToken, loadCoursesFromSemester]);
+
+  useEffect(() => {
+    autoLoadCourses();
+  }, [autoLoadCourses]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
-    }, 300);
+    }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
   }, [search]);
-
-  useEffect(() => {
-    storage.set(STORAGE_KEYS.COURSE_SELECTIONS, Object.fromEntries(selectedSections));
-  }, [selectedSections]);
 
   const subjects = useMemo(() => {
     const subs = new Set(courses.map((c) => c.subject));
@@ -71,20 +247,28 @@ export default function CoursesPage() {
   }, [courses]);
 
   const filteredCourses = useMemo(() => {
-    const loweredSearch = debouncedSearch.toLowerCase();
+    if (!debouncedSearch.trim()) {
+      return subject === 'all' ? courses : courses.filter((c) => c.subject === subject);
+    }
 
-    return courses.filter((course) => {
-      const matchesSearch =
-        course.name.toLowerCase().includes(loweredSearch) ||
-        course.code.toLowerCase().includes(loweredSearch);
-      const matchesSubject = subject === 'all' || course.subject === subject;
-      return matchesSearch && matchesSubject;
-    });
+    const { courseIds } = searchIndex.search(debouncedSearch);
+
+    if (courseIds.length === 0) {
+      const loweredSearch = debouncedSearch.toLowerCase();
+      return courses.filter((course) => {
+        const matchesSearch =
+          course.name.toLowerCase().includes(loweredSearch) ||
+          course.code.toLowerCase().includes(loweredSearch);
+        const matchesSubject = subject === 'all' || course.subject === subject;
+        return matchesSearch && matchesSubject;
+      });
+    }
+
+    const courseSet = new Set(courseIds.map((id) => String(id)));
+    return courses.filter(
+      (course) => courseSet.has(course.id) && (subject === 'all' || course.subject === subject),
+    );
   }, [courses, debouncedSearch, subject]);
-
-  useEffect(() => {
-    setVisibleCount(INITIAL_VISIBLE_COURSES);
-  }, []);
 
   const courseSectionsMap = useMemo(() => {
     const map = new Map<string, Section[]>();
@@ -96,25 +280,18 @@ export default function CoursesPage() {
     return map;
   }, [sections]);
 
-  const courseSections = useCallback(
-    (courseId: string) => courseSectionsMap.get(courseId) || [],
-    [courseSectionsMap],
-  );
+  const selectedSectionList = useMemo(() => {
+    const ids = new Set(selectedSections.values());
+    return sections.filter((section) => ids.has(section.id));
+  }, [selectedSections, sections]);
 
-  const sectionsById = useMemo(() => {
-    const map = new Map<string, Section>();
-    sections.forEach((section) => {
-      map.set(section.id, section);
-    });
-    return map;
-  }, [sections]);
-
-  const getSelectedSection = useCallback(
-    (courseId: string) => {
-      const sectionId = selectedSections.get(courseId);
-      return sectionId ? sectionsById.get(sectionId) : undefined;
+  const hasConflict = useCallback(
+    (section: Section): boolean => {
+      return selectedSectionList.some(
+        (sel) => sel.id !== section.id && hasSectionConflict(section, sel),
+      );
     },
-    [selectedSections, sectionsById],
+    [selectedSectionList],
   );
 
   const handleSelectSection = useCallback((courseId: string, sectionId: string) => {
@@ -129,43 +306,48 @@ export default function CoursesPage() {
     });
   }, []);
 
-  const selectedSectionList = useMemo(() => {
-    const ids = new Set(selectedSections.values());
-    return sections.filter((section) => ids.has(section.id));
-  }, [selectedSections, sections]);
-
-  const visibleCourses = useMemo(
-    () => filteredCourses.slice(0, visibleCount),
-    [filteredCourses, visibleCount],
-  );
-
-  const hasMoreCourses = filteredCourses.length > visibleCount;
-
-  const hasConflict = useCallback(
-    (section: Section): boolean =>
-      selectedSectionList.some((sel) => sel.id !== section.id && hasSectionConflict(section, sel)),
-    [selectedSectionList],
-  );
-
   const handleClearAll = useCallback(() => {
     setSelectedSections(new Map());
+    setSnackbar({
+      open: true,
+      message: 'Cleared all course selections',
+      severity: 'info',
+    });
   }, []);
 
-  const theme = useTheme();
+  const handleSnackbarClose = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
+  const handleExpand = useCallback((courseId: string) => {
+    setExpanded((prev) => (prev === courseId ? null : courseId));
+  }, []);
+
+  // Virtualizer with dynamic measurement
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  const virtualizer = useVirtualizer({
+    count: filteredCourses.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => INITIAL_ESTIMATE_SIZE,
+    measureElement: (el) => el.getBoundingClientRect().height,
+    overscan: 3,
+    gap: 8,
+  });
 
   if (loading) {
     return (
       <Box>
-        <header style={{ marginBottom: '40px' }}>
+        <Box component="header" sx={{ mb: 5 }}>
           <Typography variant="h4" fontWeight={800} gutterBottom sx={{ letterSpacing: '-0.02em' }}>
             Course Browser
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Loading your courses...
+            {loadingMessage}
           </Typography>
-        </header>
+        </Box>
         <Stack spacing={2}>
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3, 4, 5].map((i) => (
             <Card key={i}>
               <CardContent>
                 <Skeleton variant="text" width="30%" height={30} />
@@ -179,28 +361,71 @@ export default function CoursesPage() {
     );
   }
 
-  if (courses.length === 0) {
+  if (!isAuthenticated) {
     return (
       <Box>
-        <header style={{ marginBottom: '40px' }}>
+        <Box component="header" sx={{ mb: 5 }}>
           <Typography variant="h4" fontWeight={800} gutterBottom sx={{ letterSpacing: '-0.02em' }}>
             Course Browser
           </Typography>
-        </header>
+        </Box>
+        <Alert severity="info">Please sign in to view and select courses.</Alert>
+      </Box>
+    );
+  }
+
+  if (courses.length === 0) {
+    return (
+      <Box>
+        <Box component="header" sx={{ mb: 5 }}>
+          <Typography variant="h4" fontWeight={800} gutterBottom sx={{ letterSpacing: '-0.02em' }}>
+            Course Browser
+          </Typography>
+        </Box>
+        {error ? (
+          <Stack spacing={2}>
+            <Alert severity="error" action={<Button onClick={autoLoadCourses}>Retry</Button>}>
+              {error}
+            </Alert>
+          </Stack>
+        ) : (
+          <Card>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <CalendarToday sx={{ fontSize: 40, color: 'text.secondary' }} />
+                <Box>
+                  <Typography variant="h6">No Courses Loaded</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Click below to load courses for the current semester.
+                  </Typography>
+                </Box>
+              </Stack>
+              <Button variant="contained" sx={{ mt: 3 }} onClick={autoLoadCourses}>
+                Load Courses
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </Box>
     );
   }
 
   return (
     <Box>
-      <header style={{ marginBottom: '40px' }}>
+      <Box component="header" sx={{ mb: 3 }}>
         <Typography variant="h4" fontWeight={800} gutterBottom sx={{ letterSpacing: '-0.02em' }}>
           Course Browser
         </Typography>
         <Typography variant="body1" color="text.secondary">
           Search courses, view sections, and select your preferred classes.
         </Typography>
-      </header>
+      </Box>
+
+      {error && (
+        <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
         <TextField
@@ -243,123 +468,67 @@ export default function CoursesPage() {
         <Alert severity="info">No courses found matching your criteria.</Alert>
       )}
 
-      {visibleCourses.map((course) => {
-        const sectionList = courseSections(course.id);
-        const selected = getSelectedSection(course.id);
-        const isExpanded = expanded === course.id;
+      {/* Virtualized course list */}
+      <Box
+        ref={parentRef}
+        sx={{
+          height: 'calc(100vh - 280px)',
+          minHeight: '400px',
+          overflow: 'auto',
+          position: 'relative',
+        }}
+      >
+        <Box
+          sx={{
+            position: 'relative',
+            height: `${virtualizer.getTotalSize()}px`,
+            width: '100%',
+          }}
+        >
+          {virtualizer.getVirtualItems().map((virtualRow) => {
+            const course = filteredCourses[virtualRow.index];
+            const sectionList = courseSectionsMap.get(course.id) || [];
+            const selectedSectionId = selectedSections.get(course.id);
+            const isExpanded = expanded === course.id;
 
-        return (
-          <Card key={course.id} sx={{ mb: 2 }}>
-            <CardContent sx={{ pb: 1 }}>
-              <Stack direction="row" alignItems="center" justifyContent="space-between">
-                <Box>
-                  <Typography variant="h6" fontWeight={600}>
-                    {course.code}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {course.name} • {course.credits} credits
-                  </Typography>
-                </Box>
-                <Stack direction="row" spacing={1} alignItems="center">
-                  {selected && (
-                    <Chip
-                      size="small"
-                      label={`Section ${selected.sectionNumber}`}
-                      color="success"
-                    />
-                  )}
-                  <IconButton onClick={() => setExpanded(isExpanded ? null : course.id)}>
-                    {isExpanded ? <ExpandLess /> : <ExpandMore />}
-                  </IconButton>
-                </Stack>
-              </Stack>
-            </CardContent>
-
-            <Collapse in={isExpanded}>
-              <CardActions sx={{ pt: 0, px: 2, pb: 2 }}>
-                <Stack spacing={1.5} sx={{ width: '100%' }}>
-                  {sectionList.map((section) => {
-                    const isSelected = selectedSections.get(course.id) === section.id;
-                    const conflict = hasConflict(section);
-                    const { dayDisplay, timeDisplay } = formatTimeSlots(section.timeSlots);
-
-                    return (
-                      <Card
-                        key={section.id}
-                        variant="outlined"
-                        sx={{
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          borderColor: isSelected
-                            ? 'success.main'
-                            : conflict
-                              ? 'error.main'
-                              : 'transparent',
-                          bgcolor: isSelected
-                            ? alpha(theme.palette.success.main, 0.1)
-                            : conflict
-                              ? alpha(theme.palette.error.main, 0.1)
-                              : 'action.hover',
-                          color: isSelected ? 'success.main' : conflict ? 'error.main' : 'inherit',
-                          '&:hover': {
-                            borderColor: isSelected ? 'success.main' : 'secondary.main',
-                            bgcolor: isSelected
-                              ? alpha(theme.palette.success.main, 0.15)
-                              : 'action.selected',
-                          },
-                        }}
-                        onClick={() => handleSelectSection(course.id, section.id)}
-                      >
-                        <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-                          <Stack direction="row" alignItems="center" justifyContent="space-between">
-                            <Box>
-                              <Typography variant="subtitle2" fontWeight={600}>
-                                Section {section.sectionNumber}
-                              </Typography>
-                              <Stack direction="row" spacing={2} mt={0.5}>
-                                <Stack direction="row" alignItems="center" spacing={0.5}>
-                                  <Person sx={{ fontSize: 16 }} />
-                                  <Typography variant="caption">{section.instructor}</Typography>
-                                </Stack>
-                                <Stack direction="row" alignItems="center" spacing={0.5}>
-                                  <Schedule sx={{ fontSize: 16 }} />
-                                  <Typography variant="caption">
-                                    {dayDisplay} {timeDisplay}
-                                  </Typography>
-                                </Stack>
-                              </Stack>
-                            </Box>
-                            {isSelected && <Chip size="small" label="Selected" color="success" />}
-                            {conflict && !isSelected && (
-                              <Chip
-                                size="small"
-                                icon={<Warning />}
-                                label="Conflict"
-                                color="error"
-                              />
-                            )}
-                          </Stack>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </Stack>
-              </CardActions>
-            </Collapse>
-          </Card>
-        );
-      })}
-
-      {hasMoreCourses && (
-        <Box display="flex" justifyContent="center" mt={2}>
-          <Button
-            variant="outlined"
-            onClick={() => setVisibleCount((count) => count + VISIBLE_COURSE_STEP)}
-          >
-            Load More Courses
-          </Button>
+            return (
+              <Box
+                key={course.id}
+                data-index={virtualRow.index}
+                ref={(el: HTMLDivElement | null) => virtualizer.measureElement(el)}
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                <CourseCard
+                  course={course}
+                  sections={sectionList}
+                  selectedSectionId={selectedSectionId}
+                  isExpanded={isExpanded}
+                  hasConflict={hasConflict}
+                  onExpand={() => handleExpand(course.id)}
+                  onSelectSection={(sectionId) => handleSelectSection(course.id, sectionId)}
+                />
+              </Box>
+            );
+          })}
         </Box>
-      )}
+      </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

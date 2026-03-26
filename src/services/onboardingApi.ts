@@ -1,4 +1,4 @@
-import type { Preferences, Semester, UserProfile } from '../types';
+import type { Preferences, UserProfile } from '../types';
 import { ApiError, api } from './apiClient';
 
 export async function getUserProfile(token: string): Promise<UserProfile | null> {
@@ -36,9 +36,4 @@ export async function completeOnboarding(
     onboardingCompleted: true,
     preferences,
   });
-}
-
-export async function getSemesters(): Promise<Semester[]> {
-  const result = await api.get<{ semesters: Semester[] }>('/semesters');
-  return result.semesters;
 }

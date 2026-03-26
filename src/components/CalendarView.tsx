@@ -54,19 +54,20 @@ const COURSE_COLORS = [
 
 const EventComponent = memo(function EventComponent({ event }: EventProps) {
   const courseCode = event.resource?.course?.code || '';
+  const sectionNumber = event.resource?.section?.sectionNumber || '';
   const colorIndex = courseCode.length > 0 ? courseCode.charCodeAt(0) % COURSE_COLORS.length : 0;
   const backgroundColor = COURSE_COLORS[colorIndex];
 
   return (
     <Box
       sx={{
-        px: 0.5,
-        py: 0.25,
+        px: 0.75,
+        py: 0.5,
         overflow: 'hidden',
         textOverflow: 'ellipsis',
         whiteSpace: 'nowrap',
-        fontSize: '0.7rem',
-        fontWeight: 500,
+        fontSize: '0.75rem',
+        fontWeight: 600,
         backgroundColor,
         color: '#fff',
         borderRadius: 1,
@@ -75,20 +76,35 @@ const EventComponent = memo(function EventComponent({ event }: EventProps) {
         flexDirection: 'column',
         justifyContent: 'center',
         lineHeight: 1.2,
+        boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
       }}
     >
       <Typography
         variant="caption"
         sx={{
-          fontWeight: 600,
-          lineHeight: 1,
+          fontWeight: 700,
+          lineHeight: 1.1,
           display: 'block',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
+          fontSize: '0.75rem',
         }}
       >
         {courseCode}
       </Typography>
+      {sectionNumber && (
+        <Typography
+          variant="caption"
+          sx={{
+            fontSize: '0.65rem',
+            lineHeight: 1.1,
+            opacity: 0.9,
+            fontWeight: 500,
+          }}
+        >
+          {sectionNumber}
+        </Typography>
+      )}
     </Box>
   );
 });
@@ -129,17 +145,25 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
       const courseCode = _event.resource?.course?.code || '';
       const colorIndex =
         courseCode.length > 0 ? courseCode.charCodeAt(0) % COURSE_COLORS.length : 0;
-      const backgroundColor = isConflicted ? theme.palette.error.main : COURSE_COLORS[colorIndex];
+      const baseColor = isConflicted ? theme.palette.error.main : COURSE_COLORS[colorIndex];
+
+      // Add pattern overlay for conflicts
+      const backgroundStyle = isConflicted
+        ? `repeating-linear-gradient(45deg, ${baseColor}, ${baseColor} 10px, rgba(0,0,0,0.15) 10px, rgba(0,0,0,0.15) 20px)`
+        : baseColor;
 
       return {
         style: {
-          backgroundColor,
+          background: backgroundStyle,
           color: '#fff',
           border: 'none',
-          borderRadius: '6px',
-          fontSize: '0.7rem',
-          fontWeight: 500,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+          borderRadius: '8px',
+          fontSize: '0.75rem',
+          fontWeight: 600,
+          boxShadow: isConflicted
+            ? '0 2px 8px rgba(211, 47, 47, 0.3)'
+            : '0 2px 4px rgba(0,0,0,0.15)',
+          opacity: isConflicted ? 0.9 : 1,
         },
       };
     },
@@ -249,6 +273,8 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
             },
             '& .rbc-timeslot-group': {
               minHeight: 48,
+              borderColor:
+                theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
             },
             '& .rbc-time-content': {
               borderTop: `1px solid ${theme.palette.divider}`,
@@ -306,8 +332,10 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
             },
             '& .rbc-time-slot.rbc-now': {
               fontWeight: 600,
+              color: theme.palette.secondary.main,
             },
-            height: { xs: 400, sm: 500, md: 550 },
+            height: { xs: 400, sm: 500, md: 600, lg: 650 },
+            minHeight: 400,
           }}
         >
           <Calendar
@@ -336,12 +364,12 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
         </Box>
       </Paper>
 
-      <Box sx={{ mt: 2 }}>
-        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+      <Box sx={{ mt: 2.5 }}>
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontWeight: 600 }}>
           Enrolled Courses
         </Typography>
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-          {sections.map((section, _index) => {
+          {sections.map((section) => {
             const course = courses.find((c) => c.id === section.courseId);
             const hasConflict = conflicts.some((c) => c.includes(section.sectionNumber));
             const colorIndex =
@@ -355,13 +383,24 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
                 label={`${course?.code} - ${section.sectionNumber}`}
                 size="small"
                 sx={{
-                  borderRadius: 1.5,
-                  bgcolor: hasConflict ? 'error.light' : `${COURSE_COLORS[colorIndex]}20`,
-                  color: hasConflict ? 'error.dark' : COURSE_COLORS[colorIndex],
+                  borderRadius: 2,
+                  bgcolor: hasConflict
+                    ? alpha(theme.palette.error.main, 0.1)
+                    : `${COURSE_COLORS[colorIndex]}15`,
+                  color: hasConflict ? 'error.main' : COURSE_COLORS[colorIndex],
                   borderColor: hasConflict ? 'error.main' : COURSE_COLORS[colorIndex],
-                  fontWeight: 500,
+                  fontWeight: 600,
+                  px: 1.5,
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    bgcolor: hasConflict
+                      ? alpha(theme.palette.error.main, 0.2)
+                      : `${COURSE_COLORS[colorIndex]}25`,
+                    transform: 'translateY(-2px)',
+                    boxShadow: theme.shadows[1],
+                  },
                   '& .MuiChip-label': {
-                    fontWeight: 500,
+                    fontWeight: 600,
                   },
                 }}
                 variant="outlined"

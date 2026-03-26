@@ -1,7 +1,9 @@
 import { Email, Person, Phone } from '@mui/icons-material';
 import { Box, Button, CircularProgress, Stack, TextField, Typography } from '@mui/material';
 import { useState } from 'react';
+import { ZodError } from 'zod';
 import { useAuth } from '../../hooks/useAuth';
+import { traderDetailsSchema } from '../../lib/schemas';
 
 interface StepTraderDetailsProps {
   onComplete: (data: { displayName: string; email: string; phone: string }) => void;
@@ -19,30 +21,27 @@ export function StepTraderDetails({ onComplete, initialData }: StepTraderDetails
     email: initialData?.email || user?.email || '',
     phone: initialData?.phone || '',
   });
-  const [errors, setErrors] = useState<Partial<typeof formData>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
   const validate = () => {
-    const newErrors: Partial<typeof formData> = {};
-
-    if (!formData.displayName.trim()) {
-      newErrors.displayName = 'Name is required';
+    try {
+      traderDetailsSchema.parse(formData);
+      setErrors({});
+      return true;
+    } catch (e) {
+      if (e instanceof ZodError) {
+        const fieldErrors: Record<string, string> = {};
+        for (const issue of e.issues) {
+          const field = issue.path[0];
+          if (field) {
+            fieldErrors[field as string] = issue.message;
+          }
+        }
+        setErrors(fieldErrors);
+      }
+      return false;
     }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    } else if (!/^[\d\s\-+()]{10,}$/.test(formData.phone)) {
-      newErrors.phone = 'Invalid phone number (min 10 digits)';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,7 +104,7 @@ export function StepTraderDetails({ onComplete, initialData }: StepTraderDetails
           fullWidth
           label="Phone Number"
           type="tel"
-          placeholder="+1 (555) 123-4567"
+          placeholder="+(555) 123-4567"
           value={formData.phone}
           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           error={!!errors.phone}

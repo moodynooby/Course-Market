@@ -27,10 +27,16 @@
     "@mui/material": "^7.3.9",
     "@netlify/neon": "^0.1.2",
     "@netlify/vite-plugin": "^2.11.2",
+    "@tanstack/react-virtual": "^3.13.23",
     "ai": "^6.0.138",
+    "chrono-node": "^2.9.0",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.1",
+    "flexsearch": "^0.8.212",
+    "idb": "^8.0.3",
     "jose": "^6.2.2",
+    "ml-distance": "^4.0.1",
+    "ml-kmeans": "^7.0.0",
     "react": "^19.2.4",
     "react-big-calendar": "^1.19.4",
     "react-dom": "^19.2.4",
@@ -43,6 +49,7 @@
     "@biomejs/biome": "2.4.7",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+    "@types/flexsearch": "^0.7.42",
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -52,8 +59,8 @@
     "happy-dom": "^20.8.8",
     "lefthook": "^2.1.4",
     "tsx": "^4.21.0",
-    "typescript": "~5.9.3",
-    "vite": "^8.0.2",
-    "vitest": "^4.1.1"
+    "typescript": "^6.0.2",
+    "vite": "^8.0.3",
+    "vitest": "^4.1.2"
   }
 }

@@ -1,19 +1,19 @@
-import { DarkMode, LightMode, Settings, SettingsBrightness, Logout } from '@mui/icons-material';
+import { DarkMode, LightMode, Logout, Settings, SettingsBrightness } from '@mui/icons-material';
 import {
   Avatar,
   Box,
   Button,
   Divider,
   IconButton,
+  ListItemIcon,
+  ListItemText,
   Menu,
   MenuItem,
   Typography,
   useTheme,
-  ListItemIcon,
-  ListItemText,
 } from '@mui/material';
-import { useState, useCallback } from 'react';
-import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom';
+import { useCallback, useState } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../hooks/useAuth';
 
@@ -77,6 +77,7 @@ function NavLink({ to, label, primary = false, currentPath }: NavLinkProps) {
     </Box>
   );
 }
+
 import callMissedIcon from '../assets/3dicons-call-missed-dynamic-color.png';
 import lockIcon from '../assets/3dicons-locker-dynamic-premium.png';
 import logoIcon from '../assets/logo.png';
@@ -175,12 +176,25 @@ export default function Layout() {
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, sm: 4 } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {' '}
-                <img src={callMissedIcon} alt="Call Missed" width={24} height={24} />
+                <Box
+                  component="img"
+                  src={callMissedIcon}
+                  alt=""
+                  width={24}
+                  height={24}
+                  sx={{ display: 'block' }}
+                />
                 <NavLink to="/" label="Dashboard" primary currentPath={location.pathname} />
-              </Box>{' '}
+              </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <img src={lockIcon} alt="Lock" width={24} height={24} />
+                <Box
+                  component="img"
+                  src={lockIcon}
+                  alt=""
+                  width={24}
+                  height={24}
+                  sx={{ display: 'block' }}
+                />
                 <NavLink to="/trading" label="Trading" primary currentPath={location.pathname} />
               </Box>
             </Box>
@@ -222,8 +236,8 @@ export default function Layout() {
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 1.5,
-                    pl: 1,
+                    gap: 1,
+                    pl: 1.5,
                     pr: 0.5,
                     py: 0.5,
                     borderRadius: 9999,
@@ -238,12 +252,19 @@ export default function Layout() {
                   <Typography
                     variant="body2"
                     fontWeight={600}
-                    sx={{ pl: 1, display: { xs: 'none', sm: 'block' } }}
+                    sx={{ display: { xs: 'none', md: 'block' } }}
                   >
                     {user.displayName || 'User'}
                   </Typography>
                   <Avatar
-                    sx={{ width: 32, height: 32, border: '1px solid', borderColor: 'accent.main' }}
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      border: '2px solid',
+                      borderColor: 'accent.main',
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                    }}
                   >
                     {user.displayName?.[0] || 'U'}
                   </Avatar>

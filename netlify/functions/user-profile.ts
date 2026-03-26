@@ -1,7 +1,9 @@
 import { neon } from '@netlify/neon';
 import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/neon-http';
+import { ZodError } from 'zod';
 import * as schema from '../../db/schema';
+import { formatZodError, userProfileSchema, userProfileUpdateSchema } from '../../src/lib/schemas';
 import { validateToken } from './lib/auth';
 
 const client = neon();
@@ -31,7 +33,6 @@ export const handler = async (event: any) => {
     const user = await validateToken(event.headers.authorization);
 
     const { httpMethod, body } = event;
-    const requestBody = body ? JSON.parse(body) : {};
 
     // GET: Fetch user profile
     if (httpMethod === 'GET') {
@@ -49,18 +50,20 @@ export const handler = async (event: any) => {
 
     // POST: Create or update user profile
     if (httpMethod === 'POST') {
-      const { displayName, email, phone, semesterId, preferences, onboardingCompleted } =
-        requestBody;
-
-      // Check if profile exists
       const [existingProfile] = await db
         .select()
         .from(schema.userProfiles)
         .where(eq(schema.userProfiles.auth0UserId, user.sub));
 
-      // Validate required fields only for new profiles
-      if (!existingProfile && (!displayName || !email || !phone)) {
-        return jsonResponse(400, { error: 'Missing required fields: displayName, email, phone' });
+      let requestBody;
+      try {
+        const schemaToUse = existingProfile ? userProfileUpdateSchema : userProfileSchema;
+        requestBody = schemaToUse.parse(body ? JSON.parse(body) : {});
+      } catch (e) {
+        if (e instanceof ZodError) {
+          return jsonResponse(400, formatZodError(e));
+        }
+        return jsonResponse(400, { error: 'Invalid JSON' });
       }
 
       let profile;
@@ -70,12 +73,13 @@ export const handler = async (event: any) => {
         [profile] = await db
           .update(schema.userProfiles)
           .set({
-            displayName: displayName ?? existingProfile.displayName,
-            email: email ?? existingProfile.email,
-            phone: phone ?? existingProfile.phone,
-            semesterId: semesterId ?? existingProfile.semesterId,
-            preferences: preferences ?? existingProfile.preferences,
-            onboardingCompleted: onboardingCompleted ?? existingProfile.onboardingCompleted,
+            displayName: requestBody.displayName ?? existingProfile.displayName,
+            email: requestBody.email ?? existingProfile.email,
+            phone: requestBody.phone ?? existingProfile.phone,
+            semesterId: requestBody.semesterId ?? existingProfile.semesterId,
+            preferences: requestBody.preferences ?? existingProfile.preferences,
+            onboardingCompleted:
+              requestBody.onboardingCompleted ?? existingProfile.onboardingCompleted,
             updatedAt: new Date(),
           })
           .where(eq(schema.userProfiles.auth0UserId, user.sub))
@@ -86,12 +90,12 @@ export const handler = async (event: any) => {
           .insert(schema.userProfiles)
           .values({
             auth0UserId: user.sub,
-            displayName: displayName!,
-            email: email!,
-            phone: phone!,
-            semesterId: semesterId || null,
-            preferences: preferences || null,
-            onboardingCompleted: onboardingCompleted ?? false,
+            displayName: requestBody.displayName,
+            email: requestBody.email,
+            phone: requestBody.phone,
+            semesterId: requestBody.semesterId || null,
+            preferences: requestBody.preferences || null,
+            onboardingCompleted: requestBody.onboardingCompleted ?? false,
           })
           .returning();
       }

@@ -39,7 +39,8 @@ import {
 } from '../config/userConfig';
 import { useThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../hooks/useAuth';
-import { getSemesters, saveUserProfile } from '../services/onboardingApi';
+import { getSemesters } from '../services/coursesApi';
+import { saveUserProfile } from '../services/onboardingApi';
 import type { LLMProvider, Preferences, Semester } from '../types';
 
 export default function SettingsPage() {
@@ -77,7 +78,7 @@ export default function SettingsPage() {
     try {
       setLoadingSemesters(true);
       const data = await getSemesters();
-      setSemesters(data);
+      setSemesters(data.semesters);
       const savedSemester = localStorage.getItem('auraishub_semester') || '';
       setCurrentSemester(savedSemester);
     } catch (error) {

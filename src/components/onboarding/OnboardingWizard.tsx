@@ -1,5 +1,6 @@
 import { Check, ChevronLeft, ChevronRight } from '@mui/icons-material';
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -171,8 +172,13 @@ export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
                 background: 'transparent',
                 p: 0,
                 '& .MuiLinearProgress-root': {
-                  height: 4,
-                  borderRadius: 2,
+                  height: 6,
+                  borderRadius: 3,
+                  bgcolor: 'action.hover',
+                },
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: 'accent.main',
+                  borderRadius: 3,
                 },
               }}
             />
@@ -183,52 +189,71 @@ export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
                 [`& .${stepClasses.completed}`]: {
                   color: 'accent.main',
                 },
+                [`& .${stepClasses.root}`]: {
+                  '&:last-child $': {
+                    marginRight: 0,
+                  },
+                },
               }}
             >
-              {STEPS.map((step) => (
-                <Step key={step.id}>
-                  <StepLabel
-                    StepIconComponent={({ completed, active }) =>
-                      completed ? (
-                        <Check />
-                      ) : active ? (
-                        <Box
-                          sx={{
-                            width: 12,
-                            height: 12,
-                            borderRadius: '50%',
-                            bgcolor: 'currentColor',
-                          }}
-                        />
-                      ) : (
-                        <Box
-                          sx={{
-                            width: 12,
-                            height: 12,
-                            borderRadius: '50%',
-                            border: '2px solid currentColor',
-                          }}
-                        />
-                      )
-                    }
-                  >
-                    <Typography variant="subtitle2" fontWeight={600}>
-                      {step.label}
-                    </Typography>
-                  </StepLabel>
-                </Step>
-              ))}
+              {STEPS.map((step, index) => {
+                const isActive = index === currentStepIndex;
+                const isCompleted = index < currentStepIndex;
+
+                return (
+                  <Step key={step.id}>
+                    <StepLabel
+                      StepIconComponent={({ completed }) =>
+                        completed || isCompleted ? (
+                          <Check
+                            sx={{
+                              fontSize: 16,
+                              strokeWidth: 3,
+                            }}
+                          />
+                        ) : isActive ? (
+                          <Box
+                            sx={{
+                              width: 12,
+                              height: 12,
+                              borderRadius: '50%',
+                              bgcolor: 'accent.main',
+                              boxShadow: theme.shadows[2],
+                            }}
+                          />
+                        ) : (
+                          <Box
+                            sx={{
+                              width: 12,
+                              height: 12,
+                              borderRadius: '50%',
+                              border: '2px solid',
+                              borderColor: 'divider',
+                            }}
+                          />
+                        )
+                      }
+                    >
+                      <Typography
+                        variant="subtitle2"
+                        fontWeight={isActive ? 700 : 600}
+                        color={isActive ? 'text.primary' : 'text.secondary'}
+                      >
+                        {step.label}
+                      </Typography>
+                    </StepLabel>
+                  </Step>
+                );
+              })}
             </Stepper>
           )}
         </Box>
 
         <CardContent sx={{ p: 3 }}>
           {error && (
-            <Box sx={{ mb: 3 }}>
-              <Typography color="error" variant="body2">
-                {error}
-              </Typography>
-            </Box>
+            <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
+              {error}
+            </Alert>
           )}
 
           {/* Step Content */}

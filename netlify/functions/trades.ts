@@ -1,7 +1,9 @@
 import { neon } from '@netlify/neon';
 import { desc, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/neon-http';
+import { ZodError } from 'zod';
 import * as schema from '../../db/schema';
+import { formatZodError, tradeSchema, tradeUpdateSchema } from '../../src/lib/schemas';
 import { validateToken } from './lib/auth';
 
 const client = neon();
@@ -31,7 +33,6 @@ export const handler = async (event: any) => {
     const user = await validateToken(event.headers.authorization);
 
     const { httpMethod, path, body } = event;
-    const requestBody = body ? JSON.parse(body) : {};
     const pathParts = path.split('/').filter(Boolean);
     const tradeId = pathParts[pathParts.length - 1];
 
@@ -45,11 +46,14 @@ export const handler = async (event: any) => {
     }
 
     if (httpMethod === 'POST' && path.endsWith('/trades')) {
-      const { courseCode, courseName, sectionOffered, sectionWanted, description, contactPhone } =
-        requestBody;
-
-      if (!courseCode || !sectionOffered || !sectionWanted || !contactPhone) {
-        return jsonResponse(400, { error: 'Missing required fields' });
+      let requestBody;
+      try {
+        requestBody = tradeSchema.parse(body ? JSON.parse(body) : {});
+      } catch (e) {
+        if (e instanceof ZodError) {
+          return jsonResponse(400, formatZodError(e));
+        }
+        return jsonResponse(400, { error: 'Invalid JSON' });
       }
 
       const [newTrade] = await db
@@ -59,13 +63,13 @@ export const handler = async (event: any) => {
           userDisplayName: user.name,
           userEmail: user.email,
           userAvatarUrl: user.picture || null,
-          courseCode,
-          courseName: courseName || null,
-          sectionOffered,
-          sectionWanted,
+          courseCode: requestBody.courseCode,
+          courseName: requestBody.courseName || null,
+          sectionOffered: requestBody.sectionOffered,
+          sectionWanted: requestBody.sectionWanted,
           status: 'open',
-          description: description || null,
-          contactPhone,
+          description: requestBody.description || null,
+          contactPhone: requestBody.contactPhone,
         })
         .returning();
 
@@ -73,20 +77,25 @@ export const handler = async (event: any) => {
     }
 
     if (httpMethod === 'PUT' && tradeId) {
-      const {
-        status,
-        courseCode,
-        courseName,
-        sectionOffered,
-        sectionWanted,
-        description,
-        contactPhone,
-      } = requestBody;
+      const idNum = parseInt(tradeId);
+      if (Number.isNaN(idNum)) {
+        return jsonResponse(400, { error: 'Invalid trade ID' });
+      }
+
+      let requestBody;
+      try {
+        requestBody = tradeUpdateSchema.parse(body ? JSON.parse(body) : {});
+      } catch (e) {
+        if (e instanceof ZodError) {
+          return jsonResponse(400, formatZodError(e));
+        }
+        return jsonResponse(400, { error: 'Invalid JSON' });
+      }
 
       const [existingTrade] = await db
         .select()
         .from(schema.trades)
-        .where(eq(schema.trades.id, parseInt(tradeId)));
+        .where(eq(schema.trades.id, idNum));
 
       if (!existingTrade) {
         return jsonResponse(404, { error: 'Trade not found' });
@@ -101,26 +110,31 @@ export const handler = async (event: any) => {
       const [updatedTrade] = await db
         .update(schema.trades)
         .set({
-          courseCode: courseCode ?? existingTrade.courseCode,
-          courseName: courseName ?? existingTrade.courseName,
-          sectionOffered: sectionOffered ?? existingTrade.sectionOffered,
-          sectionWanted: sectionWanted ?? existingTrade.sectionWanted,
-          status: status ?? existingTrade.status,
-          description: description ?? existingTrade.description,
-          contactPhone: contactPhone ?? existingTrade.contactPhone,
+          courseCode: requestBody.courseCode ?? existingTrade.courseCode,
+          courseName: requestBody.courseName ?? existingTrade.courseName,
+          sectionOffered: requestBody.sectionOffered ?? existingTrade.sectionOffered,
+          sectionWanted: requestBody.sectionWanted ?? existingTrade.sectionWanted,
+          status: requestBody.status ?? existingTrade.status,
+          description: requestBody.description ?? existingTrade.description,
+          contactPhone: requestBody.contactPhone ?? existingTrade.contactPhone,
           updatedAt: new Date(),
         })
-        .where(eq(schema.trades.id, parseInt(tradeId)))
+        .where(eq(schema.trades.id, idNum))
         .returning();
 
       return jsonResponse(200, { trade: updatedTrade });
     }
 
     if (httpMethod === 'DELETE' && tradeId) {
+      const idNum = parseInt(tradeId);
+      if (Number.isNaN(idNum)) {
+        return jsonResponse(400, { error: 'Invalid trade ID' });
+      }
+
       const [existingTrade] = await db
         .select()
         .from(schema.trades)
-        .where(eq(schema.trades.id, parseInt(tradeId)));
+        .where(eq(schema.trades.id, idNum));
 
       if (!existingTrade) {
         return jsonResponse(404, { error: 'Trade not found' });
@@ -132,7 +146,7 @@ export const handler = async (event: any) => {
         });
       }
 
-      await db.delete(schema.trades).where(eq(schema.trades.id, parseInt(tradeId)));
+      await db.delete(schema.trades).where(eq(schema.trades.id, idNum));
 
       return jsonResponse(200, { success: true });
     }

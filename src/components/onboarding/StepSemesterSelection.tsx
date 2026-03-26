@@ -10,10 +10,9 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
-import { saveCourses } from '../../config/storageConfig';
-import { getCoursesBySubject, getSemesterData } from '../../services/coursesApi';
-import { getSemesters } from '../../services/onboardingApi';
-import type { Semester } from '../../types';
+import { getCoursesBySubject, getSemesterData, getSemesters } from '../../services/coursesApi';
+import { cacheSemesterData } from '../../services/dbCache';
+import type { Course, Section, Semester } from '../../types';
 
 interface StepSemesterSelectionProps {
   onComplete: (semesterId: string) => void;
@@ -32,8 +31,8 @@ export function StepSemesterSelection({
   const loadSemesters = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getSemesters();
-      setSemesters(data);
+      const response = await getSemesters();
+      setSemesters(response.semesters);
     } catch (err) {
       setError('Failed to load semesters. Please try again.');
       console.error('Error loading semesters:', err);
@@ -53,11 +52,20 @@ export function StepSemesterSelection({
 
       const semesterData = await getSemesterData(semesterId);
 
-      // Transform and save courses to localStorage for Course Browser
       const coursesBySubject = getCoursesBySubject(semesterData);
-      const allCourses = Object.values(coursesBySubject).flat();
-      const allSections = semesterData.sections;
-      saveCourses(allCourses, allSections);
+      const allCourses: Course[] = Object.values(coursesBySubject).flat();
+
+      const allSections: Section[] = semesterData.sections.map((s) => ({
+        id: s.id,
+        courseId: s.courseCode,
+        sectionNumber: s.sectionNumber,
+        instructor: s.instructor,
+        timeSlots: s.timeSlots,
+        capacity: s.capacity,
+        enrolled: s.enrolled,
+      }));
+
+      await cacheSemesterData(semesterId, allCourses, allSections, semesterData.version);
 
       onComplete(semesterId);
     } catch (err) {

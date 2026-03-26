@@ -1,5 +1,7 @@
 import { createGroq } from '@ai-sdk/groq';
 import { generateText } from 'ai';
+import { ZodError } from 'zod';
+import { formatZodError, llmRequestSchema } from '../../src/lib/schemas';
 import { validateToken } from './lib/auth';
 import { getUserKey, saveUserKey } from './lib/userKeys';
 
@@ -22,22 +24,26 @@ export const handler = async (event: any) => {
 
   try {
     const user = await validateToken(event.headers.authorization);
-    const { provider, model, messages, temperature, maxOutputTokens, saveKey, userApiKey } =
-      JSON.parse(event.body);
 
-    if (!provider || !messages) {
-      return { statusCode: 400, body: 'Missing required parameters' };
-    }
-
-    if (provider !== 'groq') {
+    let requestBody;
+    try {
+      requestBody = llmRequestSchema.parse(event.body ? JSON.parse(event.body) : {});
+    } catch (e) {
+      if (e instanceof ZodError) {
+        return {
+          statusCode: 400,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formatZodError(e)),
+        };
+      }
       return {
         statusCode: 400,
-        body: JSON.stringify({
-          error: 'Only Groq is supported as a cloud provider',
-          code: 'UNSUPPORTED_PROVIDER',
-        }),
+        body: JSON.stringify({ error: 'Invalid JSON' }),
       };
     }
+
+    const { provider, model, messages, temperature, maxOutputTokens, saveKey, userApiKey } =
+      requestBody;
 
     if (saveKey && userApiKey) {
       await saveUserKey(user.sub, provider, userApiKey);

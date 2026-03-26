@@ -39,7 +39,7 @@ export function sectionsToCalendarEvents(sections: Section[], courses: Course[])
   sections.forEach((section) => {
     const course = courses.find((c) => c.id === section.courseId);
 
-    section.timeSlots.forEach((slot) => {
+    section.timeSlots.forEach((slot, index) => {
       const dayOffset = DAY_TO_NUMBER[slot.day];
       const startMinutes = timeToMinutes(slot.startTime);
       const endMinutes = timeToMinutes(slot.endTime);
@@ -52,8 +52,9 @@ export function sectionsToCalendarEvents(sections: Section[], courses: Course[])
       endDate.setDate(endDate.getDate() + dayOffset);
       endDate.setHours(Math.floor(endMinutes / 60), endMinutes % 60, 0, 0);
 
+      // Add index to ensure unique IDs even when time slots are duplicated
       events.push({
-        id: `${section.id}-${slot.day}-${slot.startTime}`,
+        id: `${section.id}-${slot.day}-${slot.startTime}-${index}`,
         title: `${course?.code || 'Course'} - ${section.sectionNumber}`,
         start: startDate,
         end: endDate,

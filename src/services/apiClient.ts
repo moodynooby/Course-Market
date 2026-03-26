@@ -9,9 +9,16 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public details?: { field: string; message: string }[],
   ) {
     super(message);
     this.name = 'ApiError';
+  }
+
+  static fromResponse(status: number, body: unknown): ApiError {
+    const data = body as { error?: string; message?: string; details?: { field: string; message: string }[] };
+    const message = data.error || data.message || `API error ${status}`;
+    return new ApiError(status, message, data.details);
   }
 }
 
@@ -35,8 +42,14 @@ export async function apiClient<T>(path: string, options: RequestOptions = {}): 
   });
 
   if (!response.ok) {
-    const errorBody = await response.text();
-    throw new ApiError(response.status, `API error ${response.status}: ${errorBody}`);
+    let errorBody: unknown;
+    const contentType = response.headers.get('content-type');
+    if (contentType?.includes('application/json')) {
+      errorBody = await response.json();
+    } else {
+      errorBody = await response.text();
+    }
+    throw ApiError.fromResponse(response.status, errorBody);
   }
 
   return response.json();

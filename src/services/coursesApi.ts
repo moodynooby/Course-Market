@@ -1,33 +1,39 @@
 import type { Course, SectionJSON, SemesterJSON } from '../types';
 import { api } from './apiClient';
 
-export async function getCoursesBySemester(semesterId: string): Promise<{
-  courses: Course[];
-  subjects: string[];
-  semester: string;
-  count: number;
+/**
+ * Fetch available semesters with JSON URLs
+ */
+export async function getSemesters(): Promise<{
+  semesters: Array<{ id: string; name: string; jsonUrl: string; isActive: boolean }>;
 }> {
-  return api.get(`/courses?semester=${encodeURIComponent(semesterId)}`);
+  return api.get('/semesters');
 }
 
-export async function getSectionsBySemester(semesterId: string): Promise<{
-  sections: any[];
-  jsonUrl: string;
-  semester: string;
-  count: number;
-}> {
-  return api.get(`/sections?semester=${encodeURIComponent(semesterId)}`);
-}
-
+/**
+ * Fetch complete semester data including all sections with time slots
+ * This is the primary data loading method - fetches JSON directly from CDN
+ */
 export async function getSemesterData(semesterId: string): Promise<SemesterJSON> {
-  const sectionsData = await getSectionsBySemester(semesterId);
-  const response = await fetch(sectionsData.jsonUrl);
+  // First get semester metadata to find the JSON URL
+  const { semesters } = await getSemesters();
+  const semester = semesters.find((s) => s.id === semesterId);
+
+  if (!semester) {
+    throw new Error(`Semester '${semesterId}' not found`);
+  }
+
+  // Fetch the complete semester JSON from CDN
+  const response = await fetch(semester.jsonUrl);
   if (!response.ok) {
     throw new Error(`Failed to fetch semester JSON: ${response.status}`);
   }
   return response.json();
 }
 
+/**
+ * Direct fetch of semester JSON from a known URL
+ */
 export async function fetchSemesterJSON(jsonUrl: string): Promise<SemesterJSON> {
   const response = await fetch(jsonUrl);
   if (!response.ok) {
@@ -36,6 +42,9 @@ export async function fetchSemesterJSON(jsonUrl: string): Promise<SemesterJSON> 
   return response.json();
 }
 
+/**
+ * Extract unique subjects from semester data
+ */
 export function getSubjectsFromSemester(semesterData: SemesterJSON): string[] {
   return (
     semesterData.metadata.subjects ||
@@ -43,6 +52,9 @@ export function getSubjectsFromSemester(semesterData: SemesterJSON): string[] {
   );
 }
 
+/**
+ * Transform semester sections into courses grouped by subject
+ */
 export function getCoursesBySubject(semesterData: SemesterJSON): Record<string, Course[]> {
   const courses: Record<string, Course[]> = {};
 
@@ -54,7 +66,7 @@ export function getCoursesBySubject(semesterData: SemesterJSON): Record<string, 
     const exists = courses[section.subject].some((c) => c.code === section.courseCode);
     if (!exists) {
       courses[section.subject].push({
-        id: section.id,
+        id: section.courseCode,
         code: section.courseCode,
         name: section.courseName,
         subject: section.subject,
@@ -66,6 +78,9 @@ export function getCoursesBySubject(semesterData: SemesterJSON): Record<string, 
   return courses;
 }
 
+/**
+ * Get all sections for a specific course
+ */
 export function getSectionsForCourse(
   semesterData: SemesterJSON,
   courseCode: string,

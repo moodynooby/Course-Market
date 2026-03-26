@@ -8,6 +8,7 @@ import {
   type LLMTask,
 } from '../config/llmConfig';
 import type { Preferences, Schedule, Section, TradePost } from '../types';
+import type { GeneratedSchedule, ScheduleRank } from '../utils/schedule-types';
 
 export function buildScheduleAnalysisPrompt(
   schedule: Schedule,
@@ -90,16 +91,288 @@ Provide your analysis using this Markdown structure:
 
 export function buildTradeMessagePrompt(trade: TradePost): string {
   return `You are a helpful assistant assisting a student with trading a course section.
-  
+
 Trade Details:
 - Course: ${trade.courseCode} - ${trade.courseName}
 - Offering Section: ${trade.sectionOffered}
 - Looking for Section: ${trade.sectionWanted}
 - Student Name: ${trade.userDisplayName}
 
-Draft a polite, professional, and clear message that the student can send to potential trade partners. 
-The message should introduce the trade offer and ask if they are interested. 
+Draft a polite, professional, and clear message that the student can send to potential trade partners.
+The message should introduce the trade offer and ask if they are interested.
 Keep it concise (under 100 words).`;
+}
+
+/**
+ * Build prompt for ranking multiple schedules
+ */
+export function buildScheduleRankingPrompt(
+  schedules: GeneratedSchedule[],
+  preferences: Preferences,
+  topN: number = 3,
+): string {
+  const schedulesInfo = schedules
+    .slice(0, topN)
+    .map(
+      (s, idx) => `
+**Schedule ${idx + 1}**
+- Courses: ${s.sections.map((sec) => sec.courseId).join(', ')}
+- Total Credits: ${s.totalCredits}
+- Score: ${s.score}/100
+- Time Slots:
+${s.sections
+  .map(
+    (sec) =>
+      `  - ${sec.courseId}: ${sec.sectionNumber} (${sec.instructor || 'TBA'}) - ${sec.timeSlots.map((t) => `${t.day} ${t.startTime}-${t.endTime}`).join(', ')}`,
+  )
+  .join('\n')}
+`,
+    )
+    .join('\n---\n');
+
+  const preferencesText = [
+    preferences.preferMorning && 'Prefers morning classes',
+    preferences.preferAfternoon && 'Prefers afternoon classes',
+    preferences.avoidDays.length > 0 && `Avoids classes on ${preferences.avoidDays.join(', ')}`,
+    `Preferred time range: ${preferences.preferredStartTime} - ${preferences.preferredEndTime}`,
+    preferences.maxGapMinutes > 0 &&
+      `Maximum gap between classes: ${preferences.maxGapMinutes} minutes`,
+    preferences.preferConsecutiveDays && 'Prefers consecutive class days',
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  return `You are an expert academic advisor. Compare and rank these ${Math.min(topN, schedules.length)} schedule options for a student with the following preferences:
+
+**Student Preferences:**
+${preferencesText}
+
+**Schedule Options:**
+${schedulesInfo}
+
+For each schedule, provide:
+1. **Match Score** (1-10): How well it matches the student's preferences
+2. **Key Strength**: One major advantage of this schedule
+3. **Main Tradeoff**: One significant compromise or drawback compared to other options
+4. **Recommendation**: Brief explanation of why a student might choose this schedule
+
+Format your response as a JSON array with this structure:
+[
+  {
+    "scheduleIndex": 1,
+    "rank": 1,
+    "matchScore": 9,
+    "explanation": "This schedule best matches your preference for morning classes...",
+    "tradeoff": "Has a 2-hour gap on Wednesday but offers compact MWF schedule"
+  }
+]
+
+Return ONLY the JSON array, no additional text.`;
+}
+
+/**
+ * Build prompt for natural language schedule search
+ */
+export function buildNaturalSearchPrompt(
+  query: string,
+  schedules: GeneratedSchedule[],
+  preferences: Preferences,
+  topN: number = 10,
+): string {
+  const schedulesInfo = schedules
+    .slice(0, topN)
+    .map(
+      (s, idx) => `
+**Schedule ${idx + 1}**
+- Credits: ${s.totalCredits}
+- Score: ${s.score}
+- Courses: ${s.sections.map((sec) => `${sec.courseId} (${sec.sectionNumber})`).join(', ')}
+- Times: ${s.sections.map((sec) => sec.timeSlots.map((t) => `${t.day} ${t.startTime}-${t.endTime}`).join(', ')).join('; ')}
+`,
+    )
+    .join('\n');
+
+  return `You are a helpful academic advisor assistant. A student is looking for schedules matching this request:
+
+**Student Request:** "${query}"
+
+**Context from their profile:**
+- Preferred time: ${preferences.preferredStartTime} - ${preferences.preferredEndTime}
+- ${preferences.preferMorning ? 'Prefers morning classes' : preferences.preferAfternoon ? 'Prefers afternoon classes' : 'No specific time preference'}
+- ${preferences.avoidDays.length > 0 ? `Avoids: ${preferences.avoidDays.join(', ')}` : 'No specific days to avoid'}
+
+**Available Schedules:**
+${schedulesInfo}
+
+Analyze each schedule and determine:
+1. Does it match the student's request? (yes/no/partial)
+2. How well does it match? (relevance score 0-100)
+3. Why does it match or not match? (brief explanation)
+
+Format your response as a JSON array:
+[
+  {
+    "scheduleIndex": 1,
+    "matches": true,
+    "relevanceScore": 85,
+    "explanation": "This schedule has morning classes on MWF as requested, with no Friday afternoon classes",
+    "matchedCriteria": ["morning classes", "MWF days", "no Friday afternoon"]
+  }
+]
+
+Return ONLY the JSON array, no additional text.`;
+}
+
+/**
+ * Rank schedules using LLM comparison
+ * @param schedules - Schedules to rank
+ * @param preferences - User preferences
+ * @param topN - Number of top schedules to compare
+ * @returns Ranked schedules with explanations
+ */
+export async function rankSchedules(
+  schedules: GeneratedSchedule[],
+  preferences: Preferences,
+  topN: number = 3,
+): Promise<ScheduleRank[]> {
+  if (schedules.length === 0) {
+    return [];
+  }
+
+  const schedulesToCompare = schedules.slice(0, Math.max(topN, 5));
+  const prompt = buildScheduleRankingPrompt(schedulesToCompare, preferences, topN);
+
+  try {
+    const response = await llmService.generateCompletion(prompt);
+
+    // Try to parse JSON response
+    const jsonMatch = response.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      const ranks = JSON.parse(jsonMatch[0]) as Array<{
+        scheduleIndex: number;
+        rank: number;
+        matchScore: number;
+        explanation: string;
+        tradeoff: string;
+      }>;
+
+      return ranks
+        .map((r) => {
+          const schedule = schedulesToCompare[r.scheduleIndex - 1];
+          if (!schedule) return null;
+          return {
+            schedule,
+            rank: r.rank,
+            matchScore: r.matchScore,
+            explanation: r.explanation,
+            tradeoff: r.tradeoff,
+          };
+        })
+        .filter((r): r is ScheduleRank => r !== null)
+        .sort((a, b) => a.rank - b.rank);
+    }
+
+    // Fallback: return schedules sorted by score
+    return schedulesToCompare.map((s, idx) => ({
+      schedule: s,
+      rank: idx + 1,
+      matchScore: Math.round(s.score / 10),
+      explanation: `Score: ${s.score}/100, Credits: ${s.totalCredits}`,
+      tradeoff: 'Ranking based on score alone',
+    }));
+  } catch (error) {
+    if (ENV.IS_DEV) {
+      console.error('LLM ranking failed:', error);
+    }
+    // Fallback to score-based ranking
+    return schedulesToCompare.map((s, idx) => ({
+      schedule: s,
+      rank: idx + 1,
+      matchScore: Math.round(s.score / 10),
+      explanation: `Score: ${s.score}/100, Credits: ${s.totalCredits}`,
+      tradeoff: 'Ranking based on score alone',
+    }));
+  }
+}
+
+/**
+ * Search schedules using natural language query with LLM enhancement
+ * @param query - Natural language query
+ * @param schedules - Schedules to search
+ * @param preferences - User preferences
+ * @returns Filtered and ranked schedules with explanations
+ */
+export async function searchSchedulesNatural(
+  query: string,
+  schedules: GeneratedSchedule[],
+  preferences: Preferences,
+): Promise<
+  Array<{
+    schedule: GeneratedSchedule;
+    relevanceScore: number;
+    explanation: string;
+    matchedCriteria: string[];
+  }>
+> {
+  if (!query.trim() || schedules.length === 0) {
+    return schedules.map((s) => ({
+      schedule: s,
+      relevanceScore: 1,
+      explanation: 'No filter applied',
+      matchedCriteria: ['All schedules shown'],
+    }));
+  }
+
+  const prompt = buildNaturalSearchPrompt(query, schedules, preferences);
+
+  try {
+    const response = await llmService.generateCompletion(prompt);
+
+    // Try to parse JSON response
+    const jsonMatch = response.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      const results = JSON.parse(jsonMatch[0]) as Array<{
+        scheduleIndex: number;
+        matches: boolean;
+        relevanceScore: number;
+        explanation: string;
+        matchedCriteria: string[];
+      }>;
+
+      return results
+        .map((r) => {
+          const schedule = schedules[r.scheduleIndex - 1];
+          if (!schedule || !r.matches) return null;
+          return {
+            schedule,
+            relevanceScore: r.relevanceScore / 100,
+            explanation: r.explanation,
+            matchedCriteria: r.matchedCriteria,
+          };
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null)
+        .sort((a, b) => b.relevanceScore - a.relevanceScore);
+    }
+
+    // Fallback: return all schedules
+    return schedules.map((s) => ({
+      schedule: s,
+      relevanceScore: 1,
+      explanation: 'Showing all schedules',
+      matchedCriteria: ['All schedules shown'],
+    }));
+  } catch (error) {
+    if (ENV.IS_DEV) {
+      console.error('LLM natural search failed:', error);
+    }
+    // Fallback: return all schedules
+    return schedules.map((s) => ({
+      schedule: s,
+      relevanceScore: 1,
+      explanation: 'Showing all schedules',
+      matchedCriteria: ['All schedules shown'],
+    }));
+  }
 }
 
 class UnifiedLLMService {

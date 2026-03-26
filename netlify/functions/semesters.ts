@@ -1,8 +1,8 @@
 import { neon } from '@netlify/neon';
 import { drizzle } from 'drizzle-orm/neon-http';
-import * as schema from '../../db/schema';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as schema from '../../db/schema';
 
 const client = neon();
 const db = drizzle({ client, schema });
@@ -57,36 +57,50 @@ export const handler = async (event: any) => {
         return jsonResponse(200, { semesters: [] });
       }
 
-      const semesters = files.map((file) => {
-        const filePath = path.join(semestersDir, file);
-        const content = fs.readFileSync(filePath, 'utf-8');
-        const data = JSON.parse(content);
+      const semesters: Array<{
+        id: string;
+        name: string;
+        jsonUrl: string;
+        isActive: boolean;
+      }> = [];
 
-        // Use semesterId from JSON, lowercase it for database consistency
-        const semesterId = (data.semesterId || file.replace('.json', '')).toLowerCase();
-        const semesterName = data.semesterName || file.replace('.json', '');
+      for (const file of files) {
+        try {
+          const filePath = path.join(semestersDir, file);
+          const content = fs.readFileSync(filePath, 'utf-8');
+          const data = JSON.parse(content);
 
-        return {
-          id: semesterId,
-          name: semesterName,
-          jsonUrl: `/semesters/${file}`,
-          isActive: true,
-        };
-      });
+          const semesterId = (data.semesterId || file.replace('.json', '')).toLowerCase();
+          const semesterName = data.semesterName || file.replace('.json', '');
 
-      // Sync with database
-      for (const sem of semesters) {
-        await db
-          .insert(schema.semesters)
-          .values(sem)
-          .onConflictDoUpdate({
-            target: schema.semesters.id,
-            set: {
-              name: sem.name,
-              jsonUrl: sem.jsonUrl,
-              isActive: sem.isActive,
-            },
+          semesters.push({
+            id: semesterId,
+            name: semesterName,
+            jsonUrl: `/semesters/${file}`,
+            isActive: true,
           });
+        } catch (err) {
+          console.error(`Failed to parse semester file ${file}:`, err);
+        }
+      }
+
+      // Sync with database using batch insert
+      if (semesters.length > 0) {
+        await Promise.all(
+          semesters.map((sem) =>
+            db
+              .insert(schema.semesters)
+              .values(sem)
+              .onConflictDoUpdate({
+                target: schema.semesters.id,
+                set: {
+                  name: sem.name,
+                  jsonUrl: sem.jsonUrl,
+                  isActive: sem.isActive,
+                },
+              }),
+          ),
+        );
       }
 
       return jsonResponse(200, { semesters });

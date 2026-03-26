@@ -5,13 +5,13 @@ import {
   Close,
   ContactPhone,
   Description,
-  HourglassEmpty,
   School,
   Search,
   SwapHoriz,
 } from '@mui/icons-material';
 import {
   Alert,
+  alpha,
   Avatar,
   Box,
   Button,
@@ -28,6 +28,7 @@ import {
   Stack,
   TextField,
   Typography,
+  useTheme,
 } from '@mui/material';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -37,8 +38,10 @@ import {
   getTrades as fetchTrades,
   updateTrade,
 } from '../services/tradesApi';
+import { ApiError } from '../services/apiClient';
 import type { TradePost } from '../types';
 import { timeAgo } from '../utils';
+import { tradeSchema, formatZodError } from '../lib/schemas';
 
 const TradeCard = memo(function TradeCard({
   trade,
@@ -57,11 +60,11 @@ const TradeCard = memo(function TradeCard({
   const isOwner = user && trade.auth0UserId === user.id;
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const theme = useTheme();
 
   const statusConfig = {
     open: { color: 'success' as const, icon: <CheckCircle fontSize="small" /> },
-    pending: { color: 'warning' as const, icon: <HourglassEmpty fontSize="small" /> },
-    completed: { color: 'info' as const, icon: <CheckCircle fontSize="small" /> },
+    filled: { color: 'info' as const, icon: <CheckCircle fontSize="small" /> },
     cancelled: { color: 'default' as const, icon: <Close fontSize="small" /> },
   };
 
@@ -70,12 +73,13 @@ const TradeCard = memo(function TradeCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       sx={{
-        transition: 'all 0.2s ease-in-out',
-        transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
-        boxShadow: isHovered ? 6 : 1,
-        opacity: trade.status === 'cancelled' ? 0.7 : 1,
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
+        boxShadow: isHovered ? 4 : 1,
+        opacity: trade.status === 'cancelled' ? 0.75 : 1,
         '&:hover .owner-actions': {
           opacity: 1,
+          visibility: 'visible',
         },
       }}
     >
@@ -175,25 +179,24 @@ const TradeCard = memo(function TradeCard({
           className="owner-actions"
           sx={{
             opacity: isHovered ? 1 : 0,
-            transition: 'opacity 0.2s',
-            bgcolor: 'action.hover',
+            visibility: isHovered ? 'visible' : 'hidden',
+            transition: 'opacity 0.2s ease, visibility 0.2s ease',
+            bgcolor: alpha(theme.palette.action.hover, 0.5),
             py: 1,
             px: 2,
             display: 'flex',
             gap: 1,
+            borderTop: `1px solid ${theme.palette.divider}`,
           }}
         >
           <Button size="small" onClick={() => onEdit(trade)}>
             Edit
           </Button>
           {trade.status === 'open' && (
-            <Button size="small" onClick={() => onUpdate(trade.id, { status: 'pending' })}>
-              Mark Pending
+            <Button size="small" onClick={() => onUpdate(trade.id, { status: 'filled' })}>
+              Mark as Filled
             </Button>
           )}
-          <Button size="small" onClick={() => onUpdate(trade.id, { status: 'completed' })}>
-            Complete
-          </Button>
           <Button size="small" color="error" onClick={() => setConfirmDeleteOpen(true)}>
             Delete
           </Button>
@@ -225,6 +228,9 @@ const TradeCard = memo(function TradeCard({
   );
 });
 
+const INITIAL_VISIBLE_COUNT = 10;
+const LOAD_MORE_INCREMENT = 10;
+
 export default function TradingPage() {
   const { user, getToken } = useAuth();
 
@@ -235,6 +241,7 @@ export default function TradingPage() {
   const [search, setSearch] = useState('');
   const [editingTrade, setEditingTrade] = useState<TradePost | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({
     open: false,
     message: '',
@@ -285,12 +292,19 @@ export default function TradingPage() {
 
     setSubmitting(true);
     try {
+      // Validate form data using Zod schema
+      const validatedData = tradeSchema.parse({
+        ...tradeForm,
+        courseName: tradeForm.courseName || undefined,
+        description: tradeForm.description || undefined,
+      });
+
       const token = await getToken();
 
       if (editingTrade) {
-        await updateTrade(token, editingTrade.id, tradeForm);
+        await updateTrade(token, editingTrade.id, validatedData);
       } else {
-        await createTrade(token, tradeForm);
+        await createTrade(token, validatedData);
       }
 
       setDialogOpen(false);
@@ -306,7 +320,17 @@ export default function TradingPage() {
       await loadTrades();
       setSnackbar({ open: true, message: 'Trade posted successfully!' });
     } catch (e) {
-      setError((e as Error).message);
+      if (e instanceof Error && e.constructor.name === 'ZodError') {
+        const zodError = e as import('zod').ZodError;
+        const formatted = formatZodError(zodError);
+        const messages = formatted.details.map((d) => `${d.field}: ${d.message}`).join('\n');
+        setError(`Validation failed:\n${messages}`);
+      } else if (e instanceof ApiError && e.details) {
+        const messages = e.details.map((d) => `${d.field}: ${d.message}`).join('\n');
+        setError(`Validation failed:\n${messages}`);
+      } else {
+        setError((e as Error).message);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -328,7 +352,12 @@ export default function TradingPage() {
         const updated = await updateTrade(token, id, updates);
         setTrades((prev) => prev.map((t) => (t.id === id ? updated : t)));
       } catch (e) {
-        setError((e as Error).message);
+        if (e instanceof ApiError && e.details) {
+          const messages = e.details.map((d) => `${d.field}: ${d.message}`).join('\n');
+          setError(`Validation failed:\n${messages}`);
+        } else {
+          setError((e as Error).message);
+        }
       }
     },
     [getToken],
@@ -341,7 +370,12 @@ export default function TradingPage() {
         await deleteTrade(token, id);
         setTrades((prev) => prev.filter((t) => t.id !== id));
       } catch (e) {
-        setError((e as Error).message);
+        if (e instanceof ApiError && e.details) {
+          const messages = e.details.map((d) => `${d.field}: ${d.message}`).join('\n');
+          setError(`Validation failed:\n${messages}`);
+        } else {
+          setError((e as Error).message);
+        }
       }
     },
     [getToken],
@@ -358,6 +392,21 @@ export default function TradingPage() {
         t.sectionWanted.toLowerCase().includes(lower),
     );
   }, [trades, search]);
+
+  // Reset visible count when search changes
+  useEffect(() => {
+    setVisibleCount(INITIAL_VISIBLE_COUNT);
+  }, []);
+
+  const visibleTrades = useMemo(() => {
+    return filteredTrades.slice(0, visibleCount);
+  }, [filteredTrades, visibleCount]);
+
+  const hasMoreTrades = visibleCount < filteredTrades.length;
+
+  const handleLoadMore = () => {
+    setVisibleCount((prev) => prev + LOAD_MORE_INCREMENT);
+  };
 
   if (loading) {
     return (
@@ -456,20 +505,30 @@ export default function TradingPage() {
           />
 
           <Typography variant="h6">
-            {filteredTrades.length} Trade{filteredTrades.length !== 1 ? 's' : ''}
-            {search && ` (${trades.length} total)`}
+            Showing {visibleTrades.length} of {filteredTrades.length} Trade
+            {filteredTrades.length !== 1 ? 's' : ''}
           </Typography>
 
-          {filteredTrades.map((trade) => (
-            <TradeCard
-              key={trade.id}
-              trade={trade}
-              onUpdate={handleUpdate}
-              onDelete={handleDelete}
-              onEdit={handleEdit}
-              onContact={handleContact}
-            />
-          ))}
+          <Stack spacing={2}>
+            {visibleTrades.map((trade) => (
+              <TradeCard
+                key={trade.id}
+                trade={trade}
+                onUpdate={handleUpdate}
+                onDelete={handleDelete}
+                onEdit={handleEdit}
+                onContact={handleContact}
+              />
+            ))}
+          </Stack>
+
+          {hasMoreTrades && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+              <Button variant="outlined" onClick={handleLoadMore} sx={{ minWidth: 200 }}>
+                Load More ({LOAD_MORE_INCREMENT} more)
+              </Button>
+            </Box>
+          )}
         </Stack>
       )}
 
@@ -585,7 +644,7 @@ export default function TradingPage() {
               </Typography>
               <TextField
                 label="Phone Number"
-                placeholder="+1 (555) 123-4567"
+                placeholder="(555) 123-4567"
                 value={tradeForm.contactPhone}
                 onChange={(e) => setTradeForm({ ...tradeForm, contactPhone: e.target.value })}
                 required
@@ -618,6 +677,7 @@ export default function TradingPage() {
               !tradeForm.courseCode ||
               !tradeForm.sectionOffered ||
               !tradeForm.sectionWanted ||
+              !tradeForm.contactPhone ||
               submitting
             }
             loading={submitting}

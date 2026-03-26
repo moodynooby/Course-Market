@@ -58,7 +58,7 @@ export interface TradePost {
   courseName: string;
   sectionOffered: string;
   sectionWanted: string;
-  status: 'open' | 'pending' | 'completed' | 'cancelled';
+  status: 'open' | 'filled' | 'cancelled';
   description?: string;
   contactPhone: string;
   createdAt: string;
@@ -99,7 +99,7 @@ export interface Semester {
   isActive: boolean;
 }
 
-// JSON file structure for semester data (hybrid approach)
+// JSON file structure for semester data
 export interface SemesterJSON {
   version: string;
   semesterId: string;
@@ -119,6 +119,7 @@ export interface SemesterJSON {
 
 export interface SectionJSON {
   id: string;
+  courseId?: string; // Optional for backward compatibility
   courseCode: string;
   courseName: string;
   sectionNumber: string;

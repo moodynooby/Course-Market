@@ -10,6 +10,7 @@ import {
   Switch,
   TextField,
   Typography,
+  useTheme,
 } from '@mui/material';
 import type { DayOfWeek, Preferences } from '../types';
 
@@ -29,6 +30,8 @@ const DAYS: { value: DayOfWeek; label: string }[] = [
 ];
 
 export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps) {
+  const theme = useTheme();
+
   const handleDayToggle = (day: DayOfWeek) => {
     const current = preferences.avoidDays;
     const updated = current.includes(day) ? current.filter((d) => d !== day) : [...current, day];
@@ -155,9 +158,13 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
               <Typography variant="caption" color="text.secondary">
                 Max Gap Between Classes
               </Typography>
-              <Typography variant="caption" fontWeight={600} color="accent.main">
-                {preferences.maxGapMinutes} min
-              </Typography>
+              <Chip
+                label={`${preferences.maxGapMinutes} min`}
+                size="small"
+                color="primary"
+                variant="outlined"
+                sx={{ fontWeight: 600 }}
+              />
             </Stack>
             <Slider
               value={preferences.maxGapMinutes}
@@ -165,11 +172,26 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
               min={0}
               max={180}
               step={15}
-              valueLabelDisplay="off"
+              valueLabelDisplay="auto"
+              valueLabelFormat={(value) => `${value} min`}
               sx={{
                 '& .MuiSlider-thumb': {
-                  width: 16,
-                  height: 16,
+                  width: 18,
+                  height: 18,
+                },
+                '& .MuiSlider-track': {
+                  bgcolor: 'primary.main',
+                },
+                '& .MuiSlider-rail': {
+                  opacity: 0.3,
+                },
+                '& .MuiSlider-valueLabel': {
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                  fontWeight: 600,
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 1,
                 },
               }}
             />
@@ -191,7 +213,14 @@ export function PreferencesForm({ preferences, onUpdate }: PreferencesFormProps)
                     variant={isActive ? 'filled' : 'outlined'}
                     size="small"
                     sx={{
-                      fontWeight: isActive ? 600 : 400,
+                      fontWeight: isActive ? 600 : 500,
+                      transition: 'all 0.2s ease',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: theme.shadows[1],
+                        bgcolor: isActive ? 'error.dark' : 'action.hover',
+                      },
                     }}
                   />
                 );
