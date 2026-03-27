@@ -105,13 +105,13 @@ const router = createBrowserRouter([
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider>
-        <ConfigProvider>
+      <ConfigProvider>
+        <ThemeProvider>
           <AuthProvider>
             <RouterProvider router={router} />
           </AuthProvider>
-        </ConfigProvider>
-      </ThemeProvider>
+        </ThemeProvider>
+      </ConfigProvider>
     </ErrorBoundary>
   );
 }
