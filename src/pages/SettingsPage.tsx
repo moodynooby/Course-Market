@@ -27,13 +27,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { PROVIDER_OPTIONS, STORAGE_KEYS } from '../utils/constants';
 import { useConfigContext } from '../context/ConfigContext';
 import { useThemeMode } from '../context/ThemeContext';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthContext } from '../context/AuthContext';
 import { getSemesters } from '../services/coursesApi';
 import { api } from '../services/apiClient';
-import type { LLMProvider, Semester } from '../types';
-
+import type { LLMProvider, Preferences, Semester } from '../types';
+import { SchedulePreferences } from '../components/SchedulePreferences';
 export default function SettingsPage() {
-  const { user, getToken } = useAuth();
+  const { user, profile, getToken, updateProfile } = useAuthContext();
   const { mode } = useThemeMode();
   const { preferences, llmConfig, updatePreferences, updateLlmConfig } = useConfigContext();
   const [saved, setSaved] = useState(false);
@@ -105,6 +105,16 @@ export default function SettingsPage() {
 
   const selectedOption = PROVIDER_OPTIONS.find((o) => o.value === llmConfig.provider);
   const isLocalProvider = llmConfig.provider === 'webllm';
+
+  const handlePreferencesSave = async (prefs: Preferences) => {
+    try {
+      await updateProfile({ preferences: prefs });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (error) {
+      console.error('Error saving schedule preferences:', error);
+    }
+  };
 
   return (
     <Box>
@@ -293,6 +303,14 @@ export default function SettingsPage() {
               </Stack>
             </CardContent>
           </Card>
+        </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <SchedulePreferences
+            initialPreferences={profile?.preferences}
+            onSave={handlePreferencesSave}
+            autoSave={true}
+          />
         </Grid>
       </Grid>
 

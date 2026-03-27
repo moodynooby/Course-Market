@@ -17,7 +17,6 @@ import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ApiKeyDialog from '../components/ApiKeyDialog';
 import { OptimizationPanel } from '../components/dashboard/OptimizationPanel';
-import { PreferencesPanel } from '../components/dashboard/PreferencesPanel';
 import { ScheduleOverview } from '../components/dashboard/ScheduleOverview';
 import { SelectedCoursesList } from '../components/dashboard/SelectedCoursesList';
 import { storage } from '../utils/storage';
@@ -38,7 +37,7 @@ const ScheduleExplorerDialog = lazy(() =>
 export default function LandingPage() {
   const navigate = useNavigate();
   const { getToken } = useAuth();
-  const { preferences, llmConfig, updateLlmConfig, updatePreferences } = useConfigContext();
+  const { preferences, llmConfig, updateLlmConfig } = useConfigContext();
   const theme = useTheme();
 
   const [loading, setLoading] = useState(true);
@@ -319,14 +318,8 @@ export default function LandingPage() {
     }
   }, [searchQuery, generatedSchedules]);
 
-  const _handleClearSearch = useCallback(() => {
-    setSearchQuery('');
-    setSearchResults([]);
-  }, []);
-
   const hasCourses = schedule && schedule.sections.length > 0;
   const showOptimization = hasCourses;
-  const showPreferences = hasCourses || Object.keys(preferences.avoidDays).length > 0;
 
   return (
     <Box>
@@ -516,15 +509,6 @@ export default function LandingPage() {
                   onOptimize={handleOptimize}
                   onGenerateAll={handleGenerateAll}
                   onWebgpuWarning={() => setWebgpuWarningOpen(true)}
-                />
-              )}
-
-              {showPreferences && (
-                <PreferencesPanel
-                  preferences={preferences}
-                  onUpdate={(key, value) => {
-                    updatePreferences({ [key]: value });
-                  }}
                 />
               )}
             </Stack>

@@ -56,11 +56,24 @@ export const handler = async (event: any) => {
         return jsonResponse(400, { error: 'Invalid JSON' });
       }
 
+      // Fetch user profile to get displayName and phone
+      const [userProfile] = await db
+        .select()
+        .from(schema.userProfiles)
+        .where(eq(schema.userProfiles.auth0UserId, user.sub));
+
+      if (!userProfile) {
+        return jsonResponse(400, {
+          error: 'Profile not found',
+          message: 'Please complete onboarding before creating a trade',
+        });
+      }
+
       const [newTrade] = await db
         .insert(schema.trades)
         .values({
           auth0UserId: user.sub,
-          userDisplayName: user.name,
+          userDisplayName: userProfile.displayName,
           userEmail: user.email,
           userAvatarUrl: user.picture || null,
           courseCode: requestBody.courseCode,
@@ -69,7 +82,7 @@ export const handler = async (event: any) => {
           sectionWanted: requestBody.sectionWanted,
           status: 'open',
           description: requestBody.description || null,
-          contactPhone: requestBody.contactPhone,
+          contactPhone: userProfile.phone,
         })
         .returning();
 
@@ -107,6 +120,12 @@ export const handler = async (event: any) => {
         });
       }
 
+      // Fetch user profile to get updated phone number
+      const [userProfile] = await db
+        .select()
+        .from(schema.userProfiles)
+        .where(eq(schema.userProfiles.auth0UserId, user.sub));
+
       const [updatedTrade] = await db
         .update(schema.trades)
         .set({
@@ -116,7 +135,7 @@ export const handler = async (event: any) => {
           sectionWanted: requestBody.sectionWanted ?? existingTrade.sectionWanted,
           status: requestBody.status ?? existingTrade.status,
           description: requestBody.description ?? existingTrade.description,
-          contactPhone: requestBody.contactPhone ?? existingTrade.contactPhone,
+          contactPhone: userProfile?.phone ?? existingTrade.contactPhone,
           updatedAt: new Date(),
         })
         .where(eq(schema.trades.id, idNum))

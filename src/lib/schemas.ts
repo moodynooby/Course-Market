@@ -26,7 +26,6 @@ export const tradeSchema = z.object({
   sectionOffered: z.string().min(1, 'Section offered is required').max(20),
   sectionWanted: z.string().min(1, 'Section wanted is required').max(20),
   description: z.string().optional(),
-  contactPhone: phoneSchema,
 });
 
 export const tradeUpdateSchema = tradeSchema

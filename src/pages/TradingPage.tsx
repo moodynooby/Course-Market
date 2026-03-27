@@ -254,7 +254,6 @@ export default function TradingPage() {
     sectionOffered: '',
     sectionWanted: '',
     description: '',
-    contactPhone: '',
   });
 
   const loadTrades = useCallback(async () => {
@@ -283,7 +282,6 @@ export default function TradingPage() {
       sectionOffered: trade.sectionOffered,
       sectionWanted: trade.sectionWanted,
       description: trade.description || '',
-      contactPhone: trade.contactPhone || '',
     });
     setDialogOpen(true);
   }, []);
@@ -316,7 +314,6 @@ export default function TradingPage() {
         sectionOffered: '',
         sectionWanted: '',
         description: '',
-        contactPhone: '',
       });
       await loadTrades();
       setSnackbar({ open: true, message: 'Trade posted successfully!' });
@@ -638,28 +635,6 @@ export default function TradingPage() {
                 ),
               }}
             />
-
-            <Box>
-              <Typography variant="subtitle2" color="primary" fontWeight={600} sx={{ mb: 1 }}>
-                Contact Information
-              </Typography>
-              <TextField
-                label="Phone Number"
-                placeholder="(555) 123-4567"
-                value={tradeForm.contactPhone}
-                onChange={(e) => setTradeForm({ ...tradeForm, contactPhone: e.target.value })}
-                required
-                fullWidth
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <ContactPhone fontSize="small" />
-                    </InputAdornment>
-                  ),
-                }}
-                helperText="Other traders will use this to contact you"
-              />
-            </Box>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -678,7 +653,6 @@ export default function TradingPage() {
               !tradeForm.courseCode ||
               !tradeForm.sectionOffered ||
               !tradeForm.sectionWanted ||
-              !tradeForm.contactPhone ||
               submitting
             }
             loading={submitting}
