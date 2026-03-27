@@ -5,6 +5,8 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AuthProvider } from './context/AuthContext';
+import { ConfigProvider } from './context/ConfigContext';
 import { ThemeProvider } from './context/ThemeContext';
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -104,7 +106,11 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <RouterProvider router={router} />
+        <ConfigProvider>
+          <AuthProvider>
+            <RouterProvider router={router} />
+          </AuthProvider>
+        </ConfigProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

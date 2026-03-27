@@ -1,7 +1,7 @@
-import { ENV } from '../config/devConfig';
+import { env } from '../utils/env';
 
 const getBaseUrl = (): string => {
-  if (ENV.NETLIFY_FUNCTION_URL) return ENV.NETLIFY_FUNCTION_URL;
+  if (env.NETLIFY_FUNCTION_URL) return env.NETLIFY_FUNCTION_URL;
   return '/.netlify/functions';
 };
 

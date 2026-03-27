@@ -1,41 +1,22 @@
 import { useAuth0 } from '@auth0/auth0-react';
 import { Box, CircularProgress, Typography } from '@mui/material';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { getUserProfile } from '../services/onboardingApi';
+import { useAuthContext } from '../context/AuthContext';
 
 export default function CallbackPage() {
-  const { isAuthenticated, isLoading, error } = useAuth0();
-  const { getToken } = useAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth0();
+  const { profile, isProfileLoading, loading: contextLoading } = useAuthContext();
   const navigate = useNavigate();
 
-  const checkOnboardingStatus = useCallback(async () => {
-    try {
-      const token = await getToken();
-      const profile = await getUserProfile(token);
-
-      if (profile?.onboardingCompleted) {
-        navigate('/', { replace: true });
-      } else {
-        navigate('/onboarding', { replace: true });
-      }
-    } catch (err) {
-      console.error('[CallbackPage] Error checking profile:', err);
-      navigate('/onboarding', { replace: true });
-    }
-  }, [getToken, navigate]);
+  const isLoading = authLoading || contextLoading || isProfileLoading;
 
   useEffect(() => {
-    if (!isLoading) {
-      if (isAuthenticated) {
-        checkOnboardingStatus();
-      } else if (error) {
-        console.error('Auth error:', error);
-        navigate('/login');
-      }
+    if (!isLoading && isAuthenticated) {
+      const redirectPath = profile?.onboardingCompleted ? '/' : '/onboarding';
+      navigate(redirectPath, { replace: true });
     }
-  }, [isAuthenticated, isLoading, error, navigate, checkOnboardingStatus]);
+  }, [isAuthenticated, isLoading, profile, navigate]);
 
   return (
     <Box
@@ -50,7 +31,7 @@ export default function CallbackPage() {
     >
       <CircularProgress sx={{ mb: 2 }} />
       <Typography variant="body1" color="text.secondary">
-        {error ? 'Authentication failed. Redirecting...' : 'Completing sign in...'}
+        Completing sign in...
       </Typography>
     </Box>
   );

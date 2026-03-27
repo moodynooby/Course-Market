@@ -20,12 +20,12 @@ import { OptimizationPanel } from '../components/dashboard/OptimizationPanel';
 import { PreferencesPanel } from '../components/dashboard/PreferencesPanel';
 import { ScheduleOverview } from '../components/dashboard/ScheduleOverview';
 import { SelectedCoursesList } from '../components/dashboard/SelectedCoursesList';
-import { getLlmConfig, saveLlmConfig } from '../config/llmConfig';
-import { storage } from '../config/storage';
-import { DEFAULT_PREFERENCES, STORAGE_KEYS, savePreferences } from '../config/userConfig';
+import { storage } from '../utils/storage';
+import { STORAGE_KEYS } from '../utils/constants';
+import { useConfigContext } from '../context/ConfigContext';
 import { useAuth } from '../hooks/useAuth';
 import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
-import type { Course, Preferences, Schedule, Section } from '../types';
+import type { Course, Schedule, Section } from '../types';
 import { checkConflicts } from '../utils/schedule';
 import type { GeneratedSchedule, SearchResult } from '../utils/schedule-types';
 
@@ -38,6 +38,7 @@ const ScheduleExplorerDialog = lazy(() =>
 export default function LandingPage() {
   const navigate = useNavigate();
   const { getToken } = useAuth();
+  const { preferences, llmConfig, updateLlmConfig, updatePreferences } = useConfigContext();
   const theme = useTheme();
 
   const [loading, setLoading] = useState(true);
@@ -45,7 +46,6 @@ export default function LandingPage() {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [allSections, setAllSections] = useState<Section[]>([]);
-  const [preferences, setPreferences] = useState<Preferences>(DEFAULT_PREFERENCES);
 
   const [optimizing, setOptimizing] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
@@ -188,21 +188,18 @@ export default function LandingPage() {
 
     try {
       const { optimizeWithLLM } = await import('../services/llm');
-      const { getPreferences } = await import('../config/userConfig');
-      const prefs = getPreferences();
-      const currentLlmConfig = getLlmConfig();
       const token = await getToken();
 
       const result = await optimizeWithLLM(
         [schedule],
-        prefs,
+        preferences,
         token || '',
         {
-          provider: currentLlmConfig.provider as 'webllm' | 'groq',
-          model: currentLlmConfig.model,
-          temperature: currentLlmConfig.temperature,
-          maxTokens: currentLlmConfig.maxTokens,
-          initProgressCallback: (report) => {
+          provider: llmConfig.provider as 'webllm' | 'groq',
+          model: llmConfig.model,
+          temperature: llmConfig.temperature,
+          maxTokens: llmConfig.maxTokens,
+          initProgressCallback: (report: { progress: number; text: string }) => {
             setInitProgress(`${report.text} (${Math.round(report.progress * 100)}%)`);
           },
         },
@@ -245,8 +242,7 @@ export default function LandingPage() {
 
     try {
       const { generateSchedules } = await import('../utils/schedule-generator');
-      const { getPreferences } = await import('../config/userConfig');
-      const prefs = getPreferences();
+      const prefs = preferences;
 
       const selectedCourseIds = new Set(schedule.sections.map((s) => s.courseId));
       const relevantSections = allSections.filter((s) => selectedCourseIds.has(s.courseId));
@@ -279,7 +275,7 @@ export default function LandingPage() {
     } finally {
       setGenerating(false);
     }
-  }, [schedule, allCourses, allSections]);
+  }, [schedule, allCourses, allSections, preferences]);
 
   const handleApplySchedule = useCallback((genSchedule: GeneratedSchedule) => {
     const selections = genSchedule.sections.reduce(
@@ -527,9 +523,7 @@ export default function LandingPage() {
                 <PreferencesPanel
                   preferences={preferences}
                   onUpdate={(key, value) => {
-                    const updated = { ...preferences, [key]: value };
-                    setPreferences(updated);
-                    savePreferences(updated);
+                    updatePreferences({ [key]: value });
                   }}
                 />
               )}
@@ -565,8 +559,7 @@ export default function LandingPage() {
         open={apiKeyDialogOpen}
         onClose={() => setApiKeyDialogOpen(false)}
         onSave={(key) => {
-          const config = getLlmConfig();
-          saveLlmConfig({ ...config, apiKey: key });
+          updateLlmConfig({ ...llmConfig, apiKey: key });
           handleOptimize();
         }}
       />

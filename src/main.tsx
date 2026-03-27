@@ -2,14 +2,14 @@ import { Auth0Provider } from '@auth0/auth0-react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
-import { ENV } from './config/devConfig';
+import { env } from './utils/env.ts';
 
 const auth0Config = {
-  domain: ENV.AUTH0_DOMAIN,
-  clientId: ENV.AUTH0_CLIENT_ID,
+  domain: env.AUTH0_DOMAIN,
+  clientId: env.AUTH0_CLIENT_ID,
   authorizationParams: {
     redirect_uri: window.location.origin + '/callback',
-    audience: ENV.AUTH0_AUDIENCE,
+    audience: env.AUTH0_AUDIENCE,
     scope: 'openid profile email',
   },
   cacheLocation: 'localstorage' as const,

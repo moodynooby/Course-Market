@@ -21,8 +21,8 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { CourseCard } from '../components/CourseCard';
-import { storage } from '../config/storage';
-import { STORAGE_KEYS } from '../config/userConfig';
+import { storage } from '../utils/storage';
+import { STORAGE_KEYS } from '../utils/constants';
 import { useAuth } from '../hooks/useAuth';
 import { useSemesterParser } from '../hooks/useSemesterParser';
 import { getSemesters } from '../services/coursesApi';

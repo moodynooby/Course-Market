@@ -1,7 +1,7 @@
 import { CheckCircle } from '@mui/icons-material';
 import { Alert, Box, Button, CircularProgress, Paper, Typography } from '@mui/material';
 import { useState } from 'react';
-import { DEFAULT_PREFERENCES } from '../../config/userConfig';
+import { useConfigContext } from '../../context/ConfigContext';
 import type { Preferences } from '../../types';
 import { PreferencesForm } from '../PreferencesForm';
 
@@ -11,8 +11,9 @@ interface StepPreferencesProps {
 }
 
 export function StepPreferences({ onComplete, initialPreferences }: StepPreferencesProps) {
+  const { preferences: contextPreferences } = useConfigContext();
   const [preferences, setPreferences] = useState<Preferences>(
-    initialPreferences || DEFAULT_PREFERENCES,
+    initialPreferences || contextPreferences,
   );
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);

@@ -18,7 +18,7 @@ pnpm run build # Build + SPA _redirects generation
 
 - **Linter**: Biome (single quotes, 100 char line length, 2 space indent)
 - **Naming**: PascalCase for components, camelCase for functions/variables, kebab-case for files
-- **State**: Use `useAuth` hook (src/hooks/useAuth.ts) for identity, local state for UI
+- **State**: Use `useAuthContext` hook (src/context/AuthContext.tsx) for auth + profile state
 - **Styles**: MUI `sx` prop + theme tokens, custom hooks for complex logic
 - **Routing**: Protected routes use `<ProtectedRoute>` wrapper
 
@@ -81,6 +81,42 @@ pnpm run build # Build + SPA _redirects generation
 
 - **SPA Routing**: `_redirects` file generated in `dist/` at build time
 - **Protected routes**: Use `<ProtectedRoute>` component for auth-required pages
+- **Auth Context**: `AuthProvider` wraps app at root (src/App.tsx), provides unified auth + profile state
+
+## Authentication & Onboarding Flow
+
+### Architecture (Context-Based)
+
+- **AuthProvider** (`src/context/AuthContext.tsx`): Central context managing:
+  - Auth0 authentication state
+  - User profile data (fetched from backend, cached in context)
+  - Onboarding completion status
+  - Profile update/refresh methods
+
+- **Key Hooks**: 
+  - `useAuthContext()` - Primary hook for auth + profile (use this in new code)
+  - `useAuth()` - Legacy hook for Auth0-only access (still available in src/hooks/useAuth.ts)
+
+### User Flow
+
+1. **Login** (`/login`) → Auth0 redirect → **Callback** (`/callback`)
+2. **Callback** checks profile → redirects to `/onboarding` (new) or `/` (returning)
+3. **Onboarding** (`/onboarding`) → 3-step wizard (details → semester → preferences)
+4. **Protected Routes** → Check `profile.onboardingCompleted` before granting access
+
+### ProtectedRoute Behavior
+
+- Skips onboarding check for: `/login`, `/callback`, `/onboarding`
+- Shows `LoadingSpinner` while auth/profile loading
+- Redirects to `/login` if not authenticated
+- Redirects to `/onboarding` if authenticated but `onboardingCompleted === false`
+
+### Critical Rules
+
+1. **Use `useAuthContext()`** in components needing auth or profile data
+2. **Don't call profile API directly** - use context's `updateProfile()` and `refreshProfile()`
+3. **Profile is cached** in context - avoid redundant fetches
+4. **Onboarding is atomic** - all steps save to backend, final step sets `onboardingCompleted: true`
 
 ## Critical Rules for Agents
 

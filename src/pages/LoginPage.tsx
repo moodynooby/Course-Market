@@ -1,43 +1,9 @@
 import { School } from '@mui/icons-material';
-import {
-  Avatar,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  CircularProgress,
-  Stack,
-  Typography,
-} from '@mui/material';
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { Avatar, Box, Button, Card, CardContent, Stack, Typography } from '@mui/material';
+import { useAuthContext } from '../context/AuthContext';
 
 export default function LoginPage() {
-  const { signIn, isAuthenticated, loading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/');
-    }
-  }, [isAuthenticated, navigate]);
-
-  if (loading) {
-    return (
-      <Box
-        sx={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          bgcolor: 'background.default',
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const { signIn } = useAuthContext();
 
   return (
     <Box

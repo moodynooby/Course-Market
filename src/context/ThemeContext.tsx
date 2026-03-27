@@ -1,7 +1,6 @@
 import { CssBaseline, ThemeProvider as MuiThemeProvider } from '@mui/material';
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
-import { storage } from '../config/storage';
-import { STORAGE_KEYS } from '../config/userConfig';
+import { useConfigContext } from './ConfigContext';
 import { createAppTheme } from '../theme';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
@@ -25,10 +24,7 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [mode, setModeState] = useState<ThemeMode>(() => {
-    return storage.get(STORAGE_KEYS.THEME_MODE, 'system');
-  });
-
+  const { preferences, updatePreferences } = useConfigContext();
   const [systemDark, setSystemDark] = useState(false);
 
   useEffect(() => {
@@ -40,9 +36,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
+  const mode = preferences.theme || 'system';
+
   const setMode = (newMode: ThemeMode) => {
-    setModeState(newMode);
-    storage.set(STORAGE_KEYS.THEME_MODE, newMode);
+    updatePreferences({ theme: newMode });
   };
 
   const isDark = mode === 'system' ? systemDark : mode === 'dark';

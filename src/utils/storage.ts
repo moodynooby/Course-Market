@@ -1,13 +1,5 @@
-import { ENV } from './devConfig';
-
-const STORAGE_KEYS = {
-  COURSES: 'auraishub_courses',
-  SECTIONS: 'auraishub_sections',
-  PREFERENCES: 'auraishub_preferences',
-  COURSE_SELECTIONS: 'auraishub_course_selections',
-  THEME_MODE: 'theme-mode',
-  LLM_CONFIG: 'llm-byok-config',
-} as const;
+import { env } from './env';
+import { STORAGE_KEYS } from './constants';
 
 function safeGetItem<T>(key: string, defaultValue: T): T {
   try {
@@ -22,7 +14,7 @@ function safeGetItem<T>(key: string, defaultValue: T): T {
     // For objects, merge with defaults
     return { ...defaultValue, ...parsed };
   } catch (error) {
-    if (ENV.IS_DEV) {
+    if (env.IS_DEV) {
       console.error(`Failed to parse ${key} from localStorage:`, error);
     }
     return defaultValue;
@@ -33,7 +25,7 @@ function safeSetItem<T>(key: string, value: T): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (error) {
-    if (ENV.IS_DEV) {
+    if (env.IS_DEV) {
       console.error(`Failed to save ${key} to localStorage:`, error);
     }
   }
@@ -43,7 +35,7 @@ function safeRemoveItem(key: string): void {
   try {
     localStorage.removeItem(key);
   } catch (error) {
-    if (ENV.IS_DEV) {
+    if (env.IS_DEV) {
       console.error(`Failed to remove ${key} from localStorage:`, error);
     }
   }
@@ -66,5 +58,3 @@ export const storage = {
     safeRemoveItem(key);
   },
 };
-
-export { STORAGE_KEYS };

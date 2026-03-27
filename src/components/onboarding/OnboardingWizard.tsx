@@ -16,10 +16,8 @@ import {
 } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { savePreferences } from '../../config/userConfig';
-import { useThemeMode } from '../../context/ThemeContext';
-import { useAuth } from '../../hooks/useAuth';
-import { completeOnboarding, saveUserProfile } from '../../services/onboardingApi';
+import { useAuthContext } from '../../context/AuthContext';
+import { useConfigContext } from '../../context/ConfigContext';
 import type { Preferences } from '../../types';
 import { StepPreferences } from './StepPreferences';
 import { StepSemesterSelection } from './StepSemesterSelection';
@@ -46,8 +44,8 @@ const STEPS: { id: OnboardingStep; label: string }[] = [
 export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { getToken } = useAuth();
-  const { setMode } = useThemeMode();
+  const { updateProfile } = useAuthContext();
+  const { updatePreferences } = useConfigContext();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [activeStep, setActiveStep] = useState<OnboardingStep>(
@@ -74,8 +72,7 @@ export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
       setSaving(true);
       setError(null);
 
-      const token = await getToken();
-      await saveUserProfile(token, data);
+      await updateProfile(data);
 
       setUserData((prev) => ({
         ...prev,
@@ -101,8 +98,7 @@ export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
         throw new Error('Invalid semester ID');
       }
 
-      const token = await getToken();
-      await saveUserProfile(token, { semesterId });
+      await updateProfile({ semesterId });
 
       setUserData((prev) => ({
         ...prev,
@@ -123,21 +119,18 @@ export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
       setSaving(true);
       setError(null);
 
-      const token = await getToken();
-      await completeOnboarding(token, preferences);
+      await updateProfile({
+        preferences,
+        onboardingCompleted: true,
+      });
 
       setUserData((prev) => ({
         ...prev,
         preferences,
       }));
 
-      // Save preferences to localStorage for immediate use
-      savePreferences(preferences);
-
-      // Apply theme preference after onboarding completes
-      if (preferences.theme) {
-        setMode(preferences.theme);
-      }
+      // Save preferences to context (persists to localStorage automatically)
+      updatePreferences(preferences);
 
       // Onboarding complete - redirect to dashboard
       navigate('/');

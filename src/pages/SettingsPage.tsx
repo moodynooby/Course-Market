@@ -24,55 +24,24 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  type BYOKConfig,
-  DEFAULT_LLM_CONFIG,
-  getLlmConfig,
-  PROVIDER_OPTIONS,
-  saveLlmConfig,
-} from '../config/llmConfig';
-import {
-  DEFAULT_PREFERENCES,
-  getPreferences,
-  STORAGE_KEYS,
-  savePreferences,
-} from '../config/userConfig';
+import { PROVIDER_OPTIONS, STORAGE_KEYS } from '../utils/constants';
+import { useConfigContext } from '../context/ConfigContext';
 import { useThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../hooks/useAuth';
 import { getSemesters } from '../services/coursesApi';
 import { saveUserProfile } from '../services/onboardingApi';
-import type { LLMProvider, Preferences, Semester } from '../types';
+import type { LLMProvider, Semester } from '../types';
 
 export default function SettingsPage() {
   const { user, getToken } = useAuth();
-  const { mode, setMode } = useThemeMode();
+  const { mode } = useThemeMode();
+  const { preferences, llmConfig, updatePreferences, updateLlmConfig } = useConfigContext();
   const [saved, setSaved] = useState(false);
-  const [_llmSaved, setLlmSaved] = useState(false);
   const [clearDataOpen, setClearDataOpen] = useState(false);
   const [semesterDialogOpen, setSemesterDialogOpen] = useState(false);
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [currentSemester, setCurrentSemester] = useState<string>('');
   const [loadingSemesters, setLoadingSemesters] = useState(false);
-
-  const [preferences, setPreferences] = useState<Preferences>(DEFAULT_PREFERENCES);
-  const [llmConfig, setLlmConfig] = useState<BYOKConfig>(DEFAULT_LLM_CONFIG);
-
-  const savePreferencesHandler = useCallback(
-    (prefs: Preferences) => {
-      savePreferences(prefs);
-      setMode(prefs.theme || 'system');
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    },
-    [setMode],
-  );
-
-  const saveLlmConfigHandler = useCallback((config: BYOKConfig) => {
-    saveLlmConfig(config);
-    setLlmSaved(true);
-    setTimeout(() => setLlmSaved(false), 3000);
-    return true;
-  }, []);
 
   const loadSemesters = useCallback(async () => {
     try {
@@ -89,10 +58,15 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    setPreferences(getPreferences());
-    setLlmConfig(getLlmConfig());
     loadSemesters();
   }, [loadSemesters]);
+
+  useEffect(() => {
+    if (preferences.theme && preferences.theme !== mode) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    }
+  }, [preferences.theme, mode]);
 
   const handleSemesterChange = async (semesterId: string) => {
     try {
@@ -106,20 +80,6 @@ export default function SettingsPage() {
       console.error('Error changing semester:', error);
     }
   };
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      savePreferencesHandler(preferences);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [preferences, savePreferencesHandler]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      saveLlmConfigHandler(llmConfig);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [llmConfig, saveLlmConfigHandler]);
 
   const handleClearData = () => {
     const APP_KEY_PREFIX = 'auraishub_';
@@ -136,7 +96,7 @@ export default function SettingsPage() {
   const handleProviderChange = (provider: LLMProvider) => {
     const option = PROVIDER_OPTIONS.find((o) => o.value === provider);
 
-    setLlmConfig({
+    updateLlmConfig({
       ...llmConfig,
       provider,
       model: option?.defaultModel || '',
@@ -176,7 +136,7 @@ export default function SettingsPage() {
                       value={mode}
                       label="Theme"
                       onChange={(e) =>
-                        setPreferences({
+                        updatePreferences({
                           ...preferences,
                           theme: e.target.value as 'light' | 'dark' | 'system',
                         })
@@ -260,7 +220,7 @@ export default function SettingsPage() {
                     label="API Key (Optional)"
                     type="password"
                     value={llmConfig.apiKey}
-                    onChange={(e) => setLlmConfig({ ...llmConfig, apiKey: e.target.value })}
+                    onChange={(e) => updateLlmConfig({ ...llmConfig, apiKey: e.target.value })}
                     placeholder="gsk_..."
                     helperText="Optional. A shared key is used by default for Groq."
                   />
@@ -286,7 +246,7 @@ export default function SettingsPage() {
                         fullWidth
                         label="Model"
                         value={llmConfig.model}
-                        onChange={(e) => setLlmConfig({ ...llmConfig, model: e.target.value })}
+                        onChange={(e) => updateLlmConfig({ ...llmConfig, model: e.target.value })}
                         placeholder={selectedOption?.defaultModel}
                         helperText="Model name for API"
                       />
@@ -299,7 +259,7 @@ export default function SettingsPage() {
                       label="Temperature"
                       value={llmConfig.temperature}
                       onChange={(e) =>
-                        setLlmConfig({
+                        updateLlmConfig({
                           ...llmConfig,
                           temperature: parseFloat(e.target.value) || 0.7,
                         })
@@ -316,7 +276,7 @@ export default function SettingsPage() {
                   label="Max Tokens"
                   value={llmConfig.maxTokens}
                   onChange={(e) =>
-                    setLlmConfig({ ...llmConfig, maxTokens: parseInt(e.target.value) || 1024 })
+                    updateLlmConfig({ ...llmConfig, maxTokens: parseInt(e.target.value) || 1024 })
                   }
                   inputProps={{ step: 64, min: 256, max: 8192 }}
                   helperText="Maximum response length"

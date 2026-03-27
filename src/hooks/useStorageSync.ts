@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { storage, type StorageKey } from '../config/storage';
+import { storage, type StorageKey } from '../utils/storage';
 
 /**
  * Hook for synchronized localStorage access with React state

@@ -1,12 +1,12 @@
 import { webLLM } from '@browser-ai/web-llm';
 import { generateText } from 'ai';
-import { ENV } from '../config/devConfig';
+import { env } from '../utils/env';
 import {
-  type BYOKConfig,
   DEFAULT_LLM_CONFIG,
   getDefaultModel,
   type LLMTask,
-} from '../config/llmConfig';
+  type BYOKConfig,
+} from '../utils/constants';
 import type { Preferences, Schedule, Section, TradePost } from '../types';
 import type { GeneratedSchedule, ScheduleRank } from '../utils/schedule-types';
 
@@ -281,7 +281,7 @@ export async function rankSchedules(
       tradeoff: 'Ranking based on score alone',
     }));
   } catch (error) {
-    if (ENV.IS_DEV) {
+    if (env.IS_DEV) {
       console.error('LLM ranking failed:', error);
     }
     // Fallback to score-based ranking
@@ -362,7 +362,7 @@ export async function searchSchedulesNatural(
       matchedCriteria: ['All schedules shown'],
     }));
   } catch (error) {
-    if (ENV.IS_DEV) {
+    if (env.IS_DEV) {
       console.error('LLM natural search failed:', error);
     }
     // Fallback: return all schedules
@@ -409,7 +409,7 @@ class UnifiedLLMService {
       this.isInitialized &&
       (this.config.model !== targetModel || this.config.provider !== targetProvider)
     ) {
-      if (ENV.IS_DEV) console.log('Model/Provider change detected, re-initializing...');
+      if (env.IS_DEV) console.log('Model/Provider change detected, re-initializing...');
       this.isInitialized = false;
     }
 
@@ -434,7 +434,7 @@ class UnifiedLLMService {
       this.isInitialized = true;
       return true;
     } catch (error) {
-      if (ENV.IS_DEV) console.error('Failed to initialize LLM:', error);
+      if (env.IS_DEV) console.error('Failed to initialize LLM:', error);
       this.isInitialized = false;
       return false;
     } finally {
@@ -483,7 +483,7 @@ class UnifiedLLMService {
           });
           return text;
         } catch (error) {
-          if (ENV.IS_DEV) console.error('WebLLM generation failed, trying cloud fallback:', error);
+          if (env.IS_DEV) console.error('WebLLM generation failed, trying cloud fallback:', error);
           this.isFallbackMode = true;
           this.config.provider = 'groq';
           this.config.model = getDefaultModel('groq');
@@ -492,7 +492,7 @@ class UnifiedLLMService {
 
       return await this.callExternalAPI(prompt, systemPrompt);
     } catch (error) {
-      if (ENV.IS_DEV) {
+      if (env.IS_DEV) {
         console.error('LLM completion failed:', error);
       }
       const errorMessage = error instanceof Error ? error.message : 'Unknown cloud error';

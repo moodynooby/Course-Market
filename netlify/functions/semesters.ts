@@ -1,7 +1,6 @@
 import { neon } from '@netlify/neon';
+import { desc } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/neon-http';
-import * as fs from 'fs';
-import * as path from 'path';
 import * as schema from '../../db/schema';
 
 const client = neon();
@@ -43,65 +42,13 @@ export const handler = async (event: any) => {
   try {
     const { httpMethod } = event;
 
-    // GET: Fetch all active semesters from public/semesters folder
+    // GET: Fetch all semesters from database
     if (httpMethod === 'GET') {
-      // Read JSON files from public/semesters folder
-      const semestersDir = path.join(process.cwd(), 'public', 'semesters');
-
-      let files: string[];
-      try {
-        files = fs.readdirSync(semestersDir).filter((f) => f.endsWith('.json'));
-      } catch (err) {
-        console.debug(err);
-        // Folder doesn't exist yet, return empty list
-        return jsonResponse(200, { semesters: [] });
-      }
-
-      const semesters: Array<{
-        id: string;
-        name: string;
-        jsonUrl: string;
-        isActive: boolean;
-      }> = [];
-
-      for (const file of files) {
-        try {
-          const filePath = path.join(semestersDir, file);
-          const content = fs.readFileSync(filePath, 'utf-8');
-          const data = JSON.parse(content);
-
-          const semesterId = (data.semesterId || file.replace('.json', '')).toLowerCase();
-          const semesterName = data.semesterName || file.replace('.json', '');
-
-          semesters.push({
-            id: semesterId,
-            name: semesterName,
-            jsonUrl: `/semesters/${file}`,
-            isActive: true,
-          });
-        } catch (err) {
-          console.error(`Failed to parse semester file ${file}:`, err);
-        }
-      }
-
-      // Sync with database using batch insert
-      if (semesters.length > 0) {
-        await Promise.all(
-          semesters.map((sem) =>
-            db
-              .insert(schema.semesters)
-              .values(sem)
-              .onConflictDoUpdate({
-                target: schema.semesters.id,
-                set: {
-                  name: sem.name,
-                  jsonUrl: sem.jsonUrl,
-                  isActive: sem.isActive,
-                },
-              }),
-          ),
-        );
-      }
+      // Fetch semesters directly from database, ordered by creation date
+      const semesters = await db
+        .select()
+        .from(schema.semesters)
+        .orderBy(desc(schema.semesters.createdAt));
 
       return jsonResponse(200, { semesters });
     }

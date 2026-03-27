@@ -1,8 +1,27 @@
-import type { LLMProvider } from '../types';
-import { STORAGE_KEYS, storage } from './storage';
+// Storage keys for localStorage
+export const STORAGE_KEYS = {
+  COURSES: 'auraishub_courses',
+  SECTIONS: 'auraishub_sections',
+  PREFERENCES: 'auraishub_preferences',
+  COURSE_SELECTIONS: 'auraishub_course_selections',
+  THEME_MODE: 'theme-mode',
+  LLM_CONFIG: 'llm-byok-config',
+} as const;
 
+export type LLMProvider = 'webllm' | 'groq';
 export type LLMTask = 'SEARCH' | 'OPTIMIZE' | 'DRAFT' | 'DEFAULT';
+export type DayOfWeek = 'M' | 'T' | 'W' | 'Th' | 'F' | 'Sa' | 'Su';
 
+export interface BYOKConfig {
+  provider: LLMProvider;
+  apiKey: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  initProgressCallback?: (progress: { progress: number; text: string }) => void;
+}
+
+// LLM task-to-model mappings
 export const LLM_TASK_MODELS = {
   SEARCH: {
     webllm: 'Qwen2-0.5B-Instruct-q4f16_1-MLC',
@@ -22,31 +41,6 @@ export const LLM_TASK_MODELS = {
   },
 } as const;
 
-export interface BYOKConfig {
-  provider: LLMProvider;
-  apiKey: string;
-  model?: string;
-  temperature?: number;
-  maxTokens?: number;
-  initProgressCallback?: (progress: { progress: number; text: string }) => void;
-}
-
-export const DEFAULT_LLM_CONFIG: BYOKConfig = {
-  provider: 'webllm',
-  apiKey: '',
-  model: LLM_TASK_MODELS.DEFAULT.webllm,
-  temperature: 0.7,
-  maxTokens: 1024,
-};
-
-export function getLlmConfig(): BYOKConfig {
-  return storage.get(STORAGE_KEYS.LLM_CONFIG, DEFAULT_LLM_CONFIG);
-}
-
-export function saveLlmConfig(config: BYOKConfig): void {
-  storage.set(STORAGE_KEYS.LLM_CONFIG, config);
-}
-
 export function getDefaultModel(provider: LLMProvider, task: LLMTask = 'DEFAULT'): string {
   const taskKey = (task in LLM_TASK_MODELS ? task : 'DEFAULT') as keyof typeof LLM_TASK_MODELS;
 
@@ -54,15 +48,8 @@ export function getDefaultModel(provider: LLMProvider, task: LLMTask = 'DEFAULT'
   return LLM_TASK_MODELS[taskKey].webllm;
 }
 
-export interface ProviderOption {
-  value: LLMProvider;
-  label: string;
-  description: string;
-  learnMoreUrl?: string;
-  defaultModel: string;
-}
-
-export const PROVIDER_OPTIONS: ProviderOption[] = [
+// LLM provider options
+export const PROVIDER_OPTIONS = [
   {
     value: 'webllm',
     label: 'Local AI (GPU Accelerated)',
@@ -78,4 +65,28 @@ export const PROVIDER_OPTIONS: ProviderOption[] = [
     learnMoreUrl: 'https://groq.com/',
     defaultModel: LLM_TASK_MODELS.DEFAULT.groq,
   },
-];
+] as const;
+
+// Default LLM configuration
+export const DEFAULT_LLM_CONFIG = {
+  provider: 'webllm' as const,
+  apiKey: '',
+  model: LLM_TASK_MODELS.DEFAULT.webllm,
+  temperature: 0.7,
+  maxTokens: 1024,
+};
+
+// Default user preferences
+export const DEFAULT_PREFERENCES = {
+  preferredStartTime: '08:00',
+  preferredEndTime: '17:00',
+  maxGapMinutes: 60,
+  preferConsecutiveDays: true,
+  preferMorning: false,
+  preferAfternoon: false,
+  maxCredits: 18,
+  minCredits: 12,
+  avoidDays: [] as DayOfWeek[],
+  excludeInstructors: [] as string[],
+  theme: 'system' as const,
+};
