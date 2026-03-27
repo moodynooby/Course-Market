@@ -1,20 +1,8 @@
 import { School } from '@mui/icons-material';
 import { Avatar, Box, Container, Stack, Typography } from '@mui/material';
 import { OnboardingWizard } from '../components/onboarding/OnboardingWizard';
-import { useAuthContext } from '../context/AuthContext';
-import type { Preferences } from '../types';
 
 export default function OnboardingPage() {
-  const { user, profile } = useAuthContext();
-
-  const initialData = {
-    displayName: profile?.displayName || user?.displayName || '',
-    email: profile?.email || user?.email || '',
-    phone: profile?.phone || '',
-    semesterId: profile?.semesterId || undefined,
-    preferences: profile?.preferences as Preferences | undefined,
-  };
-
   return (
     <Box
       sx={{
@@ -48,7 +36,7 @@ export default function OnboardingPage() {
           </Stack>
 
           <Box sx={{ width: '100%' }}>
-            <OnboardingWizard initialData={initialData} />
+            <OnboardingWizard />
           </Box>
         </Stack>
       </Container>

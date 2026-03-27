@@ -28,6 +28,7 @@ import {
   CalendarToday,
 } from '@mui/icons-material';
 import { memo, useMemo, useState, useEffect, useCallback } from 'react';
+import { EmptyState } from '../EmptyState';
 import CalendarView from '../CalendarView';
 import type { Course } from '../../types';
 import type { GeneratedSchedule, SearchResult } from '../../utils/schedule-types';
@@ -266,9 +267,35 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
       <DialogContent sx={{ p: 0 }}>
         {activeSchedules.length === 0 && !searching ? (
           <EmptyState
-            hasGenerated={generatedSchedules.length > 0}
-            hasFilters={hasActiveFilters}
-            onClearFilters={handleClearSearch}
+            icon={
+              generatedSchedules.length > 0 ? (
+                <FilterList sx={{ fontSize: 40 }} />
+              ) : (
+                <CalendarToday sx={{ fontSize: 40 }} />
+              )
+            }
+            title={
+              generatedSchedules.length > 0
+                ? hasActiveFilters
+                  ? 'No matching schedules'
+                  : 'No viable schedules found'
+                : 'No schedules generated yet'
+            }
+            description={
+              generatedSchedules.length > 0
+                ? hasActiveFilters
+                  ? 'Try adjusting your search or clearing filters to see more results'
+                  : 'Try adjusting your course selections or preferences'
+                : 'Generate schedule alternatives to explore different combinations'
+            }
+            action={
+              hasActiveFilters && (
+                <Button variant="outlined" onClick={handleClearSearch} sx={{ borderRadius: 3 }}>
+                  Clear Filters
+                </Button>
+              )
+            }
+            variant="fullscreen"
           />
         ) : (
           <Grid container sx={{ height: '100%' }}>
@@ -307,7 +334,12 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
                   onApply={() => onApplySchedule(selectedSchedule)}
                 />
               ) : (
-                <EmptySelectionState />
+                <EmptyState
+                  icon={<GridView sx={{ fontSize: 32 }} />}
+                  title="Select a schedule"
+                  description="Select a schedule from the list to view details"
+                  variant="compact"
+                />
               )}
             </Grid>
           </Grid>
@@ -316,152 +348,6 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
     </Dialog>
   );
 });
-
-// Empty State Component
-interface EmptyStateProps {
-  hasGenerated: boolean;
-  hasFilters: boolean;
-  onClearFilters: () => void;
-}
-
-function EmptyState({ hasGenerated, hasFilters, onClearFilters }: EmptyStateProps) {
-  const theme = useTheme();
-
-  return (
-    <Box
-      sx={{
-        p: 5,
-        textAlign: 'center',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        minHeight: 300,
-      }}
-    >
-      <Box
-        sx={{
-          width: 80,
-          height: 80,
-          borderRadius: '50%',
-          bgcolor: alpha(theme.palette.secondary.main, 0.1),
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          mb: 2,
-          position: 'relative',
-        }}
-      >
-        <Box
-          sx={{
-            width: 40,
-            height: 40,
-            borderRadius: '50%',
-            bgcolor: alpha(theme.palette.secondary.main, 0.3),
-            filter: 'blur(8px)',
-            position: 'absolute',
-          }}
-        />
-        {hasGenerated ? (
-          <FilterList
-            sx={{
-              fontSize: 40,
-              color: 'secondary.main',
-              position: 'relative',
-              zIndex: 1,
-            }}
-          />
-        ) : (
-          <CalendarToday
-            sx={{
-              fontSize: 40,
-              color: 'secondary.main',
-              position: 'relative',
-              zIndex: 1,
-            }}
-          />
-        )}
-      </Box>
-
-      <Typography variant="h6" fontWeight={700} gutterBottom>
-        {hasGenerated
-          ? hasFilters
-            ? 'No matching schedules'
-            : 'No viable schedules found'
-          : 'No schedules generated yet'}
-      </Typography>
-
-      <Typography color="text.secondary" maxWidth={400} mb={3}>
-        {hasGenerated
-          ? hasFilters
-            ? 'Try adjusting your search or clearing filters to see more results'
-            : 'Try adjusting your course selections or preferences'
-          : 'Generate schedule alternatives to explore different combinations'}
-      </Typography>
-
-      {hasFilters && (
-        <Button variant="outlined" onClick={onClearFilters} sx={{ borderRadius: 3 }}>
-          Clear Filters
-        </Button>
-      )}
-    </Box>
-  );
-}
-
-function EmptySelectionState() {
-  const theme = useTheme();
-
-  return (
-    <Box
-      sx={{
-        p: 4,
-        textAlign: 'center',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-      }}
-    >
-      <Box
-        sx={{
-          width: 60,
-          height: 60,
-          borderRadius: '50%',
-          bgcolor: alpha(theme.palette.primary.main, 0.1),
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          mb: 2,
-          position: 'relative',
-        }}
-      >
-        <Box
-          sx={{
-            width: 30,
-            height: 30,
-            borderRadius: '50%',
-            bgcolor: alpha(theme.palette.primary.main, 0.3),
-            filter: 'blur(6px)',
-            position: 'absolute',
-          }}
-        />
-        <GridView
-          sx={{
-            fontSize: 32,
-            color: 'primary.main',
-            position: 'relative',
-            zIndex: 1,
-          }}
-        />
-      </Box>
-      <Typography color="text.secondary">
-        Select a schedule from the list to view details
-      </Typography>
-    </Box>
-  );
-}
 
 // Schedule List Component
 interface ScheduleListProps {

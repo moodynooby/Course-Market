@@ -5,18 +5,16 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
 
 export default function CallbackPage() {
-  const { isAuthenticated, isLoading: authLoading } = useAuth0();
-  const { profile, isProfileLoading, loading: contextLoading } = useAuthContext();
+  const { isAuthenticated } = useAuth0();
+  const { profile, loading } = useAuthContext();
   const navigate = useNavigate();
 
-  const isLoading = authLoading || contextLoading || isProfileLoading;
-
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    if (!loading && isAuthenticated) {
       const redirectPath = profile?.onboardingCompleted ? '/' : '/onboarding';
       navigate(redirectPath, { replace: true });
     }
-  }, [isAuthenticated, isLoading, profile, navigate]);
+  }, [isAuthenticated, loading, profile, navigate]);
 
   return (
     <Box

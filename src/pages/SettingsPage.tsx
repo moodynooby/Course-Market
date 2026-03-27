@@ -29,7 +29,7 @@ import { useConfigContext } from '../context/ConfigContext';
 import { useThemeMode } from '../context/ThemeContext';
 import { useAuth } from '../hooks/useAuth';
 import { getSemesters } from '../services/coursesApi';
-import { saveUserProfile } from '../services/onboardingApi';
+import { api } from '../services/apiClient';
 import type { LLMProvider, Semester } from '../types';
 
 export default function SettingsPage() {
@@ -71,7 +71,7 @@ export default function SettingsPage() {
   const handleSemesterChange = async (semesterId: string) => {
     try {
       const token = await getToken();
-      await saveUserProfile(token, { semesterId });
+      await api.post('/user-profile', { semesterId }, token);
       localStorage.setItem('auraishub_semester', semesterId);
       setCurrentSemester(semesterId);
       setSemesterDialogOpen(false);

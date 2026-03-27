@@ -1,6 +1,6 @@
 import { useAuth0 } from '@auth0/auth0-react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { getUserProfile, saveUserProfile } from '../services/onboardingApi';
+import { api, ApiError } from '../services/apiClient';
 import type { UserProfile } from '../types';
 
 interface AuthContextValue {
@@ -13,7 +13,6 @@ interface AuthContextValue {
   profile: UserProfile | null;
   loading: boolean;
   isAuthenticated: boolean;
-  isProfileLoading: boolean;
   signIn: () => Promise<void>;
   signOut: () => void;
   getToken: () => Promise<string>;
@@ -38,7 +37,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   } = useAuth0();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const appUser = useMemo(
     () =>
@@ -81,15 +80,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     try {
-      setIsProfileLoading(true);
+      setLoading(true);
       const token = await getToken();
-      const fetchedProfile = await getUserProfile(token);
-      setProfile(fetchedProfile);
+      const result = await api.get<{ profile: UserProfile }>('/user-profile', token);
+      setProfile(result.profile);
     } catch (error) {
-      console.error('[AuthContext] Failed to refresh profile:', error);
-      setProfile(null);
+      if (error instanceof ApiError && error.status === 404) {
+        setProfile(null);
+      } else {
+        console.error('[AuthContext] Failed to refresh profile:', error);
+        setProfile(null);
+      }
     } finally {
-      setIsProfileLoading(false);
+      setLoading(false);
     }
   }, [isAuthenticated, getToken]);
 
@@ -100,8 +103,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       const token = await getToken();
-      const updatedProfile = await saveUserProfile(token, updates);
-      setProfile(updatedProfile);
+      const result = await api.post<{ profile: UserProfile }>('/user-profile', updates, token);
+      setProfile(result.profile);
     },
     [isAuthenticated, getToken],
   );
@@ -114,13 +117,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     refreshProfile();
   }, [isAuthenticated, authLoading, refreshProfile]);
 
+  // Set loading to false when not authenticated
+  useEffect(() => {
+    if (!isAuthenticated && !authLoading) {
+      setLoading(false);
+    }
+  }, [isAuthenticated, authLoading]);
+
   const value = useMemo(
     () => ({
       user: appUser,
       profile,
-      loading: authLoading,
+      loading,
       isAuthenticated,
-      isProfileLoading,
       signIn,
       signOut,
       getToken,
@@ -130,9 +139,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [
       appUser,
       profile,
-      authLoading,
+      loading,
       isAuthenticated,
-      isProfileLoading,
       signIn,
       signOut,
       getToken,

@@ -27,7 +27,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useSemesterParser } from '../hooks/useSemesterParser';
 import { getSemesters } from '../services/coursesApi';
 import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
-import { getUserProfile } from '../services/onboardingApi';
+import { api } from '../services/apiClient';
 import { searchIndex } from '../services/searchIndex';
 import type { Course, Section } from '../types';
 import { hasSectionConflict } from '../utils/schedule';
@@ -197,7 +197,8 @@ export default function CoursesPage() {
     try {
       setLoadingMessage('Checking your profile...');
       const token = await getToken();
-      const profile = await getUserProfile(token);
+      const result = await api.get<{ profile?: { semesterId?: string } }>('/user-profile', token);
+      const profile = result.profile;
 
       let selectedSemester: { id: string; name: string; jsonUrl: string } | null = null;
 

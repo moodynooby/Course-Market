@@ -1,7 +1,5 @@
-import { CheckCircle } from '@mui/icons-material';
-import { Alert, Box, Button, CircularProgress, Paper, Typography } from '@mui/material';
+import { Box, Button, CircularProgress, Paper, Typography } from '@mui/material';
 import { useState } from 'react';
-import { useConfigContext } from '../../context/ConfigContext';
 import type { Preferences } from '../../types';
 import { PreferencesForm } from '../PreferencesForm';
 
@@ -11,12 +9,21 @@ interface StepPreferencesProps {
 }
 
 export function StepPreferences({ onComplete, initialPreferences }: StepPreferencesProps) {
-  const { preferences: contextPreferences } = useConfigContext();
   const [preferences, setPreferences] = useState<Preferences>(
-    initialPreferences || contextPreferences,
+    initialPreferences || {
+      preferredStartTime: '08:00',
+      preferredEndTime: '20:00',
+      maxGapMinutes: 60,
+      preferConsecutiveDays: false,
+      preferMorning: false,
+      preferAfternoon: true,
+      maxCredits: 18,
+      minCredits: 12,
+      avoidDays: [],
+      excludeInstructors: [],
+    },
   );
   const [loading, setLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
 
   const handleUpdate = <K extends keyof Preferences>(key: K, value: Preferences[K]) => {
     setPreferences((prev) => ({
@@ -28,10 +35,7 @@ export function StepPreferences({ onComplete, initialPreferences }: StepPreferen
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      setShowSuccess(true);
-      setTimeout(() => {
-        onComplete(preferences);
-      }, 800);
+      onComplete(preferences);
     } finally {
       setLoading(false);
     }
@@ -39,12 +43,6 @@ export function StepPreferences({ onComplete, initialPreferences }: StepPreferen
 
   return (
     <Box>
-      {showSuccess && (
-        <Alert severity="success" sx={{ mb: 3 }} icon={<CheckCircle />}>
-          Saving your preferences...
-        </Alert>
-      )}
-
       <Box sx={{ mb: 3 }}>
         <Typography variant="h5" fontWeight={700} gutterBottom>
           Schedule Preferences

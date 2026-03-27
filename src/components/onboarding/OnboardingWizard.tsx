@@ -17,7 +17,6 @@ import {
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/AuthContext';
-import { useConfigContext } from '../../context/ConfigContext';
 import type { Preferences } from '../../types';
 import { StepPreferences } from './StepPreferences';
 import { StepSemesterSelection } from './StepSemesterSelection';
@@ -25,41 +24,26 @@ import { StepTraderDetails } from './StepTraderDetails';
 
 export type OnboardingStep = 'details' | 'semester' | 'preferences';
 
-interface OnboardingWizardProps {
-  initialData?: {
-    displayName?: string;
-    email?: string;
-    phone?: string;
-    semesterId?: string;
-    preferences?: Preferences;
-  };
-}
-
 const STEPS: { id: OnboardingStep; label: string }[] = [
   { id: 'details', label: 'Trader Details' },
   { id: 'semester', label: 'Semester' },
   { id: 'preferences', label: 'Preferences' },
 ];
 
-export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
+export function OnboardingWizard() {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { updateProfile } = useAuthContext();
-  const { updatePreferences } = useConfigContext();
+  const { profile, updateProfile } = useAuthContext();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const [activeStep, setActiveStep] = useState<OnboardingStep>(
-    initialData?.semesterId ? 'preferences' : initialData?.displayName ? 'semester' : 'details',
-  );
+  // Calculate starting step from profile
+  const getStartingStep = (): OnboardingStep => {
+    if (profile?.semesterId) return 'preferences';
+    if (profile?.displayName) return 'semester';
+    return 'details';
+  };
 
-  const [userData, setUserData] = useState({
-    displayName: initialData?.displayName || '',
-    email: initialData?.email || '',
-    phone: initialData?.phone || '',
-    semesterId: initialData?.semesterId || '',
-    preferences: initialData?.preferences,
-  });
-
+  const [activeStep, setActiveStep] = useState<OnboardingStep>(getStartingStep());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,11 +57,6 @@ export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
       setError(null);
 
       await updateProfile(data);
-
-      setUserData((prev) => ({
-        ...prev,
-        ...data,
-      }));
 
       // Move to next step
       setActiveStep('semester');
@@ -100,11 +79,6 @@ export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
 
       await updateProfile({ semesterId });
 
-      setUserData((prev) => ({
-        ...prev,
-        semesterId,
-      }));
-
       setActiveStep('preferences');
     } catch (err) {
       setError('Failed to save semester selection. Please try again.');
@@ -123,14 +97,6 @@ export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
         preferences,
         onboardingCompleted: true,
       });
-
-      setUserData((prev) => ({
-        ...prev,
-        preferences,
-      }));
-
-      // Save preferences to context (persists to localStorage automatically)
-      updatePreferences(preferences);
 
       // Onboarding complete - redirect to dashboard
       navigate('/');
@@ -258,9 +224,9 @@ export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
               <StepTraderDetails
                 onComplete={handleDetailsComplete}
                 initialData={{
-                  displayName: userData.displayName,
-                  email: userData.email,
-                  phone: userData.phone,
+                  displayName: profile?.displayName || '',
+                  email: profile?.email || '',
+                  phone: profile?.phone || '',
                 }}
               />
             )}
@@ -268,14 +234,14 @@ export function OnboardingWizard({ initialData }: OnboardingWizardProps) {
             {activeStep === 'semester' && (
               <StepSemesterSelection
                 onComplete={handleSemesterComplete}
-                selectedSemesterId={userData.semesterId}
+                selectedSemesterId={profile?.semesterId}
               />
             )}
 
             {activeStep === 'preferences' && (
               <StepPreferences
                 onComplete={handlePreferencesComplete}
-                initialPreferences={userData.preferences}
+                initialPreferences={profile?.preferences}
               />
             )}
           </Box>

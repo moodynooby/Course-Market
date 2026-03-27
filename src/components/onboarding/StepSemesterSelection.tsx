@@ -1,15 +1,8 @@
 import { CalendarToday, CloudUpload, Folder } from '@mui/icons-material';
-import {
-  Alert,
-  Box,
-  Card,
-  CardContent,
-  CircularProgress,
-  Grid,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Alert, Box, CircularProgress, Grid, Stack, Typography } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
+import { EmptyState, LoadingState } from '../EmptyState';
+import { InteractiveCard } from '../GlassAppBar';
 import { getCoursesBySubject, getSemesterData, getSemesters } from '../../services/coursesApi';
 import { getCachedSemesterData } from '../../services/dbCache';
 import type { Course, Section, Semester } from '../../types';
@@ -88,23 +81,17 @@ export function StepSemesterSelection({
   };
 
   if (loading) {
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8 }}>
-        <CircularProgress sx={{ mb: 2 }} />
-        <Typography variant="body2" color="text.secondary">
-          Loading available semesters...
-        </Typography>
-      </Box>
-    );
+    return <LoadingState message="Loading available semesters..." />;
   }
 
   if (semesters.length === 0) {
     return (
-      <Box sx={{ py: 4 }}>
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          No semesters available yet. Please contact your administrator.
-        </Alert>
-      </Box>
+      <EmptyState
+        icon={<Folder sx={{ fontSize: 40 }} />}
+        title="No semesters available"
+        description="Please contact your administrator to add semester data"
+        variant="compact"
+      />
     );
   }
 
@@ -128,21 +115,12 @@ export function StepSemesterSelection({
       <Grid container spacing={3}>
         {semesters.map((semester) => (
           <Grid size={{ xs: 12, sm: 6 }} key={semester.id}>
-            <Card
-              sx={{
-                height: '100%',
-                cursor: selecting === semester.id ? 'wait' : 'pointer',
-                border: selectedSemesterId === semester.id ? 2 : 1,
-                borderColor: selectedSemesterId === semester.id ? 'accent.main' : 'divider',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  boxShadow: 3,
-                  borderColor: 'accent.main',
-                },
-              }}
+            <InteractiveCard
+              selected={selectedSemesterId === semester.id}
+              disabled={selecting === semester.id}
               onClick={() => handleSelectSemester(semester.id)}
             >
-              <CardContent>
+              <Box sx={{ p: 2 }}>
                 <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
                   <Box
                     sx={{
@@ -175,7 +153,9 @@ export function StepSemesterSelection({
                 <Stack direction="row" alignItems="center" spacing={1}>
                   {selecting === semester.id ? (
                     <>
-                      <CircularProgress size={16} />
+                      <Box sx={{ width: 16, height: 16 }}>
+                        <CircularProgress size={16} />
+                      </Box>
                       <Typography variant="body2" color="text.secondary">
                         Loading courses...
                       </Typography>
@@ -189,8 +169,8 @@ export function StepSemesterSelection({
                     </>
                   )}
                 </Stack>
-              </CardContent>
-            </Card>
+              </Box>
+            </InteractiveCard>
           </Grid>
         ))}
       </Grid>
