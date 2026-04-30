@@ -75,9 +75,10 @@ export default function LandingPage() {
     }
 
     try {
+      const sectionMap = new Map(sections.map((s) => [s.id, s]));
       const selectedSections: Section[] = [];
       Object.entries(selections).forEach(([, sectionId]) => {
-        const section = sections.find((s) => s.id === sectionId);
+        const section = sectionMap.get(sectionId);
         if (section) selectedSections.push(section);
       });
 

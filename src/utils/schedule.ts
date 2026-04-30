@@ -18,6 +18,8 @@ const DAY_TO_NUMBER: Record<DayOfWeek, number> = {
   Su: 0,
 };
 
+const DAY_ORDER: DayOfWeek[] = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su'];
+
 function getWeekStartDate(): Date {
   const now = new Date();
   const day = now.getDay();
@@ -25,11 +27,6 @@ function getWeekStartDate(): Date {
   const weekStart = new Date(now.setDate(diff));
   weekStart.setHours(0, 0, 0, 0);
   return weekStart;
-}
-
-function timeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
 }
 
 export function sectionsToCalendarEvents(sections: Section[], courses: Course[]): CalendarEvent[] {
@@ -41,8 +38,8 @@ export function sectionsToCalendarEvents(sections: Section[], courses: Course[])
 
     section.timeSlots.forEach((slot, index) => {
       const dayOffset = DAY_TO_NUMBER[slot.day];
-      const startMinutes = timeToMinutes(slot.startTime);
-      const endMinutes = timeToMinutes(slot.endTime);
+      const startMinutes = timeToMinutesCached(slot.startTime);
+      const endMinutes = timeToMinutesCached(slot.endTime);
 
       const startDate = new Date(weekStart);
       startDate.setDate(startDate.getDate() + dayOffset);
@@ -121,12 +118,25 @@ export function checkConflicts(sections: Section[]): string[] {
   return conflicts;
 }
 
+// Cache for time to minutes to avoid repeated parsing
+const timeCache = new Map<string, number>();
+
+export function timeToMinutesCached(time: string): number {
+  let minutes = timeCache.get(time);
+  if (minutes === undefined) {
+    const [hours, mins] = time.split(':').map(Number);
+    minutes = hours * 60 + mins;
+    timeCache.set(time, minutes);
+  }
+  return minutes;
+}
+
 export function hasTimeConflict(slot1: TimeSlot, slot2: TimeSlot): boolean {
   if (slot1.day !== slot2.day) return false;
-  const start1 = timeToMinutes(slot1.startTime);
-  const end1 = timeToMinutes(slot1.endTime);
-  const start2 = timeToMinutes(slot2.startTime);
-  const end2 = timeToMinutes(slot2.endTime);
+  const start1 = timeToMinutesCached(slot1.startTime);
+  const end1 = timeToMinutesCached(slot1.endTime);
+  const start2 = timeToMinutesCached(slot2.startTime);
+  const end2 = timeToMinutesCached(slot2.endTime);
   return start1 < end2 && start2 < end1;
 }
 
@@ -141,30 +151,24 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
     score -= 20;
   }
 
-  const daySchedule = new Map<DayOfWeek, number[]>();
+  const avoidDaysSet = new Set(preferences.avoidDays);
+  const excludeInstructorsSet = new Set(preferences.excludeInstructors);
+  const daysUsed = new Set<DayOfWeek>();
+
+  const preferredStart = timeToMinutesCached(preferences.preferredStartTime);
+  const preferredEnd = timeToMinutesCached(preferences.preferredEndTime);
+
+  const allSlots: { day: DayOfWeek; start: number; end: number }[] = [];
 
   sections.forEach((section) => {
+    const isExcludedInstructor = excludeInstructorsSet.has(section.instructor);
+
     section.timeSlots.forEach((slot) => {
-      const times = daySchedule.get(slot.day) || [];
-      times.push(parseInt(slot.startTime.replace(':', ''), 10));
-      times.push(parseInt(slot.endTime.replace(':', ''), 10));
-      daySchedule.set(slot.day, times);
-    });
-  });
+      daysUsed.add(slot.day);
+      const startTime = timeToMinutesCached(slot.startTime);
+      const endTime = timeToMinutesCached(slot.endTime);
 
-  daySchedule.forEach((_times, day) => {
-    if (preferences.avoidDays.includes(day)) {
-      score -= 15;
-    }
-  });
-
-  const preferredStart = timeToMinutes(preferences.preferredStartTime);
-  const preferredEnd = timeToMinutes(preferences.preferredEndTime);
-
-  sections.forEach((section) => {
-    section.timeSlots.forEach((slot) => {
-      const startTime = timeToMinutes(slot.startTime);
-      const endTime = timeToMinutes(slot.endTime);
+      allSlots.push({ day: slot.day, start: startTime, end: endTime });
 
       if (preferences.preferMorning && startTime < 720 && startTime >= 480) {
         score += 5;
@@ -176,25 +180,27 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
         score -= 10;
       }
 
-      if (preferences.excludeInstructors.includes(section.instructor)) {
+      if (isExcludedInstructor) {
         score -= 20;
       }
     });
   });
 
-  if (preferences.preferConsecutiveDays) {
-    const days = new Set<DayOfWeek>();
-    sections.forEach((section) => {
-      section.timeSlots.forEach((slot) => days.add(slot.day));
-    });
+  daysUsed.forEach((day) => {
+    if (avoidDaysSet.has(day)) {
+      score -= 15;
+    }
+  });
 
-    const dayOrder: DayOfWeek[] = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su'];
-    const sortedDays = Array.from(days).sort((a, b) => dayOrder.indexOf(a) - dayOrder.indexOf(b));
+  if (preferences.preferConsecutiveDays && daysUsed.size > 0) {
+    const sortedDays = Array.from(daysUsed).sort(
+      (a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b),
+    );
 
     let gaps = 0;
     for (let i = 0; i < sortedDays.length - 1; i++) {
-      const currentIdx = dayOrder.indexOf(sortedDays[i]);
-      const nextIdx = dayOrder.indexOf(sortedDays[i + 1]);
+      const currentIdx = DAY_ORDER.indexOf(sortedDays[i]);
+      const nextIdx = DAY_ORDER.indexOf(sortedDays[i + 1]);
       if (nextIdx - currentIdx > 1) {
         gaps++;
       }
@@ -203,21 +209,11 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
     score -= gaps * 5;
   }
 
-  if (preferences.maxGapMinutes > 0) {
-    const allSlots: { day: DayOfWeek; start: number; end: number }[] = [];
-
-    sections.forEach((section) => {
-      section.timeSlots.forEach((slot) => {
-        allSlots.push({
-          day: slot.day,
-          start: timeToMinutes(slot.startTime),
-          end: timeToMinutes(slot.endTime),
-        });
-      });
-    });
-
+  if (preferences.maxGapMinutes > 0 && allSlots.length > 1) {
     allSlots.sort((a, b) => {
-      if (a.day !== b.day) return a.day.localeCompare(b.day);
+      if (a.day !== b.day) {
+        return DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day);
+      }
       return a.start - b.start;
     });
 
