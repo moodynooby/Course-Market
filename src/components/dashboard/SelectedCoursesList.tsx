@@ -86,7 +86,7 @@ export function SelectedCoursesList({ sections, courses }: SelectedCoursesListPr
                 variant="caption"
                 sx={{
                   fontWeight: 600,
-                  color: 'accent.main',
+                  color: 'secondary.main',
                   mt: 0.5,
                   display: 'inline-block',
                 }}

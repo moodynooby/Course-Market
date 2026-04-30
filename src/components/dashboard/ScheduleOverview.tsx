@@ -26,7 +26,7 @@ export function ScheduleOverview({ sections, courses, aiAnalysis }: ScheduleOver
         action={
           <Button
             variant="contained"
-            color="accent"
+            color="secondary"
             size="large"
             onClick={() => navigate('/courses')}
             endIcon={<ArrowForward />}
@@ -83,7 +83,7 @@ export function ScheduleOverview({ sections, courses, aiAnalysis }: ScheduleOver
               gutterBottom
               sx={{
                 fontWeight: 800,
-                color: 'accent.main',
+                color: 'secondary.main',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1,

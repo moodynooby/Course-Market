@@ -115,7 +115,7 @@ export const CourseCard = memo(
                         ? alpha(theme.palette.success.main, 0.08)
                         : conflict
                           ? alpha(theme.palette.error.main, 0.08)
-                          : 'surface.containerHighest',
+                          : 'background.paperest',
                       color: isSelected ? 'success.main' : conflict ? 'error.main' : 'inherit',
                       '&:hover': {
                         transform: 'translateY(-2px)',

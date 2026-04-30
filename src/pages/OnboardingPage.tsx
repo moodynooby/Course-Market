@@ -127,7 +127,7 @@ function OnboardingWizard() {
                   bgcolor: 'action.hover',
                 },
                 '& .MuiLinearProgress-bar': {
-                  bgcolor: 'accent.main',
+                  bgcolor: 'secondary.main',
                   borderRadius: 3,
                 },
               }}
@@ -137,7 +137,7 @@ function OnboardingWizard() {
               activeStep={currentStepIndex}
               sx={{
                 [`& .${stepClasses.completed}`]: {
-                  color: 'accent.main',
+                  color: 'secondary.main',
                 },
                 [`& .${stepClasses.root}`]: {
                   '&:last-child $': {
@@ -168,7 +168,7 @@ function OnboardingWizard() {
                                 width: 12,
                                 height: 12,
                                 borderRadius: '50%',
-                                bgcolor: 'accent.main',
+                                bgcolor: 'secondary.main',
                                 boxShadow: theme.shadows[2],
                               }}
                             />
@@ -265,7 +265,7 @@ function OnboardingWizard() {
               {activeStep === 'profile' && profile?.semesterId && (
                 <Button
                   variant="contained"
-                  color="accent"
+                  color="secondary"
                   onClick={() => setActiveStep('preferences')}
                   sx={{
                     borderRadius: 3,
@@ -280,7 +280,7 @@ function OnboardingWizard() {
               {activeStep === 'preferences' && (
                 <Button
                   variant="contained"
-                  color="accent"
+                  color="secondary"
                   onClick={handleCompleteOnboarding}
                   disabled={!preferencesSaved}
                   startIcon={<Check />}
@@ -338,7 +338,7 @@ export default function OnboardingPage() {
               sx={{
                 width: 64,
                 height: 64,
-                bgcolor: 'accent.main',
+                bgcolor: 'secondary.main',
               }}
             >
               <School sx={{ fontSize: 36 }} />

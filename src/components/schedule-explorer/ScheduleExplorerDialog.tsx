@@ -152,7 +152,7 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
           sx: {
             height: { xs: '95vh', sm: '90vh', md: '85vh' },
             borderRadius: 4,
-            bgcolor: 'surface.container.high',
+            bgcolor: 'background.paper',
           },
         },
       }}
@@ -173,7 +173,7 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
                 alignItems: 'center',
               }}
             >
-              <GridView sx={{ color: 'accent.main' }} />
+              <GridView sx={{ color: 'secondary.main' }} />
               <Typography
                 variant="h6"
                 sx={{
@@ -747,13 +747,13 @@ function ScheduleDetails({ selectedSchedule, courses, onApply }: ScheduleDetails
           left: 0,
           right: 0,
           pt: 2,
-          bgcolor: 'surface.container.high',
+          bgcolor: 'background.paper',
           borderTop: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
         }}
       >
         <Button
           variant="contained"
-          color="accent"
+          color="secondary"
           fullWidth
           sx={{ borderRadius: 3, py: 1.5, fontWeight: 600 }}
           onClick={onApply}

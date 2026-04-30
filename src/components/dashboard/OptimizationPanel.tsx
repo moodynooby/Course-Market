@@ -38,7 +38,7 @@ export function OptimizationPanel({
           mb: 2,
         }}
       >
-        <Psychology sx={{ color: 'accent.main', fontSize: 20 }} />
+        <Psychology sx={{ color: 'secondary.main', fontSize: 20 }} />
         <Typography
           variant="h6"
           sx={{

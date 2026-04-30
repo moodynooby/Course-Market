@@ -207,7 +207,7 @@ export default function SettingsPage() {
                   mb: 2,
                 }}
               >
-                <Psychology color="accent" />
+                <Psychology color="secondary" />
                 <Typography variant="h6">AI Optimization Settings</Typography>
               </Stack>
 
@@ -228,7 +228,7 @@ export default function SettingsPage() {
                     value={llmConfig.provider}
                     label="AI Provider"
                     onChange={(e) => handleProviderChange(e.target.value as LLMProvider)}
-                    startAdornment={<Psychology sx={{ mr: 1, color: 'accent.main' }} />}
+                    startAdornment={<Psychology sx={{ mr: 1, color: 'secondary.main' }} />}
                   >
                     {PROVIDER_OPTIONS.map((option) => (
                       <MenuItem key={option.value} value={option.value}>
@@ -288,7 +288,7 @@ export default function SettingsPage() {
                         slotProps={{
                           input: {
                             startAdornment: (
-                              <AutoAwesome sx={{ mr: 1, color: 'accent.main', fontSize: 18 }} />
+                              <AutoAwesome sx={{ mr: 1, color: 'secondary.main', fontSize: 18 }} />
                             ),
                           },
                         }}
@@ -422,9 +422,9 @@ export default function SettingsPage() {
                   sx={{
                     cursor: 'pointer',
                     border: currentSemester === semester.id ? 2 : 1,
-                    borderColor: currentSemester === semester.id ? 'accent.main' : 'divider',
+                    borderColor: currentSemester === semester.id ? 'secondary.main' : 'divider',
                     '&:hover': {
-                      borderColor: 'accent.main',
+                      borderColor: 'secondary.main',
                       boxShadow: 2,
                     },
                   }}
@@ -439,7 +439,7 @@ export default function SettingsPage() {
                       }}
                     >
                       <CalendarToday
-                        color={currentSemester === semester.id ? 'accent' : 'action'}
+                        color={currentSemester === semester.id ? 'secondary' : 'action'}
                       />
                       <Box>
                         <Typography
