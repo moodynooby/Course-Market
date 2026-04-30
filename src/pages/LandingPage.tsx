@@ -23,6 +23,7 @@ import { storage } from '../utils/storage';
 import { STORAGE_KEYS } from '../utils/constants';
 import { useConfigContext } from '../context/ConfigContext';
 import { useAuth } from '../hooks/useAuth';
+import { useNotification } from '../hooks/useNotification';
 import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
 import type { Course, Schedule, Section } from '../types';
 import { checkConflicts } from '../utils/schedule';
@@ -37,6 +38,7 @@ const ScheduleExplorerDialog = lazy(() =>
 export default function LandingPage() {
   const navigate = useNavigate();
   const { getToken } = useAuth();
+  const { showNotification } = useNotification();
   const { preferences, llmConfig, updateLlmConfig } = useConfigContext();
   const theme = useTheme();
 
@@ -216,6 +218,7 @@ export default function LandingPage() {
         );
         storage.set(STORAGE_KEYS.COURSE_SELECTIONS, selections);
         window.dispatchEvent(new Event('storage'));
+        showNotification('Schedule optimized successfully!', 'success');
       }
 
       setAiAnalysis(result.aiAnalysis || 'Schedule optimized successfully.');
@@ -224,7 +227,9 @@ export default function LandingPage() {
       if (error.code === 'KEY_REQUIRED') {
         setApiKeyDialogOpen(true);
       } else {
-        setError(`Optimization failed: ${error.message}`);
+        const msg = `Optimization failed: ${error.message}`;
+        setError(msg);
+        showNotification(msg, 'error');
       }
     } finally {
       setOptimizing(false);
@@ -267,37 +272,46 @@ export default function LandingPage() {
       setGeneratedSchedules(schedules);
       if (schedules.length > 0) {
         setSelectedSchedule(schedules[0]);
+        showNotification(`Generated ${schedules.length} valid schedules!`, 'success');
+      } else {
+        showNotification('No valid schedules found with current filters.', 'info');
       }
       setScheduleExplorerOpen(true);
     } catch (err) {
-      setError(`Failed to generate schedules: ${(err as Error).message}`);
+      const msg = `Failed to generate schedules: ${(err as Error).message}`;
+      setError(msg);
+      showNotification(msg, 'error');
     } finally {
       setGenerating(false);
     }
-  }, [schedule, allCourses, allSections, preferences]);
+  }, [schedule, allCourses, allSections, preferences, showNotification]);
 
-  const handleApplySchedule = useCallback((genSchedule: GeneratedSchedule) => {
-    const selections = genSchedule.sections.reduce(
-      (acc: Record<string, string>, section: Section) => {
-        acc[section.courseId] = section.id;
-        return acc;
-      },
-      {} as Record<string, string>,
-    );
-    storage.set(STORAGE_KEYS.COURSE_SELECTIONS, selections);
-    window.dispatchEvent(new Event('storage'));
-    setScheduleExplorerOpen(false);
+  const handleApplySchedule = useCallback(
+    (genSchedule: GeneratedSchedule) => {
+      const selections = genSchedule.sections.reduce(
+        (acc: Record<string, string>, section: Section) => {
+          acc[section.courseId] = section.id;
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+      storage.set(STORAGE_KEYS.COURSE_SELECTIONS, selections);
+      window.dispatchEvent(new Event('storage'));
+      setScheduleExplorerOpen(false);
+      showNotification('Schedule applied to your selections!', 'success');
 
-    const newSchedule: Schedule = {
-      id: genSchedule.id,
-      name: 'Applied Schedule',
-      sections: genSchedule.sections,
-      totalCredits: genSchedule.totalCredits,
-      score: genSchedule.score,
-      conflicts: genSchedule.conflicts,
-    };
-    setSchedule(newSchedule);
-  }, []);
+      const newSchedule: Schedule = {
+        id: genSchedule.id,
+        name: 'Applied Schedule',
+        sections: genSchedule.sections,
+        totalCredits: genSchedule.totalCredits,
+        score: genSchedule.score,
+        conflicts: genSchedule.conflicts,
+      };
+      setSchedule(newSchedule);
+    },
+    [showNotification],
+  );
 
   const handleNaturalSearch = useCallback(async () => {
     if (!searchQuery.trim() || generatedSchedules.length === 0) {
@@ -311,12 +325,14 @@ export default function LandingPage() {
       const results = searchSchedulesByIntent(searchQuery, generatedSchedules);
       setSearchResults(results);
     } catch (err) {
-      setError(`Search failed: ${(err as Error).message}`);
+      const msg = `Search failed: ${(err as Error).message}`;
+      setError(msg);
+      showNotification(msg, 'error');
       setSearchResults([]);
     } finally {
       setSearching(false);
     }
-  }, [searchQuery, generatedSchedules]);
+  }, [searchQuery, generatedSchedules, showNotification]);
 
   const hasCourses = schedule && schedule.sections.length > 0;
   const showOptimization = hasCourses;

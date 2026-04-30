@@ -1,8 +1,8 @@
 import { useAuth0 } from '@auth0/auth0-react';
-import { Box, CircularProgress, Typography } from '@mui/material';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
+import { LoadingState } from '../components/EmptyState';
 
 export default function CallbackPage() {
   const { isAuthenticated } = useAuth0();
@@ -16,21 +16,5 @@ export default function CallbackPage() {
     }
   }, [isAuthenticated, loading, profile, navigate]);
 
-  return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        bgcolor: 'background.default',
-      }}
-    >
-      <CircularProgress sx={{ mb: 2 }} />
-      <Typography variant="body1" color="text.secondary">
-        Completing sign in...
-      </Typography>
-    </Box>
-  );
+  return <LoadingState message="Completing sign in..." variant="fullscreen" />;
 }

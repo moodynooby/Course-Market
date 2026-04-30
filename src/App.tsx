@@ -7,6 +7,7 @@ import { LoadingSpinner } from './components/LoadingSpinner';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { ConfigProvider } from './context/ConfigContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { ThemeProvider } from './context/ThemeContext';
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -107,9 +108,11 @@ function App() {
     <ErrorBoundary>
       <ConfigProvider>
         <ThemeProvider>
-          <AuthProvider>
-            <RouterProvider router={router} />
-          </AuthProvider>
+          <NotificationProvider>
+            <AuthProvider>
+              <RouterProvider router={router} />
+            </AuthProvider>
+          </NotificationProvider>
         </ThemeProvider>
       </ConfigProvider>
     </ErrorBoundary>

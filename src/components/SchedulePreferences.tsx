@@ -18,6 +18,7 @@ import {
 import { useEffect, useState, useCallback } from 'react';
 import type { DayOfWeek, Preferences } from '../types';
 import { InfoCard } from './GlassAppBar';
+import { useNotification } from '../hooks/useNotification';
 
 interface SchedulePreferencesProps {
   initialPreferences?: Preferences;
@@ -105,6 +106,7 @@ export function SchedulePreferences({
   defaultExpanded = true,
 }: SchedulePreferencesProps) {
   const theme = useTheme();
+  const { showNotification } = useNotification();
   const [preferences, setPreferences] = useState<Preferences>(
     initialPreferences || DEFAULT_PREFERENCES,
   );
@@ -136,14 +138,16 @@ export function SchedulePreferences({
       await onSave(preferences);
       setSaved(true);
       if (!autoSave) {
+        showNotification('Preferences saved!', 'success');
         setTimeout(() => setSaved(false), 3000);
       }
     } catch (error) {
       console.error('Error saving preferences:', error);
+      showNotification('Failed to save preferences', 'error');
     } finally {
       setSaving(false);
     }
-  }, [preferences, onSave, autoSave]);
+  }, [preferences, onSave, autoSave, showNotification]);
 
   useEffect(() => {
     if (!autoSave || !onSave) return;

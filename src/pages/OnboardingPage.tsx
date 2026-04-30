@@ -22,6 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import { ProfileCard } from '../components/ProfileCard';
 import { SchedulePreferences } from '../components/SchedulePreferences';
 import { useAuthContext } from '../context/AuthContext';
+import { useNotification } from '../hooks/useNotification';
 import type { Preferences } from '../types';
 
 export type OnboardingStep = 'profile' | 'preferences';
@@ -34,6 +35,7 @@ const STEPS: { id: OnboardingStep; label: string }[] = [
 function OnboardingWizard() {
   const theme = useTheme();
   const navigate = useNavigate();
+  const { showNotification } = useNotification();
   const { profile, updateProfile } = useAuthContext();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -57,7 +59,9 @@ function OnboardingWizard() {
       await updateProfile(data);
 
       if (data.semesterId && activeStep === 'profile') {
-        setError('Profile saved! You can now proceed to set your schedule preferences.');
+        showNotification('Profile saved! You can now proceed to preferences.', 'success');
+      } else {
+        showNotification('Profile updated!', 'success');
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save your profile';
@@ -74,6 +78,7 @@ function OnboardingWizard() {
         onboardingCompleted: true,
       });
       setPreferencesSaved(true);
+      showNotification('Preferences saved! Ready to finish.', 'success');
     } catch (err) {
       setError('Failed to save preferences. Please try again.');
       console.error('Error saving preferences:', err);
@@ -226,15 +231,6 @@ function OnboardingWizard() {
                   onSave={handlePreferencesSave}
                   autoSave={true}
                 />
-                {preferencesSaved && (
-                  <Alert
-                    severity="success"
-                    sx={{ mt: 2 }}
-                    onClose={() => setPreferencesSaved(false)}
-                  >
-                    Preferences saved! Click "Complete & Continue" to finish setup.
-                  </Alert>
-                )}
               </Box>
             )}
           </Box>

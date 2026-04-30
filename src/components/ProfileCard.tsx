@@ -14,6 +14,7 @@ import { getCoursesBySubject, getSemesterData, getSemesters } from '../services/
 import { getCachedSemesterData } from '../services/dbCache';
 import type { Course, Section } from '../types';
 import { InfoCard, InteractiveCard } from './GlassAppBar';
+import { useNotification } from '../hooks/useNotification';
 
 interface ProfileCardProps {
   initialData?: {
@@ -32,6 +33,7 @@ interface ProfileCardProps {
 }
 
 export function ProfileCard({ initialData, onSave, showSemester = true }: ProfileCardProps) {
+  const { showNotification } = useNotification();
   const [formData, setFormData] = useState({
     displayName: initialData?.displayName || '',
     email: initialData?.email || '',
@@ -110,14 +112,17 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
         semesterId: selectedSemester || undefined,
       });
       setSaved(true);
+      showNotification('Profile updated successfully!', 'success');
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       console.error('Error saving profile:', error);
-      setSaveError(error instanceof Error ? error.message : 'Failed to save profile');
+      const msg = error instanceof Error ? error.message : 'Failed to save profile';
+      setSaveError(msg);
+      showNotification(msg, 'error');
     } finally {
       setSaving(false);
     }
-  }, [formData, selectedSemester, onSave, isValid, saving]);
+  }, [formData, selectedSemester, onSave, isValid, saving, showNotification]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
