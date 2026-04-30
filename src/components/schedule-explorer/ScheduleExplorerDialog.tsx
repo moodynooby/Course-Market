@@ -485,6 +485,7 @@ const ScheduleListItem = memo(function ScheduleListItem({
 }: ScheduleListItemProps) {
   return (
     <Card
+      variant="outlined"
       sx={{
         cursor: 'pointer',
         border: isSelected ? 2 : 1,
@@ -608,6 +609,7 @@ const ClusterGroup = memo(function ClusterGroup({
         {cluster.schedules.slice(0, MAX_DISPLAY_SCHEDULES).map((genSched) => (
           <Card
             key={genSched.id}
+            variant="outlined"
             sx={{
               cursor: 'pointer',
               border: selectedSchedule?.id === genSched.id ? 2 : 1,

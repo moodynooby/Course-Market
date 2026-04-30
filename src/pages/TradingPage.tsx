@@ -70,12 +70,12 @@ const TradeCard = memo(function TradeCard({
 
   return (
     <Card
+      variant="outlined"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       sx={{
-        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        transition: 'transform 0.2s ease',
         transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
-        boxShadow: isHovered ? 4 : 'none',
         opacity: trade.status === 'cancelled' ? 0.75 : 1,
         '&:hover .owner-actions': {
           opacity: 1,
@@ -471,7 +471,7 @@ export default function TradingPage() {
         </Stack>
         <Stack spacing={2}>
           {[1, 2, 3].map((i) => (
-            <Card key={i}>
+            <Card key={i} variant="outlined">
               <CardContent>
                 <Stack
                   direction="row"
@@ -547,7 +547,7 @@ export default function TradingPage() {
         </Alert>
       )}
       {trades.length === 0 && !loading ? (
-        <Card>
+        <Card variant="outlined">
           <CardContent sx={{ textAlign: 'center', py: 4 }}>
             <SwapHoriz sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
             <Typography variant="h6" gutterBottom>

@@ -1,6 +1,5 @@
-import { Box, Button, LinearProgress, Stack, Typography } from '@mui/material';
+import { Box, Button, Card, LinearProgress, Stack, Typography } from '@mui/material';
 import { Psychology, GridView } from '@mui/icons-material';
-import { ActionCard } from '../AppBar';
 import type { Schedule } from '../../types';
 
 interface OptimizationPanelProps {
@@ -29,7 +28,10 @@ export function OptimizationPanel({
   onWebgpuWarning,
 }: OptimizationPanelProps) {
   return (
-    <ActionCard sx={{ p: 3 }}>
+    <Card
+      variant="outlined"
+      sx={{ borderRadius: 4, bgcolor: 'background.paper', transition: 'all 0.3s ease', p: 3 }}
+    >
       <Stack
         direction="row"
         spacing={1}
@@ -126,6 +128,6 @@ export function OptimizationPanel({
           </Typography>
         )}
       </Stack>
-    </ActionCard>
+    </Card>
   );
 }

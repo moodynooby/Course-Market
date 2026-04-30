@@ -26,6 +26,7 @@ export function LoadingCard({
 }: LoadingCardProps) {
   return (
     <Card
+      variant="outlined"
       sx={{
         borderRadius: 4,
         bgcolor: 'background.paper',

@@ -2,6 +2,7 @@ import { CalendarToday, RemoveCircleOutlined, School, Save, Timer } from '@mui/i
 import {
   Box,
   Button,
+  Card,
   CardActions,
   Chip,
   Divider,
@@ -17,7 +18,6 @@ import {
 } from '@mui/material';
 import { useEffect, useState, useCallback } from 'react';
 import type { DayOfWeek, Preferences } from '../types';
-import { InfoCard } from './AppBar';
 
 interface SchedulePreferencesProps {
   initialPreferences?: Preferences;
@@ -197,7 +197,7 @@ export function SchedulePreferences({
   const showActions = !autoSave;
 
   return (
-    <InfoCard sx={{ p: 3 }}>
+    <Card variant="outlined" sx={{ borderRadius: 4, bgcolor: 'background.paper', p: 3 }}>
       {collapsible ? (
         <Box sx={{ mb: 3, cursor: 'pointer' }} onClick={() => setExpanded(!expanded)}>
           <Stack
@@ -496,7 +496,6 @@ export function SchedulePreferences({
                         cursor: 'pointer',
                         '&:hover': {
                           transform: 'translateY(-2px)',
-                          boxShadow: theme.shadows[1],
                           bgcolor: isActive ? 'error.dark' : 'action.hover',
                         },
                       }}
@@ -656,6 +655,6 @@ export function SchedulePreferences({
           </Box>
         )}
       </Box>
-    </InfoCard>
+    </Card>
   );
 }

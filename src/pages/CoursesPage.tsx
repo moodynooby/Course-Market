@@ -427,7 +427,7 @@ export default function CoursesPage() {
         </Box>
         <Stack spacing={2}>
           {[1, 2, 3, 4, 5].map((i) => (
-            <Card key={i}>
+            <Card key={i} variant="outlined">
               <CardContent>
                 <Skeleton variant="text" width="30%" height={30} />
                 <Skeleton variant="text" width="60%" />
@@ -482,7 +482,7 @@ export default function CoursesPage() {
             </Alert>
           </Stack>
         ) : (
-          <Card>
+          <Card variant="outlined">
             <CardContent>
               <Stack
                 direction="row"

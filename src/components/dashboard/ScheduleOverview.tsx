@@ -1,8 +1,7 @@
-import { Box, Button, Stack, Typography } from '@mui/material';
+import { Box, Button, Card, Stack, Typography } from '@mui/material';
 import { ArrowForward, CalendarToday } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '../EmptyState';
-import { InfoCard } from '../AppBar';
 import CalendarView from '../CalendarView';
 import type { Course, Section } from '../../types';
 import { checkConflicts } from '../../utils/schedule';
@@ -42,7 +41,7 @@ export function ScheduleOverview({ sections, courses, aiAnalysis }: ScheduleOver
 
   return (
     <Stack spacing={3}>
-      <InfoCard>
+      <Card sx={{ borderRadius: 4, bgcolor: 'background.paper' }}>
         <Box sx={{ p: 3 }}>
           <Stack
             direction="row"
@@ -74,9 +73,9 @@ export function ScheduleOverview({ sections, courses, aiAnalysis }: ScheduleOver
             <CalendarView sections={sections} courses={courses} conflicts={conflicts} />
           </Box>
         </Box>
-      </InfoCard>
+      </Card>
       {aiAnalysis && (
-        <InfoCard>
+        <Card variant="outlined" sx={{ borderRadius: 4, bgcolor: 'background.paper' }}>
           <Box sx={{ p: 3 }}>
             <Typography
               variant="subtitle2"
@@ -111,7 +110,7 @@ export function ScheduleOverview({ sections, courses, aiAnalysis }: ScheduleOver
               {aiAnalysis}
             </Box>
           </Box>
-        </InfoCard>
+        </Card>
       )}
     </Stack>
   );

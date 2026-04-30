@@ -53,6 +53,7 @@ const COURSE_COLORS = [
 ];
 
 const EventComponent = memo(function EventComponent({ event }: EventProps) {
+  const theme = useTheme();
   const courseCode = event.resource?.course?.code || '';
   const sectionNumber = event.resource?.section?.sectionNumber || '';
   const colorIndex = courseCode.length > 0 ? courseCode.charCodeAt(0) % COURSE_COLORS.length : 0;
@@ -76,7 +77,6 @@ const EventComponent = memo(function EventComponent({ event }: EventProps) {
         flexDirection: 'column',
         justifyContent: 'center',
         lineHeight: 1.2,
-        boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
       }}
     >
       <Typography
@@ -160,9 +160,6 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
           borderRadius: '8px',
           fontSize: '0.75rem',
           fontWeight: 600,
-          boxShadow: isConflicted
-            ? '0 2px 8px rgba(211, 47, 47, 0.3)'
-            : '0 2px 4px rgba(0,0,0,0.15)',
           opacity: isConflicted ? 0.9 : 1,
         },
       };
@@ -434,7 +431,6 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
                       ? alpha(theme.palette.error.main, 0.2)
                       : `${COURSE_COLORS[colorIndex]}25`,
                     transform: 'translateY(-2px)',
-                    boxShadow: theme.shadows[1],
                   },
                   '& .MuiChip-label': {
                     fontWeight: 600,

@@ -7,13 +7,21 @@ import {
   Person,
   Phone,
 } from '@mui/icons-material';
-import { Alert, Box, CircularProgress, Grid, Stack, TextField, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Card,
+  CircularProgress,
+  Grid,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import type { Semester } from '../types';
 import { getCoursesBySubject, getSemesterData, getSemesters } from '../services/coursesApi';
 import { getCachedSemesterData } from '../services/dbCache';
 import type { Course, Section } from '../types';
-import { InfoCard, InteractiveCard } from './AppBar';
 
 interface ProfileCardProps {
   initialData?: {
@@ -174,7 +182,7 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
   };
 
   return (
-    <InfoCard sx={{ p: 3 }}>
+    <Card variant="outlined" sx={{ borderRadius: 4, bgcolor: 'background.paper', p: 3 }}>
       <Box sx={{ mb: 3 }}>
         <Typography
           variant="h6"
@@ -277,10 +285,26 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
               <Grid container spacing={2}>
                 {semesters.map((semester) => (
                   <Grid size={{ xs: 12, sm: 6 }} key={semester.id}>
-                    <InteractiveCard
-                      selected={selectedSemester === semester.id}
-                      disabled={selectingSemester === semester.id}
+                    <Card
                       onClick={() => handleSelectSemester(semester.id)}
+                      variant="outlined"
+                      sx={{
+                        height: '100%',
+                        cursor: selectingSemester === semester.id ? 'not-allowed' : 'pointer',
+                        border: selectedSemester === semester.id ? 2 : 1,
+                        borderColor:
+                          selectedSemester === semester.id ? 'secondary.main' : 'divider',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          borderColor: 'secondary.main',
+                        },
+                        ...(selectingSemester === semester.id && {
+                          opacity: 0.6,
+                          '&:hover': {
+                            boxShadow: 'none',
+                          },
+                        }),
+                      }}
                     >
                       <Box sx={{ p: 2 }}>
                         <Stack
@@ -377,7 +401,7 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
                           )}
                         </Stack>
                       </Box>
-                    </InteractiveCard>
+                    </Card>
                   </Grid>
                 ))}
               </Grid>
@@ -435,6 +459,6 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
           )}
         </Box>
       </Stack>
-    </InfoCard>
+    </Card>
   );
 }

@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "pnpm@9.0.0",
   "scripts": {
     "dev": "npx netlify dev",
     "build": "tsc -b && vite build && echo '/*  /index.html  200' > dist/_redirects",

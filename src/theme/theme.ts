@@ -61,7 +61,7 @@ const getPalette = (isDark: boolean): ThemeOptions['palette'] => {
   };
 };
 
-const getComponents = (isDark: boolean): ThemeOptions['components'] => {
+const getComponents = (_isDark: boolean): ThemeOptions['components'] => {
   return {
     MuiCssBaseline: {
       styleOverrides: {
@@ -86,18 +86,34 @@ const getComponents = (isDark: boolean): ThemeOptions['components'] => {
     },
     MuiCard: {
       styleOverrides: {
-        root: {
-          borderRadius: 32,
+        root: ({ theme }) => ({
+          borderRadius: 24,
+          [theme.breakpoints.up('sm')]: {
+            borderRadius: 32,
+          },
           backgroundImage: 'none',
+        }),
+      },
+    },
+    MuiCardContent: {
+      styleOverrides: {
+        root: {
+          padding: '24px',
+          '&:last-child': {
+            paddingBottom: '24px',
+          },
         },
       },
     },
     MuiPaper: {
       styleOverrides: {
-        root: {
+        root: ({ theme }) => ({
           backgroundImage: 'none',
-          borderRadius: 32,
-        },
+          borderRadius: 24,
+          [theme.breakpoints.up('sm')]: {
+            borderRadius: 32,
+          },
+        }),
       },
     },
     MuiChip: {
@@ -133,9 +149,12 @@ const getComponents = (isDark: boolean): ThemeOptions['components'] => {
     },
     MuiDialog: {
       styleOverrides: {
-        paper: {
-          borderRadius: 32,
-        },
+        paper: ({ theme }) => ({
+          borderRadius: 24,
+          [theme.breakpoints.up('sm')]: {
+            borderRadius: 32,
+          },
+        }),
       },
     },
     MuiDialogTitle: {
@@ -149,7 +168,7 @@ const getComponents = (isDark: boolean): ThemeOptions['components'] => {
     MuiDialogContent: {
       styleOverrides: {
         root: {
-          padding: '0 24px 24px',
+          padding: '24px',
         },
       },
     },
@@ -263,12 +282,27 @@ export const createAppTheme = (isDark: boolean) => {
     palette: getPalette(isDark),
     typography: {
       fontFamily: '"Plus Jakarta Sans", "Inter", sans-serif',
-      h1: { fontSize: '3.5rem', fontWeight: 700, letterSpacing: '-0.02em' },
-      h2: { fontSize: '1.75rem', fontWeight: 600, letterSpacing: '-0.01em' },
-      h3: { fontSize: '1.5rem', fontWeight: 600, letterSpacing: '-0.01em' },
-      h4: { fontSize: '1.25rem', fontWeight: 700 },
-      h5: { fontSize: '1.125rem', fontWeight: 600 },
-      h6: { fontSize: '1rem', fontWeight: 600 },
+      h1: {
+        fontSize: '3.5rem',
+        fontWeight: 700,
+        letterSpacing: '-0.02em',
+        fontFamily: '"Zilla Slab", serif',
+      },
+      h2: {
+        fontSize: '1.75rem',
+        fontWeight: 600,
+        letterSpacing: '-0.01em',
+        fontFamily: '"Zilla Slab", serif',
+      },
+      h3: {
+        fontSize: '1.5rem',
+        fontWeight: 600,
+        letterSpacing: '-0.01em',
+        fontFamily: '"Zilla Slab", serif',
+      },
+      h4: { fontSize: '1.25rem', fontWeight: 700, fontFamily: '"Zilla Slab", serif' },
+      h5: { fontSize: '1.125rem', fontWeight: 600, fontFamily: '"Zilla Slab", serif' },
+      h6: { fontSize: '1rem', fontWeight: 600, fontFamily: '"Zilla Slab", serif' },
       subtitle1: { fontSize: '1rem', fontWeight: 600 },
       subtitle2: { fontSize: '0.875rem', fontWeight: 600 },
       body1: { fontSize: '1rem', fontWeight: 400 },

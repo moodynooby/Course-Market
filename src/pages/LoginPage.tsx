@@ -16,7 +16,7 @@ export default function LoginPage() {
         p: 2,
       }}
     >
-      <Card sx={{ maxWidth: 450, width: '100%' }}>
+      <Card variant="outlined" sx={{ maxWidth: 450, width: '100%' }}>
         <CardContent sx={{ p: 4 }}>
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Avatar
@@ -36,7 +36,6 @@ export default function LoginPage() {
               gutterBottom
               sx={{
                 fontWeight: 700,
-                fontFamily: '"Zilla Slab", serif',
               }}
             >
               AuraIsHub

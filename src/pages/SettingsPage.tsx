@@ -129,7 +129,7 @@ export default function SettingsPage() {
       </Typography>
       <Grid container spacing={3}>
         <Grid size={{ xs: 12 }}>
-          <Card>
+          <Card variant="outlined">
             <CardContent>
               <Stack
                 direction="row"
@@ -197,7 +197,7 @@ export default function SettingsPage() {
         </Grid>
 
         <Grid size={{ xs: 12 }}>
-          <Card>
+          <Card variant="outlined">
             <CardContent>
               <Stack
                 direction="row"
@@ -419,13 +419,13 @@ export default function SettingsPage() {
               {semesters.map((semester) => (
                 <Card
                   key={semester.id}
+                  variant="outlined"
                   sx={{
                     cursor: 'pointer',
                     border: currentSemester === semester.id ? 2 : 1,
                     borderColor: currentSemester === semester.id ? 'secondary.main' : 'divider',
                     '&:hover': {
                       borderColor: 'secondary.main',
-                      boxShadow: 2,
                     },
                   }}
                   onClick={() => handleSemesterChange(semester.id)}
