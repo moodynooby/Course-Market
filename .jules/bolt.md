@@ -5,3 +5,7 @@
 ## 2025-05-15 - Hot Loop Micro-optimizations
 **Learning:** String operations (split, replace) and repeated array lookups (find, includes) in tight loops (like scoring thousands of combinations or searching NLP results) add up significantly.
 **Action:** Use memoization/caching for repetitive computations (like time parsing), use Sets/Maps for O(1) lookups of preference data, and consolidate multiple passes over data into a single pass.
+
+## 2026-04-30 - Optimization of Hot Loops via Context Hoisting
+**Learning:** Even with pruning, calling a scoring function thousands of times in a generator loop becomes slow if it performs redundant work like Set creation or string parsing. Index-based backtracking with a shared array is significantly more memory-efficient than array spreading.
+**Action:** Always hoist invariant computations (like Set creation from preferences) out of hot loops. Use a context object to pass pre-calculated values. Use index-based backtracking for combinatorial searches to minimize GC pressure.

@@ -18,7 +18,22 @@ const DAY_TO_NUMBER: Record<DayOfWeek, number> = {
   Su: 0,
 };
 
-const DAY_ORDER: DayOfWeek[] = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su'];
+export const DAY_INDEX_MAP: Record<DayOfWeek, number> = {
+  M: 0,
+  T: 1,
+  W: 2,
+  Th: 3,
+  F: 4,
+  Sa: 5,
+  Su: 6,
+};
+
+export interface ScoringContext {
+  avoidDaysSet: Set<DayOfWeek>;
+  excludeInstructorsSet: Set<string>;
+  preferredStart: number;
+  preferredEnd: number;
+}
 
 function getWeekStartDate(): Date {
   const now = new Date();
@@ -140,7 +155,11 @@ export function hasTimeConflict(slot1: TimeSlot, slot2: TimeSlot): boolean {
   return start1 < end2 && start2 < end1;
 }
 
-export function calculateScheduleScore(schedule: Schedule, preferences: Preferences): number {
+export function calculateScheduleScore(
+  schedule: Schedule,
+  preferences: Preferences,
+  context?: ScoringContext,
+): number {
   let score = 100;
   const { sections, totalCredits } = schedule;
 
@@ -151,19 +170,23 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
     score -= 20;
   }
 
-  const avoidDaysSet = new Set(preferences.avoidDays);
-  const excludeInstructorsSet = new Set(preferences.excludeInstructors);
+  // Use provided context or create it on the fly (for single calls)
+  const avoidDaysSet = context?.avoidDaysSet ?? new Set(preferences.avoidDays);
+  const excludeInstructorsSet =
+    context?.excludeInstructorsSet ?? new Set(preferences.excludeInstructors);
+  const preferredStart =
+    context?.preferredStart ?? timeToMinutesCached(preferences.preferredStartTime);
+  const preferredEnd = context?.preferredEnd ?? timeToMinutesCached(preferences.preferredEndTime);
+
   const daysUsed = new Set<DayOfWeek>();
-
-  const preferredStart = timeToMinutesCached(preferences.preferredStartTime);
-  const preferredEnd = timeToMinutesCached(preferences.preferredEndTime);
-
   const allSlots: { day: DayOfWeek; start: number; end: number }[] = [];
 
-  sections.forEach((section) => {
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i];
     const isExcludedInstructor = excludeInstructorsSet.has(section.instructor);
 
-    section.timeSlots.forEach((slot) => {
+    for (let j = 0; j < section.timeSlots.length; j++) {
+      const slot = section.timeSlots[j];
       daysUsed.add(slot.day);
       const startTime = timeToMinutesCached(slot.startTime);
       const endTime = timeToMinutesCached(slot.endTime);
@@ -183,24 +206,22 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
       if (isExcludedInstructor) {
         score -= 20;
       }
-    });
-  });
+    }
+  }
 
-  daysUsed.forEach((day) => {
+  for (const day of daysUsed) {
     if (avoidDaysSet.has(day)) {
       score -= 15;
     }
-  });
+  }
 
   if (preferences.preferConsecutiveDays && daysUsed.size > 0) {
-    const sortedDays = Array.from(daysUsed).sort(
-      (a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b),
-    );
+    const sortedDays = Array.from(daysUsed).sort((a, b) => DAY_INDEX_MAP[a] - DAY_INDEX_MAP[b]);
 
     let gaps = 0;
     for (let i = 0; i < sortedDays.length - 1; i++) {
-      const currentIdx = DAY_ORDER.indexOf(sortedDays[i]);
-      const nextIdx = DAY_ORDER.indexOf(sortedDays[i + 1]);
+      const currentIdx = DAY_INDEX_MAP[sortedDays[i]];
+      const nextIdx = DAY_INDEX_MAP[sortedDays[i + 1]];
       if (nextIdx - currentIdx > 1) {
         gaps++;
       }
@@ -212,7 +233,7 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
   if (preferences.maxGapMinutes > 0 && allSlots.length > 1) {
     allSlots.sort((a, b) => {
       if (a.day !== b.day) {
-        return DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day);
+        return DAY_INDEX_MAP[a.day] - DAY_INDEX_MAP[b.day];
       }
       return a.start - b.start;
     });
