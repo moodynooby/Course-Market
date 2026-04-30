@@ -623,7 +623,7 @@ export function SchedulePreferences({
               <Button
                 onClick={handleSave}
                 variant="contained"
-                color="accent"
+                color="secondary"
                 disabled={saving || saved || !isValid}
                 startIcon={saving ? undefined : <Save />}
                 sx={{

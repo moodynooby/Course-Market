@@ -23,7 +23,7 @@ export default function LoginPage() {
               sx={{
                 width: 72,
                 height: 72,
-                bgcolor: 'accent.main',
+                bgcolor: 'secondary.main',
                 mx: 'auto',
                 mb: 2,
               }}
@@ -56,7 +56,7 @@ export default function LoginPage() {
             <Button
               fullWidth
               variant="contained"
-              color="accent"
+              color="secondary"
               size="large"
               onClick={signIn}
               sx={{ py: 1.5 }}

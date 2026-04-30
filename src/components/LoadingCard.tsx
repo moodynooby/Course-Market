@@ -28,7 +28,7 @@ export function LoadingCard({
     <Card
       sx={{
         borderRadius: 4,
-        bgcolor: 'surface.containerHigh',
+        bgcolor: 'background.paper',
         height: fullHeight ? '100%' : 'auto',
         display: 'flex',
         flexDirection: 'column',

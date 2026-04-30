@@ -39,12 +39,12 @@ function NavLink({ to, label, primary = false, currentPath }: NavLinkProps) {
           display: 'flex',
           alignItems: 'center',
           px: 1,
-          color: isActive ? 'accent.main' : 'text.secondary',
+          color: isActive ? 'secondary.main' : 'text.secondary',
           borderBottom: isActive ? '2px solid' : '2px solid transparent',
-          borderColor: isActive ? 'accent.main' : 'transparent',
+          borderColor: isActive ? 'secondary.main' : 'transparent',
           transition: 'all 0.2s',
           '&:hover': {
-            color: isActive ? 'accent.main' : 'text.primary',
+            color: isActive ? 'secondary.main' : 'text.primary',
           },
           '&:active': {
             transform: 'scale(0.95)',
@@ -128,7 +128,7 @@ export default function Layout() {
           position: 'sticky',
           top: 0,
           zIndex: 50,
-          bgcolor: 'surface.containerHigh',
+          bgcolor: 'background.paper',
           borderBottom: 'none',
         }}
       >
@@ -161,7 +161,7 @@ export default function Layout() {
                 variant="h6"
                 sx={{
                   fontWeight: 900,
-                  color: 'accent.main',
+                  color: 'secondary.main',
                   textDecoration: 'none',
                   letterSpacing: '-0.02em',
                   fontFamily: '"Zilla Slab", serif',
@@ -243,10 +243,10 @@ export default function Layout() {
                     py: 0.5,
                     borderRadius: 9999,
                     border: 'none',
-                    bgcolor: 'surface.container',
+                    bgcolor: 'background.paper',
                     textTransform: 'none',
                     color: 'text.primary',
-                    '&:hover': { bgcolor: 'surface.containerHigh' },
+                    '&:hover': { bgcolor: 'background.paper' },
                   }}
                 >
                   <Typography
@@ -263,7 +263,7 @@ export default function Layout() {
                       width: 32,
                       height: 32,
                       border: `2px solid`,
-                      borderColor: 'accent.main',
+                      borderColor: 'secondary.main',
                       bgcolor: 'primary.main',
                       color: 'primary.contrastText',
                     }}
@@ -284,7 +284,7 @@ export default function Layout() {
                         border: 'none',
                         boxShadow: theme.shadows[4],
                         backgroundImage: 'none',
-                        bgcolor: 'surface.containerHigh',
+                        bgcolor: 'background.paper',
                       },
                     },
                   }}
@@ -320,7 +320,7 @@ export default function Layout() {
             ) : (
               <Button
                 variant="contained"
-                color="accent"
+                color="secondary"
                 size="small"
                 onClick={signIn}
                 sx={{ borderRadius: 9999, ml: 1 }}

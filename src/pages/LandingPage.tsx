@@ -351,7 +351,7 @@ export default function LandingPage() {
             textAlign: 'center',
             mb: 4,
             borderRadius: 4,
-            bgcolor: 'surface.containerHigh',
+            bgcolor: 'background.paper',
           }}
         >
           <Typography
@@ -371,7 +371,7 @@ export default function LandingPage() {
             textAlign: 'center',
             mb: 4,
             borderRadius: 6, // rounded-xl per DESIGN.md
-            bgcolor: 'surface.containerHigh',
+            bgcolor: 'background.paper',
           }}
         >
           <Box
@@ -379,7 +379,7 @@ export default function LandingPage() {
               width: 100,
               height: 100,
               borderRadius: '50%',
-              bgcolor: alpha(theme.palette.accent?.main || theme.palette.secondary.main, 0.1),
+              bgcolor: alpha(theme.palette.secondary?.main || theme.palette.secondary.main, 0.1),
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -393,7 +393,7 @@ export default function LandingPage() {
                 width: 50,
                 height: 50,
                 borderRadius: '50%',
-                bgcolor: alpha(theme.palette.accent?.main || theme.palette.secondary.main, 0.3),
+                bgcolor: alpha(theme.palette.secondary?.main || theme.palette.secondary.main, 0.3),
                 filter: 'blur(12px)',
                 position: 'absolute',
               }}
@@ -401,7 +401,7 @@ export default function LandingPage() {
             <AutoAwesome
               sx={{
                 fontSize: 48,
-                color: 'accent.main',
+                color: 'secondary.main',
                 position: 'relative',
                 zIndex: 1,
               }}
@@ -507,14 +507,14 @@ export default function LandingPage() {
                   width: 40,
                   height: 40,
                   borderRadius: '50%',
-                  bgcolor: alpha(theme.palette.accent?.main || theme.palette.warning.main, 0.1),
+                  bgcolor: alpha(theme.palette.secondary?.main || theme.palette.warning.main, 0.1),
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   mx: 'auto',
                   mb: 1,
                   fontWeight: 700,
-                  color: 'accent.main',
+                  color: 'secondary.main',
                 }}
               >
                 3
@@ -531,7 +531,7 @@ export default function LandingPage() {
           </Stack>
           <Button
             variant="contained"
-            color="accent"
+            color="secondary"
             size="large"
             onClick={() => navigate('/courses')}
             startIcon={<ArrowForward />}
@@ -590,7 +590,7 @@ export default function LandingPage() {
           <Button onClick={() => setWebgpuWarningOpen(false)}>Cancel</Button>
           <Button
             variant="contained"
-            color="accent"
+            color="secondary"
             onClick={() => {
               setWebgpuWarningOpen(false);
               handleOptimize();

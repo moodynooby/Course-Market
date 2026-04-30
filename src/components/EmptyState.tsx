@@ -58,7 +58,7 @@ export function EmptyState({
         justifyContent: 'center',
         textAlign: 'center',
         borderRadius: 4,
-        bgcolor: 'surface.containerHigh',
+        bgcolor: 'background.paper',
       }}
     >
       <Box

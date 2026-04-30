@@ -296,11 +296,11 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
                               width: 40,
                               height: 40,
                               borderRadius: 2,
-                              bgcolor: 'accent.light',
+                              bgcolor: 'secondary.light',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              color: 'accent.main',
+                              color: 'secondary.main',
                             }}
                           >
                             {semester.jsonUrl ? (

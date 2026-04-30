@@ -81,7 +81,7 @@ const TradeCard = memo(function TradeCard({
           opacity: 1,
           visibility: 'visible',
         },
-        bgcolor: 'surface.containerHighest',
+        bgcolor: 'background.paper',
       }}
     >
       <CardContent>
@@ -200,7 +200,7 @@ const TradeCard = memo(function TradeCard({
               <Button
                 size="small"
                 variant="contained"
-                color="accent"
+                color="secondary"
                 startIcon={<ContactPhone />}
                 onClick={() => onContact(trade.contactPhone)}
                 sx={{ borderRadius: 2 }}
@@ -533,7 +533,7 @@ export default function TradingPage() {
           </Button>
           <Button
             variant="contained"
-            color="accent"
+            color="secondary"
             startIcon={<SwapHoriz />}
             onClick={() => setDialogOpen(true)}
           >
@@ -564,7 +564,7 @@ export default function TradingPage() {
             </Typography>
             <Button
               variant="contained"
-              color="accent"
+              color="secondary"
               startIcon={<SwapHoriz />}
               onClick={() => setDialogOpen(true)}
             >

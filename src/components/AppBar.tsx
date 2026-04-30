@@ -15,7 +15,7 @@ export const AppBarElevated = forwardRef<HTMLDivElement, AppBarProps>(
         elevation={0}
         {...props}
         sx={{
-          background: theme.palette.surface?.containerHigh || '#1f2020',
+          background: theme.palette.background.paper || '#1f2020',
           borderBottom: 'none',
           ...props.sx,
         }}
@@ -42,11 +42,11 @@ export function CardElevated({
 
   const bgColor =
     {
-      low: theme.palette.surface?.containerLow,
-      default: theme.palette.surface?.container,
-      high: theme.palette.surface?.containerHigh,
-      highest: theme.palette.surface?.containerHighest,
-    }[level] || theme.palette.surface?.containerHigh;
+      low: theme.palette.background.default,
+      default: theme.palette.background.default,
+      high: theme.palette.background.paper,
+      highest: theme.palette.background.paper,
+    }[level] || theme.palette.background.paper;
 
   return (
     <Box
@@ -74,7 +74,7 @@ export const InfoCard = forwardRef<HTMLDivElement, CardProps>(function InfoCard(
       {...props}
       sx={{
         borderRadius: 4,
-        bgcolor: 'surface.containerHighest',
+        bgcolor: 'background.paper',
         ...props.sx,
       }}
     >
@@ -102,11 +102,11 @@ export const InteractiveCard = forwardRef<
         height: '100%',
         cursor: disabled ? 'not-allowed' : 'pointer',
         border: selected ? 2 : 1,
-        borderColor: selected ? 'accent.main' : 'divider',
+        borderColor: selected ? 'secondary.main' : 'divider',
         transition: 'all 0.2s',
         '&:hover': {
           boxShadow: 3,
-          borderColor: 'accent.main',
+          borderColor: 'secondary.main',
         },
         ...(disabled && {
           opacity: 0.6,
@@ -133,7 +133,7 @@ export const ActionCard = forwardRef<HTMLDivElement, CardProps>(function ActionC
       {...props}
       sx={{
         borderRadius: 4,
-        bgcolor: 'surface.containerHigh',
+        bgcolor: 'background.paper',
         transition: 'all 0.3s ease',
         ...props.sx,
       }}

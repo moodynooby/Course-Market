@@ -16,50 +16,6 @@ body {
     "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #0e0e0e; /* The Void */
-}
-
-/* DESIGN.md Spacing Scale (The Breath) */
-:root {
-  /* Spacing tokens */
-  --spacing-1: 0.35rem; /* Micro-adjustments */
-  --spacing-2: 0.5rem;
-  --spacing-3: 1rem; /* Component Internal */
-  --spacing-4: 1.5rem;
-  --spacing-5: 2rem;
-  --spacing-6: 2.5rem;
-  --spacing-8: 3rem;
-  --spacing-10: 4rem; /* Section Gaps */
-  --spacing-12: 5rem;
-  --spacing-16: 6rem;
-  --spacing-20: 7rem; /* Hero Margins */
-
-  /* Corner Radii */
-  --radius-md: 24px; /* Inner Nested Elements */
-  --radius-lg: 32px; /* Cards */
-  --radius-xl: 48px; /* Hero Containers */
-  --radius-full: 9999px; /* Buttons/Chips */
-
-  /* Colors */
-  --color-void: #0e0e0e;
-  --color-primary: #c6c6c6;
-  --color-primary-dim: #b8b9b9;
-  --color-primary-fixed: #e2e2e2;
-  --color-tertiary: #ffb148;
-  --color-tertiary-contrast: #573500;
-  --color-error: #fa746f;
-  --color-on-surface-variant: #acabaa;
-
-  /* Surface Hierarchy */
-  --surface-container-low: #131313;
-  --surface-container-lowest: #1a1a1a;
-  --surface-container-high: #1f2020;
-  --surface-container-highest: #252626;
-  --surface-bright: #2c2c2c;
-
-  /* Shadows (MUI3 - minimal, tonal elevation preferred) */
-  --shadow-ambient: 0px 24px 48px rgba(0, 0, 0, 0.4);
-  --shadow-float: 0px 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 /* Scrollbar Styling */
@@ -73,30 +29,19 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #484848;
-  border-radius: var(--radius-full);
+  background: #888;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #5a5a5a;
+  background: #555;
 }
 
-/* Focus States - Orange glow, not blue */
-*:focus-visible {
-  outline: 2px solid var(--color-tertiary);
-  outline-offset: 2px;
-}
-
-/* Utility: Ghost Border (15% opacity for accessibility) */
-.ghost-border {
-  outline: 1px solid rgba(72, 72, 72, 0.15);
-}
-
-/* Utility: Active Indicator (MUI3 - no blur) */
+/* Utility: Active Indicator */
 .active-indicator {
   width: 8px;
   height: 8px;
-  background: var(--color-tertiary);
+  background: #0061a4; /* primary */
   border-radius: 50%;
   position: relative;
 }
@@ -109,7 +54,7 @@ body {
   transform: translate(-50%, -50%);
   width: 16px;
   height: 16px;
-  background: var(--color-tertiary);
+  background: #0061a4;
   border-radius: 50%;
   opacity: 0.3;
   z-index: -1;
@@ -132,30 +77,4 @@ body {
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.05em;
-}
-
-/* MUI3 Tonal Elevation: Surface colors for depth (no blur) */
-.surface-container {
-  background: #1a1a1a;
-}
-
-.surface-container-low {
-  background: var(--surface-container-low);
-}
-
-.surface-container-high {
-  background: var(--surface-container-high);
-}
-
-.surface-container-highest {
-  background: var(--surface-container-highest);
-}
-
-/* Gradient CTA (Milled Metal Effect) */
-.gradient-cta {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dim));
-}
-
-.gradient-cta:hover {
-  background: linear-gradient(135deg, var(--color-primary-fixed), var(--color-primary));
 }
