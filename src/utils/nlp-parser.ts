@@ -1,5 +1,6 @@
 import * as chrono from 'chrono-node';
 import type { DayOfWeek } from '../types';
+import { timeToMinutesCached } from './schedule';
 import type { GeneratedSchedule, ScheduleIntent, SearchResult } from './schedule-types';
 
 /**
@@ -292,101 +293,76 @@ export function scheduleMatchesIntent(
   intent: ScheduleIntent,
 ): { matches: boolean; score: number; criteria: string[] } {
   const criteria: string[] = [];
-  let score = 1;
   const penalties: number[] = [];
 
-  // Check morning preference
+  const avoidDaysSet = intent.avoidDays ? new Set(intent.avoidDays) : null;
+  const specificDaysSet = intent.specificDays ? new Set(intent.specificDays) : null;
+  const earliestMinutes = intent.earliestTime ? timeToMinutesCached(intent.earliestTime) : null;
+  const latestMinutes = intent.latestTime ? timeToMinutesCached(intent.latestTime) : null;
+
+  let hasMorningClasses = false;
+  let hasAfternoonClasses = false;
+  let hasAvoidedDays = false;
+  let hasEarlyClass = false;
+  let hasLateClass = false;
+  const scheduleDays = new Set<DayOfWeek>();
+
+  // Single pass over sections and time slots
+  for (const section of schedule.sections) {
+    for (const slot of section.timeSlots) {
+      const startMinutes = timeToMinutesCached(slot.startTime);
+      const hour = Math.floor(startMinutes / 60);
+
+      scheduleDays.add(slot.day);
+
+      if (hour >= 6 && hour < 12) hasMorningClasses = true;
+      if (hour >= 12 && hour < 17) hasAfternoonClasses = true;
+
+      if (avoidDaysSet?.has(slot.day)) hasAvoidedDays = true;
+
+      if (earliestMinutes !== null && startMinutes < earliestMinutes) {
+        hasEarlyClass = true;
+      }
+
+      if (latestMinutes !== null && startMinutes >= latestMinutes) {
+        hasLateClass = true;
+      }
+    }
+  }
+
   if (intent.preferMorning) {
-    const hasMorningClasses = schedule.sections.some((section) =>
-      section.timeSlots.some((slot) => {
-        const hour = parseInt(slot.startTime.split(':')[0], 10);
-        return hour >= 6 && hour < 12;
-      }),
-    );
-    if (hasMorningClasses) {
-      criteria.push('Has morning classes');
-    } else {
-      penalties.push(0.3);
-    }
+    if (hasMorningClasses) criteria.push('Has morning classes');
+    else penalties.push(0.3);
   }
 
-  // Check afternoon preference
   if (intent.preferAfternoon) {
-    const hasAfternoonClasses = schedule.sections.some((section) =>
-      section.timeSlots.some((slot) => {
-        const hour = parseInt(slot.startTime.split(':')[0], 10);
-        return hour >= 12 && hour < 17;
-      }),
-    );
-    if (hasAfternoonClasses) {
-      criteria.push('Has afternoon classes');
-    } else {
-      penalties.push(0.3);
-    }
+    if (hasAfternoonClasses) criteria.push('Has afternoon classes');
+    else penalties.push(0.3);
   }
 
-  // Check avoided days
-  if (intent.avoidDays && intent.avoidDays.length > 0) {
-    const hasAvoidedDays = schedule.sections.some((section) =>
-      section.timeSlots.some((slot) => intent.avoidDays?.includes(slot.day)),
-    );
-    if (!hasAvoidedDays) {
-      criteria.push(`Avoids ${intent.avoidDays.join(', ')} classes`);
-    } else {
-      penalties.push(0.5);
-    }
+  if (avoidDaysSet) {
+    if (!hasAvoidedDays) criteria.push(`Avoids ${intent.avoidDays?.join(', ')} classes`);
+    else penalties.push(0.5);
   }
 
-  // Check specific days requested
-  if (intent.specificDays && intent.specificDays.length > 0) {
-    const scheduleDays = new Set<DayOfWeek>();
-    schedule.sections.forEach((section) => {
-      section.timeSlots.forEach((slot) => scheduleDays.add(slot.day));
-    });
-
-    const hasAllDays = intent.specificDays.every((day) => scheduleDays.has(day));
-    if (hasAllDays) {
-      criteria.push(`Includes ${intent.specificDays.join(', ')} classes`);
-    } else {
-      penalties.push(0.4);
-    }
+  if (specificDaysSet) {
+    const hasAllDays = intent.specificDays?.every((day) => scheduleDays.has(day));
+    if (hasAllDays) criteria.push(`Includes ${intent.specificDays?.join(', ')} classes`);
+    else penalties.push(0.4);
   }
 
-  // Check earliest time constraint
-  if (intent.earliestTime) {
-    const minHour = parseInt(intent.earliestTime.split(':')[0], 10);
-    const hasEarlyClass = schedule.sections.some((section) =>
-      section.timeSlots.some((slot) => {
-        const hour = parseInt(slot.startTime.split(':')[0], 10);
-        return hour < minHour;
-      }),
-    );
-    if (!hasEarlyClass) {
-      criteria.push(`No classes before ${intent.earliestTime}`);
-    } else {
-      penalties.push(0.4);
-    }
+  if (earliestMinutes !== null) {
+    if (!hasEarlyClass) criteria.push(`No classes before ${intent.earliestTime}`);
+    else penalties.push(0.4);
   }
 
-  // Check latest time constraint
-  if (intent.latestTime) {
-    const maxHour = parseInt(intent.latestTime.split(':')[0], 10);
-    const hasLateClass = schedule.sections.some((section) =>
-      section.timeSlots.some((slot) => {
-        const hour = parseInt(slot.startTime.split(':')[0], 10);
-        return hour >= maxHour;
-      }),
-    );
-    if (!hasLateClass) {
-      criteria.push(`No classes after ${intent.latestTime}`);
-    } else {
-      penalties.push(0.4);
-    }
+  if (latestMinutes !== null) {
+    if (!hasLateClass) criteria.push(`No classes after ${intent.latestTime}`);
+    else penalties.push(0.4);
   }
 
-  // Calculate final score
   const totalPenalty = penalties.reduce((sum, p) => sum + p, 0);
-  score = Math.max(0, 1 - totalPenalty);
+  const score = Math.max(0, 1 - totalPenalty);
 
   return {
     matches: score > 0.5,

@@ -126,7 +126,7 @@ export function checkConflicts(sections: Section[]): string[] {
 // Cache for time to minutes to avoid repeated parsing
 const timeCache = new Map<string, number>();
 
-function timeToMinutesCached(time: string): number {
+export function timeToMinutesCached(time: string): number {
   let minutes = timeCache.get(time);
   if (minutes === undefined) {
     const [hours, mins] = time.split(':').map(Number);
