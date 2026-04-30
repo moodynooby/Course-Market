@@ -10,7 +10,6 @@ import {
   Menu,
   MenuItem,
   Typography,
-  useTheme,
 } from '@mui/material';
 import { useCallback, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -83,7 +82,6 @@ import lockIcon from '../assets/3dicons-locker-dynamic-premium.png';
 import logoIcon from '../assets/logo.png';
 export default function Layout() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const { mode, setMode } = useThemeMode();

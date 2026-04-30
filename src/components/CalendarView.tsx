@@ -53,7 +53,6 @@ const COURSE_COLORS = [
 ];
 
 const EventComponent = memo(function EventComponent({ event }: EventProps) {
-  const theme = useTheme();
   const courseCode = event.resource?.course?.code || '';
   const sectionNumber = event.resource?.section?.sectionNumber || '';
   const colorIndex = courseCode.length > 0 ? courseCode.charCodeAt(0) % COURSE_COLORS.length : 0;
