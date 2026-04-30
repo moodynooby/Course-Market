@@ -24,7 +24,6 @@ import {
   DialogTitle,
   InputAdornment,
   Skeleton,
-  Snackbar,
   Stack,
   TextField,
   Typography,
@@ -42,6 +41,8 @@ import { ApiError } from '../services/apiClient';
 import type { TradePost } from '../types';
 import { timeAgo } from '../utils';
 import { tradeSchema, formatZodError } from '../lib/schemas';
+import { useNotification } from '../hooks/useNotification';
+import { EmptyState } from '../components/EmptyState';
 
 const TradeCard = memo(function TradeCard({
   trade,
@@ -234,6 +235,7 @@ const LOAD_MORE_INCREMENT = 10;
 
 export default function TradingPage() {
   const { user, getToken } = useAuth();
+  const { showNotification } = useNotification();
 
   const [trades, setTrades] = useState<TradePost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -243,10 +245,6 @@ export default function TradingPage() {
   const [editingTrade, setEditingTrade] = useState<TradePost | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({
-    open: false,
-    message: '',
-  });
 
   const [tradeForm, setTradeForm] = useState({
     courseCode: '',
@@ -316,7 +314,10 @@ export default function TradingPage() {
         description: '',
       });
       await loadTrades();
-      setSnackbar({ open: true, message: 'Trade posted successfully!' });
+      showNotification(
+        editingTrade ? 'Trade updated successfully!' : 'Trade posted successfully!',
+        'success',
+      );
     } catch (e) {
       if (e instanceof Error && e.constructor.name === 'ZodError') {
         const zodError = e as import('zod').ZodError;
@@ -334,14 +335,17 @@ export default function TradingPage() {
     }
   };
 
-  const handleContact = useCallback(async (phone: string) => {
-    try {
-      await navigator.clipboard.writeText(phone);
-      setSnackbar({ open: true, message: 'Phone number copied to clipboard!' });
-    } catch {
-      setSnackbar({ open: true, message: `Phone: ${phone}` });
-    }
-  }, []);
+  const handleContact = useCallback(
+    async (phone: string) => {
+      try {
+        await navigator.clipboard.writeText(phone);
+        showNotification('Phone number copied to clipboard!', 'success');
+      } catch {
+        showNotification(`Phone: ${phone}`, 'info');
+      }
+    },
+    [showNotification],
+  );
 
   const handleUpdate = useCallback(
     async (id: string, updates: Partial<TradePost>) => {
@@ -349,6 +353,7 @@ export default function TradingPage() {
         const token = await getToken();
         const updated = await updateTrade(token, id, updates);
         setTrades((prev) => prev.map((t) => (t.id === id ? updated : t)));
+        showNotification('Trade updated!', 'success');
       } catch (e) {
         if (e instanceof ApiError && e.details) {
           const messages = e.details.map((d) => `${d.field}: ${d.message}`).join('\n');
@@ -358,7 +363,7 @@ export default function TradingPage() {
         }
       }
     },
-    [getToken],
+    [getToken, showNotification],
   );
 
   const handleDelete = useCallback(
@@ -367,6 +372,7 @@ export default function TradingPage() {
         const token = await getToken();
         await deleteTrade(token, id);
         setTrades((prev) => prev.filter((t) => t.id !== id));
+        showNotification('Trade deleted', 'info');
       } catch (e) {
         if (e instanceof ApiError && e.details) {
           const messages = e.details.map((d) => `${d.field}: ${d.message}`).join('\n');
@@ -376,7 +382,7 @@ export default function TradingPage() {
         }
       }
     },
-    [getToken],
+    [getToken, showNotification],
   );
 
   const filteredTrades = useMemo(() => {
@@ -470,15 +476,11 @@ export default function TradingPage() {
       )}
 
       {trades.length === 0 && !loading ? (
-        <Card>
-          <CardContent sx={{ textAlign: 'center', py: 4 }}>
-            <SwapHoriz sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" gutterBottom>
-              No Trades Yet
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Be the first to post a course trade
-            </Typography>
+        <EmptyState
+          icon={<SwapHoriz sx={{ fontSize: 48 }} />}
+          title="No Trades Yet"
+          description="Be the first to post a course trade and find your ideal section."
+          action={
             <Button
               variant="contained"
               color="accent"
@@ -487,8 +489,8 @@ export default function TradingPage() {
             >
               Post Trade
             </Button>
-          </CardContent>
-        </Card>
+          }
+        />
       ) : (
         <Stack spacing={2}>
           <TextField
@@ -661,14 +663,6 @@ export default function TradingPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        message={snackbar.message}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      />
     </Box>
   );
 }

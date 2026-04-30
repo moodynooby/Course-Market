@@ -34,9 +34,9 @@ import type { LLMProvider, Preferences, Semester } from '../types';
 import { SchedulePreferences } from '../components/SchedulePreferences';
 export default function SettingsPage() {
   const { user, profile, getToken, updateProfile } = useAuthContext();
+  const { showNotification } = useNotification();
   const { mode } = useThemeMode();
   const { preferences, llmConfig, updatePreferences, updateLlmConfig } = useConfigContext();
-  const [saved, setSaved] = useState(false);
   const [clearDataOpen, setClearDataOpen] = useState(false);
   const [semesterDialogOpen, setSemesterDialogOpen] = useState(false);
   const [semesters, setSemesters] = useState<Semester[]>([]);
@@ -109,10 +109,10 @@ export default function SettingsPage() {
   const handlePreferencesSave = async (prefs: Preferences) => {
     try {
       await updateProfile({ preferences: prefs });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      showNotification('Preferences saved successfully!', 'success');
     } catch (error) {
       console.error('Error saving schedule preferences:', error);
+      showNotification('Failed to save preferences', 'error');
     }
   };
 
@@ -323,11 +323,6 @@ export default function SettingsPage() {
         >
           Clear All Data
         </Button>
-        {saved && (
-          <Typography variant="body2" color="success.main" fontWeight={600}>
-            Settings saved automatically!
-          </Typography>
-        )}
       </Stack>
 
       <Dialog open={clearDataOpen} onClose={() => setClearDataOpen(false)}>

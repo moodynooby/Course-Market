@@ -1,4 +1,4 @@
-import { CalendarToday, Clear, KeyboardArrowDown } from '@mui/icons-material';
+import { CalendarToday, Clear, KeyboardArrowDown, SearchOff } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -13,7 +13,6 @@ import {
   MenuItem,
   Select,
   Skeleton,
-  Snackbar,
   Stack,
   TextField,
   Typography,
@@ -29,6 +28,8 @@ import { getSemesters } from '../services/coursesApi';
 import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
 import { api } from '../services/apiClient';
 import { searchIndex } from '../services/searchIndex';
+import { useNotification } from '../hooks/useNotification';
+import { EmptyState } from '../components/EmptyState';
 import type { Course, Section } from '../types';
 import { hasSectionConflict } from '../utils/schedule';
 
@@ -38,6 +39,7 @@ const INITIAL_ESTIMATE_SIZE = 200;
 
 export default function CoursesPage() {
   const { isAuthenticated, getToken } = useAuth();
+  const { showNotification } = useNotification();
   const [courses, setCourses] = useState<Course[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [search, setSearch] = useState('');
@@ -54,16 +56,6 @@ export default function CoursesPage() {
     Array<{ id: string; name: string; jsonUrl: string; isActive: boolean }>
   >([]);
   const [loadingSemesters, setLoadingSemesters] = useState(false);
-
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity?: 'success' | 'info' | 'warning' | 'error';
-  }>({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
 
   const { progress, result: parsedResult, error: parseError, fetchAndParse } = useSemesterParser();
 
@@ -111,21 +103,16 @@ export default function CoursesPage() {
     });
 
     if (added.length > 0) {
-      setSnackbar({
-        open: true,
-        message: `Selected ${added.length} course${added.length > 1 ? 's' : ''}`,
-        severity: 'success',
-      });
+      showNotification(`Selected ${added.length} course${added.length > 1 ? 's' : ''}`, 'success');
     } else if (removed.length > 0) {
-      setSnackbar({
-        open: true,
-        message: `Deselected ${removed.length} course${removed.length > 1 ? 's' : ''}`,
-        severity: 'info',
-      });
+      showNotification(
+        `Deselected ${removed.length} course${removed.length > 1 ? 's' : ''}`,
+        'info',
+      );
     }
 
     previousSelectionsRef.current = new Map(curr);
-  }, [selectedSections]);
+  }, [selectedSections, showNotification]);
 
   useEffect(() => {
     saveSelections(selectedSections);
@@ -322,16 +309,8 @@ export default function CoursesPage() {
 
   const handleClearAll = useCallback(() => {
     setSelectedSections(new Map());
-    setSnackbar({
-      open: true,
-      message: 'Cleared all course selections',
-      severity: 'info',
-    });
-  }, []);
-
-  const handleSnackbarClose = () => {
-    setSnackbar((prev) => ({ ...prev, open: false }));
-  };
+    showNotification('Cleared all course selections', 'info');
+  }, [showNotification]);
 
   const handleExpand = useCallback((courseId: string) => {
     setExpanded((prev) => (prev === courseId ? null : courseId));
@@ -456,22 +435,16 @@ export default function CoursesPage() {
             </Alert>
           </Stack>
         ) : (
-          <Card>
-            <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <CalendarToday sx={{ fontSize: 40, color: 'text.secondary' }} />
-                <Box>
-                  <Typography variant="h6">No Courses Loaded</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Click below to load courses for the current semester.
-                  </Typography>
-                </Box>
-              </Stack>
-              <Button variant="contained" sx={{ mt: 3 }} onClick={autoLoadCourses}>
+          <EmptyState
+            icon={<CalendarToday sx={{ fontSize: 40 }} />}
+            title="No Courses Loaded"
+            description="Click below to load courses for the current semester."
+            action={
+              <Button variant="contained" onClick={autoLoadCourses}>
                 Load Courses
               </Button>
-            </CardContent>
-          </Card>
+            }
+          />
         )}
       </Box>
     );
@@ -596,7 +569,23 @@ export default function CoursesPage() {
       </Stack>
 
       {filteredCourses.length === 0 && (
-        <Alert severity="info">No courses found matching your criteria.</Alert>
+        <EmptyState
+          variant="compact"
+          icon={<SearchOff sx={{ fontSize: 40 }} />}
+          title="No courses found"
+          description="Try adjusting your search or subject filter to find what you're looking for."
+          action={
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setSearch('');
+                setSubject('all');
+              }}
+            >
+              Clear Filters
+            </Button>
+          }
+        />
       )}
 
       {/* Virtualized course list */}
@@ -649,17 +638,6 @@ export default function CoursesPage() {
           })}
         </Box>
       </Box>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 }
