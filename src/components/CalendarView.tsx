@@ -53,6 +53,7 @@ const COURSE_COLORS = [
 ];
 
 const EventComponent = memo(function EventComponent({ event }: EventProps) {
+  const theme = useTheme();
   const courseCode = event.resource?.course?.code || '';
   const sectionNumber = event.resource?.section?.sectionNumber || '';
   const colorIndex = courseCode.length > 0 ? courseCode.charCodeAt(0) % COURSE_COLORS.length : 0;
@@ -76,7 +77,7 @@ const EventComponent = memo(function EventComponent({ event }: EventProps) {
         flexDirection: 'column',
         justifyContent: 'center',
         lineHeight: 1.2,
-        boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
+        boxShadow: theme.shadows[1],
       }}
     >
       <Typography
@@ -160,14 +161,12 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
           borderRadius: '8px',
           fontSize: '0.75rem',
           fontWeight: 600,
-          boxShadow: isConflicted
-            ? '0 2px 8px rgba(211, 47, 47, 0.3)'
-            : '0 2px 4px rgba(0,0,0,0.15)',
+          boxShadow: isConflicted ? theme.shadows[4] : theme.shadows[2],
           opacity: isConflicted ? 0.9 : 1,
         },
       };
     },
-    [conflicts, theme.palette.error.main],
+    [conflicts, theme.palette.error.main, theme.shadows],
   );
 
   const formats = useMemo(

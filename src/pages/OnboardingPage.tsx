@@ -347,7 +347,6 @@ export default function OnboardingPage() {
               variant="h4"
               sx={{
                 fontWeight: 700,
-                fontFamily: '"Zilla Slab", serif',
               }}
             >
               Welcome to AuraIsHub!

@@ -164,7 +164,6 @@ export default function Layout() {
                   color: 'secondary.main',
                   textDecoration: 'none',
                   letterSpacing: '-0.02em',
-                  fontFamily: '"Zilla Slab", serif',
                   display: { xs: 'none', sm: 'block' },
                 }}
               >

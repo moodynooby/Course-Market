@@ -36,7 +36,6 @@ export default function LoginPage() {
               gutterBottom
               sx={{
                 fontWeight: 700,
-                fontFamily: '"Zilla Slab", serif',
               }}
             >
               AuraIsHub

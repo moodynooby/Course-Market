@@ -1,7 +1,6 @@
-import { Box, Button, Stack, Typography, alpha, useTheme } from '@mui/material';
+import { Box, Button, Card, Stack, Typography, alpha, useTheme } from '@mui/material';
 import { ArrowForward } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { InfoCard } from '../AppBar';
 import type { Course, Section } from '../../types';
 
 interface SelectedCoursesListProps {
@@ -15,7 +14,7 @@ export function SelectedCoursesList({ sections, courses }: SelectedCoursesListPr
 
   if (sections.length === 0) {
     return (
-      <InfoCard sx={{ p: 3 }}>
+      <Card sx={{ borderRadius: 4, bgcolor: 'background.paper', p: 3 }}>
         <Typography
           variant="h6"
           sx={{
@@ -33,12 +32,12 @@ export function SelectedCoursesList({ sections, courses }: SelectedCoursesListPr
         >
           No courses selected yet
         </Typography>
-      </InfoCard>
+      </Card>
     );
   }
 
   return (
-    <InfoCard sx={{ p: 3 }}>
+    <Card sx={{ borderRadius: 4, bgcolor: 'background.paper', p: 3 }}>
       <Typography
         variant="h6"
         sx={{
@@ -106,6 +105,6 @@ export function SelectedCoursesList({ sections, courses }: SelectedCoursesListPr
           Manage Courses
         </Button>
       </Stack>
-    </InfoCard>
+    </Card>
   );
 }
