@@ -1,4 +1,4 @@
-import { CalendarToday, RemoveCircleOutline, School, Save, Timer } from '@mui/icons-material';
+import { CalendarToday, RemoveCircleOutlined, School, Save, Timer } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import { useEffect, useState, useCallback } from 'react';
 import type { DayOfWeek, Preferences } from '../types';
-import { InfoCard } from './GlassAppBar';
+import { InfoCard } from './AppBar';
 
 interface SchedulePreferencesProps {
   initialPreferences?: Preferences;
@@ -200,20 +200,40 @@ export function SchedulePreferences({
     <InfoCard sx={{ p: 3 }}>
       {collapsible ? (
         <Box sx={{ mb: 3, cursor: 'pointer' }} onClick={() => setExpanded(!expanded)}>
-          <Stack direction="row" alignItems="center" spacing={1}>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              alignItems: 'center',
+            }}
+          >
             <Box sx={{ flexGrow: 1 }}>
-              <Typography variant="h6" fontWeight={700} gutterBottom>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{
+                  fontWeight: 700,
+                }}
+              >
                 {title}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 {description}
                 {autoSave && ' • Auto-saves as you edit'}
               </Typography>
             </Box>
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ fontWeight: 500, ml: 'auto' }}
+              sx={{
+                color: 'text.secondary',
+                fontWeight: 500,
+                ml: 'auto',
+              }}
             >
               {expanded ? '− Collapse' : '+ Expand'}
             </Typography>
@@ -221,16 +241,26 @@ export function SchedulePreferences({
         </Box>
       ) : (
         <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" fontWeight={700} gutterBottom>
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{
+              fontWeight: 700,
+            }}
+          >
             {title}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             {description}
             {autoSave && ' • Auto-saves as you edit'}
           </Typography>
         </Box>
       )}
-
       <Box
         sx={{
           maxHeight: expanded ? '2000px' : '0',
@@ -242,9 +272,22 @@ export function SchedulePreferences({
         <Stack spacing={3}>
           {/* Time Preferences */}
           <Box>
-            <Stack direction="row" alignItems="center" spacing={0.5} mb={1.5}>
+            <Stack
+              direction="row"
+              spacing={0.5}
+              sx={{
+                alignItems: 'center',
+                mb: 1.5,
+              }}
+            >
               <Timer fontSize="small" sx={{ color: 'text.secondary' }} />
-              <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 600,
+                  color: 'text.secondary',
+                }}
+              >
                 TIME PREFERENCES
               </Typography>
             </Stack>
@@ -258,7 +301,9 @@ export function SchedulePreferences({
                   label="Start Time"
                   value={preferences.preferredStartTime}
                   onChange={(e) => handleUpdate('preferredStartTime', e.target.value)}
-                  InputLabelProps={{ shrink: true }}
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                  }}
                 />
               </Grid>
               <Grid size={{ xs: 6 }}>
@@ -269,12 +314,20 @@ export function SchedulePreferences({
                   label="End Time"
                   value={preferences.preferredEndTime}
                   onChange={(e) => handleUpdate('preferredEndTime', e.target.value)}
-                  InputLabelProps={{ shrink: true }}
+                  slotProps={{
+                    inputLabel: { shrink: true },
+                  }}
                 />
               </Grid>
             </Grid>
 
-            <Stack direction="row" spacing={1} mt={2}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                mt: 2,
+              }}
+            >
               <Chip
                 label="🌅 Morning"
                 onClick={() => handleUpdate('preferMorning', !preferences.preferMorning)}
@@ -296,9 +349,22 @@ export function SchedulePreferences({
 
           {/* Credit & Schedule */}
           <Box>
-            <Stack direction="row" alignItems="center" spacing={0.5} mb={1.5}>
+            <Stack
+              direction="row"
+              spacing={0.5}
+              sx={{
+                alignItems: 'center',
+                mb: 1.5,
+              }}
+            >
               <CalendarToday fontSize="small" sx={{ color: 'text.secondary' }} />
-              <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 600,
+                  color: 'text.secondary',
+                }}
+              >
                 SCHEDULE
               </Typography>
             </Stack>
@@ -312,7 +378,9 @@ export function SchedulePreferences({
                   label="Min Credits"
                   value={preferences.minCredits}
                   onChange={(e) => handleCreditsChange('min', parseInt(e.target.value) || 0)}
-                  inputProps={{ min: 0, max: 24 }}
+                  slotProps={{
+                    htmlInput: { min: 0, max: 24 },
+                  }}
                 />
               </Grid>
               <Grid size={{ xs: 6 }}>
@@ -323,14 +391,32 @@ export function SchedulePreferences({
                   label="Max Credits"
                   value={preferences.maxCredits}
                   onChange={(e) => handleCreditsChange('max', parseInt(e.target.value) || 0)}
-                  inputProps={{ min: 0, max: 24 }}
+                  slotProps={{
+                    htmlInput: { min: 0, max: 24 },
+                  }}
                 />
               </Grid>
             </Grid>
 
-            <Box mt={2}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
-                <Typography variant="caption" color="text.secondary">
+            <Box
+              sx={{
+                mt: 2,
+              }}
+            >
+              <Stack
+                direction="row"
+                sx={{
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 1,
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                  }}
+                >
                   Max Gap Between Classes
                 </Typography>
                 <Chip
@@ -372,11 +458,28 @@ export function SchedulePreferences({
               />
             </Box>
 
-            <Box mt={2}>
-              <Typography variant="caption" color="text.secondary" mb={1} display="block">
+            <Box
+              sx={{
+                mt: 2,
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  mb: 1,
+                  display: 'block',
+                }}
+              >
                 Days to Avoid
               </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap">
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  flexWrap: 'wrap',
+                }}
+              >
                 {DAYS.map((day) => {
                   const isActive = preferences.avoidDays.includes(day.value);
                   return (
@@ -412,7 +515,12 @@ export function SchedulePreferences({
                 />
               }
               label={
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'text.secondary',
+                  }}
+                >
                   Prefer consecutive days (MWF or TTh)
                 </Typography>
               }
@@ -424,9 +532,22 @@ export function SchedulePreferences({
 
           {/* Instructor Preferences */}
           <Box>
-            <Stack direction="row" alignItems="center" spacing={0.5} mb={1.5}>
+            <Stack
+              direction="row"
+              spacing={0.5}
+              sx={{
+                alignItems: 'center',
+                mb: 1.5,
+              }}
+            >
               <School fontSize="small" sx={{ color: 'text.secondary' }} />
-              <Typography variant="subtitle2" fontWeight={600} color="text.secondary">
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 600,
+                  color: 'text.secondary',
+                }}
+              >
                 INSTRUCTORS
               </Typography>
             </Stack>
@@ -437,12 +558,17 @@ export function SchedulePreferences({
               placeholder="Dr. Smith, Prof. Jones"
               value={preferences.excludeInstructors.join(', ')}
               onChange={(e) => handleInstructorChange(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <RemoveCircleOutline fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />
-                ),
-              }}
               helperText="Separate multiple names with commas"
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <RemoveCircleOutlined
+                      fontSize="small"
+                      sx={{ mr: 1, color: 'text.secondary' }}
+                    />
+                  ),
+                },
+              }}
             />
           </Box>
         </Stack>
@@ -455,8 +581,11 @@ export function SchedulePreferences({
                 key={index}
                 variant="caption"
                 color="error"
-                display="block"
-                sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                }}
               >
                 ⚠️ {error}
               </Typography>
@@ -481,8 +610,12 @@ export function SchedulePreferences({
               {saved && (
                 <Typography
                   variant="body2"
-                  color="success.main"
-                  sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}
+                  sx={{
+                    color: 'success.main',
+                    display: 'flex',
+                    alignItems: 'center',
+                    fontWeight: 600,
+                  }}
                 >
                   ✓ Saved!
                 </Typography>
@@ -511,8 +644,12 @@ export function SchedulePreferences({
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
             <Typography
               variant="body2"
-              color="success.main"
-              sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}
+              sx={{
+                color: 'success.main',
+                display: 'flex',
+                alignItems: 'center',
+                fontWeight: 600,
+              }}
             >
               ✓ Saved
             </Typography>

@@ -1,13 +1,13 @@
 import { webLLM } from '@browser-ai/web-llm';
 import { generateText } from 'ai';
-import { env } from '../utils/env';
+import type { Preferences, Schedule, Section, TradePost } from '../types';
 import {
   DEFAULT_LLM_CONFIG,
   getDefaultModel,
   type LLMTask,
   type BYOKConfig,
 } from '../utils/constants';
-import type { Preferences, Schedule, Section, TradePost } from '../types';
+import { env } from '../utils/env';
 import type { GeneratedSchedule, ScheduleRank } from '../utils/schedule-types';
 
 export function buildScheduleAnalysisPrompt(
@@ -15,7 +15,7 @@ export function buildScheduleAnalysisPrompt(
   preferences: Preferences,
   allSections?: Section[],
 ): string {
-  if (!schedule || !schedule.sections) {
+  if (!schedule?.sections) {
     return 'Analyze this course schedule and provide recommendations.';
   }
 

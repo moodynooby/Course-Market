@@ -13,7 +13,7 @@ import type { Semester } from '../types';
 import { getCoursesBySubject, getSemesterData, getSemesters } from '../services/coursesApi';
 import { getCachedSemesterData } from '../services/dbCache';
 import type { Course, Section } from '../types';
-import { InfoCard, InteractiveCard } from './GlassAppBar';
+import { InfoCard, InteractiveCard } from './AppBar';
 
 interface ProfileCardProps {
   initialData?: {
@@ -176,14 +176,24 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
   return (
     <InfoCard sx={{ p: 3 }}>
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" fontWeight={700} gutterBottom>
+        <Typography
+          variant="h6"
+          gutterBottom
+          sx={{
+            fontWeight: 700,
+          }}
+        >
           Profile Information
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           Your trader profile and semester selection
         </Typography>
       </Box>
-
       <Stack spacing={3}>
         {/* Trader Details */}
         <Grid container spacing={2}>
@@ -196,8 +206,10 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
               onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
               error={!!errors.displayName}
               helperText={errors.displayName}
-              InputProps={{
-                startAdornment: <Person sx={{ mr: 1, color: 'text.secondary' }} />,
+              slotProps={{
+                input: {
+                  startAdornment: <Person sx={{ mr: 1, color: 'text.secondary' }} />,
+                },
               }}
               required
             />
@@ -212,8 +224,10 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               error={!!errors.email}
               helperText={errors.email}
-              InputProps={{
-                startAdornment: <Email sx={{ mr: 1, color: 'text.secondary' }} />,
+              slotProps={{
+                input: {
+                  startAdornment: <Email sx={{ mr: 1, color: 'text.secondary' }} />,
+                },
               }}
               required
             />
@@ -228,8 +242,10 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               error={!!errors.phone}
               helperText={errors.phone || "We'll keep it safe"}
-              InputProps={{
-                startAdornment: <Phone sx={{ mr: 1, color: 'text.secondary' }} />,
+              slotProps={{
+                input: {
+                  startAdornment: <Phone sx={{ mr: 1, color: 'text.secondary' }} />,
+                },
               }}
               required
             />
@@ -239,7 +255,13 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
         {/* Semester Selection */}
         {showSemester && (
           <Box>
-            <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+            <Typography
+              variant="subtitle2"
+              gutterBottom
+              sx={{
+                fontWeight: 600,
+              }}
+            >
               Semester
             </Typography>
 
@@ -261,7 +283,14 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
                       onClick={() => handleSelectSemester(semester.id)}
                     >
                       <Box sx={{ p: 2 }}>
-                        <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 1 }}>
+                        <Stack
+                          direction="row"
+                          spacing={2}
+                          sx={{
+                            alignItems: 'center',
+                            mb: 1,
+                          }}
+                        >
                           <Box
                             sx={{
                               width: 40,
@@ -281,36 +310,67 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
                             )}
                           </Box>
                           <Box>
-                            <Typography variant="body1" fontWeight={600}>
+                            <Typography
+                              variant="body1"
+                              sx={{
+                                fontWeight: 600,
+                              }}
+                            >
                               {semester.name}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: 'text.secondary',
+                              }}
+                            >
                               {semester.jsonUrl ? 'Ready to use' : 'Loading required'}
                             </Typography>
                           </Box>
                         </Stack>
 
-                        <Stack direction="row" alignItems="center" spacing={1}>
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          sx={{
+                            alignItems: 'center',
+                          }}
+                        >
                           {selectingSemester === semester.id ? (
                             <>
                               <Box sx={{ width: 14, height: 14 }}>
                                 <CircularProgress size={14} />
                               </Box>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: 'text.secondary',
+                                }}
+                              >
                                 Loading...
                               </Typography>
                             </>
                           ) : selectedSemester === semester.id ? (
                             <>
                               <Check sx={{ fontSize: 16, color: 'success.main' }} />
-                              <Typography variant="caption" color="success.main">
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: 'success.main',
+                                }}
+                              >
                                 Selected
                               </Typography>
                             </>
                           ) : (
                             <>
                               <CalendarToday fontSize="small" sx={{ color: 'text.secondary' }} />
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                sx={{
+                                  color: 'text.secondary',
+                                }}
+                              >
                                 Click to select
                               </Typography>
                             </>
@@ -341,8 +401,12 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
           {saving && (
             <Typography
               variant="body2"
-              color="text.secondary"
-              sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}
+              sx={{
+                color: 'text.secondary',
+                display: 'flex',
+                alignItems: 'center',
+                fontWeight: 600,
+              }}
             >
               <CircularProgress size={16} sx={{ mr: 1 }} /> Saving...
             </Typography>
@@ -359,8 +423,12 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
           {saved && !saving && (
             <Typography
               variant="body2"
-              color="success.main"
-              sx={{ display: 'flex', alignItems: 'center', fontWeight: 600 }}
+              sx={{
+                color: 'success.main',
+                display: 'flex',
+                alignItems: 'center',
+                fontWeight: 600,
+              }}
             >
               <Check sx={{ fontSize: 16, mr: 0.5 }} /> Saved
             </Typography>

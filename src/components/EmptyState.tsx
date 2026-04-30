@@ -86,23 +86,36 @@ export function EmptyState({
         />
         <Box sx={{ position: 'relative', zIndex: 1, color: 'primary.main' }}>{icon}</Box>
       </Box>
-
-      <Typography variant="h6" fontWeight={700} gutterBottom>
+      <Typography
+        variant="h6"
+        gutterBottom
+        sx={{
+          fontWeight: 700,
+        }}
+      >
         {title}
       </Typography>
-
       {description && (
         <Typography
           variant="body2"
-          color="text.secondary"
-          sx={{ maxWidth: 400, mb: action ? 2 : 0 }}
+          sx={{
+            color: 'text.secondary',
+            maxWidth: 400,
+            mb: action ? 2 : 0,
+          }}
         >
           {description}
         </Typography>
       )}
-
       {action && (
-        <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap">
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
           {action}
         </Stack>
       )}
@@ -131,7 +144,12 @@ export function LoadingState({ message = 'Loading...', variant = 'default' }: Lo
     >
       <CircularProgress sx={{ mb: 2 }} />
       {message && (
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           {message}
         </Typography>
       )}

@@ -1,7 +1,7 @@
 import { Box, Button, Stack, Typography, alpha, useTheme } from '@mui/material';
 import { ArrowForward } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { InfoCard } from '../GlassAppBar';
+import { InfoCard } from '../AppBar';
 import type { Course, Section } from '../../types';
 
 interface SelectedCoursesListProps {
@@ -16,10 +16,21 @@ export function SelectedCoursesList({ sections, courses }: SelectedCoursesListPr
   if (sections.length === 0) {
     return (
       <InfoCard sx={{ p: 3 }}>
-        <Typography variant="h6" fontWeight={700} mb={2}>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 700,
+            mb: 2,
+          }}
+        >
           Selected Courses
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           No courses selected yet
         </Typography>
       </InfoCard>
@@ -28,7 +39,13 @@ export function SelectedCoursesList({ sections, courses }: SelectedCoursesListPr
 
   return (
     <InfoCard sx={{ p: 3 }}>
-      <Typography variant="h6" fontWeight={700} mb={2}>
+      <Typography
+        variant="h6"
+        sx={{
+          fontWeight: 700,
+          mb: 2,
+        }}
+      >
         Selected Courses ({sections.length})
       </Typography>
       <Stack spacing={2}>
@@ -48,18 +65,31 @@ export function SelectedCoursesList({ sections, courses }: SelectedCoursesListPr
                 },
               }}
             >
-              <Typography variant="subtitle2" fontWeight={700}>
+              <Typography
+                variant="subtitle2"
+                sx={{
+                  fontWeight: 700,
+                }}
+              >
                 {course?.code}
               </Typography>
-              <Typography variant="caption" color="text.secondary" display="block">
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  display: 'block',
+                }}
+              >
                 {course?.name}
               </Typography>
               <Typography
                 variant="caption"
-                fontWeight={600}
-                color="accent.main"
-                mt={0.5}
-                display="inline-block"
+                sx={{
+                  fontWeight: 600,
+                  color: 'accent.main',
+                  mt: 0.5,
+                  display: 'inline-block',
+                }}
               >
                 Section {section.sectionNumber}
               </Typography>

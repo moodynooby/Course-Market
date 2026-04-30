@@ -147,20 +147,39 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
       onClose={onClose}
       maxWidth="lg"
       fullWidth
-      PaperProps={{
-        sx: {
-          height: { xs: '95vh', sm: '90vh', md: '85vh' },
-          borderRadius: 4,
-          bgcolor: 'surface.container.high',
+      slotProps={{
+        paper: {
+          sx: {
+            height: { xs: '95vh', sm: '90vh', md: '85vh' },
+            borderRadius: 4,
+            bgcolor: 'surface.container.high',
+          },
         },
       }}
     >
       <DialogTitle sx={{ p: 3, borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}` }}>
         <Stack spacing={2}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
-            <Stack direction="row" alignItems="center" spacing={1}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                alignItems: 'center',
+              }}
+            >
               <GridView sx={{ color: 'accent.main' }} />
-              <Typography variant="h6" fontWeight={700}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                }}
+              >
                 Schedule Explorer
               </Typography>
               <Chip
@@ -170,7 +189,13 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
                 sx={{ borderRadius: 2, fontWeight: 600 }}
               />
             </Stack>
-            <Stack direction="row" alignItems="center" spacing={1}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                alignItems: 'center',
+              }}
+            >
               {conflictingSchedules.length > 0 && (
                 <Chip
                   label={`${conflictingSchedules.length} conflicts`}
@@ -187,7 +212,13 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
             </Stack>
           </Stack>
 
-          <Stack direction="row" spacing={2} alignItems="center">
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{
+              alignItems: 'center',
+            }}
+          >
             <TextField
               fullWidth
               size="small"
@@ -195,32 +226,34 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && onSearch()}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
-                endAdornment: (
-                  <InputAdornment position="end">
-                    {hasActiveFilters ? (
-                      <IconButton
-                        size="small"
-                        onClick={handleClearSearch}
-                        edge="end"
-                        sx={{ mr: 0.5, borderRadius: 2 }}
-                        title="Clear search and filters"
-                      >
-                        <Close fontSize="small" />
-                      </IconButton>
-                    ) : (
-                      <IconButton onClick={onSearch} edge="end" disabled={!searchQuery.trim()}>
-                        <Search />
-                      </IconButton>
-                    )}
-                  </InputAdornment>
-                ),
-                sx: { borderRadius: 3, bgcolor: alpha(theme.palette.divider, 0.1) },
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      {hasActiveFilters ? (
+                        <IconButton
+                          size="small"
+                          onClick={handleClearSearch}
+                          edge="end"
+                          sx={{ mr: 0.5, borderRadius: 2 }}
+                          title="Clear search and filters"
+                        >
+                          <Close fontSize="small" />
+                        </IconButton>
+                      ) : (
+                        <IconButton onClick={onSearch} edge="end" disabled={!searchQuery.trim()}>
+                          <Search />
+                        </IconButton>
+                      )}
+                    </InputAdornment>
+                  ),
+                  sx: { borderRadius: 3, bgcolor: alpha(theme.palette.divider, 0.1) },
+                },
               }}
             />
             <IconButton
@@ -250,12 +283,22 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
                 />
               )}
               {searching && (
-                <Typography variant="caption" color="text.secondary">
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                  }}
+                >
                   Searching...
                 </Typography>
               )}
               {searchResults.length > 0 && !searching && (
-                <Typography variant="caption" color="text.secondary">
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: 'text.secondary',
+                  }}
+                >
                   Found {searchResults.length} match{searchResults.length !== 1 ? 'es' : ''}
                 </Typography>
               )}
@@ -263,7 +306,6 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
           )}
         </Stack>
       </DialogTitle>
-
       <DialogContent sx={{ p: 0 }}>
         {activeSchedules.length === 0 && !searching ? (
           <EmptyState
@@ -371,7 +413,12 @@ const ScheduleList = memo(function ScheduleList({
     const displayList = searchResults.length > 0 ? searchResults : activeSchedules;
 
     return (
-      <Stack spacing={1} p={2}>
+      <Stack
+        spacing={1}
+        sx={{
+          p: 2,
+        }}
+      >
         {displayList.slice(0, MAX_DISPLAY_SCHEDULES).map((item, idx) => {
           const isSearchResult = searchResults.length > 0;
           const genSched = isSearchResult
@@ -398,7 +445,12 @@ const ScheduleList = memo(function ScheduleList({
   }
 
   return (
-    <Stack spacing={2} p={2}>
+    <Stack
+      spacing={2}
+      sx={{
+        p: 2,
+      }}
+    >
       {clusteredSchedules.map((cluster, cIdx) => (
         <ClusterGroup
           key={cIdx}
@@ -444,14 +496,39 @@ const ScheduleListItem = memo(function ScheduleListItem({
       onClick={onSelect}
     >
       <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <Stack spacing={0.5} sx={{ flex: 1 }}>
-            <Stack direction="row" alignItems="center" spacing={1} justifyContent="space-between">
-              <Stack direction="row" alignItems="center" spacing={1}>
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  alignItems: 'center',
+                }}
+              >
                 {idx === 0 && !isSearchResult && (
                   <Star sx={{ color: 'warning.main', fontSize: 16 }} />
                 )}
-                <Typography variant="body2" fontWeight={600}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 600,
+                  }}
+                >
                   {schedule.totalCredits} credits
                 </Typography>
               </Stack>
@@ -486,8 +563,8 @@ const ScheduleListItem = memo(function ScheduleListItem({
             {explanation && (
               <Typography
                 variant="caption"
-                color="text.secondary"
                 sx={{
+                  color: 'text.secondary',
                   display: '-webkit-box',
                   WebkitLineClamp: 2,
                   WebkitBoxOrient: 'vertical',
@@ -518,7 +595,13 @@ const ClusterGroup = memo(function ClusterGroup({
 }: ClusterGroupProps) {
   return (
     <Box>
-      <Typography variant="subtitle2" fontWeight={700} mb={1}>
+      <Typography
+        variant="subtitle2"
+        sx={{
+          fontWeight: 700,
+          mb: 1,
+        }}
+      >
         {cluster.label} ({cluster.schedules.length})
       </Typography>
       <Stack spacing={1}>
@@ -535,8 +618,19 @@ const ClusterGroup = memo(function ClusterGroup({
             onClick={() => onSelectSchedule(genSched)}
           >
             <CardContent sx={{ py: 1, '&:last-child': { pb: 1 } }}>
-              <Stack direction="row" alignItems="center" justifyContent="space-between">
-                <Typography variant="body2" fontWeight={600}>
+              <Stack
+                direction="row"
+                sx={{
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  sx={{
+                    fontWeight: 600,
+                  }}
+                >
                   {genSched.totalCredits} credits
                 </Typography>
                 <Chip
@@ -565,10 +659,29 @@ function ScheduleDetails({ selectedSchedule, courses, onApply }: ScheduleDetails
   const theme = useTheme();
 
   return (
-    <Stack sx={{ height: '100%', position: 'relative' }} p={3}>
+    <Stack
+      sx={{
+        p: 3,
+        height: '100%',
+        position: 'relative',
+      }}
+    >
       <Box sx={{ overflow: 'auto', pb: 7 }}>
-        <Stack direction="row" alignItems="center" spacing={2} mb={2} flexWrap="wrap">
-          <Typography variant="h6" fontWeight={700}>
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{
+            alignItems: 'center',
+            mb: 2,
+            flexWrap: 'wrap',
+          }}
+        >
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 700,
+            }}
+          >
             Schedule Details
           </Typography>
           <Chip
@@ -600,13 +713,25 @@ function ScheduleDetails({ selectedSchedule, courses, onApply }: ScheduleDetails
               border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
             }}
           >
-            <Typography variant="subtitle2" fontWeight={700} color="warning.main" mb={1}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                fontWeight: 700,
+                color: 'warning.main',
+                mb: 1,
+              }}
+            >
               ⚠️ Conflicts:
             </Typography>
             <ul style={{ margin: 0, paddingLeft: 20 }}>
               {selectedSchedule.conflicts.map((c: string, i: number) => (
                 <li key={i}>
-                  <Typography variant="caption" color="warning.main">
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'warning.main',
+                    }}
+                  >
                     {c}
                   </Typography>
                 </li>
@@ -615,7 +740,6 @@ function ScheduleDetails({ selectedSchedule, courses, onApply }: ScheduleDetails
           </Box>
         )}
       </Box>
-
       <Box
         sx={{
           position: 'sticky',

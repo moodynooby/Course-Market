@@ -153,41 +153,44 @@ function OnboardingWizard() {
                 return (
                   <Step key={step.id}>
                     <StepLabel
-                      StepIconComponent={({ completed }) =>
-                        completed || isCompleted ? (
-                          <Check
-                            sx={{
-                              fontSize: 16,
-                              strokeWidth: 3,
-                            }}
-                          />
-                        ) : isActive ? (
-                          <Box
-                            sx={{
-                              width: 12,
-                              height: 12,
-                              borderRadius: '50%',
-                              bgcolor: 'accent.main',
-                              boxShadow: theme.shadows[2],
-                            }}
-                          />
-                        ) : (
-                          <Box
-                            sx={{
-                              width: 12,
-                              height: 12,
-                              borderRadius: '50%',
-                              border: '2px solid',
-                              borderColor: 'divider',
-                            }}
-                          />
-                        )
-                      }
+                      slots={{
+                        stepIcon: ({ completed }) =>
+                          completed || isCompleted ? (
+                            <Check
+                              sx={{
+                                fontSize: 16,
+                                strokeWidth: 3,
+                              }}
+                            />
+                          ) : isActive ? (
+                            <Box
+                              sx={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: '50%',
+                                bgcolor: 'accent.main',
+                                boxShadow: theme.shadows[2],
+                              }}
+                            />
+                          ) : (
+                            <Box
+                              sx={{
+                                width: 12,
+                                height: 12,
+                                borderRadius: '50%',
+                                border: '2px solid',
+                                borderColor: 'divider',
+                              }}
+                            />
+                          ),
+                      }}
                     >
                       <Typography
                         variant="subtitle2"
-                        fontWeight={isActive ? 700 : 600}
                         color={isActive ? 'text.primary' : 'text.secondary'}
+                        sx={{
+                          fontWeight: isActive ? 700 : 600,
+                        }}
                       >
                         {step.label}
                       </Typography>
@@ -295,9 +298,13 @@ function OnboardingWizard() {
           </Box>
         )}
       </Card>
-
       <Box sx={{ mt: 3, textAlign: 'center' }}>
-        <Typography variant="caption" color="text.secondary">
+        <Typography
+          variant="caption"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           Step {currentStepIndex + 1} of {STEPS.length}
         </Typography>
       </Box>
@@ -315,8 +322,18 @@ export default function OnboardingPage() {
       }}
     >
       <Container maxWidth="lg">
-        <Stack alignItems="center" spacing={4}>
-          <Stack alignItems="center" spacing={2}>
+        <Stack
+          spacing={4}
+          sx={{
+            alignItems: 'center',
+          }}
+        >
+          <Stack
+            spacing={2}
+            sx={{
+              alignItems: 'center',
+            }}
+          >
             <Avatar
               sx={{
                 width: 64,
@@ -326,13 +343,22 @@ export default function OnboardingPage() {
             >
               <School sx={{ fontSize: 36 }} />
             </Avatar>
-            <Typography variant="h4" fontWeight={700} sx={{ fontFamily: '"Zilla Slab", serif' }}>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 700,
+                fontFamily: '"Zilla Slab", serif',
+              }}
+            >
               Welcome to AuraIsHub!
             </Typography>
             <Typography
               variant="body1"
-              color="text.secondary"
-              sx={{ maxWidth: 600, textAlign: 'center' }}
+              sx={{
+                color: 'text.secondary',
+                maxWidth: 600,
+                textAlign: 'center',
+              }}
             >
               Let's set up your profile and preferences to help you optimize your semester
             </Typography>

@@ -406,10 +406,22 @@ export default function CoursesPage() {
     return (
       <Box>
         <Box component="header" sx={{ mb: 5 }}>
-          <Typography variant="h4" fontWeight={800} gutterBottom sx={{ letterSpacing: '-0.02em' }}>
+          <Typography
+            variant="h4"
+            gutterBottom
+            sx={{
+              fontWeight: 800,
+              letterSpacing: '-0.02em',
+            }}
+          >
             Course Browser
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography
+            variant="body1"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             {loadingMessage}
           </Typography>
         </Box>
@@ -432,7 +444,14 @@ export default function CoursesPage() {
     return (
       <Box>
         <Box component="header" sx={{ mb: 5 }}>
-          <Typography variant="h4" fontWeight={800} gutterBottom sx={{ letterSpacing: '-0.02em' }}>
+          <Typography
+            variant="h4"
+            gutterBottom
+            sx={{
+              fontWeight: 800,
+              letterSpacing: '-0.02em',
+            }}
+          >
             Course Browser
           </Typography>
         </Box>
@@ -445,7 +464,14 @@ export default function CoursesPage() {
     return (
       <Box>
         <Box component="header" sx={{ mb: 5 }}>
-          <Typography variant="h4" fontWeight={800} gutterBottom sx={{ letterSpacing: '-0.02em' }}>
+          <Typography
+            variant="h4"
+            gutterBottom
+            sx={{
+              fontWeight: 800,
+              letterSpacing: '-0.02em',
+            }}
+          >
             Course Browser
           </Typography>
         </Box>
@@ -458,11 +484,22 @@ export default function CoursesPage() {
         ) : (
           <Card>
             <CardContent>
-              <Stack direction="row" spacing={2} alignItems="center">
+              <Stack
+                direction="row"
+                spacing={2}
+                sx={{
+                  alignItems: 'center',
+                }}
+              >
                 <CalendarToday sx={{ fontSize: 40, color: 'text.secondary' }} />
                 <Box>
                   <Typography variant="h6">No Courses Loaded</Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: 'text.secondary',
+                    }}
+                  >
                     Click below to load courses for the current semester.
                   </Typography>
                 </Box>
@@ -480,17 +517,31 @@ export default function CoursesPage() {
   return (
     <Box>
       <Box component="header" sx={{ mb: 3 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <Box>
             <Typography
               variant="h4"
-              fontWeight={800}
               gutterBottom
-              sx={{ letterSpacing: '-0.02em' }}
+              sx={{
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
+              }}
             >
               Course Browser
             </Typography>
-            <Typography variant="body1" color="text.secondary">
+            <Typography
+              variant="body1"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               Search courses, view sections, and select your preferred classes.
             </Typography>
           </Box>
@@ -506,7 +557,6 @@ export default function CoursesPage() {
           </Button>
         </Stack>
       </Box>
-
       <Menu
         anchorEl={semesterMenuAnchor}
         open={Boolean(semesterMenuAnchor)}
@@ -514,13 +564,23 @@ export default function CoursesPage() {
       >
         {loadingSemesters ? (
           <MenuItem disabled>
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               Loading semesters...
             </Typography>
           </MenuItem>
         ) : availableSemesters.length === 0 ? (
           <MenuItem disabled>
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+              }}
+            >
               No semesters available
             </Typography>
           </MenuItem>
@@ -531,17 +591,33 @@ export default function CoursesPage() {
               onClick={() => handleSemesterChange(semester.id, semester.jsonUrl, semester.name)}
               selected={currentSemesterId === semester.id}
             >
-              <Stack direction="row" alignItems="center" spacing={1}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  alignItems: 'center',
+                }}
+              >
                 <CalendarToday
                   fontSize="small"
                   color={currentSemesterId === semester.id ? 'action' : 'disabled'}
                 />
                 <Box>
-                  <Typography variant="body2" fontWeight={600}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      fontWeight: 600,
+                    }}
+                  >
                     {semester.name}
                   </Typography>
                   {currentSemesterId === semester.id && (
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color: 'text.secondary',
+                      }}
+                    >
                       Current
                     </Typography>
                   )}
@@ -551,13 +627,11 @@ export default function CoursesPage() {
           ))
         )}
       </Menu>
-
       {error && (
         <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
-
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
         <TextField
           placeholder="Search courses..."
@@ -565,16 +639,18 @@ export default function CoursesPage() {
           onChange={(e) => setSearch(e.target.value)}
           sx={{ flex: 1 }}
           size="small"
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                {search && (
-                  <IconButton size="small" onClick={() => setSearch('')} sx={{ mr: 0.5 }}>
-                    <Clear fontSize="small" />
-                  </IconButton>
-                )}
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              endAdornment: (
+                <InputAdornment position="end">
+                  {search && (
+                    <IconButton size="small" onClick={() => setSearch('')} sx={{ mr: 0.5 }}>
+                      <Clear fontSize="small" />
+                    </IconButton>
+                  )}
+                </InputAdornment>
+              ),
+            },
           }}
         />
         <FormControl sx={{ minWidth: 200 }} size="small">
@@ -594,11 +670,9 @@ export default function CoursesPage() {
           </Button>
         )}
       </Stack>
-
       {filteredCourses.length === 0 && (
         <Alert severity="info">No courses found matching your criteria.</Alert>
       )}
-
       {/* Virtualized course list */}
       <Box
         ref={parentRef}
@@ -649,7 +723,6 @@ export default function CoursesPage() {
           })}
         </Box>
       </Box>
-
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}

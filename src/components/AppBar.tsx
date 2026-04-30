@@ -1,20 +1,12 @@
-import {
-  AppBar,
-  Box,
-  Card,
-  type CardProps,
-  type AppBarProps,
-  alpha,
-  useTheme,
-} from '@mui/material';
+import { AppBar, Box, Card, type CardProps, type AppBarProps, useTheme } from '@mui/material';
 import { forwardRef } from 'react';
 
 /**
- * GlassAppBar - Signature glassmorphic navigation bar
- * Per DESIGN.md: surface-container colors at 70% opacity with 20px backdrop-blur
+ * AppBar - MUI3 tonal elevation navigation bar
+ * Per DESIGN.md: Uses surfaceContainerHigh for elevated navigation (no blur)
  */
-export const GlassAppBar = forwardRef<HTMLDivElement, AppBarProps>(
-  function GlassAppBar(props, ref) {
+export const AppBarElevated = forwardRef<HTMLDivElement, AppBarProps>(
+  function AppBarElevated(props, ref) {
     const theme = useTheme();
 
     return (
@@ -23,9 +15,7 @@ export const GlassAppBar = forwardRef<HTMLDivElement, AppBarProps>(
         elevation={0}
         {...props}
         sx={{
-          background: alpha(theme.palette.surface?.containerHigh || '#1f2020', 0.7),
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
+          background: theme.palette.surface?.containerHigh || '#1f2020',
           borderBottom: 'none',
           ...props.sx,
         }}
@@ -35,29 +25,35 @@ export const GlassAppBar = forwardRef<HTMLDivElement, AppBarProps>(
 );
 
 /**
- * GlassCard - Floating card with glassmorphism effect
- * For use in layered layouts
+ * CardElevated - MUI3 tonal elevation card
+ * Uses surface color hierarchy for depth (no blur)
  */
-export function GlassCard({
+export function CardElevated({
   children,
-  intensity = 0.7,
+  level = 'high',
   ...props
 }: {
   children: React.ReactNode;
-  intensity?: number;
+  level?: 'low' | 'default' | 'high' | 'highest';
   sx?: any;
   [key: string]: any;
 }) {
   const theme = useTheme();
 
+  const bgColor =
+    {
+      low: theme.palette.surface?.containerLow,
+      default: theme.palette.surface?.container,
+      high: theme.palette.surface?.containerHigh,
+      highest: theme.palette.surface?.containerHighest,
+    }[level] || theme.palette.surface?.containerHigh;
+
   return (
     <Box
       sx={{
-        background: alpha(theme.palette.surface?.containerHigh || '#1f2020', intensity),
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        background: bgColor,
         borderRadius: 32,
-        border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+        border: 'none',
         ...props.sx,
       }}
       {...props}

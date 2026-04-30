@@ -1,10 +1,8 @@
 pre-commit:
   commands:
-    fix:
-      glob: "{src,netlify/functions}/**/*.{ts,tsx,js,jsx}"
-      run: "pnpm run lint"
-      stage_fixed: true
+    lint-staged:
+      run: npx lint-staged
     test:
-      run: "pnpm run test"
+      run: pnpm run test
     typecheck:
-      run: "pnpm run typecheck"
+      run: pnpm run typecheck

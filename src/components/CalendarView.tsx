@@ -191,8 +191,20 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
           bgcolor: 'background.paper',
         }}
       >
-        <Typography color="text.secondary">No courses scheduled</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+        <Typography
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
+          No courses scheduled
+        </Typography>
+        <Typography
+          variant="body2"
+          sx={{
+            color: 'text.secondary',
+            mt: 1,
+          }}
+        >
           Select courses to see your schedule
         </Typography>
       </Paper>
@@ -222,7 +234,13 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
             bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
           }}
         >
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{
+              alignItems: 'center',
+            }}
+          >
             <IconButton onClick={goToPrev} size="small">
               <ChevronLeft />
             </IconButton>
@@ -232,7 +250,13 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
             <IconButton onClick={goToNext} size="small">
               <ChevronRight />
             </IconButton>
-            <Typography variant="h6" fontWeight={600} sx={{ ml: 2 }}>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 600,
+                ml: 2,
+              }}
+            >
               {format(date, view === Views.WEEK ? 'MMMM yyyy' : 'MMMM d, yyyy')}
             </Typography>
           </Stack>
@@ -363,12 +387,25 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
           />
         </Box>
       </Paper>
-
       <Box sx={{ mt: 2.5 }}>
-        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5, fontWeight: 600 }}>
+        <Typography
+          variant="subtitle2"
+          sx={{
+            color: 'text.secondary',
+            mb: 1.5,
+            fontWeight: 600,
+          }}
+        >
           Enrolled Courses
         </Typography>
-        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+        <Stack
+          direction="row"
+          spacing={1}
+          useFlexGap
+          sx={{
+            flexWrap: 'wrap',
+          }}
+        >
           {sections.map((section) => {
             const course = courses.find((c) => c.id === section.courseId);
             const hasConflict = conflicts.some((c) => c.includes(section.sectionNumber));

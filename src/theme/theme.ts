@@ -95,14 +95,17 @@ const getPalette = (isDark: boolean): ThemeOptions['palette'] => {
       disabledBackground: 'rgba(255, 255, 255, 0.05)',
     },
     divider: COLORS.OUTLINE_VARIANT,
-    // Custom surface tokens
+    // MUI3 Surface Container tokens (tonal elevation)
     surface: {
       default: COLORS.VOID,
-      containerLow: COLORS.SURFACE_CONTAINER_LOW,
+      dim: COLORS.VOID,
+      bright: COLORS.SURFACE_BRIGHT,
+      // MUI3 Container levels (elevation through color)
       containerLowest: COLORS.SURFACE_CONTAINER_LOWEST,
+      containerLow: COLORS.SURFACE_CONTAINER_LOW,
+      container: '#1a1a1a', // Standard container level
       containerHigh: COLORS.SURFACE_CONTAINER_HIGH,
       containerHighest: COLORS.SURFACE_CONTAINER_HIGHEST,
-      bright: COLORS.SURFACE_BRIGHT,
     },
   };
 };
@@ -146,15 +149,18 @@ const getComponents = (isDark: boolean): ThemeOptions['components'] => {
             boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.2)',
           },
         },
-        containedSecondary: {
-          background: COLORS.SURFACE_BRIGHT,
-          color: COLORS.PRIMARY_FIXED,
-          '&:hover': {
-            background: '#3c3c3c',
-          },
-        },
       },
       variants: [
+        {
+          props: { variant: 'contained', color: 'secondary' },
+          style: {
+            background: COLORS.SURFACE_BRIGHT,
+            color: COLORS.PRIMARY_FIXED,
+            '&:hover': {
+              background: '#3c3c3c',
+            },
+          },
+        },
         {
           props: { variant: 'contained', color: 'accent' },
           style: {

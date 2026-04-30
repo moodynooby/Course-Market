@@ -59,7 +59,13 @@ export class ErrorBoundary extends Component<Props, State> {
               <Typography variant="h4" component="h1" gutterBottom color="error">
                 Oops! Something went wrong
               </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              <Typography
+                variant="body1"
+                sx={{
+                  color: 'text.secondary',
+                  mb: 3,
+                }}
+              >
                 {this.state.error?.message || 'An unexpected error occurred'}
               </Typography>
               <Button variant="contained" onClick={this.handleReset} size="large">

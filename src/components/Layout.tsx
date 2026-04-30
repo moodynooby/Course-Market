@@ -11,7 +11,6 @@ import {
   MenuItem,
   Typography,
   useTheme,
-  alpha,
 } from '@mui/material';
 import { useCallback, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -122,16 +121,14 @@ export default function Layout() {
         bgcolor: 'background.default',
       }}
     >
-      {/* Glassmorphic Navigation Bar - Per DESIGN.md */}
+      {/* MUI3 Tonal Elevation Navigation Bar - Per DESIGN.md */}
       <Box
         component="nav"
         sx={{
           position: 'sticky',
           top: 0,
           zIndex: 50,
-          bgcolor: alpha(theme.palette.surface?.containerHigh || '#1f2020', 0.7),
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
+          bgcolor: 'surface.containerHigh',
           borderBottom: 'none',
         }}
       >
@@ -181,9 +178,11 @@ export default function Layout() {
                   component="img"
                   src={callMissedIcon}
                   alt=""
-                  width={24}
-                  height={24}
-                  sx={{ display: 'block' }}
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    display: 'block',
+                  }}
                 />
                 <NavLink to="/" label="Dashboard" primary currentPath={location.pathname} />
               </Box>
@@ -192,9 +191,11 @@ export default function Layout() {
                   component="img"
                   src={lockIcon}
                   alt=""
-                  width={24}
-                  height={24}
-                  sx={{ display: 'block' }}
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    display: 'block',
+                  }}
                 />
                 <NavLink to="/trading" label="Trading" primary currentPath={location.pathname} />
               </Box>
@@ -242,16 +243,18 @@ export default function Layout() {
                     py: 0.5,
                     borderRadius: 9999,
                     border: 'none',
-                    bgcolor: alpha(theme.palette.action.hover, 0.5),
+                    bgcolor: 'surface.container',
                     textTransform: 'none',
                     color: 'text.primary',
-                    '&:hover': { bgcolor: alpha(theme.palette.action.selected, 0.5) },
+                    '&:hover': { bgcolor: 'surface.containerHigh' },
                   }}
                 >
                   <Typography
                     variant="body2"
-                    fontWeight={600}
-                    sx={{ display: { xs: 'none', md: 'block' } }}
+                    sx={{
+                      fontWeight: 600,
+                      display: { xs: 'none', md: 'block' },
+                    }}
                   >
                     {user.displayName || 'User'}
                   </Typography>
@@ -272,15 +275,17 @@ export default function Layout() {
                   anchorEl={anchorEl}
                   open={Boolean(anchorEl)}
                   onClose={handleClose}
-                  PaperProps={{
-                    sx: {
-                      mt: 1.5,
-                      minWidth: 200,
-                      borderRadius: '24px',
-                      border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-                      boxShadow: theme.shadows[4],
-                      backgroundImage: 'none',
-                      bgcolor: theme.palette.surface?.containerHigh || '#1f2020',
+                  slotProps={{
+                    paper: {
+                      sx: {
+                        mt: 1.5,
+                        minWidth: 200,
+                        borderRadius: '24px',
+                        border: 'none',
+                        boxShadow: theme.shadows[4],
+                        backgroundImage: 'none',
+                        bgcolor: 'surface.containerHigh',
+                      },
                     },
                   }}
                   transformOrigin={{ horizontal: 'right', vertical: 'top' }}
@@ -297,7 +302,7 @@ export default function Layout() {
                     </ListItemIcon>
                     <ListItemText>Settings</ListItemText>
                   </MenuItem>
-                  <Divider sx={{ my: 0.5, borderColor: alpha(theme.palette.divider, 0.5) }} />
+                  <Divider sx={{ my: 0.5, borderColor: 'divider' }} />
                   <MenuItem
                     onClick={() => {
                       handleClose();
@@ -326,7 +331,6 @@ export default function Layout() {
           </Box>
         </Box>
       </Box>
-
       <Box
         component="main"
         sx={{

@@ -324,14 +324,25 @@ export default function LandingPage() {
   return (
     <Box>
       <Box component="header" sx={{ mb: 5 }}>
-        <Typography variant="h4" fontWeight={800} gutterBottom sx={{ letterSpacing: '-0.02em' }}>
+        <Typography
+          variant="h4"
+          gutterBottom
+          sx={{
+            fontWeight: 800,
+            letterSpacing: '-0.02em',
+          }}
+        >
           Dashboard
         </Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Typography
+          variant="body1"
+          sx={{
+            color: 'text.secondary',
+          }}
+        >
           Welcome to your centralized AuraIsHub control center
         </Typography>
       </Box>
-
       {loading ? (
         <Card
           variant="outlined"
@@ -343,7 +354,12 @@ export default function LandingPage() {
             bgcolor: 'surface.containerHigh',
           }}
         >
-          <Typography variant="body1" color="text.secondary">
+          <Typography
+            variant="body1"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             Loading semester data...
           </Typography>
         </Card>
@@ -391,15 +407,39 @@ export default function LandingPage() {
               }}
             />
           </Box>
-          <Typography variant="h5" fontWeight={700} gutterBottom>
+          <Typography
+            variant="h5"
+            gutterBottom
+            sx={{
+              fontWeight: 700,
+            }}
+          >
             Build Your Perfect Schedule
           </Typography>
-          <Typography color="text.secondary" mb={4} maxWidth={500} mx="auto">
+          <Typography
+            sx={{
+              color: 'text.secondary',
+              mb: 4,
+              maxWidth: 500,
+              mx: 'auto',
+            }}
+          >
             Browse available courses, select your preferred sections, and let our AI optimize your
             timetable for the perfect balance
           </Typography>
-          <Stack direction="row" spacing={2} justifyContent="center" mb={4}>
-            <Box textAlign="center">
+          <Stack
+            direction="row"
+            spacing={2}
+            sx={{
+              justifyContent: 'center',
+              mb: 4,
+            }}
+          >
+            <Box
+              sx={{
+                textAlign: 'center',
+              }}
+            >
               <Box
                 sx={{
                   width: 40,
@@ -417,11 +457,20 @@ export default function LandingPage() {
               >
                 1
               </Box>
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 Browse
               </Typography>
             </Box>
-            <Box textAlign="center">
+            <Box
+              sx={{
+                textAlign: 'center',
+              }}
+            >
               <Box
                 sx={{
                   width: 40,
@@ -439,11 +488,20 @@ export default function LandingPage() {
               >
                 2
               </Box>
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 Select
               </Typography>
             </Box>
-            <Box textAlign="center">
+            <Box
+              sx={{
+                textAlign: 'center',
+              }}
+            >
               <Box
                 sx={{
                   width: 40,
@@ -461,7 +519,12 @@ export default function LandingPage() {
               >
                 3
               </Box>
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 Optimize
               </Typography>
             </Box>
@@ -515,7 +578,6 @@ export default function LandingPage() {
           </Grid>
         </Grid>
       )}
-
       <Dialog open={webgpuWarningOpen} onClose={() => setWebgpuWarningOpen(false)}>
         <DialogTitle>AI Performance Notice</DialogTitle>
         <DialogContent>
@@ -538,7 +600,6 @@ export default function LandingPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       <ApiKeyDialog
         open={apiKeyDialogOpen}
         onClose={() => setApiKeyDialogOpen(false)}
@@ -547,7 +608,6 @@ export default function LandingPage() {
           handleOptimize();
         }}
       />
-
       <Suspense fallback={null}>
         <ScheduleExplorerDialog
           open={scheduleExplorerOpen}

@@ -6,13 +6,16 @@ declare module '@mui/material/styles' {
       dark: string;
       contrastText: string;
     };
+    // MUI3 Surface Container tokens for tonal elevation
     surface: {
       default: string;
-      containerLow: string;
+      dim: string;
+      bright: string;
       containerLowest: string;
+      containerLow: string;
+      container: string;
       containerHigh: string;
       containerHighest: string;
-      bright: string;
     };
   }
   interface PaletteOptions {
@@ -22,13 +25,16 @@ declare module '@mui/material/styles' {
       dark?: string;
       contrastText?: string;
     };
+    // MUI3 Surface Container tokens for tonal elevation
     surface?: {
       default?: string;
-      containerLow?: string;
+      dim?: string;
+      bright?: string;
       containerLowest?: string;
+      containerLow?: string;
+      container?: string;
       containerHigh?: string;
       containerHighest?: string;
-      bright?: string;
     };
   }
 }

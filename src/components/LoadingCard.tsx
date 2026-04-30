@@ -40,7 +40,13 @@ export function LoadingCard({
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
           {icon || <CircularProgress size={40} />}
 
-          <Typography variant="body2" color="text.secondary" align="center">
+          <Typography
+            variant="body2"
+            align="center"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             {message}
           </Typography>
 
@@ -52,7 +58,14 @@ export function LoadingCard({
                 sx={{ height: 6, borderRadius: 3, mb: 1 }}
               />
               {progressLabel && (
-                <Typography variant="caption" color="text.secondary" align="center" display="block">
+                <Typography
+                  variant="caption"
+                  align="center"
+                  sx={{
+                    color: 'text.secondary',
+                    display: 'block',
+                  }}
+                >
                   {progressLabel}
                 </Typography>
               )}

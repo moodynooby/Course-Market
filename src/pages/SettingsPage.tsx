@@ -118,21 +118,43 @@ export default function SettingsPage() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom fontWeight={700}>
+      <Typography
+        variant="h4"
+        gutterBottom
+        sx={{
+          fontWeight: 700,
+        }}
+      >
         Settings
       </Typography>
-
       <Grid container spacing={3}>
         <Grid size={{ xs: 12 }}>
           <Card>
             <CardContent>
-              <Stack direction="row" alignItems="center" spacing={2} mb={2}>
+              <Stack
+                direction="row"
+                spacing={2}
+                sx={{
+                  alignItems: 'center',
+                  mb: 2,
+                }}
+              >
                 <Avatar sx={{ width: 48, height: 48 }}>{user?.displayName?.[0] || 'U'}</Avatar>
                 <Box>
-                  <Typography variant="h6" fontWeight={600}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 600,
+                    }}
+                  >
                     {user?.displayName || 'User'}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: 'text.secondary',
+                    }}
+                  >
                     {user?.email}
                   </Typography>
                 </Box>
@@ -177,12 +199,25 @@ export default function SettingsPage() {
         <Grid size={{ xs: 12 }}>
           <Card>
             <CardContent>
-              <Stack direction="row" alignItems="center" spacing={1} mb={2}>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  alignItems: 'center',
+                  mb: 2,
+                }}
+              >
                 <Psychology color="accent" />
                 <Typography variant="h6">AI Optimization Settings</Typography>
               </Stack>
 
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                  mb: 3,
+                }}
+              >
                 Configure your preferred AI provider for schedule optimization.
               </Typography>
 
@@ -199,7 +234,12 @@ export default function SettingsPage() {
                       <MenuItem key={option.value} value={option.value}>
                         <Box>
                           <Typography variant="body1">{option.label}</Typography>
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: 'text.secondary',
+                            }}
+                          >
                             {option.description}
                           </Typography>
                         </Box>
@@ -245,10 +285,12 @@ export default function SettingsPage() {
                         value="Task-Optimized (Auto)"
                         disabled
                         helperText="The app automatically selects the best model for each task."
-                        InputProps={{
-                          startAdornment: (
-                            <AutoAwesome sx={{ mr: 1, color: 'accent.main', fontSize: 18 }} />
-                          ),
+                        slotProps={{
+                          input: {
+                            startAdornment: (
+                              <AutoAwesome sx={{ mr: 1, color: 'accent.main', fontSize: 18 }} />
+                            ),
+                          },
                         }}
                       />
                     ) : (
@@ -259,6 +301,9 @@ export default function SettingsPage() {
                         onChange={(e) => updateLlmConfig({ ...llmConfig, model: e.target.value })}
                         placeholder={selectedOption?.defaultModel}
                         helperText="Model name for API"
+                        slotProps={{
+                          input: { type: 'text' },
+                        }}
                       />
                     )}
                   </Grid>
@@ -274,7 +319,9 @@ export default function SettingsPage() {
                           temperature: parseFloat(e.target.value) || 0.7,
                         })
                       }
-                      inputProps={{ step: 0.1, min: 0, max: 2 }}
+                      slotProps={{
+                        htmlInput: { step: 0.1, min: 0, max: 2 },
+                      }}
                       helperText="Higher = more creative, Lower = more focused"
                     />
                   </Grid>
@@ -288,7 +335,9 @@ export default function SettingsPage() {
                   onChange={(e) =>
                     updateLlmConfig({ ...llmConfig, maxTokens: parseInt(e.target.value) || 1024 })
                   }
-                  inputProps={{ step: 64, min: 256, max: 8192 }}
+                  slotProps={{
+                    htmlInput: { step: 64, min: 256, max: 8192 },
+                  }}
                   helperText="Maximum response length"
                 />
 
@@ -313,8 +362,14 @@ export default function SettingsPage() {
           />
         </Grid>
       </Grid>
-
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 3 }}>
+      <Stack
+        direction="row"
+        sx={{
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mt: 3,
+        }}
+      >
         <Button
           variant="outlined"
           color="error"
@@ -324,12 +379,17 @@ export default function SettingsPage() {
           Clear All Data
         </Button>
         {saved && (
-          <Typography variant="body2" color="success.main" fontWeight={600}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'success.main',
+              fontWeight: 600,
+            }}
+          >
             Settings saved automatically!
           </Typography>
         )}
       </Stack>
-
       <Dialog open={clearDataOpen} onClose={() => setClearDataOpen(false)}>
         <DialogTitle>Clear All Data?</DialogTitle>
         <DialogContent>
@@ -345,7 +405,6 @@ export default function SettingsPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       <Dialog open={semesterDialogOpen} onClose={() => setSemesterDialogOpen(false)}>
         <DialogTitle>Change Semester</DialogTitle>
         <DialogContent sx={{ minWidth: 400 }}>
@@ -372,15 +431,31 @@ export default function SettingsPage() {
                   onClick={() => handleSemesterChange(semester.id)}
                 >
                   <CardContent>
-                    <Stack direction="row" alignItems="center" spacing={2}>
+                    <Stack
+                      direction="row"
+                      spacing={2}
+                      sx={{
+                        alignItems: 'center',
+                      }}
+                    >
                       <CalendarToday
                         color={currentSemester === semester.id ? 'accent' : 'action'}
                       />
                       <Box>
-                        <Typography variant="subtitle1" fontWeight={600}>
+                        <Typography
+                          variant="subtitle1"
+                          sx={{
+                            fontWeight: 600,
+                          }}
+                        >
                           {semester.name}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: 'text.secondary',
+                          }}
+                        >
                           {currentSemester === semester.id ? 'Current semester' : 'Click to select'}
                         </Typography>
                       </Box>

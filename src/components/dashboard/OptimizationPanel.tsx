@@ -1,6 +1,6 @@
 import { Box, Button, LinearProgress, Stack, Typography } from '@mui/material';
 import { Psychology, GridView } from '@mui/icons-material';
-import { ActionCard } from '../GlassAppBar';
+import { ActionCard } from '../AppBar';
 import type { Schedule } from '../../types';
 
 interface OptimizationPanelProps {
@@ -30,17 +30,33 @@ export function OptimizationPanel({
 }: OptimizationPanelProps) {
   return (
     <ActionCard sx={{ p: 3 }}>
-      <Stack direction="row" alignItems="center" spacing={1} mb={2}>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          alignItems: 'center',
+          mb: 2,
+        }}
+      >
         <Psychology sx={{ color: 'accent.main', fontSize: 20 }} />
-        <Typography variant="h6" fontWeight={700}>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 700,
+          }}
+        >
           Course Optimization
         </Typography>
       </Stack>
-
-      <Typography variant="body2" color="text.secondary" mb={3}>
+      <Typography
+        variant="body2"
+        sx={{
+          color: 'text.secondary',
+          mb: 3,
+        }}
+      >
         Use AI to synthesize your selected courses into the perfect conflict-free timetable
       </Typography>
-
       <Stack spacing={2}>
         <Button
           variant="contained"
@@ -84,14 +100,28 @@ export function OptimizationPanel({
               value={parseFloat(initProgress.match(/\d+/)?.[0] || '0')}
               sx={{ height: 6, borderRadius: 3, mb: 1 }}
             />
-            <Typography variant="caption" color="text.secondary" align="center" display="block">
+            <Typography
+              variant="caption"
+              align="center"
+              sx={{
+                color: 'text.secondary',
+                display: 'block',
+              }}
+            >
               {initProgress}
             </Typography>
           </Box>
         )}
 
         {error && (
-          <Typography variant="caption" color="error" display="block" textAlign="center">
+          <Typography
+            variant="caption"
+            color="error"
+            sx={{
+              display: 'block',
+              textAlign: 'center',
+            }}
+          >
             {error}
           </Typography>
         )}

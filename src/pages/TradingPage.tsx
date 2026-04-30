@@ -85,8 +85,21 @@ const TradeCard = memo(function TradeCard({
       }}
     >
       <CardContent>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
-          <Stack direction="row" alignItems="center" spacing={1.5}>
+        <Stack
+          direction="row"
+          sx={{
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            mb: 2,
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={1.5}
+            sx={{
+              alignItems: 'center',
+            }}
+          >
             <Avatar
               src={trade.userAvatarUrl}
               sx={{ width: 40, height: 40, bgcolor: 'primary.main' }}
@@ -94,10 +107,20 @@ const TradeCard = memo(function TradeCard({
               {trade.userDisplayName[0] || 'U'}
             </Avatar>
             <Box>
-              <Typography variant="body2" fontWeight={600}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 600,
+                }}
+              >
                 {trade.userDisplayName}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 {timeAgo(trade.createdAt)}
               </Typography>
             </Box>
@@ -121,12 +144,23 @@ const TradeCard = memo(function TradeCard({
             mb: 1.5,
           }}
         >
-          <Typography variant="subtitle2" fontWeight={600}>
+          <Typography
+            variant="subtitle2"
+            sx={{
+              fontWeight: 600,
+            }}
+          >
             {trade.courseCode}
           </Typography>
         </Box>
         {trade.courseName && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              color: 'text.secondary',
+              mb: 2,
+            }}
+          >
             {trade.courseName}
           </Typography>
         )}
@@ -154,7 +188,13 @@ const TradeCard = memo(function TradeCard({
           </Typography>
         )}
 
-        <Stack direction="row" alignItems="center" justifyContent="space-between">
+        <Stack
+          direction="row"
+          sx={{
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <Stack direction="row" spacing={1}>
             {!isOwner && (
               <Button
@@ -169,12 +209,16 @@ const TradeCard = memo(function TradeCard({
               </Button>
             )}
           </Stack>
-          <Typography variant="caption" color="text.secondary">
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+            }}
+          >
             Posted {timeAgo(trade.createdAt)}
           </Typography>
         </Stack>
       </CardContent>
-
       {isOwner && (
         <Box
           className="owner-actions"
@@ -203,7 +247,6 @@ const TradeCard = memo(function TradeCard({
           </Button>
         </Box>
       )}
-
       <Dialog open={confirmDeleteOpen} onClose={() => setConfirmDeleteOpen(false)}>
         <DialogTitle>Delete Trade?</DialogTitle>
         <DialogContent>
@@ -409,8 +452,20 @@ export default function TradingPage() {
   if (loading) {
     return (
       <Box>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
-          <Typography variant="h4" fontWeight={700}>
+        <Stack
+          direction="row"
+          sx={{
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            mb: 3,
+          }}
+        >
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 700,
+            }}
+          >
             Course Trading
           </Typography>
         </Stack>
@@ -418,7 +473,13 @@ export default function TradingPage() {
           {[1, 2, 3].map((i) => (
             <Card key={i}>
               <CardContent>
-                <Stack direction="row" justifyContent="space-between" mb={2}>
+                <Stack
+                  direction="row"
+                  sx={{
+                    justifyContent: 'space-between',
+                    mb: 2,
+                  }}
+                >
                   <Stack direction="row" spacing={1}>
                     <Skeleton variant="circular" width={32} height={32} />
                     <Skeleton variant="text" width={80} />
@@ -430,7 +491,13 @@ export default function TradingPage() {
                 </Stack>
                 <Skeleton variant="text" width="40%" />
                 <Skeleton variant="text" width="60%" />
-                <Stack direction="row" spacing={1} mt={2}>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{
+                    mt: 2,
+                  }}
+                >
                   <Skeleton variant="rounded" width={100} height={24} />
                   <Skeleton variant="rounded" width={100} height={24} />
                 </Stack>
@@ -444,8 +511,20 @@ export default function TradingPage() {
 
   return (
     <Box>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
-        <Typography variant="h4" fontWeight={700}>
+      <Stack
+        direction="row"
+        sx={{
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          mb: 3,
+        }}
+      >
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+          }}
+        >
           Course Trading
         </Typography>
         <Stack direction="row" spacing={1}>
@@ -462,13 +541,11 @@ export default function TradingPage() {
           </Button>
         </Stack>
       </Stack>
-
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
-
       {trades.length === 0 && !loading ? (
         <Card>
           <CardContent sx={{ textAlign: 'center', py: 4 }}>
@@ -476,7 +553,13 @@ export default function TradingPage() {
             <Typography variant="h6" gutterBottom>
               No Trades Yet
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+                mb: 3,
+              }}
+            >
               Be the first to post a course trade
             </Typography>
             <Button
@@ -496,8 +579,10 @@ export default function TradingPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             size="small"
-            InputProps={{
-              startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+            slotProps={{
+              input: {
+                startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+              },
             }}
             sx={{ mb: 1 }}
           />
@@ -529,7 +614,6 @@ export default function TradingPage() {
           )}
         </Stack>
       )}
-
       <Dialog
         open={dialogOpen}
         onClose={() => {
@@ -543,7 +627,14 @@ export default function TradingPage() {
         <DialogContent>
           <Stack spacing={2.5} sx={{ mt: 1 }}>
             <Box>
-              <Typography variant="subtitle2" color="primary" fontWeight={600} sx={{ mb: 1 }}>
+              <Typography
+                variant="subtitle2"
+                color="primary"
+                sx={{
+                  fontWeight: 600,
+                  mb: 1,
+                }}
+              >
                 Course Details
               </Typography>
               <TextField
@@ -553,12 +644,14 @@ export default function TradingPage() {
                 onChange={(e) => setTradeForm({ ...tradeForm, courseCode: e.target.value })}
                 fullWidth
                 required
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <School fontSize="small" />
-                    </InputAdornment>
-                  ),
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <School fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  },
                 }}
                 helperText="Enter the course code (e.g., CS 301)"
               />
@@ -569,18 +662,27 @@ export default function TradingPage() {
                 onChange={(e) => setTradeForm({ ...tradeForm, courseName: e.target.value })}
                 fullWidth
                 sx={{ mt: 1.5 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <School fontSize="small" />
-                    </InputAdornment>
-                  ),
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <School fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  },
                 }}
               />
             </Box>
 
             <Box>
-              <Typography variant="subtitle2" color="primary" fontWeight={600} sx={{ mb: 1 }}>
+              <Typography
+                variant="subtitle2"
+                color="primary"
+                sx={{
+                  fontWeight: 600,
+                  mb: 1,
+                }}
+              >
                 Trade Details
               </Typography>
               <Stack direction="row" spacing={2}>
@@ -591,12 +693,14 @@ export default function TradingPage() {
                   onChange={(e) => setTradeForm({ ...tradeForm, sectionOffered: e.target.value })}
                   fullWidth
                   required
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <ArrowForward fontSize="small" />
-                      </InputAdornment>
-                    ),
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <ArrowForward fontSize="small" />
+                        </InputAdornment>
+                      ),
+                    },
                   }}
                   helperText="Your section"
                 />
@@ -607,12 +711,14 @@ export default function TradingPage() {
                   onChange={(e) => setTradeForm({ ...tradeForm, sectionWanted: e.target.value })}
                   fullWidth
                   required
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <ArrowBack fontSize="small" />
-                      </InputAdornment>
-                    ),
+                  slotProps={{
+                    input: {
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <ArrowBack fontSize="small" />
+                        </InputAdornment>
+                      ),
+                    },
                   }}
                   helperText="Desired section"
                 />
@@ -627,12 +733,14 @@ export default function TradingPage() {
               multiline
               rows={3}
               fullWidth
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Description fontSize="small" />
-                  </InputAdornment>
-                ),
+              slotProps={{
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Description fontSize="small" />
+                    </InputAdornment>
+                  ),
+                },
               }}
             />
           </Stack>
@@ -661,7 +769,6 @@ export default function TradingPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}

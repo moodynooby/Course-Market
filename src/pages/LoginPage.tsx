@@ -34,12 +34,20 @@ export default function LoginPage() {
               variant="h4"
               component="h1"
               gutterBottom
-              fontWeight={700}
-              sx={{ fontFamily: '"Zilla Slab", serif' }}
+              sx={{
+                fontWeight: 700,
+                fontFamily: '"Zilla Slab", serif',
+              }}
             >
               AuraIsHub
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+            <Typography
+              variant="body1"
+              sx={{
+                color: 'text.secondary',
+                mb: 1,
+              }}
+            >
               Optimize your semester with AI
             </Typography>
           </Box>
@@ -59,30 +67,53 @@ export default function LoginPage() {
             <Box sx={{ px: 1 }}>
               <Typography
                 variant="caption"
-                color="text.secondary"
                 component="div"
-                sx={{ mb: 1, fontWeight: 600 }}
+                sx={{
+                  color: 'text.secondary',
+                  mb: 1,
+                  fontWeight: 600,
+                }}
               >
                 Why Sign In?
               </Typography>
               <ul style={{ margin: 0, paddingLeft: 18, color: 'text.secondary' }}>
                 <li>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                    }}
+                  >
                     Swap course sections with other students
                   </Typography>
                 </li>
                 <li>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                    }}
+                  >
                     Sync your schedule across all devices
                   </Typography>
                 </li>
                 <li>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                    }}
+                  >
                     Save your optimization preferences
                   </Typography>
                 </li>
                 <li>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: 'text.secondary',
+                    }}
+                  >
                     Get Free AI ADVICE totally private if you device supports it or a free of cost
                     ai service
                   </Typography>

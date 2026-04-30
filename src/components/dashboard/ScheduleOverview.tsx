@@ -2,7 +2,7 @@ import { Box, Button, Stack, Typography } from '@mui/material';
 import { ArrowForward, CalendarToday } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '../EmptyState';
-import { InfoCard } from '../GlassAppBar';
+import { InfoCard } from '../AppBar';
 import CalendarView from '../CalendarView';
 import type { Course, Section } from '../../types';
 import { checkConflicts } from '../../utils/schedule';
@@ -44,8 +44,20 @@ export function ScheduleOverview({ sections, courses, aiAnalysis }: ScheduleOver
     <Stack spacing={3}>
       <InfoCard>
         <Box sx={{ p: 3 }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" mb={2}>
-            <Typography variant="h6" fontWeight={700}>
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              mb: 2,
+            }}
+          >
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+              }}
+            >
               Schedule Overview
             </Typography>
             <Button
@@ -63,16 +75,19 @@ export function ScheduleOverview({ sections, courses, aiAnalysis }: ScheduleOver
           </Box>
         </Box>
       </InfoCard>
-
       {aiAnalysis && (
         <InfoCard>
           <Box sx={{ p: 3 }}>
             <Typography
               variant="subtitle2"
               gutterBottom
-              fontWeight={800}
-              color="accent.main"
-              sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              sx={{
+                fontWeight: 800,
+                color: 'accent.main',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+              }}
             >
               ✨ AI Optimization Report
             </Typography>

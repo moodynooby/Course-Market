@@ -18,7 +18,7 @@ export interface AuthUser {
 }
 
 export async function validateToken(authHeader: string | undefined): Promise<AuthUser> {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!authHeader?.startsWith('Bearer ')) {
     throw new Error('Missing or invalid authorization header');
   }
 

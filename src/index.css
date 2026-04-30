@@ -57,13 +57,9 @@ body {
   --surface-container-highest: #252626;
   --surface-bright: #2c2c2c;
 
-  /* Shadows */
+  /* Shadows (MUI3 - minimal, tonal elevation preferred) */
   --shadow-ambient: 0px 24px 48px rgba(0, 0, 0, 0.4);
   --shadow-float: 0px 4px 12px rgba(0, 0, 0, 0.2);
-
-  /* Glassmorphism */
-  --glass-bg: rgba(31, 32, 32, 0.7);
-  --glass-blur: 20px;
 }
 
 /* Scrollbar Styling */
@@ -96,15 +92,8 @@ body {
   outline: 1px solid rgba(72, 72, 72, 0.15);
 }
 
-/* Utility: Glassmorphism */
-.glass {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-}
-
-/* Utility: Floating Orb (Signature Component) */
-.floating-orb {
+/* Utility: Active Indicator (MUI3 - no blur) */
+.active-indicator {
   width: 8px;
   height: 8px;
   background: var(--color-tertiary);
@@ -112,7 +101,7 @@ body {
   position: relative;
 }
 
-.floating-orb::after {
+.active-indicator::after {
   content: "";
   position: absolute;
   top: 50%;
@@ -122,8 +111,7 @@ body {
   height: 16px;
   background: var(--color-tertiary);
   border-radius: 50%;
-  filter: blur(4px);
-  opacity: 0.6;
+  opacity: 0.3;
   z-index: -1;
 }
 
@@ -146,12 +134,20 @@ body {
   letter-spacing: 0.05em;
 }
 
-/* No-Line Rule: Background shifts instead of borders */
-.surface-nested {
+/* MUI3 Tonal Elevation: Surface colors for depth (no blur) */
+.surface-container {
+  background: #1a1a1a;
+}
+
+.surface-container-low {
+  background: var(--surface-container-low);
+}
+
+.surface-container-high {
   background: var(--surface-container-high);
 }
 
-.surface-nested-deep {
+.surface-container-highest {
   background: var(--surface-container-highest);
 }
 

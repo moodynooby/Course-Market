@@ -48,16 +48,38 @@ export const CourseCard = memo(
     return (
       <Card ref={ref} sx={{ mb: 2 }}>
         <CardContent sx={{ pb: 1 }}>
-          <Stack direction="row" alignItems="center" justifyContent="space-between">
+          <Stack
+            direction="row"
+            sx={{
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
             <Box>
-              <Typography variant="h6" fontWeight={600}>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 600,
+                }}
+              >
                 {course.code}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'text.secondary',
+                }}
+              >
                 {course.name} • {course.credits} credits
               </Typography>
             </Box>
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                alignItems: 'center',
+              }}
+            >
               {selectedSectionId && (
                 <Chip
                   size="small"
@@ -71,7 +93,6 @@ export const CourseCard = memo(
             </Stack>
           </Stack>
         </CardContent>
-
         <Collapse in={isExpanded} timeout="auto" unmountOnExit>
           <CardContent sx={{ pt: 0, px: 2, pb: 2 }}>
             <Stack spacing={2} sx={{ width: '100%' }}>
@@ -107,9 +128,11 @@ export const CourseCard = memo(
                     <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                       <Stack
                         direction="row"
-                        alignItems="center"
-                        justifyContent="space-between"
-                        sx={{ py: 0.5 }}
+                        sx={{
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          py: 0.5,
+                        }}
                       >
                         <Box sx={{ flex: 1 }}>
                           <FormControlLabel
@@ -124,15 +147,32 @@ export const CourseCard = memo(
                             }
                             label={
                               <Stack spacing={1}>
-                                <Typography variant="subtitle2" fontWeight={600}>
+                                <Typography
+                                  variant="subtitle2"
+                                  sx={{
+                                    fontWeight: 600,
+                                  }}
+                                >
                                   Section {section.sectionNumber}
                                 </Typography>
                                 <Stack direction="row" spacing={2}>
-                                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                                  <Stack
+                                    direction="row"
+                                    spacing={0.5}
+                                    sx={{
+                                      alignItems: 'center',
+                                    }}
+                                  >
                                     <Person sx={{ fontSize: 16 }} />
                                     <Typography variant="caption">{section.instructor}</Typography>
                                   </Stack>
-                                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                                  <Stack
+                                    direction="row"
+                                    spacing={0.5}
+                                    sx={{
+                                      alignItems: 'center',
+                                    }}
+                                  >
                                     <Schedule sx={{ fontSize: 16 }} />
                                     <Typography variant="caption">
                                       {dayDisplay && timeDisplay ? (
@@ -158,7 +198,13 @@ export const CourseCard = memo(
                             }}
                           />
                         </Box>
-                        <Stack direction="row" spacing={1} alignItems="center">
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          sx={{
+                            alignItems: 'center',
+                          }}
+                        >
                           {isSelected && <Chip size="small" label="Selected" color="success" />}
                           {conflict && !isSelected && (
                             <Chip
