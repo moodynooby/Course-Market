@@ -281,7 +281,6 @@ export default function Layout() {
                         minWidth: 200,
                         borderRadius: '24px',
                         border: 'none',
-                        boxShadow: theme.shadows[4],
                         backgroundImage: 'none',
                         bgcolor: 'background.paper',
                       },

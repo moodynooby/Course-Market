@@ -103,8 +103,8 @@ function OnboardingWizard() {
   return (
     <Box sx={{ maxWidth: 800, mx: 'auto', width: '100%' }}>
       <Card
+        variant="outlined"
         sx={{
-          boxShadow: theme.shadows[3],
           borderRadius: 3,
           overflow: 'hidden',
         }}
@@ -169,7 +169,6 @@ function OnboardingWizard() {
                                 height: 12,
                                 borderRadius: '50%',
                                 bgcolor: 'secondary.main',
-                                boxShadow: theme.shadows[2],
                               }}
                             />
                           ) : (

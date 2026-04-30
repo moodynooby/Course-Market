@@ -14,7 +14,7 @@ export function SelectedCoursesList({ sections, courses }: SelectedCoursesListPr
 
   if (sections.length === 0) {
     return (
-      <Card sx={{ borderRadius: 4, bgcolor: 'background.paper', p: 3 }}>
+      <Card sx={{ borderRadius: 4, bgcolor: 'background.paper', p: 3 }} variant="outlined">
         <Typography
           variant="h6"
           sx={{
@@ -37,7 +37,7 @@ export function SelectedCoursesList({ sections, courses }: SelectedCoursesListPr
   }
 
   return (
-    <Card sx={{ borderRadius: 4, bgcolor: 'background.paper', p: 3 }}>
+    <Card variant="outlined" sx={{ borderRadius: 4, bgcolor: 'background.paper', p: 3 }}>
       <Typography
         variant="h6"
         sx={{

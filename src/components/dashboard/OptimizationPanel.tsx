@@ -28,7 +28,10 @@ export function OptimizationPanel({
   onWebgpuWarning,
 }: OptimizationPanelProps) {
   return (
-    <Card sx={{ borderRadius: 4, bgcolor: 'background.paper', transition: 'all 0.3s ease', p: 3 }}>
+    <Card
+      variant="outlined"
+      sx={{ borderRadius: 4, bgcolor: 'background.paper', transition: 'all 0.3s ease', p: 3 }}
+    >
       <Stack
         direction="row"
         spacing={1}

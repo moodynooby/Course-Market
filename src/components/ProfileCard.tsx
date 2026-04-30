@@ -182,7 +182,7 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
   };
 
   return (
-    <Card sx={{ borderRadius: 4, bgcolor: 'background.paper', p: 3 }}>
+    <Card variant="outlined" sx={{ borderRadius: 4, bgcolor: 'background.paper', p: 3 }}>
       <Box sx={{ mb: 3 }}>
         <Typography
           variant="h6"
@@ -287,6 +287,7 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
                   <Grid size={{ xs: 12, sm: 6 }} key={semester.id}>
                     <Card
                       onClick={() => handleSelectSemester(semester.id)}
+                      variant="outlined"
                       sx={{
                         height: '100%',
                         cursor: selectingSemester === semester.id ? 'not-allowed' : 'pointer',
@@ -295,7 +296,6 @@ export function ProfileCard({ initialData, onSave, showSemester = true }: Profil
                           selectedSemester === semester.id ? 'secondary.main' : 'divider',
                         transition: 'all 0.2s',
                         '&:hover': {
-                          boxShadow: 3,
                           borderColor: 'secondary.main',
                         },
                         ...(selectingSemester === semester.id && {

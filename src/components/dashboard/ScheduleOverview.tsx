@@ -75,7 +75,7 @@ export function ScheduleOverview({ sections, courses, aiAnalysis }: ScheduleOver
         </Box>
       </Card>
       {aiAnalysis && (
-        <Card sx={{ borderRadius: 4, bgcolor: 'background.paper' }}>
+        <Card variant="outlined" sx={{ borderRadius: 4, bgcolor: 'background.paper' }}>
           <Box sx={{ p: 3 }}>
             <Typography
               variant="subtitle2"

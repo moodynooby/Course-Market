@@ -46,7 +46,7 @@ export const CourseCard = memo(
     );
 
     return (
-      <Card ref={ref} sx={{ mb: 2 }}>
+      <Card ref={ref} variant="outlined" sx={{ mb: 2 }}>
         <CardContent sx={{ pb: 1 }}>
           <Stack
             direction="row"

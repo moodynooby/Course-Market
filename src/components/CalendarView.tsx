@@ -77,7 +77,6 @@ const EventComponent = memo(function EventComponent({ event }: EventProps) {
         flexDirection: 'column',
         justifyContent: 'center',
         lineHeight: 1.2,
-        boxShadow: theme.shadows[1],
       }}
     >
       <Typography
@@ -161,12 +160,11 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
           borderRadius: '8px',
           fontSize: '0.75rem',
           fontWeight: 600,
-          boxShadow: isConflicted ? theme.shadows[4] : theme.shadows[2],
           opacity: isConflicted ? 0.9 : 1,
         },
       };
     },
-    [conflicts, theme.palette.error.main, theme.shadows],
+    [conflicts, theme.palette.error.main],
   );
 
   const formats = useMemo(
@@ -433,7 +431,6 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
                       ? alpha(theme.palette.error.main, 0.2)
                       : `${COURSE_COLORS[colorIndex]}25`,
                     transform: 'translateY(-2px)',
-                    boxShadow: theme.shadows[1],
                   },
                   '& .MuiChip-label': {
                     fontWeight: 600,

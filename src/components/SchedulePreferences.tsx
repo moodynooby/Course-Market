@@ -197,7 +197,7 @@ export function SchedulePreferences({
   const showActions = !autoSave;
 
   return (
-    <Card sx={{ borderRadius: 4, bgcolor: 'background.paper', p: 3 }}>
+    <Card variant="outlined" sx={{ borderRadius: 4, bgcolor: 'background.paper', p: 3 }}>
       {collapsible ? (
         <Box sx={{ mb: 3, cursor: 'pointer' }} onClick={() => setExpanded(!expanded)}>
           <Stack
@@ -496,7 +496,6 @@ export function SchedulePreferences({
                         cursor: 'pointer',
                         '&:hover': {
                           transform: 'translateY(-2px)',
-                          boxShadow: theme.shadows[1],
                           bgcolor: isActive ? 'error.dark' : 'action.hover',
                         },
                       }}
