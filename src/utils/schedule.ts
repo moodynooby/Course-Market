@@ -29,11 +29,6 @@ function getWeekStartDate(): Date {
   return weekStart;
 }
 
-function timeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
-}
-
 export function sectionsToCalendarEvents(sections: Section[], courses: Course[]): CalendarEvent[] {
   const events: CalendarEvent[] = [];
   const weekStart = getWeekStartDate();
@@ -43,8 +38,8 @@ export function sectionsToCalendarEvents(sections: Section[], courses: Course[])
 
     section.timeSlots.forEach((slot, index) => {
       const dayOffset = DAY_TO_NUMBER[slot.day];
-      const startMinutes = timeToMinutes(slot.startTime);
-      const endMinutes = timeToMinutes(slot.endTime);
+      const startMinutes = timeToMinutesCached(slot.startTime);
+      const endMinutes = timeToMinutesCached(slot.endTime);
 
       const startDate = new Date(weekStart);
       startDate.setDate(startDate.getDate() + dayOffset);
