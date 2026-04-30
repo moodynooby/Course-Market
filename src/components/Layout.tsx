@@ -212,6 +212,7 @@ export default function Layout() {
                 }}
               >
                 <NavLink to="/courses" label="Courses" currentPath={location.pathname} />
+                <NavLink to="/professors" label="Professors" currentPath={location.pathname} />
               </Box>
             )}
           </Box>

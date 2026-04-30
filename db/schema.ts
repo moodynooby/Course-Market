@@ -1,4 +1,14 @@
-import { boolean, jsonb, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  integer,
+  jsonb,
+  pgTable,
+  real,
+  serial,
+  text,
+  timestamp,
+  varchar,
+} from 'drizzle-orm/pg-core';
 
 export const trades = pgTable('trades', {
   id: serial('id').primaryKey(),
@@ -61,3 +71,43 @@ export const semesters = pgTable('semesters', {
 
 export type Semester = typeof semesters.$inferSelect;
 export type NewSemester = typeof semesters.$inferInsert;
+
+// Rate My Professors clone tables
+export const professors = pgTable('professors', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull().unique(),
+  subjects: jsonb('subjects').default([]).notNull(), // Array of subjects they teach
+  semesters: jsonb('semesters').default([]).notNull(), // Array of semester IDs they taught in
+  avgRating: real('avg_rating').default(0).notNull(),
+  avgDifficulty: real('avg_difficulty').default(0).notNull(),
+  avgChillness: real('avg_chillness').default(0).notNull(),
+  avgStrictness: real('avg_strictness').default(0).notNull(),
+  takeAgainPercent: integer('take_again_percent').default(0).notNull(),
+  totalRatings: integer('total_ratings').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type Professor = typeof professors.$inferSelect;
+export type NewProfessor = typeof professors.$inferInsert;
+
+export const professorRatings = pgTable('professor_ratings', {
+  id: serial('id').primaryKey(),
+  professorId: integer('professor_id')
+    .references(() => professors.id)
+    .notNull(),
+  auth0UserId: varchar('auth0_user_id', { length: 255 }).notNull(),
+  userDisplayName: varchar('user_display_name', { length: 255 }).notNull(),
+  courseCode: varchar('course_code', { length: 50 }).notNull(),
+  rating: integer('rating').notNull(), // 1-5
+  difficulty: integer('difficulty').notNull(), // 1-5
+  takeAgain: boolean('take_again').notNull(),
+  chillness: integer('chillness').notNull(), // 1-5
+  strictness: integer('strictness').notNull(), // 1-5
+  tags: jsonb('tags').default([]).notNull(), // Array of strings
+  comment: text('comment').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type ProfessorRating = typeof professorRatings.$inferSelect;
+export type NewProfessorRating = typeof professorRatings.$inferInsert;

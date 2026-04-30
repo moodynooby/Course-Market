@@ -16,6 +16,8 @@ const CoursesPage = lazy(() => import('./pages/CoursesPage'));
 const TradingPage = lazy(() => import('./pages/TradingPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
+const ProfessorsPage = lazy(() => import('./pages/ProfessorsPage'));
+const ProfessorDetailPage = lazy(() => import('./pages/ProfessorDetailPage'));
 
 function LoadingFallback() {
   return (
@@ -90,6 +92,26 @@ const router = createBrowserRouter([
           <ProtectedRoute>
             <Suspense fallback={<LoadingFallback />}>
               <SettingsPage />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'professors',
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<LoadingFallback />}>
+              <ProfessorsPage />
+            </Suspense>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'professor/:id',
+        element: (
+          <ProtectedRoute>
+            <Suspense fallback={<LoadingFallback />}>
+              <ProfessorDetailPage />
             </Suspense>
           </ProtectedRoute>
         ),
