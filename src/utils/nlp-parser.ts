@@ -1,8 +1,8 @@
 import * as chrono from 'chrono-node';
+import { searchSchedules } from '../services/search';
 import type { DayOfWeek } from '../types';
 import { timeToMinutesCached } from './schedule';
 import type { GeneratedSchedule, ScheduleIntent, SearchResult } from './schedule-types';
-import { searchSchedules } from '../services/search';
 
 /**
  * Day name mappings for normalization
@@ -340,4 +340,4 @@ export function searchSchedulesByIntent(
   });
 }
 
-export { PATTERNS as NlpPatterns, DAY_MAPPINGS };
+export { DAY_MAPPINGS, PATTERNS as NlpPatterns };

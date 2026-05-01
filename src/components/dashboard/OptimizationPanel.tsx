@@ -1,5 +1,5 @@
+import { GridView, Psychology } from '@mui/icons-material';
 import { Box, Button, Card, LinearProgress, Stack, Typography } from '@mui/material';
-import { Psychology, GridView } from '@mui/icons-material';
 import type { Schedule } from '../../types';
 
 interface OptimizationPanelProps {

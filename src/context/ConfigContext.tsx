@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import type { Preferences } from '../types';
 import { DEFAULT_LLM_CONFIG, DEFAULT_PREFERENCES, STORAGE_KEYS } from '../utils/constants';
 import { storage } from '../utils/storage';
-import type { Preferences } from '../types';
 
 interface BYOKConfig {
   provider: 'webllm' | 'groq';

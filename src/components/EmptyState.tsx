@@ -1,4 +1,4 @@
-import { Box, CircularProgress, Paper, Stack, Typography, alpha, useTheme } from '@mui/material';
+import { alpha, Box, CircularProgress, Paper, Stack, Typography, useTheme } from '@mui/material';
 import type { ReactNode } from 'react';
 
 export type EmptyStateVariant = 'default' | 'compact' | 'fullscreen';

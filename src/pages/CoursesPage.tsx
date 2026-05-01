@@ -18,19 +18,19 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CourseCard } from '../components/CourseCard';
-import { storage } from '../utils/storage';
-import { STORAGE_KEYS } from '../utils/constants';
 import { useAuth } from '../hooks/useAuth';
 import { useSemesterParser } from '../hooks/useSemesterParser';
+import { api } from '../services/apiClient';
 import { getSemesters } from '../services/coursesApi';
 import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
-import { api } from '../services/apiClient';
 import { buildCourseIndex, searchCourses } from '../services/search';
 import type { Course, Section } from '../types';
+import { STORAGE_KEYS } from '../utils/constants';
 import { hasSectionConflict } from '../utils/schedule';
+import { storage } from '../utils/storage';
 
 const SEARCH_DEBOUNCE_MS = 150;
 const SAVE_DEBOUNCE_MS = 500;

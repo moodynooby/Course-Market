@@ -1,4 +1,14 @@
 import {
+  CalendarToday,
+  Close,
+  FilterList,
+  GridView,
+  Search,
+  Star,
+  Timelapse,
+} from '@mui/icons-material';
+import {
+  alpha,
   Box,
   Button,
   Card,
@@ -15,24 +25,14 @@ import {
   Tabs,
   TextField,
   Typography,
-  alpha,
   useTheme,
 } from '@mui/material';
-import {
-  Close,
-  FilterList,
-  GridView,
-  Search,
-  Star,
-  Timelapse,
-  CalendarToday,
-} from '@mui/icons-material';
-import { memo, useMemo, useState, useEffect, useCallback } from 'react';
-import { EmptyState } from '../EmptyState';
-import CalendarView from '../CalendarView';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import type { Course } from '../../types';
-import type { GeneratedSchedule, SearchResult } from '../../utils/schedule-types';
 import { clusterSchedules } from '../../utils/schedule-generator';
+import type { GeneratedSchedule, SearchResult } from '../../utils/schedule-types';
+import CalendarView from '../CalendarView';
+import { EmptyState } from '../EmptyState';
 
 // Constants
 const MAX_DISPLAY_SCHEDULES = 50;

@@ -19,15 +19,15 @@ import ApiKeyDialog from '../components/ApiKeyDialog';
 import { OptimizationPanel } from '../components/dashboard/OptimizationPanel';
 import { ScheduleOverview } from '../components/dashboard/ScheduleOverview';
 import { SelectedCoursesList } from '../components/dashboard/SelectedCoursesList';
-import { storage } from '../utils/storage';
-import { STORAGE_KEYS } from '../utils/constants';
 import { useConfigContext } from '../context/ConfigContext';
 import { useAuth } from '../hooks/useAuth';
 import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
 import { buildCourseIndex } from '../services/search';
 import type { Course, Schedule, Section } from '../types';
+import { STORAGE_KEYS } from '../utils/constants';
 import { checkConflicts } from '../utils/schedule';
 import type { GeneratedSchedule, SearchResult } from '../utils/schedule-types';
+import { storage } from '../utils/storage';
 
 const ScheduleExplorerDialog = lazy(() =>
   import('../components/schedule-explorer/ScheduleExplorerDialog').then((module) => ({

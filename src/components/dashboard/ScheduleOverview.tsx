@@ -1,10 +1,10 @@
-import { Box, Button, Card, Stack, Typography } from '@mui/material';
 import { ArrowForward, CalendarToday } from '@mui/icons-material';
+import { Box, Button, Card, Stack, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { EmptyState } from '../EmptyState';
-import CalendarView from '../CalendarView';
 import type { Course, Section } from '../../types';
 import { checkConflicts } from '../../utils/schedule';
+import CalendarView from '../CalendarView';
+import { EmptyState } from '../EmptyState';
 
 interface ScheduleOverviewProps {
   sections: Section[];

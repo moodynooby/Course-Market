@@ -1,11 +1,11 @@
 import {
+  alpha,
   Box,
   Card,
   CardContent,
   CircularProgress,
   LinearProgress,
   Typography,
-  alpha,
 } from '@mui/material';
 import type { ReactNode } from 'react';
 

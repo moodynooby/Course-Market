@@ -18,10 +18,9 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
-import type { Semester } from '../types';
 import { getCoursesBySubject, getSemesterData, getSemesters } from '../services/coursesApi';
 import { getCachedSemesterData } from '../services/dbCache';
-import type { Course, Section } from '../types';
+import type { Course, Section, Semester } from '../types';
 
 interface ProfileCardProps {
   initialData?: {

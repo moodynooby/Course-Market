@@ -1,3 +1,4 @@
+import { ExpandLess, ExpandMore, Person, Schedule, Warning } from '@mui/icons-material';
 import {
   alpha,
   Box,
@@ -12,7 +13,6 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { ExpandLess, ExpandMore, Person, Schedule, Warning } from '@mui/icons-material';
 import { forwardRef, memo, useCallback } from 'react';
 import type { Course, Section } from '../types';
 import { formatTimeSlots } from '../utils/schedule';

@@ -2,10 +2,10 @@ import { webLLM } from '@browser-ai/web-llm';
 import { generateText } from 'ai';
 import type { Preferences, Schedule, Section, TradePost } from '../types';
 import {
+  type BYOKConfig,
   DEFAULT_LLM_CONFIG,
   getDefaultModel,
   type LLMTask,
-  type BYOKConfig,
 } from '../utils/constants';
 import { env } from '../utils/env';
 

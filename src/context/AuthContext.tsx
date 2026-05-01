@@ -1,6 +1,6 @@
 import { useAuth0 } from '@auth0/auth0-react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { api, ApiError } from '../services/apiClient';
+import { ApiError, api } from '../services/apiClient';
 import type { UserProfile } from '../types';
 
 interface AuthContextValue {
