@@ -9,7 +9,7 @@ export const STORAGE_KEYS = {
 } as const;
 
 export type LLMProvider = 'webllm' | 'groq';
-export type LLMTask = 'SEARCH' | 'OPTIMIZE' | 'DRAFT' | 'DEFAULT';
+export type LLMTask = 'OPTIMIZE' | 'DRAFT' | 'DEFAULT';
 export type DayOfWeek = 'M' | 'T' | 'W' | 'Th' | 'F' | 'Sa' | 'Su';
 
 export interface BYOKConfig {
@@ -23,10 +23,6 @@ export interface BYOKConfig {
 
 // LLM task-to-model mappings
 export const LLM_TASK_MODELS = {
-  SEARCH: {
-    webllm: 'Qwen2-0.5B-Instruct-q4f16_1-MLC',
-    groq: 'llama-3.1-8b-instant',
-  },
   OPTIMIZE: {
     webllm: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
     groq: 'llama-3.3-70b-versatile',

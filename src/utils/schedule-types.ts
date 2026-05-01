@@ -53,19 +53,3 @@ export interface SearchResult {
   /** Explanation of why it matched */
   explanation?: string;
 }
-
-/**
- * Schedule ranking from LLM comparison
- */
-export interface ScheduleRank {
-  /** The schedule */
-  schedule: GeneratedSchedule;
-  /** Rank position (1 = best) */
-  rank: number;
-  /** Match score 1-10 */
-  matchScore: number;
-  /** Explanation of ranking */
-  explanation: string;
-  /** Key tradeoff vs other options */
-  tradeoff: string;
-}

@@ -28,7 +28,7 @@ import { useSemesterParser } from '../hooks/useSemesterParser';
 import { getSemesters } from '../services/coursesApi';
 import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
 import { api } from '../services/apiClient';
-import { searchIndex } from '../services/searchIndex';
+import { buildCourseIndex, searchCourses } from '../services/search';
 import type { Course, Section } from '../types';
 import { hasSectionConflict } from '../utils/schedule';
 
@@ -161,7 +161,7 @@ export default function CoursesPage() {
         parsedResult.sections,
         parsedResult.version,
       );
-      searchIndex.buildIndex(parsedResult.courses, parsedResult.sections);
+      buildCourseIndex(parsedResult.courses, parsedResult.sections);
 
       setCourses(parsedResult.courses);
       setSections(parsedResult.sections);
@@ -224,7 +224,7 @@ export default function CoursesPage() {
         if (cachedData && cachedData.courses.length > 0) {
           setCourses(cachedData.courses);
           setSections(cachedData.sections);
-          searchIndex.buildIndex(cachedData.courses, cachedData.sections);
+          buildCourseIndex(cachedData.courses, cachedData.sections);
           setLoading(false);
           console.log('[CoursesPage] Loaded from IndexedDB cache for', selectedSemester.id);
           return;
@@ -261,27 +261,19 @@ export default function CoursesPage() {
   }, [courses]);
 
   const filteredCourses = useMemo(() => {
-    if (!debouncedSearch.trim()) {
-      return subject === 'all' ? courses : courses.filter((c) => c.subject === subject);
+    let result = courses;
+
+    if (debouncedSearch.trim()) {
+      const courseIds = searchCourses(debouncedSearch);
+      const courseSet = new Set(courseIds.map((id) => String(id)));
+      result = courses.filter((course) => courseSet.has(course.id));
     }
 
-    const { courseIds } = searchIndex.search(debouncedSearch);
-
-    if (courseIds.length === 0) {
-      const loweredSearch = debouncedSearch.toLowerCase();
-      return courses.filter((course) => {
-        const matchesSearch =
-          course.name.toLowerCase().includes(loweredSearch) ||
-          course.code.toLowerCase().includes(loweredSearch);
-        const matchesSubject = subject === 'all' || course.subject === subject;
-        return matchesSearch && matchesSubject;
-      });
+    if (subject !== 'all') {
+      result = result.filter((c) => c.subject === subject);
     }
 
-    const courseSet = new Set(courseIds.map((id) => String(id)));
-    return courses.filter(
-      (course) => courseSet.has(course.id) && (subject === 'all' || course.subject === subject),
-    );
+    return result;
   }, [courses, debouncedSearch, subject]);
 
   const courseSectionsMap = useMemo(() => {
@@ -374,7 +366,7 @@ export default function CoursesPage() {
         if (cachedData && cachedData.courses.length > 0) {
           setCourses(cachedData.courses);
           setSections(cachedData.sections);
-          searchIndex.buildIndex(cachedData.courses, cachedData.sections);
+          buildCourseIndex(cachedData.courses, cachedData.sections);
           setLoading(false);
           console.log('[CoursesPage] Switched to semester from IndexedDB cache:', semesterId);
           return;

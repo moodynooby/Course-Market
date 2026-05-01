@@ -24,6 +24,7 @@ import { STORAGE_KEYS } from '../utils/constants';
 import { useConfigContext } from '../context/ConfigContext';
 import { useAuth } from '../hooks/useAuth';
 import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
+import { buildCourseIndex } from '../services/search';
 import type { Course, Schedule, Section } from '../types';
 import { checkConflicts } from '../utils/schedule';
 import type { GeneratedSchedule, SearchResult } from '../utils/schedule-types';
@@ -62,7 +63,6 @@ export default function LandingPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [searching, setSearching] = useState(false);
   const [showConflicting, setShowConflicting] = useState(false);
 
   const loadScheduleFromSelections = useCallback((courses: Course[], sections: Section[]) => {
@@ -133,6 +133,7 @@ export default function LandingPage() {
         const sections = cachedData.sections;
         setAllCourses(courses);
         setAllSections(sections);
+        buildCourseIndex(courses, sections);
         loadScheduleFromSelections(courses, sections);
       } else {
         const response = await fetch(activeSemester.jsonUrl);
@@ -148,6 +149,7 @@ export default function LandingPage() {
 
         setAllCourses(courses);
         setAllSections(sections);
+        buildCourseIndex(courses, sections);
         loadScheduleFromSelections(courses, sections);
       }
     } catch (error) {
@@ -175,6 +177,26 @@ export default function LandingPage() {
       window.removeEventListener('storage', handleStorageChange);
     };
   }, [allCourses, allSections, loadScheduleFromSelections, loadData]);
+
+  useEffect(() => {
+    if (!searchQuery.trim() || generatedSchedules.length === 0) {
+      setSearchResults([]);
+      return;
+    }
+
+    const performSearch = async () => {
+      try {
+        const { searchSchedulesByIntent } = await import('../utils/nlp-parser');
+        const results = searchSchedulesByIntent(searchQuery, generatedSchedules);
+        setSearchResults(results);
+      } catch (err) {
+        console.error('Search failed:', err);
+        setSearchResults([]);
+      }
+    };
+
+    performSearch();
+  }, [searchQuery, generatedSchedules]);
 
   const handleOptimize = async () => {
     if (!schedule) {
@@ -299,25 +321,6 @@ export default function LandingPage() {
     };
     setSchedule(newSchedule);
   }, []);
-
-  const handleNaturalSearch = useCallback(async () => {
-    if (!searchQuery.trim() || generatedSchedules.length === 0) {
-      setSearchResults([]);
-      return;
-    }
-
-    setSearching(true);
-    try {
-      const { searchSchedulesByIntent } = await import('../utils/nlp-parser');
-      const results = searchSchedulesByIntent(searchQuery, generatedSchedules);
-      setSearchResults(results);
-    } catch (err) {
-      setError(`Search failed: ${(err as Error).message}`);
-      setSearchResults([]);
-    } finally {
-      setSearching(false);
-    }
-  }, [searchQuery, generatedSchedules]);
 
   const hasCourses = schedule && schedule.sections.length > 0;
   const showOptimization = hasCourses;
@@ -620,8 +623,8 @@ export default function LandingPage() {
           courses={allCourses}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          onSearch={handleNaturalSearch}
-          searching={searching}
+          onSearch={() => {}}
+          searching={false}
           searchResults={searchResults}
           showConflicting={showConflicting}
           onToggleConflicting={() => setShowConflicting(!showConflicting)}

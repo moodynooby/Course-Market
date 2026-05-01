@@ -2,6 +2,7 @@ import * as chrono from 'chrono-node';
 import type { DayOfWeek } from '../types';
 import { timeToMinutesCached } from './schedule';
 import type { GeneratedSchedule, ScheduleIntent, SearchResult } from './schedule-types';
+import { searchSchedules } from '../services/search';
 
 /**
  * Day name mappings for normalization
@@ -286,92 +287,6 @@ export function extractScheduleIntent(query: string): ScheduleIntent {
 }
 
 /**
- * Check if a schedule matches the given intent
- */
-export function scheduleMatchesIntent(
-  schedule: GeneratedSchedule,
-  intent: ScheduleIntent,
-): { matches: boolean; score: number; criteria: string[] } {
-  const criteria: string[] = [];
-  const penalties: number[] = [];
-
-  const avoidDaysSet = intent.avoidDays ? new Set(intent.avoidDays) : null;
-  const specificDaysSet = intent.specificDays ? new Set(intent.specificDays) : null;
-  const earliestMinutes = intent.earliestTime ? timeToMinutesCached(intent.earliestTime) : null;
-  const latestMinutes = intent.latestTime ? timeToMinutesCached(intent.latestTime) : null;
-
-  let hasMorningClasses = false;
-  let hasAfternoonClasses = false;
-  let hasAvoidedDays = false;
-  let hasEarlyClass = false;
-  let hasLateClass = false;
-  const scheduleDays = new Set<DayOfWeek>();
-
-  // Single pass over sections and time slots
-  for (const section of schedule.sections) {
-    for (const slot of section.timeSlots) {
-      const startMinutes = timeToMinutesCached(slot.startTime);
-      const hour = Math.floor(startMinutes / 60);
-
-      scheduleDays.add(slot.day);
-
-      if (hour >= 6 && hour < 12) hasMorningClasses = true;
-      if (hour >= 12 && hour < 17) hasAfternoonClasses = true;
-
-      if (avoidDaysSet?.has(slot.day)) hasAvoidedDays = true;
-
-      if (earliestMinutes !== null && startMinutes < earliestMinutes) {
-        hasEarlyClass = true;
-      }
-
-      if (latestMinutes !== null && startMinutes >= latestMinutes) {
-        hasLateClass = true;
-      }
-    }
-  }
-
-  if (intent.preferMorning) {
-    if (hasMorningClasses) criteria.push('Has morning classes');
-    else penalties.push(0.3);
-  }
-
-  if (intent.preferAfternoon) {
-    if (hasAfternoonClasses) criteria.push('Has afternoon classes');
-    else penalties.push(0.3);
-  }
-
-  if (avoidDaysSet) {
-    if (!hasAvoidedDays) criteria.push(`Avoids ${intent.avoidDays?.join(', ')} classes`);
-    else penalties.push(0.5);
-  }
-
-  if (specificDaysSet) {
-    const hasAllDays = intent.specificDays?.every((day) => scheduleDays.has(day));
-    if (hasAllDays) criteria.push(`Includes ${intent.specificDays?.join(', ')} classes`);
-    else penalties.push(0.4);
-  }
-
-  if (earliestMinutes !== null) {
-    if (!hasEarlyClass) criteria.push(`No classes before ${intent.earliestTime}`);
-    else penalties.push(0.4);
-  }
-
-  if (latestMinutes !== null) {
-    if (!hasLateClass) criteria.push(`No classes after ${intent.latestTime}`);
-    else penalties.push(0.4);
-  }
-
-  const totalPenalty = penalties.reduce((sum, p) => sum + p, 0);
-  const score = Math.max(0, 1 - totalPenalty);
-
-  return {
-    matches: score > 0.5,
-    score,
-    criteria,
-  };
-}
-
-/**
  * Filter and rank schedules by natural language query
  */
 export function searchSchedulesByIntent(
@@ -389,62 +304,40 @@ export function searchSchedulesByIntent(
   }
 
   const intent = extractScheduleIntent(query);
-  const results: SearchResult[] = [];
+  const searchResults = searchSchedules(schedules, query);
 
-  for (const schedule of schedules) {
-    const { matches, score, criteria } = scheduleMatchesIntent(schedule, intent);
+  // Post-filter by hard constraints
+  return searchResults.filter((result) => {
+    const { schedule } = result;
 
-    if (matches || score > 0.3) {
-      results.push({
-        schedule,
-        relevanceScore: Math.round(score * 100) / 100,
-        matchedCriteria: criteria,
-        explanation: generateExplanation(schedule, intent, score),
-      });
+    // Check avoidDays
+    if (intent.avoidDays && intent.avoidDays.length > 0) {
+      const hasAvoidedDays = schedule.sections.some((sec) =>
+        sec.timeSlots.some((ts) => intent.avoidDays?.includes(ts.day)),
+      );
+      if (hasAvoidedDays) return false;
     }
-  }
 
-  // Sort by relevance score descending
-  return results.sort((a, b) => b.relevanceScore - a.relevanceScore);
-}
-
-/**
- * Generate human-readable explanation for match
- */
-function generateExplanation(
-  schedule: GeneratedSchedule,
-  intent: ScheduleIntent,
-  score: number,
-): string {
-  const parts: string[] = [];
-
-  if (score >= 0.9) {
-    parts.push('Excellent match for your criteria');
-  } else if (score >= 0.7) {
-    parts.push('Good match with minor compromises');
-  } else if (score >= 0.5) {
-    parts.push('Partial match with some tradeoffs');
-  } else {
-    parts.push('Limited match - review carefully');
-  }
-
-  if (
-    intent.preferMorning &&
-    schedule.sections.some((s) => s.timeSlots.some((t) => parseInt(t.startTime) < 720))
-  ) {
-    parts.push('includes morning classes');
-  }
-
-  if (intent.avoidDays && intent.avoidDays.length > 0) {
-    const hasAvoidedDays = schedule.sections.some((s) =>
-      s.timeSlots.some((t) => intent.avoidDays?.includes(t.day)),
-    );
-    if (!hasAvoidedDays) {
-      parts.push(`avoids ${intent.avoidDays.join('/')} classes`);
+    // Check earliestTime
+    if (intent.earliestTime) {
+      const earliestMinutes = timeToMinutesCached(intent.earliestTime);
+      const hasEarlyClass = schedule.sections.some((sec) =>
+        sec.timeSlots.some((ts) => timeToMinutesCached(ts.startTime) < earliestMinutes),
+      );
+      if (hasEarlyClass) return false;
     }
-  }
 
-  return parts.join(', ') + '.';
+    // Check latestTime
+    if (intent.latestTime) {
+      const latestMinutes = timeToMinutesCached(intent.latestTime);
+      const hasLateClass = schedule.sections.some((sec) =>
+        sec.timeSlots.some((ts) => timeToMinutesCached(ts.startTime) >= latestMinutes),
+      );
+      if (hasLateClass) return false;
+    }
+
+    return true;
+  });
 }
 
 export { PATTERNS as NlpPatterns, DAY_MAPPINGS };
