@@ -51,10 +51,9 @@ export const handler = async (event: any) => {
     if (saveKey && userApiKey) {
       await saveUserKey(user.sub, provider, userApiKey);
       if (stream) {
-        return handleStream(provider, model, messages, temperature, maxOutputTokens, userApiKey);
+        return handleStream(model, messages, temperature, maxOutputTokens, userApiKey);
       }
       const result = await tryGenerateText(
-        provider,
         model,
         messages,
         temperature,
@@ -104,17 +103,10 @@ export const handler = async (event: any) => {
     }
 
     if (stream) {
-      return handleStream(provider, model, messages, temperature, maxOutputTokens, apiKey);
+      return handleStream(model, messages, temperature, maxOutputTokens, apiKey);
     }
 
-    const result = await tryGenerateText(
-      provider,
-      model,
-      messages,
-      temperature,
-      maxOutputTokens,
-      apiKey,
-    );
+    const result = await tryGenerateText(model, messages, temperature, maxOutputTokens, apiKey);
 
     if (result.success) {
       return {
@@ -138,10 +130,9 @@ export const handler = async (event: any) => {
       const savedKey = await getUserKey(user.sub, provider);
       if (savedKey && savedKey !== apiKey) {
         if (stream) {
-          return handleStream(provider, model, messages, temperature, maxOutputTokens, savedKey);
+          return handleStream(model, messages, temperature, maxOutputTokens, savedKey);
         }
         const retryResult = await tryGenerateText(
-          provider,
           model,
           messages,
           temperature,
@@ -201,7 +192,6 @@ export const handler = async (event: any) => {
 };
 
 async function handleStream(
-  _provider: string,
   model: string | undefined,
   messages: any[],
   temperature: number | undefined,
@@ -235,7 +225,6 @@ async function handleStream(
 }
 
 async function tryGenerateText(
-  _provider: string,
   model: string | undefined,
   messages: any[],
   temperature: number | undefined,

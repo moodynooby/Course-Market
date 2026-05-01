@@ -1,4 +1,4 @@
-import { apiClient } from './apiClient';
+import { api } from './apiClient';
 
 export interface OptimizationCacheEntry {
   id: number;
@@ -10,10 +10,11 @@ export interface OptimizationCacheEntry {
 }
 
 export const optimizationApi = {
-  async getCache(cacheKey: string): Promise<OptimizationCacheEntry | null> {
+  async getCache(cacheKey: string, token?: string): Promise<OptimizationCacheEntry | null> {
     try {
-      const response = await apiClient.get<OptimizationCacheEntry>(
-        `/.netlify/functions/optimization?cacheKey=${encodeURIComponent(cacheKey)}`,
+      const response = await api.get<OptimizationCacheEntry>(
+        `/optimization?cacheKey=${encodeURIComponent(cacheKey)}`,
+        token,
       );
       return response;
     } catch (error: any) {
@@ -24,11 +25,15 @@ export const optimizationApi = {
     }
   },
 
-  async saveCache(cacheKey: string, analysis: string, actions: any): Promise<void> {
-    await apiClient.post('/.netlify/functions/optimization', {
-      cacheKey,
-      analysis,
-      actions,
-    });
+  async saveCache(cacheKey: string, analysis: string, actions: any, token?: string): Promise<void> {
+    await api.post(
+      '/optimization',
+      {
+        cacheKey,
+        analysis,
+        actions,
+      },
+      token,
+    );
   },
 };

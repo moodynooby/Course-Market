@@ -70,85 +70,6 @@ ${alternativesInfo}
 Your analysis should be concise but thorough.`;
 }
 
-export function buildScheduleAnalysisPrompt(
-  schedule: Schedule,
-  preferences: Preferences,
-  allSections?: Section[],
-): string {
-  if (!schedule?.sections) {
-    return 'Analyze this course schedule and provide recommendations.';
-  }
-
-  const sectionsInfo = schedule.sections
-    .map(
-      (s) => `- ${s.courseId}: Section ${s.sectionNumber} (Instructor: ${s.instructor || 'TBA'})`,
-    )
-    .join('\n');
-
-  const timeSlotsInfo = schedule.sections
-    .map((s) => {
-      const times = s.timeSlots?.map((t) => `${t.day} ${t.startTime}-${t.endTime}`).join(', ');
-      return `- ${s.courseId}: ${times || 'TBA'}`;
-    })
-    .join('\n');
-
-  let availableSectionsInfo = '';
-  if (allSections && allSections.length > 0) {
-    const currentCourseIds = new Set(schedule.sections.map((s) => s.courseId));
-
-    const sectionsByCourse = new Map<string, Section[]>();
-    allSections.forEach((s) => {
-      if (currentCourseIds.has(s.courseId)) {
-        const existing = sectionsByCourse.get(s.courseId) || [];
-        if (existing.length < 5) {
-          existing.push(s);
-          sectionsByCourse.set(s.courseId, existing);
-        }
-      }
-    });
-
-    if (sectionsByCourse.size > 0) {
-      availableSectionsInfo = '\n### Available Alternative Sections\n';
-      availableSectionsInfo += '| Course | Section | Instructor | Time Slots |\n';
-      availableSectionsInfo += '|:-------|:--------|:-----------|:-----------|\n';
-
-      sectionsByCourse.forEach((sections, courseId) => {
-        sections.forEach((s) => {
-          const timeStr =
-            s.timeSlots?.map((t) => `${t.day} ${t.startTime}-${t.endTime}`).join(', ') || 'TBA';
-          availableSectionsInfo += `| ${courseId} | ${s.sectionNumber} | ${s.instructor || 'TBA'} | ${timeStr} |\n`;
-        });
-      });
-    }
-  }
-
-  return `You are a helpful academic advisor assistant. Analyze the provided schedule against the user's preferences and provide concise, actionable recommendations in markdown format.
-
-## Current Schedule Details
-- **Total Credits**: ${schedule.totalCredits ?? 0}
-- **Score**: ${schedule.score ?? 0}/100
-- **Sections**:
-${sectionsInfo}
-
-## Weekly Time Slots
-${timeSlotsInfo}
-${availableSectionsInfo}
-
-## User Preferences
-- **Preferred Time Range**: ${preferences?.preferredStartTime || '08:00'} - ${preferences?.preferredEndTime || '17:00'}
-- **Maximum Gap**: ${preferences?.maxGapMinutes || 60} minutes
-- **Preference**: ${preferences?.preferMorning ? 'Morning classes' : preferences?.preferAfternoon ? 'Afternoon classes' : 'No specific time preference'}
-- **Avoid Days**: ${preferences?.avoidDays?.join(', ') || 'None'}
-
-## Instructions
-Provide your analysis using this Markdown structure:
-1. **Assessment**: A 1-2 sentence verdict on whether this schedule is well-optimized.
-2. **Strengths**: Bullet points of what fits the user's preferences well.
-3. **Improvements**: Bullet points of specific issues or conflicts with preferences.
-4. **Recommendations**: If better alternatives exist, provide a table comparing the current vs suggested section with a brief reason.
-5. **Actionable Tips**: 1-2 specific tips for the user.`;
-}
-
 export function buildTradeMessagePrompt(trade: TradePost): string {
   return `You are a helpful assistant assisting a student with trading a course section.
 
@@ -441,11 +362,10 @@ class UnifiedLLMService {
   private isFallbackMode = false;
   private lastInitPromise: Promise<boolean> | null = null;
   private config: BYOKConfig = DEFAULT_LLM_CONFIG;
-  private analysisCache: Map<string, string> = new Map();
   private token: string | null = null;
 
-  setToken(token: string) {
-    this.token = token;
+  setToken(token: string | null | undefined) {
+    this.token = token || null;
   }
 
   async initialize(config?: Partial<BYOKConfig>, task: LLMTask = 'DEFAULT'): Promise<boolean> {
@@ -683,21 +603,6 @@ class UnifiedLLMService {
     return data.text || 'No response generated';
   }
 
-  async analyzeSchedule(
-    schedule: Schedule,
-    preferences: Preferences,
-    allSections?: Section[],
-  ): Promise<string> {
-    const cacheKey = `${schedule.id}-${JSON.stringify(preferences)}`;
-    if (this.analysisCache.has(cacheKey)) return this.analysisCache.get(cacheKey)!;
-
-    const result = await this.generateCompletion(
-      buildScheduleAnalysisPrompt(schedule, preferences, allSections),
-    );
-    this.analysisCache.set(cacheKey, result);
-    return result;
-  }
-
   async draftTradeMessage(trade: TradePost): Promise<string> {
     const prompt = buildTradeMessagePrompt(trade);
     return this.generateCompletion(prompt);
@@ -712,7 +617,6 @@ class UnifiedLLMService {
   }
 
   async destroy(): Promise<void> {
-    this.analysisCache.clear();
     this.isInitialized = false;
     this.isFallbackMode = false;
   }
@@ -720,67 +624,10 @@ class UnifiedLLMService {
 
 export const llmService = new UnifiedLLMService();
 
-export async function optimizeWithLLM(
-  schedules: Schedule[],
-  preferences: Preferences,
-  token: string,
-  courses: Course[],
-  sectionsByCourse: Map<string, Section[]>,
-  config?: Partial<BYOKConfig>,
-): Promise<{
-  schedules: Schedule[];
-  bestSchedule: Schedule | null;
-  aiAnalysis: string;
-  alternatives: GeneratedSchedule[];
-}> {
-  llmService.setToken(token);
-  await llmService.initialize(config, 'OPTIMIZE');
-
-  if (!llmService.isReady()) {
-    throw new Error('LLM not available or not initialized');
-  }
-
-  if (schedules.length === 0) {
-    return {
-      schedules,
-      bestSchedule: null,
-      aiAnalysis: 'No schedules to optimize',
-      alternatives: [],
-    };
-  }
-
-  const alternatives = generateSchedules(courses, sectionsByCourse, preferences, {
-    maxSchedules: 10,
-  });
-  const currentSectionsKey = schedules[0].sections
-    .map((s) => s.id)
-    .sort()
-    .join(',');
-  const filteredAlternatives = alternatives
-    .filter((a) => {
-      const aKey = a.sections
-        .map((s) => s.id)
-        .sort()
-        .join(',');
-      return aKey !== currentSectionsKey;
-    })
-    .slice(0, 3);
-
-  const prompt = buildAgenticOptimizationPrompt(schedules[0], filteredAlternatives, preferences);
-  const analysis = await llmService.generateCompletion(prompt);
-
-  return {
-    schedules,
-    bestSchedule: schedules[0] || null,
-    aiAnalysis: analysis,
-    alternatives: filteredAlternatives,
-  };
-}
-
 export async function* optimizeWithLLMStream(
   schedules: Schedule[],
   preferences: Preferences,
-  token: string,
+  token: string | null | undefined,
   courses: Course[],
   sectionsByCourse: Map<string, Section[]>,
   config?: Partial<BYOKConfig>,

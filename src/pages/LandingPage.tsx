@@ -220,7 +220,7 @@ export default function LandingPage() {
 
       // Check persistent cache
       try {
-        const cached = await optimizationApi.getCache(cacheKey);
+        const cached = await optimizationApi.getCache(cacheKey, token);
         if (cached) {
           setAiAnalysis(cached.analysis);
           if (cached.actions?.suggestedAction) {
@@ -239,7 +239,7 @@ export default function LandingPage() {
       const stream = optimizeWithLLMStream(
         [schedule],
         preferences,
-        token || '',
+        token,
         allCourses,
         sectionsByCourse,
         {
@@ -291,10 +291,15 @@ export default function LandingPage() {
 
       // Save to persistent cache
       try {
-        await optimizationApi.saveCache(cacheKey, fullAnalysis, {
-          suggestedAction: action,
-          alternatives,
-        });
+        await optimizationApi.saveCache(
+          cacheKey,
+          fullAnalysis,
+          {
+            suggestedAction: action,
+            alternatives,
+          },
+          token,
+        );
       } catch (saveErr) {
         console.warn('Failed to save optimization to cache', saveErr);
       }
@@ -469,7 +474,7 @@ export default function LandingPage() {
               width: 100,
               height: 100,
               borderRadius: '50%',
-              bgcolor: alpha(theme.palette.secondary?.main || theme.palette.secondary.main, 0.1),
+              bgcolor: alpha(theme.palette.secondary.main, 0.1),
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -483,7 +488,7 @@ export default function LandingPage() {
                 width: 50,
                 height: 50,
                 borderRadius: '50%',
-                bgcolor: alpha(theme.palette.secondary?.main || theme.palette.secondary.main, 0.3),
+                bgcolor: alpha(theme.palette.secondary.main, 0.3),
                 filter: 'blur(12px)',
                 position: 'absolute',
               }}
@@ -597,7 +602,7 @@ export default function LandingPage() {
                   width: 40,
                   height: 40,
                   borderRadius: '50%',
-                  bgcolor: alpha(theme.palette.secondary?.main || theme.palette.warning.main, 0.1),
+                  bgcolor: alpha(theme.palette.secondary.main, 0.1),
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
