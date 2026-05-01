@@ -8,7 +8,6 @@ import {
   type BYOKConfig,
 } from '../utils/constants';
 import { env } from '../utils/env';
-import type { GeneratedSchedule } from '../utils/schedule-types';
 
 export function buildScheduleAnalysisPrompt(
   schedule: Schedule,

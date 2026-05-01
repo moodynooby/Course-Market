@@ -83,7 +83,7 @@ import lockIcon from '../assets/3dicons-locker-dynamic-premium.png';
 import logoIcon from '../assets/logo.png';
 export default function Layout() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const theme = useTheme();
+  const _theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const { mode, setMode } = useThemeMode();

@@ -39,6 +39,16 @@ const scheduleSearchOptions = {
   },
 };
 
+/**
+ * Search results from MiniSearch
+ */
+interface MiniSearchResult {
+  id: string;
+  score: number;
+  match: Record<string, string[]>;
+  [key: string]: any;
+}
+
 let courseIndex: MiniSearch | null = null;
 const courseMap = new Map<string, Course>();
 
@@ -68,8 +78,8 @@ export const buildCourseIndex = (courses: Course[], _sections: Section[]) => {
  */
 export const searchCourses = (query: string): string[] => {
   if (!courseIndex || !query.trim()) return [];
-  const results = courseIndex.search(query);
-  return results.map((r: any) => r.id as string);
+  const results = courseIndex.search(query) as unknown as MiniSearchResult[];
+  return results.map((r) => r.id);
 };
 
 /**
@@ -81,14 +91,14 @@ export const searchTrades = (trades: TradePost[], query: string): TradePost[] =>
   const tradeIndex = new MiniSearch(tradeSearchOptions);
   tradeIndex.addAll(trades);
 
-  const results = tradeIndex.search(query);
-  const resultIds = new Set(results.map((r: any) => r.id));
+  const results = tradeIndex.search(query) as unknown as MiniSearchResult[];
+  const resultIds = new Set(results.map((r) => r.id));
 
   return trades
     .filter((t) => resultIds.has(t.id))
     .sort((a, b) => {
-      const scoreA = results.find((r: any) => r.id === a.id)?.score || 0;
-      const scoreB = results.find((r: any) => r.id === b.id)?.score || 0;
+      const scoreA = results.find((r) => r.id === a.id)?.score || 0;
+      const scoreB = results.find((r) => r.id === b.id)?.score || 0;
       return scoreB - scoreA;
     });
 };
@@ -172,9 +182,9 @@ export const searchSchedules = (schedules: GeneratedSchedule[], query: string): 
   });
 
   scheduleIndex.addAll(documents);
-  const results = scheduleIndex.search(query);
+  const results = scheduleIndex.search(query) as unknown as MiniSearchResult[];
 
-  return results.map((r: any) => {
+  return results.map((r) => {
     const schedule = schedules.find((s) => s.id === r.id)!;
     return {
       schedule,
