@@ -1,5 +1,5 @@
 import type { Course, Preferences, Schedule, Section } from '../types';
-import { calculateScheduleScore, hasSectionConflict } from './schedule';
+import { calculateScheduleScore, createScoringContext, hasSectionConflict } from './schedule';
 import type { GeneratedSchedule, GeneratorOptions, ScheduleCluster } from './schedule-types';
 
 function* generateValidCombinations(
@@ -56,6 +56,9 @@ export function generateSchedules(
   let count = 0;
   let iterations = 0;
 
+  // Pre-create scoring context to avoid redundant calculations in the loop
+  const scoringContext = createScoringContext(preferences);
+
   for (const combination of generateValidCombinations(sectionArrays)) {
     iterations++;
     if (onProgress && iterations % 100 === 0) {
@@ -81,7 +84,7 @@ export function generateSchedules(
       conflicts: [],
     };
 
-    const score = calculateScheduleScore(schedule, preferences);
+    const score = calculateScheduleScore(schedule, preferences, scoringContext);
 
     schedules.push({
       id: schedule.id,
