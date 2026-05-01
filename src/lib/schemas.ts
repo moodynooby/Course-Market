@@ -67,6 +67,7 @@ export const llmRequestSchema = z.object({
   maxOutputTokens: z.number().min(1).max(32000).optional(),
   saveKey: z.boolean().optional(),
   userApiKey: z.string().optional(),
+  stream: z.boolean().optional(),
 });
 
 export type LlmRequest = z.infer<typeof llmRequestSchema>;

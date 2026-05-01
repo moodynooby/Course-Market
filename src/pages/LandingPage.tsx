@@ -65,6 +65,11 @@ export default function LandingPage() {
   const [searching, setSearching] = useState(false);
   const [showConflicting, setShowConflicting] = useState(false);
 
+  const [_optimizationAlternatives, setOptimizationAlternatives] = useState<GeneratedSchedule[]>(
+    [],
+  );
+  const [suggestedAction, setSuggestedAction] = useState<{ type: string; value: any } | null>(null);
+
   const loadScheduleFromSelections = useCallback((courses: Course[], sections: Section[]) => {
     const selections = storage.get<Record<string, string>>(STORAGE_KEYS.COURSE_SELECTIONS, {});
 
@@ -185,15 +190,58 @@ export default function LandingPage() {
     setOptimizing(true);
     setError('');
     setInitProgress('');
+    setAiAnalysis('');
+    setOptimizationAlternatives([]);
+    setSuggestedAction(null);
 
     try {
-      const { optimizeWithLLM } = await import('../services/llm');
+      const { optimizeWithLLMStream } = await import('../services/llm');
+      const { optimizationApi } = await import('../services/optimizationApi');
       const token = await getToken();
 
-      const result = await optimizeWithLLM(
+      // Prepare sectionsByCourse for relevant courses
+      const selectedCourseIds = new Set(schedule.sections.map((s) => s.courseId));
+      const relevantSections = allSections.filter((s) => selectedCourseIds.has(s.courseId));
+
+      const sectionsByCourse = new Map<string, Section[]>();
+      relevantSections.forEach((section) => {
+        const existing = sectionsByCourse.get(section.courseId) || [];
+        existing.push(section);
+        sectionsByCourse.set(section.courseId, existing);
+      });
+
+      // Generate cache key (hash of schedule sections and preferences)
+      const selectionsKey = schedule.sections
+        .map((s) => s.id)
+        .sort()
+        .join(',');
+      const prefsKey = JSON.stringify(preferences);
+      const cacheKey = btoa(`${selectionsKey}|${prefsKey}`);
+
+      // Check persistent cache
+      try {
+        const cached = await optimizationApi.getCache(cacheKey);
+        if (cached) {
+          setAiAnalysis(cached.analysis);
+          if (cached.actions?.suggestedAction) {
+            setSuggestedAction(cached.actions.suggestedAction);
+          }
+          if (cached.actions?.alternatives) {
+            setOptimizationAlternatives(cached.actions.alternatives);
+          }
+          setOptimizing(false);
+          return;
+        }
+      } catch (cacheErr) {
+        console.warn('Cache check failed, proceeding with fresh optimization', cacheErr);
+      }
+
+      const stream = optimizeWithLLMStream(
         [schedule],
         preferences,
         token || '',
+        allCourses,
+        sectionsByCourse,
         {
           provider: llmConfig.provider as 'webllm' | 'groq',
           model: llmConfig.model,
@@ -203,23 +251,53 @@ export default function LandingPage() {
             setInitProgress(`${report.text} (${Math.round(report.progress * 100)}%)`);
           },
         },
-        allSections,
       );
 
-      if (result.bestSchedule) {
-        setSchedule(result.bestSchedule);
-        const selections = result.bestSchedule.sections.reduce(
-          (acc, section) => {
-            acc[section.courseId] = section.id;
-            return acc;
-          },
-          {} as Record<string, string>,
-        );
-        storage.set(STORAGE_KEYS.COURSE_SELECTIONS, selections);
-        window.dispatchEvent(new Event('storage'));
+      let fullAnalysis = '';
+      let alternatives: GeneratedSchedule[] = [];
+
+      for await (const part of stream) {
+        if (part.alternatives) {
+          setOptimizationAlternatives(part.alternatives);
+          alternatives = part.alternatives;
+        }
+        if (part.chunk) {
+          setAiAnalysis((prev) => prev + part.chunk);
+          fullAnalysis += part.chunk;
+        }
+        if (part.fullAnalysis) {
+          fullAnalysis = part.fullAnalysis;
+        }
       }
 
-      setAiAnalysis(result.aiAnalysis || 'Schedule optimized successfully.');
+      // Parse actions from full analysis
+      let action: { type: string; value: any } | null = null;
+      if (fullAnalysis.includes('ACTION: APPLY_SCHEDULE')) {
+        const match = fullAnalysis.match(/ACTION: APPLY_SCHEDULE\s*(\d+)/);
+        if (match) {
+          const idx = parseInt(match[1]) - 1;
+          if (alternatives[idx]) {
+            action = { type: 'APPLY_SCHEDULE', value: alternatives[idx] };
+          }
+        }
+      } else if (fullAnalysis.includes('ACTION: UPDATE_PREFERENCES')) {
+        const match = fullAnalysis.match(/ACTION: UPDATE_PREFERENCES\s*(.*)/);
+        if (match) {
+          action = { type: 'UPDATE_PREFERENCES', value: match[1] };
+        }
+      }
+
+      setSuggestedAction(action);
+
+      // Save to persistent cache
+      try {
+        await optimizationApi.saveCache(cacheKey, fullAnalysis, {
+          suggestedAction: action,
+          alternatives,
+        });
+      } catch (saveErr) {
+        console.warn('Failed to save optimization to cache', saveErr);
+      }
     } catch (err) {
       const error = err as Error & { code?: string };
       if (error.code === 'KEY_REQUIRED') {
@@ -229,6 +307,17 @@ export default function LandingPage() {
       }
     } finally {
       setOptimizing(false);
+    }
+  };
+
+  const handleExecuteAction = async () => {
+    if (!suggestedAction) return;
+
+    if (suggestedAction.type === 'APPLY_SCHEDULE') {
+      handleApplySchedule(suggestedAction.value);
+      setSuggestedAction(null);
+    } else if (suggestedAction.type === 'UPDATE_PREFERENCES') {
+      navigate('/settings');
     }
   };
 
@@ -570,8 +659,10 @@ export default function LandingPage() {
                   initProgress={initProgress}
                   error={error}
                   webllmAvailable={webllmAvailable}
+                  suggestedAction={suggestedAction}
                   onOptimize={handleOptimize}
                   onGenerateAll={handleGenerateAll}
+                  onExecuteAction={handleExecuteAction}
                   onWebgpuWarning={() => setWebgpuWarningOpen(true)}
                 />
               )}

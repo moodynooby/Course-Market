@@ -1,6 +1,6 @@
 import { webLLM } from '@browser-ai/web-llm';
-import { generateText } from 'ai';
-import type { Preferences, Schedule, Section, TradePost } from '../types';
+import { generateText, streamText } from 'ai';
+import type { Preferences, Schedule, Section, TradePost, Course } from '../types';
 import {
   DEFAULT_LLM_CONFIG,
   getDefaultModel,
@@ -9,6 +9,66 @@ import {
 } from '../utils/constants';
 import { env } from '../utils/env';
 import type { GeneratedSchedule, ScheduleRank } from '../utils/schedule-types';
+import { generateSchedules } from '../utils/schedule-generator';
+
+export function buildAgenticOptimizationPrompt(
+  currentSchedule: Schedule,
+  alternatives: GeneratedSchedule[],
+  preferences: Preferences,
+): string {
+  const formatSchedule = (s: Schedule | GeneratedSchedule, idx: number | string) => {
+    const sections = s.sections
+      .map(
+        (sec) =>
+          `- ${sec.courseId}: ${sec.sectionNumber} (${sec.instructor || 'TBA'}) - ${sec.timeSlots.map((t) => `${t.day} ${t.startTime}-${t.endTime}`).join(', ')}`,
+      )
+      .join('\n');
+    return `### Schedule ${idx} (Score: ${s.score}/100)\n${sections}`;
+  };
+
+  const alternativesInfo = alternatives
+    .slice(0, 3)
+    .map((s, i) => formatSchedule(s, i + 1))
+    .join('\n\n');
+
+  const preferencesText = [
+    preferences.preferMorning && 'Prefers morning classes',
+    preferences.preferAfternoon && 'Prefers afternoon classes',
+    preferences.avoidDays.length > 0 && `Avoids classes on ${preferences.avoidDays.join(', ')}`,
+    `Preferred time range: ${preferences.preferredStartTime} - ${preferences.preferredEndTime}`,
+    preferences.maxGapMinutes > 0 &&
+      `Maximum gap between classes: ${preferences.maxGapMinutes} minutes`,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  return `You are an expert agentic academic advisor. Your goal is to analyze the student's current schedule, compare it with alternative options, and recommend the best course of action.
+
+## Student Preferences
+${preferencesText}
+
+## Current Schedule
+${formatSchedule(currentSchedule, 'CURRENT')}
+
+## Alternative Options
+${alternativesInfo}
+
+## Instructions
+1. **Analyze**: Compare the current schedule with the alternatives based on preferences.
+2. **Evaluate**: Check if any alternative is significantly better (higher score, better fit for morning/afternoon, fewer gaps).
+3. **Recommend**: Suggest whether to keep the current schedule or switch to one of the alternatives.
+4. **Agentic Actions**: If you find a better alternative or see a way to improve the schedule by adjusting preferences, output a specific action code at the end.
+
+## Response Format
+- Start with a clear analysis of the options.
+- Use Markdown for formatting.
+- End your response with exactly ONE of these action blocks if a change is recommended:
+  - \`ACTION: APPLY_SCHEDULE [N]\` where [N] is the number of the alternative (1-3).
+  - \`ACTION: UPDATE_PREFERENCES [REASON]\` if you think the user's preferences are too restrictive or could be improved.
+  - If no action is needed, omit this block.
+
+Your analysis should be concise but thorough.`;
+}
 
 export function buildScheduleAnalysisPrompt(
   schedule: Schedule,
@@ -500,6 +560,86 @@ class UnifiedLLMService {
     }
   }
 
+  async *generateCompletionStream(prompt: string, systemPrompt?: string): AsyncGenerator<string> {
+    try {
+      if (this.config.provider === 'webllm' && !this.isFallbackMode) {
+        try {
+          const { textStream } = await streamText({
+            model: await this.getModel(),
+            prompt,
+            system: systemPrompt,
+            temperature: this.config.temperature,
+          });
+          for await (const chunk of textStream) {
+            yield chunk;
+          }
+          return;
+        } catch (error) {
+          if (env.IS_DEV) console.error('WebLLM stream failed, trying cloud fallback:', error);
+          this.isFallbackMode = true;
+          this.config.provider = 'groq';
+          this.config.model = getDefaultModel('groq');
+        }
+      }
+
+      const { model, temperature, maxTokens } = this.config;
+      if (!this.token) throw new Error('Authentication required for cloud AI');
+
+      const messages = [];
+      if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+      messages.push({ role: 'user', content: prompt });
+
+      const response = await fetch('/.netlify/functions/llm-proxy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.token}`,
+        },
+        body: JSON.stringify({
+          provider: 'groq',
+          model,
+          messages,
+          temperature,
+          maxOutputTokens: maxTokens,
+          stream: true,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || errorData.error || `Cloud AI error (${response.status})`,
+        );
+      }
+
+      if (!response.body) throw new Error('No response body');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+
+        const lines = chunk.split('\n').filter((line) => line.trim());
+        for (const line of lines) {
+          if (line.startsWith('0:')) {
+            try {
+              const content = JSON.parse(line.substring(2));
+              yield content;
+            } catch (_e) {
+              // Ignore parse errors for partial chunks
+            }
+          }
+        }
+      }
+    } catch (error) {
+      if (env.IS_DEV) console.error('LLM stream failed:', error);
+      throw error;
+    }
+  }
+
   private async callExternalAPI(prompt: string, systemPrompt?: string): Promise<string> {
     const { model, temperature, maxTokens } = this.config;
 
@@ -584,12 +724,14 @@ export async function optimizeWithLLM(
   schedules: Schedule[],
   preferences: Preferences,
   token: string,
+  courses: Course[],
+  sectionsByCourse: Map<string, Section[]>,
   config?: Partial<BYOKConfig>,
-  allSections?: Section[],
 ): Promise<{
   schedules: Schedule[];
   bestSchedule: Schedule | null;
   aiAnalysis: string;
+  alternatives: GeneratedSchedule[];
 }> {
   llmService.setToken(token);
   await llmService.initialize(config, 'OPTIMIZE');
@@ -603,16 +745,90 @@ export async function optimizeWithLLM(
       schedules,
       bestSchedule: null,
       aiAnalysis: 'No schedules to optimize',
+      alternatives: [],
     };
   }
 
-  const analysis = await llmService.analyzeSchedule(schedules[0], preferences, allSections);
+  const alternatives = generateSchedules(courses, sectionsByCourse, preferences, {
+    maxSchedules: 10,
+  });
+  const currentSectionsKey = schedules[0].sections
+    .map((s) => s.id)
+    .sort()
+    .join(',');
+  const filteredAlternatives = alternatives
+    .filter((a) => {
+      const aKey = a.sections
+        .map((s) => s.id)
+        .sort()
+        .join(',');
+      return aKey !== currentSectionsKey;
+    })
+    .slice(0, 3);
+
+  const prompt = buildAgenticOptimizationPrompt(schedules[0], filteredAlternatives, preferences);
+  const analysis = await llmService.generateCompletion(prompt);
 
   return {
     schedules,
     bestSchedule: schedules[0] || null,
     aiAnalysis: analysis,
+    alternatives: filteredAlternatives,
   };
+}
+
+export async function* optimizeWithLLMStream(
+  schedules: Schedule[],
+  preferences: Preferences,
+  token: string,
+  courses: Course[],
+  sectionsByCourse: Map<string, Section[]>,
+  config?: Partial<BYOKConfig>,
+): AsyncGenerator<{
+  chunk?: string;
+  alternatives?: GeneratedSchedule[];
+  fullAnalysis?: string;
+}> {
+  llmService.setToken(token);
+  await llmService.initialize(config, 'OPTIMIZE');
+
+  if (!llmService.isReady()) {
+    throw new Error('LLM not available or not initialized');
+  }
+
+  if (schedules.length === 0) {
+    yield { chunk: 'No schedules to optimize' };
+    return;
+  }
+
+  const alternatives = generateSchedules(courses, sectionsByCourse, preferences, {
+    maxSchedules: 10,
+  });
+  const currentSectionsKey = schedules[0].sections
+    .map((s) => s.id)
+    .sort()
+    .join(',');
+  const filteredAlternatives = alternatives
+    .filter((a) => {
+      const aKey = a.sections
+        .map((s) => s.id)
+        .sort()
+        .join(',');
+      return aKey !== currentSectionsKey;
+    })
+    .slice(0, 3);
+
+  yield { alternatives: filteredAlternatives };
+
+  const prompt = buildAgenticOptimizationPrompt(schedules[0], filteredAlternatives, preferences);
+
+  let fullAnalysis = '';
+  for await (const chunk of llmService.generateCompletionStream(prompt)) {
+    fullAnalysis += chunk;
+    yield { chunk };
+  }
+
+  yield { fullAnalysis };
 }
 
 export default llmService;

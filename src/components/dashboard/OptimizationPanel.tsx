@@ -1,5 +1,5 @@
 import { Box, Button, Card, LinearProgress, Stack, Typography } from '@mui/material';
-import { Psychology, GridView } from '@mui/icons-material';
+import { Psychology, GridView, AutoAwesome } from '@mui/icons-material';
 import type { Schedule } from '../../types';
 
 interface OptimizationPanelProps {
@@ -10,8 +10,10 @@ interface OptimizationPanelProps {
   initProgress: string;
   error: string;
   webllmAvailable: boolean;
+  suggestedAction?: { type: string; value: any } | null;
   onOptimize: () => void;
   onGenerateAll: () => void;
+  onExecuteAction?: () => void;
   onWebgpuWarning: () => void;
 }
 
@@ -23,8 +25,10 @@ export function OptimizationPanel({
   initProgress,
   error,
   webllmAvailable,
+  suggestedAction,
   onOptimize,
   onGenerateAll,
+  onExecuteAction,
   onWebgpuWarning,
 }: OptimizationPanelProps) {
   return (
@@ -81,6 +85,31 @@ export function OptimizationPanel({
         >
           {optimizing ? 'Optimizing...' : 'Optimize with AI'}
         </Button>
+
+        {suggestedAction && (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={onExecuteAction}
+            startIcon={<AutoAwesome />}
+            fullWidth
+            sx={{
+              borderRadius: 3,
+              py: 1.5,
+              fontWeight: 700,
+              animation: 'pulse 2s infinite',
+              '@keyframes pulse': {
+                '0%': { boxShadow: '0 0 0 0 rgba(25, 118, 210, 0.4)' },
+                '70%': { boxShadow: '0 0 0 10px rgba(25, 118, 210, 0)' },
+                '100%': { boxShadow: '0 0 0 0 rgba(25, 118, 210, 0)' },
+              },
+            }}
+          >
+            {suggestedAction.type === 'APPLY_SCHEDULE'
+              ? 'Apply Suggested Schedule'
+              : 'Update Preferences'}
+          </Button>
+        )}
 
         <Button
           variant="outlined"

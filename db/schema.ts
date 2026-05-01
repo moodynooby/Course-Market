@@ -1,4 +1,13 @@
-import { boolean, jsonb, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  jsonb,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  varchar,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
 
 export const trades = pgTable('trades', {
   id: serial('id').primaryKey(),
@@ -61,3 +70,24 @@ export const semesters = pgTable('semesters', {
 
 export type Semester = typeof semesters.$inferSelect;
 export type NewSemester = typeof semesters.$inferInsert;
+
+// LLM Optimization Cache
+export const optimizationCache = pgTable(
+  'optimization_cache',
+  {
+    id: serial('id').primaryKey(),
+    auth0UserId: varchar('auth0_user_id', { length: 255 }).notNull(),
+    cacheKey: text('cache_key').notNull(), // Hash of schedule + preferences
+    analysis: text('analysis').notNull(),
+    actions: jsonb('actions'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => {
+    return {
+      userCacheKeyIdx: uniqueIndex('user_cache_key_idx').on(table.auth0UserId, table.cacheKey),
+    };
+  },
+);
+
+export type OptimizationCache = typeof optimizationCache.$inferSelect;
+export type NewOptimizationCache = typeof optimizationCache.$inferInsert;
