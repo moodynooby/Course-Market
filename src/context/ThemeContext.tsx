@@ -1,7 +1,7 @@
 import { CssBaseline, ThemeProvider as MuiThemeProvider } from '@mui/material';
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
-import { useConfigContext } from './ConfigContext';
 import { createAppTheme } from '../theme';
+import { useConfigContext } from './ConfigContext';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 

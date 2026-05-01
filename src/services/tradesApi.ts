@@ -1,5 +1,5 @@
-import type { TradePost } from '../types';
 import type { TradeInput, TradeUpdateInput } from '../lib/schemas';
+import type { TradePost } from '../types';
 import { api } from './apiClient';
 
 export async function getTrades(token: string): Promise<TradePost[]> {

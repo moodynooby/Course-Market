@@ -1,5 +1,5 @@
-import { Box, Button, Card, Stack, Typography, alpha, useTheme } from '@mui/material';
 import { ArrowForward } from '@mui/icons-material';
+import { alpha, Box, Button, Card, Stack, Typography, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import type { Course, Section } from '../../types';
 

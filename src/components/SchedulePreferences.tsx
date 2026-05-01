@@ -1,5 +1,6 @@
-import { CalendarToday, RemoveCircleOutlined, School, Save, Timer } from '@mui/icons-material';
+import { CalendarToday, RemoveCircleOutlined, Save, School, Timer } from '@mui/icons-material';
 import {
+  alpha,
   Box,
   Button,
   Card,
@@ -13,10 +14,9 @@ import {
   Switch,
   TextField,
   Typography,
-  alpha,
   useTheme,
 } from '@mui/material';
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { DayOfWeek, Preferences } from '../types';
 
 interface SchedulePreferencesProps {

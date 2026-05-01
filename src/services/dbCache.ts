@@ -1,4 +1,4 @@
-import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import { type DBSchema, type IDBPDatabase, openDB } from 'idb';
 import type { Course, Section } from '../types';
 
 interface CourseMarketDB extends DBSchema {

@@ -11,8 +11,8 @@ import {
 } from '@mui/icons-material';
 import {
   Alert,
-  alpha,
   Avatar,
+  alpha,
   Box,
   Button,
   Card,
@@ -32,16 +32,17 @@ import {
 } from '@mui/material';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { formatZodError, tradeSchema } from '../lib/schemas';
+import { ApiError } from '../services/apiClient';
+import { searchTrades } from '../services/search';
 import {
   createTrade,
   deleteTrade,
   getTrades as fetchTrades,
   updateTrade,
 } from '../services/tradesApi';
-import { ApiError } from '../services/apiClient';
 import type { TradePost } from '../types';
 import { timeAgo } from '../utils';
-import { tradeSchema, formatZodError } from '../lib/schemas';
 
 const TradeCard = memo(function TradeCard({
   trade,
@@ -423,15 +424,7 @@ export default function TradingPage() {
   );
 
   const filteredTrades = useMemo(() => {
-    if (!search.trim()) return trades;
-    const lower = search.toLowerCase();
-    return trades.filter(
-      (t) =>
-        t.courseCode.toLowerCase().includes(lower) ||
-        t.courseName?.toLowerCase().includes(lower) ||
-        t.sectionOffered.toLowerCase().includes(lower) ||
-        t.sectionWanted.toLowerCase().includes(lower),
-    );
+    return searchTrades(trades, search);
   }, [trades, search]);
 
   // Reset visible count when search changes

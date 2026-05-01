@@ -24,14 +24,14 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
-import { PROVIDER_OPTIONS, STORAGE_KEYS } from '../utils/constants';
+import { SchedulePreferences } from '../components/SchedulePreferences';
+import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
 import { useThemeMode } from '../context/ThemeContext';
-import { useAuthContext } from '../context/AuthContext';
-import { getSemesters } from '../services/coursesApi';
 import { api } from '../services/apiClient';
+import { getSemesters } from '../services/coursesApi';
 import type { LLMProvider, Preferences, Semester } from '../types';
-import { SchedulePreferences } from '../components/SchedulePreferences';
+import { PROVIDER_OPTIONS, STORAGE_KEYS } from '../utils/constants';
 export default function SettingsPage() {
   const { user, profile, getToken, updateProfile } = useAuthContext();
   const { mode } = useThemeMode();
