@@ -19,8 +19,8 @@ import ApiKeyDialog from '../components/ApiKeyDialog';
 import { OptimizationPanel } from '../components/dashboard/OptimizationPanel';
 import { ScheduleOverview } from '../components/dashboard/ScheduleOverview';
 import { SelectedCoursesList } from '../components/dashboard/SelectedCoursesList';
+import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
-import { useAuth } from '../hooks/useAuth';
 import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
 import { buildCourseIndex } from '../services/search';
 import type { Course, Schedule, Section } from '../types';
@@ -37,7 +37,7 @@ const ScheduleExplorerDialog = lazy(() =>
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { getToken } = useAuth();
+  const { getToken } = useAuthContext();
   const { preferences, llmConfig, updateLlmConfig } = useConfigContext();
   const theme = useTheme();
 
