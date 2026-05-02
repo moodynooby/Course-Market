@@ -14,8 +14,8 @@ import {
 } from '@mui/material';
 import { useCallback, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useAuthContext } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
-import { useAuth } from '../hooks/useAuth';
 
 interface NavLinkProps {
   to: string;
@@ -87,7 +87,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { mode, setMode } = useThemeMode();
-  const { user, signOut, signIn } = useAuth();
+  const { user, signOut, signIn } = useAuthContext();
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);

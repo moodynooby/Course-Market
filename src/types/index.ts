@@ -82,11 +82,8 @@ export interface CalendarEvent {
 // Onboarding and User Profile types
 export interface UserProfile {
   auth0UserId: string;
-  displayName: string;
-  email: string;
   phone: string;
   semesterId?: string;
-  onboardingCompleted: boolean;
   preferences?: Preferences;
   createdAt: string;
   updatedAt: string;

@@ -5,21 +5,6 @@ export const phoneSchema = z
   .min(10, 'Phone number must be at least 10 digits')
   .regex(/^[\d\s\-+()]+$/, 'Invalid phone number format');
 
-export const emailSchema = z.string().email('Invalid email format');
-
-export const displayNameSchema = z
-  .string()
-  .min(1, 'Name is required')
-  .max(255, 'Name must be less than 255 characters');
-
-export const traderDetailsSchema = z.object({
-  displayName: displayNameSchema,
-  email: emailSchema,
-  phone: phoneSchema,
-});
-
-export type TraderDetails = z.infer<typeof traderDetailsSchema>;
-
 export const tradeSchema = z.object({
   courseCode: z.string().min(1, 'Course code is required').max(50),
   courseName: z.string().max(255).optional(),
@@ -41,12 +26,9 @@ export type TradeInput = z.infer<typeof tradeSchema>;
 export type TradeUpdateInput = z.infer<typeof tradeUpdateSchema>;
 
 export const userProfileSchema = z.object({
-  displayName: displayNameSchema,
-  email: emailSchema,
   phone: phoneSchema,
   semesterId: z.string().max(50).optional(),
   preferences: z.record(z.string(), z.unknown()).optional(),
-  onboardingCompleted: z.boolean().optional(),
 });
 
 export const userProfileUpdateSchema = userProfileSchema.partial();

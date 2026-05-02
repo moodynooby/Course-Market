@@ -73,13 +73,9 @@ export const handler = async (event: any) => {
         [profile] = await db
           .update(schema.userProfiles)
           .set({
-            displayName: requestBody.displayName ?? existingProfile.displayName,
-            email: requestBody.email ?? existingProfile.email,
             phone: requestBody.phone ?? existingProfile.phone,
             semesterId: requestBody.semesterId ?? existingProfile.semesterId,
             preferences: requestBody.preferences ?? existingProfile.preferences,
-            onboardingCompleted:
-              requestBody.onboardingCompleted ?? existingProfile.onboardingCompleted,
             updatedAt: new Date(),
           })
           .where(eq(schema.userProfiles.auth0UserId, user.sub))
@@ -90,12 +86,9 @@ export const handler = async (event: any) => {
           .insert(schema.userProfiles)
           .values({
             auth0UserId: user.sub,
-            displayName: requestBody.displayName,
-            email: requestBody.email,
             phone: requestBody.phone,
             semesterId: requestBody.semesterId || null,
             preferences: requestBody.preferences || null,
-            onboardingCompleted: requestBody.onboardingCompleted ?? false,
           })
           .returning();
       }

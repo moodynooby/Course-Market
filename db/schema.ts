@@ -1,4 +1,4 @@
-import { boolean, jsonb, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { jsonb, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
 
 export const trades = pgTable('trades', {
   id: serial('id').primaryKey(),
@@ -37,11 +37,8 @@ export type NewUserLlmKey = typeof userLlmKeys.$inferInsert;
 // User profiles for onboarding
 export const userProfiles = pgTable('user_profiles', {
   auth0UserId: varchar('auth0_user_id', { length: 255 }).primaryKey(),
-  displayName: varchar('user_display_name', { length: 255 }).notNull(),
-  email: varchar('user_email', { length: 255 }).notNull(),
   phone: varchar('contact_phone', { length: 20 }).notNull(),
   semesterId: varchar('semester_id', { length: 50 }),
-  onboardingCompleted: boolean('onboarding_completed').default(false).notNull(),
   preferences: jsonb('preferences'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

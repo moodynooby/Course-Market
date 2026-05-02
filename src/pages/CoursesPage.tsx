@@ -21,7 +21,7 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CourseCard } from '../components/CourseCard';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthContext } from '../context/AuthContext';
 import { useSemesterParser } from '../hooks/useSemesterParser';
 import { api } from '../services/apiClient';
 import { getSemesters } from '../services/coursesApi';
@@ -37,7 +37,7 @@ const SAVE_DEBOUNCE_MS = 500;
 const INITIAL_ESTIMATE_SIZE = 200;
 
 export default function CoursesPage() {
-  const { isAuthenticated, getToken } = useAuth();
+  const { isAuthenticated, getToken } = useAuthContext();
   const [courses, setCourses] = useState<Course[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [search, setSearch] = useState('');
