@@ -16,7 +16,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DayOfWeek, Preferences } from '../types';
 
 interface SchedulePreferencesProps {
@@ -114,6 +114,16 @@ export function SchedulePreferences({
   const [isValid, setIsValid] = useState(true);
   const [expanded, setExpanded] = useState(defaultExpanded);
 
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onSaveRef = useRef(onSave);
+  const preferencesRef = useRef(preferences);
+  const autoSaveRef = useRef(autoSave);
+
+  onSaveRef.current = onSave;
+  preferencesRef.current = preferences;
+  autoSaveRef.current = autoSave;
+
   // Validate on mount and when preferences change
   useEffect(() => {
     const validation = validatePreferences(preferences);
@@ -121,11 +131,12 @@ export function SchedulePreferences({
     setValidationErrors(validation.errors);
   }, [preferences]);
 
-  // Auto-save on preference change (debounced)
-  const handleSave = useCallback(async () => {
-    if (!onSave) return;
+  const performSave = useCallback(async () => {
+    const currentOnSave = onSaveRef.current;
+    const currentPreferences = preferencesRef.current;
+    if (!currentOnSave) return;
 
-    const validation = validatePreferences(preferences);
+    const validation = validatePreferences(currentPreferences);
     if (!validation.valid) {
       setValidationErrors(validation.errors);
       return;
@@ -133,29 +144,54 @@ export function SchedulePreferences({
 
     setSaving(true);
     try {
-      await onSave(preferences);
+      await currentOnSave(currentPreferences);
       setSaved(true);
-      if (!autoSave) {
-        setTimeout(() => setSaved(false), 3000);
+      if (!autoSaveRef.current) {
+        if (savedTimerRef.current) {
+          clearTimeout(savedTimerRef.current);
+        }
+        savedTimerRef.current = setTimeout(() => setSaved(false), 3000);
       }
     } catch (error) {
       console.error('Error saving preferences:', error);
     } finally {
       setSaving(false);
     }
-  }, [preferences, onSave, autoSave]);
+  }, []);
 
   useEffect(() => {
     if (!autoSave || !onSave) return;
 
-    const timer = setTimeout(() => {
+    const currentPreferences = preferences;
+    void currentPreferences;
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
       if (isValid) {
-        handleSave();
+        performSave();
       }
     }, 5000); // 5 second debounce
 
-    return () => clearTimeout(timer);
-  }, [handleSave, autoSave, onSave, isValid]);
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [preferences, autoSave, onSave, isValid, performSave]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      if (savedTimerRef.current) {
+        clearTimeout(savedTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleUpdate = <K extends keyof Preferences>(key: K, value: Preferences[K]) => {
     setPreferences((prev) => ({
@@ -193,6 +229,10 @@ export function SchedulePreferences({
     setSaved(false);
     setValidationErrors([]);
   };
+
+  const handleSaveClick = useCallback(() => {
+    performSave();
+  }, [performSave]);
 
   const showActions = !autoSave;
 
@@ -620,7 +660,7 @@ export function SchedulePreferences({
                 </Typography>
               )}
               <Button
-                onClick={handleSave}
+                onClick={handleSaveClick}
                 variant="contained"
                 color="secondary"
                 disabled={saving || saved || !isValid}
