@@ -2,8 +2,13 @@ import { z } from 'zod';
 
 export const phoneSchema = z
   .string()
-  .min(10, 'Phone number must be at least 10 digits')
-  .regex(/^[\d\s\-+()]+$/, 'Invalid phone number format');
+  .transform((val) => val.replace(/\D/g, ''))
+  .pipe(
+    z
+      .string()
+      .min(10, 'Phone number must be at least 10 digits')
+      .max(15, 'Phone number must be at most 15 digits'),
+  );
 
 export const tradeSchema = z.object({
   courseCode: z.string().min(1, 'Course code is required').max(50),

@@ -1,5 +1,13 @@
 import { useAuth0 } from '@auth0/auth0-react';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { ApiError, api } from '../services/apiClient';
 import type { UserProfile } from '../types';
 
@@ -38,6 +46,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const refreshProfilePromiseRef = useRef<Promise<void> | null>(null);
+  const updateProfilePromiseRef = useRef<Promise<void> | null>(null);
 
   const appUser = useMemo(
     () =>
@@ -79,20 +90,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return;
     }
 
-    try {
-      setLoading(true);
-      const token = await getToken();
-      const result = await api.get<{ profile: UserProfile }>('/user-profile', token);
-      setProfile(result.profile);
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 404) {
-        setProfile(null);
-      } else {
-        console.error('[AuthContext] Failed to refresh profile:', error);
-        setProfile(null);
+    if (refreshProfilePromiseRef.current) {
+      return refreshProfilePromiseRef.current;
+    }
+
+    const promise = (async () => {
+      try {
+        setLoading(true);
+        const token = await getToken();
+        const result = await api.get<{ profile: UserProfile }>('/user-profile', token);
+        setProfile(result.profile);
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) {
+          setProfile(null);
+        } else {
+          console.error('[AuthContext] Failed to refresh profile:', error);
+          setProfile(null);
+        }
+      } finally {
+        setLoading(false);
       }
+    })();
+
+    refreshProfilePromiseRef.current = promise;
+
+    try {
+      await promise;
     } finally {
-      setLoading(false);
+      refreshProfilePromiseRef.current = null;
     }
   }, [isAuthenticated, getToken]);
 
@@ -102,9 +127,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('Cannot update profile: not authenticated');
       }
 
-      const token = await getToken();
-      const result = await api.post<{ profile: UserProfile }>('/user-profile', updates, token);
-      setProfile(result.profile);
+      if (updateProfilePromiseRef.current) {
+        return updateProfilePromiseRef.current;
+      }
+
+      const promise = (async () => {
+        const token = await getToken();
+        const result = await api.post<{ profile: UserProfile }>('/user-profile', updates, token);
+        setProfile(result.profile);
+      })();
+
+      updateProfilePromiseRef.current = promise;
+
+      try {
+        await promise;
+      } finally {
+        updateProfilePromiseRef.current = null;
+      }
     },
     [isAuthenticated, getToken],
   );

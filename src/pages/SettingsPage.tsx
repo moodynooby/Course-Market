@@ -23,7 +23,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { SchedulePreferences } from '../components/SchedulePreferences';
 import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
@@ -42,6 +42,9 @@ export default function SettingsPage() {
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [currentSemester, setCurrentSemester] = useState<string>('');
   const [loadingSemesters, setLoadingSemesters] = useState(false);
+
+  const themeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadSemesters = useCallback(async () => {
     try {
@@ -64,8 +67,17 @@ export default function SettingsPage() {
   useEffect(() => {
     if (preferences.theme && preferences.theme !== mode) {
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      if (themeTimeoutRef.current) {
+        clearTimeout(themeTimeoutRef.current);
+      }
+      themeTimeoutRef.current = setTimeout(() => setSaved(false), 3000);
     }
+
+    return () => {
+      if (themeTimeoutRef.current) {
+        clearTimeout(themeTimeoutRef.current);
+      }
+    };
   }, [preferences.theme, mode]);
 
   const handleSemesterChange = async (semesterId: string) => {
@@ -110,11 +122,22 @@ export default function SettingsPage() {
     try {
       await updateProfile({ preferences: prefs });
       setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      saveTimeoutRef.current = setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       console.error('Error saving schedule preferences:', error);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <Box>
