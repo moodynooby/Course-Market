@@ -11,7 +11,7 @@
     "typecheck": "tsc -b",
     "lint": "biome lint --write . && biome format --write .",
     "test": "vitest run",
-    "pre-commit": "pnpm run lint && pnpm run typecheck && pnpm run test",
+    "pre-commit": "npm run lint && npm run typecheck && npm run test",
     "db:generate": "npx netlify dev:exec drizzle-kit generate",
     "db:push": "npx netlify dev:exec drizzle-kit push",
     "db:check": "npx netlify dev:exec drizzle-kit check",
@@ -29,7 +29,7 @@
     "@netlify/neon": "^0.1.2",
     "@netlify/vite-plugin": "^2.12.1",
     "@tanstack/react-virtual": "^3.13.24",
-    "ai": "^6.0.173",
+    "ai": "^6.0.174",
     "chrono-node": "^2.9.0",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.2",
@@ -41,7 +41,7 @@
     "react-big-calendar": "^1.19.4",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.2",
-    "zod": "^4.4.1"
+    "zod": "^4.4.2"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.13",
