@@ -12,7 +12,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, loading, profile } = useAuthContext();
   const location = useLocation();
 
-  const onboardingCompleted = profile?.onboardingCompleted ?? false;
+  const hasSemester = !!profile?.semesterId;
 
   if (loading) {
     return <LoadingSpinner fullScreen />;
@@ -26,7 +26,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     location.pathname.startsWith(route),
   );
 
-  if (!shouldSkipCheck && !onboardingCompleted) {
+  if (!shouldSkipCheck && !hasSemester) {
     return <Navigate to="/onboarding" state={{ from: location }} replace />;
   }
 

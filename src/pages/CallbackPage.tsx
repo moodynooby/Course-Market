@@ -11,7 +11,7 @@ export default function CallbackPage() {
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      const redirectPath = profile?.onboardingCompleted ? '/' : '/onboarding';
+      const redirectPath = profile?.semesterId ? '/' : '/onboarding';
       navigate(redirectPath, { replace: true });
     }
   }, [isAuthenticated, loading, profile, navigate]);

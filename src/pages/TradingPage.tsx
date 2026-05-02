@@ -31,7 +31,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthContext } from '../context/AuthContext';
 import { formatZodError, tradeSchema } from '../lib/schemas';
 import { ApiError } from '../services/apiClient';
 import { searchTrades } from '../services/search';
@@ -57,7 +57,7 @@ const TradeCard = memo(function TradeCard({
   onEdit: (trade: TradePost) => void;
   onContact: (phone: string) => void;
 }) {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const isOwner = user && trade.auth0UserId === user.id;
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -277,7 +277,7 @@ const INITIAL_VISIBLE_COUNT = 10;
 const LOAD_MORE_INCREMENT = 10;
 
 export default function TradingPage() {
-  const { user, getToken } = useAuth();
+  const { user, getToken } = useAuthContext();
 
   const [trades, setTrades] = useState<TradePost[]>([]);
   const [loading, setLoading] = useState(true);

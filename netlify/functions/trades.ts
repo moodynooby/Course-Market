@@ -56,7 +56,7 @@ export const handler = async (event: any) => {
         return jsonResponse(400, { error: 'Invalid JSON' });
       }
 
-      // Fetch user profile to get displayName and phone
+      // Fetch user profile to get phone
       const [userProfile] = await db
         .select()
         .from(schema.userProfiles)
@@ -73,7 +73,7 @@ export const handler = async (event: any) => {
         .insert(schema.trades)
         .values({
           auth0UserId: user.sub,
-          userDisplayName: userProfile.displayName,
+          userDisplayName: user.name,
           userEmail: user.email,
           userAvatarUrl: user.picture || null,
           courseCode: requestBody.courseCode,
