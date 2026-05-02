@@ -13,7 +13,6 @@ function* generateValidCombinations(
 
   const [first, ...rest] = arrays;
   for (const section of first) {
-    // Prune: check if the current section conflicts with any already selected sections
     let hasConflict = false;
     for (const selected of current) {
       if (hasSectionConflict(section, selected)) {
@@ -64,8 +63,7 @@ export function generateSchedules(
 
     if (schedules.length >= maxSchedules) break;
 
-    // We still check total credits at the end, but we could prune this too if needed.
-    // For now, pruning by conflict is the biggest win.
+    // Currently checking total credits here; pruning could be added for earlier termination
     const totalCredits = combination.reduce((sum, s) => {
       return sum + (courseCreditsMap.get(s.courseId) || 3);
     }, 0);
@@ -148,7 +146,6 @@ export function clusterSchedules(
   for (let i = 0; i < nClusters; i++) {
     const bucket = buckets.get(i);
     if (bucket && bucket.length > 0) {
-      // Sort by score descending and pick the first as representative
       const sorted = [...bucket].sort((a, b) => b.score - a.score);
       const label =
         i < clusterLabels.length

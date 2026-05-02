@@ -56,7 +56,6 @@ type ParserResponse =
       };
     };
 
-// Transform sections into courses
 function transformData(data: any): {
   courses: import('../types').Course[];
   sections: import('../types').Section[];
@@ -69,9 +68,7 @@ function transformData(data: any): {
   let maxCredits = -Infinity;
   const subjectsSet = new Set<string>();
 
-  // Process sections
   data.sections.forEach((section: any) => {
-    // Create course entry if not exists
     if (!coursesMap.has(section.courseCode)) {
       const course: import('../types').Course = {
         id: section.courseCode,
@@ -83,7 +80,6 @@ function transformData(data: any): {
       coursesMap.set(section.courseCode, course);
     }
 
-    // Create section entry
     const sectionEntry: import('../types').Section = {
       id: section.id,
       courseId: section.courseCode,
@@ -95,7 +91,6 @@ function transformData(data: any): {
     };
     sections.push(sectionEntry);
 
-    // Track metadata
     subjectsSet.add(section.subject);
     minCredits = Math.min(minCredits, section.credits);
     maxCredits = Math.max(maxCredits, section.credits);
@@ -118,7 +113,6 @@ function transformData(data: any): {
   };
 }
 
-// Handle messages from main thread
 self.onmessage = async (event: MessageEvent<ParserMessage>) => {
   const { type, payload } = event.data;
   const startTime = performance.now();
@@ -127,7 +121,6 @@ self.onmessage = async (event: MessageEvent<ParserMessage>) => {
     if (type === 'PARSE_JSON') {
       const { jsonText, semesterId } = payload;
 
-      // Send progress update
       self.postMessage({
         type: 'PARSE_PROGRESS',
         payload: {
@@ -136,7 +129,6 @@ self.onmessage = async (event: MessageEvent<ParserMessage>) => {
         },
       } as ParserResponse);
 
-      // Parse JSON (this can be slow for large files)
       const data = JSON.parse(jsonText);
 
       self.postMessage({
@@ -147,7 +139,6 @@ self.onmessage = async (event: MessageEvent<ParserMessage>) => {
         },
       } as ParserResponse);
 
-      // Transform data
       const { courses, sections, metadata } = transformData(data);
 
       const parseTime = performance.now() - startTime;
@@ -175,7 +166,6 @@ self.onmessage = async (event: MessageEvent<ParserMessage>) => {
         },
       } as ParserResponse);
 
-      // Fetch JSON
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${response.status}`);
@@ -199,7 +189,6 @@ self.onmessage = async (event: MessageEvent<ParserMessage>) => {
         },
       } as ParserResponse);
 
-      // Parse JSON
       const data = JSON.parse(jsonText);
 
       self.postMessage({
@@ -210,7 +199,6 @@ self.onmessage = async (event: MessageEvent<ParserMessage>) => {
         },
       } as ParserResponse);
 
-      // Transform data
       const { courses, sections, metadata } = transformData(data);
 
       const parseTime = performance.now() - startTime;

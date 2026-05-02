@@ -34,7 +34,6 @@ export const userLlmKeys = pgTable('user_llm_keys', {
 export type UserLlmKey = typeof userLlmKeys.$inferSelect;
 export type NewUserLlmKey = typeof userLlmKeys.$inferInsert;
 
-// User profiles for onboarding
 export const userProfiles = pgTable('user_profiles', {
   auth0UserId: varchar('auth0_user_id', { length: 255 }).primaryKey(),
   phone: varchar('contact_phone', { length: 20 }).notNull(),
@@ -47,7 +46,6 @@ export const userProfiles = pgTable('user_profiles', {
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type NewUserProfile = typeof userProfiles.$inferInsert;
 
-// Semesters metadata
 export const semesters = pgTable('semesters', {
   id: varchar('id', { length: 50 }).primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),

@@ -40,14 +40,12 @@ export function useSemesterParser() {
   const [result, setResult] = useState<ParseResult | null>(null);
   const [error, setError] = useState<ParseError | null>(null);
 
-  // Initialize worker
   useEffect(() => {
     workerRef.current = new Worker(
       new URL('../workers/semesterParser.worker.ts', import.meta.url),
       { type: 'module' },
     );
 
-    // Handle worker messages
     workerRef.current.onmessage = (event) => {
       const { type, payload } = event.data;
 

@@ -7,11 +7,9 @@ function safeGetItem<T>(key: string, defaultValue: T): T {
     if (!item) return defaultValue;
 
     const parsed = JSON.parse(item);
-    // If default is a primitive (string/number/boolean), return parsed value directly
     if (defaultValue === null || typeof defaultValue !== 'object') {
       return parsed as T;
     }
-    // For objects, merge with defaults
     return { ...defaultValue, ...parsed };
   } catch (error) {
     if (env.IS_DEV) {

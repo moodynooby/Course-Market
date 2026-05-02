@@ -49,7 +49,7 @@ export function sectionsToCalendarEvents(sections: Section[], courses: Course[])
       endDate.setDate(endDate.getDate() + dayOffset);
       endDate.setHours(Math.floor(endMinutes / 60), endMinutes % 60, 0, 0);
 
-      // Add index to ensure unique IDs even when time slots are duplicated
+      // Include index to ensure unique IDs for potentially duplicate time slots
       events.push({
         id: `${section.id}-${slot.day}-${slot.startTime}-${index}`,
         title: `${course?.code || 'Course'} - ${section.sectionNumber}`,
@@ -118,9 +118,12 @@ export function checkConflicts(sections: Section[]): string[] {
   return conflicts;
 }
 
-// Cache for time to minutes to avoid repeated parsing
 const timeCache = new Map<string, number>();
 
+/**
+ * Converts a HH:mm time string to minutes from the start of the day.
+ * Uses a cache to avoid repeated string splitting and conversion.
+ */
 export function timeToMinutesCached(time: string): number {
   let minutes = timeCache.get(time);
   if (minutes === undefined) {

@@ -156,7 +156,7 @@ class UnifiedLLMService {
         if (!('gpu' in navigator) || !navigator.gpu) {
           throw new Error('WebGPU not supported');
         }
-        // @browser-ai/web-llm handles initialization lazily
+        // WebLLM handles internal initialization lazily on the first use
         this.isInitialized = true;
         return true;
       }
@@ -182,7 +182,7 @@ class UnifiedLLMService {
       });
     }
 
-    // Proxy "model" as a custom provider
+    // Wrap the model as a custom provider for the 'ai' package
     return {
       modelId: model,
       specificationVersion: 'v1' as const,

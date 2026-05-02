@@ -47,19 +47,16 @@ function getDB(): Promise<IDBPDatabase<CourseMarketDB>> {
   if (!dbPromise) {
     dbPromise = openDB<CourseMarketDB>(DB_NAME, DB_VERSION, {
       upgrade(db) {
-        // Courses store
         if (!db.objectStoreNames.contains('courses')) {
           const courseStore = db.createObjectStore('courses', { keyPath: 'id' });
           courseStore.createIndex('by-semester', 'semesterId');
         }
 
-        // Sections store
         if (!db.objectStoreNames.contains('sections')) {
           const sectionStore = db.createObjectStore('sections', { keyPath: 'id' });
           sectionStore.createIndex('by-semester', 'semesterId');
         }
 
-        // Metadata store
         if (!db.objectStoreNames.contains('metadata')) {
           db.createObjectStore('metadata', { keyPath: 'key' });
         }
@@ -102,9 +99,7 @@ export async function getCachedCourses(
 
   if (!cached) return null;
 
-  // Check if cache is expired
   if (Date.now() - cached.timestamp > CACHE_TTL) {
-    // Delete expired cache
     await db.delete('courses', `courses:${semesterId.toLowerCase()}`);
     return null;
   }
@@ -149,9 +144,7 @@ export async function getCachedSections(
 
   if (!cached) return null;
 
-  // Check if cache is expired
   if (Date.now() - cached.timestamp > CACHE_TTL) {
-    // Delete expired cache
     await db.delete('sections', `sections:${semesterId.toLowerCase()}`);
     return null;
   }
@@ -226,7 +219,6 @@ export async function clearExpiredCache(): Promise<void> {
   const db = await getDB();
   const now = Date.now();
 
-  // Clear expired courses
   const courseTx = db.transaction('courses', 'readwrite');
   const allCourses = await courseTx.store.getAll();
 
@@ -238,7 +230,6 @@ export async function clearExpiredCache(): Promise<void> {
 
   await courseTx.done;
 
-  // Clear expired sections
   const sectionTx = db.transaction('sections', 'readwrite');
   const allSections = await sectionTx.store.getAll();
 
@@ -263,7 +254,7 @@ export async function getCacheStats(): Promise<{
   const courses = await db.getAll('courses');
   const sections = await db.getAll('sections');
 
-  // Estimate size (rough approximation)
+  // Estimate size by stringifying the records
   const totalSize = JSON.stringify(courses).length + JSON.stringify(sections).length;
 
   return {
