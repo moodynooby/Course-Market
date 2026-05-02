@@ -52,49 +52,27 @@ const DAYS: { value: DayOfWeek; label: string }[] = [
   { value: 'Su', label: 'Sun' },
 ];
 
-/**
- * Validate preferences object
- */
 function validatePreferences(prefs: Preferences): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
-
-  // Validate time range
   const startMinutes = parseInt(prefs.preferredStartTime.replace(':', ''), 10);
   const endMinutes = parseInt(prefs.preferredEndTime.replace(':', ''), 10);
 
   if (startMinutes >= endMinutes) {
     errors.push('Start time must be before end time');
   }
-
-  // Validate credits range
   if (prefs.minCredits > prefs.maxCredits) {
     errors.push('Min credits cannot exceed max credits');
   }
-
   if (prefs.minCredits < 0 || prefs.maxCredits > 24) {
     errors.push('Credits must be between 0 and 24');
   }
-
-  // Validate max gap
   if (prefs.maxGapMinutes < 0 || prefs.maxGapMinutes > 180) {
     errors.push('Max gap must be between 0 and 180 minutes');
   }
 
-  return {
-    valid: errors.length === 0,
-    errors,
-  };
+  return { valid: errors.length === 0, errors };
 }
 
-/**
- * Unified schedule preferences component.
- * Supports both auto-save and manual save modes.
- *
- * @param autoSave - If true, saves automatically on change (no buttons)
- *                   If false, shows Save/Reset buttons
- * @param collapsible - If true, shows expand/collapse toggle
- * @param defaultExpanded - Initial expanded state when collapsible is true
- */
 export function SchedulePreferences({
   initialPreferences,
   onSave,
@@ -119,12 +97,13 @@ export function SchedulePreferences({
   const onSaveRef = useRef(onSave);
   const preferencesRef = useRef(preferences);
   const autoSaveRef = useRef(autoSave);
+  const isValidRef = useRef(isValid);
 
   onSaveRef.current = onSave;
   preferencesRef.current = preferences;
   autoSaveRef.current = autoSave;
+  isValidRef.current = isValid;
 
-  // Validate on mount and when preferences change
   useEffect(() => {
     const validation = validatePreferences(preferences);
     setIsValid(validation.valid);
@@ -147,9 +126,7 @@ export function SchedulePreferences({
       await currentOnSave(currentPreferences);
       setSaved(true);
       if (!autoSaveRef.current) {
-        if (savedTimerRef.current) {
-          clearTimeout(savedTimerRef.current);
-        }
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
         savedTimerRef.current = setTimeout(() => setSaved(false), 3000);
       }
     } catch (error) {
@@ -160,45 +137,22 @@ export function SchedulePreferences({
   }, []);
 
   useEffect(() => {
-    if (!autoSave || !onSave) return;
-
-    const currentPreferences = preferences;
-    void currentPreferences;
-
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    debounceTimerRef.current = setTimeout(() => {
-      if (isValid) {
-        performSave();
-      }
-    }, 5000); // 5 second debounce
-
     return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, [preferences, autoSave, onSave, isValid, performSave]);
-
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-      if (savedTimerRef.current) {
-        clearTimeout(savedTimerRef.current);
-      }
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     };
   }, []);
 
   const handleUpdate = <K extends keyof Preferences>(key: K, value: Preferences[K]) => {
-    setPreferences((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    setPreferences((prev) => ({ ...prev, [key]: value }));
     setSaved(false);
+
+    if (autoSave && onSave) {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = setTimeout(() => {
+        if (isValidRef.current) performSave();
+      }, 5000);
+    }
   };
 
   const handleDayToggle = (day: DayOfWeek) => {
@@ -230,50 +184,23 @@ export function SchedulePreferences({
     setValidationErrors([]);
   };
 
-  const handleSaveClick = useCallback(() => {
-    performSave();
-  }, [performSave]);
-
-  const showActions = !autoSave;
-
   return (
     <Card variant="outlined" sx={{ borderRadius: 4, bgcolor: 'background.paper', p: 3 }}>
       {collapsible ? (
         <Box sx={{ mb: 3, cursor: 'pointer' }} onClick={() => setExpanded(!expanded)}>
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{
-              alignItems: 'center',
-            }}
-          >
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <Box sx={{ flexGrow: 1 }}>
-              <Typography
-                variant="h6"
-                gutterBottom
-                sx={{
-                  fontWeight: 700,
-                }}
-              >
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
                 {title}
               </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'text.secondary',
-                }}
-              >
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                 {description}
                 {autoSave && ' • Auto-saves as you edit'}
               </Typography>
             </Box>
             <Typography
               variant="caption"
-              sx={{
-                color: 'text.secondary',
-                fontWeight: 500,
-                ml: 'auto',
-              }}
+              sx={{ color: 'text.secondary', fontWeight: 500, ml: 'auto' }}
             >
               {expanded ? '− Collapse' : '+ Expand'}
             </Typography>
@@ -281,21 +208,10 @@ export function SchedulePreferences({
         </Box>
       ) : (
         <Box sx={{ mb: 3 }}>
-          <Typography
-            variant="h6"
-            gutterBottom
-            sx={{
-              fontWeight: 700,
-            }}
-          >
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
             {title}
           </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              color: 'text.secondary',
-            }}
-          >
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
             {description}
             {autoSave && ' • Auto-saves as you edit'}
           </Typography>
@@ -310,24 +226,10 @@ export function SchedulePreferences({
         }}
       >
         <Stack spacing={3}>
-          {/* Time Preferences */}
           <Box>
-            <Stack
-              direction="row"
-              spacing={0.5}
-              sx={{
-                alignItems: 'center',
-                mb: 1.5,
-              }}
-            >
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 1.5 }}>
               <Timer fontSize="small" sx={{ color: 'text.secondary' }} />
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  fontWeight: 600,
-                  color: 'text.secondary',
-                }}
-              >
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
                 TIME PREFERENCES
               </Typography>
             </Stack>
@@ -341,9 +243,7 @@ export function SchedulePreferences({
                   label="Start Time"
                   value={preferences.preferredStartTime}
                   onChange={(e) => handleUpdate('preferredStartTime', e.target.value)}
-                  slotProps={{
-                    inputLabel: { shrink: true },
-                  }}
+                  slotProps={{ inputLabel: { shrink: true } }}
                 />
               </Grid>
               <Grid size={{ xs: 6 }}>
@@ -354,20 +254,12 @@ export function SchedulePreferences({
                   label="End Time"
                   value={preferences.preferredEndTime}
                   onChange={(e) => handleUpdate('preferredEndTime', e.target.value)}
-                  slotProps={{
-                    inputLabel: { shrink: true },
-                  }}
+                  slotProps={{ inputLabel: { shrink: true } }}
                 />
               </Grid>
             </Grid>
 
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{
-                mt: 2,
-              }}
-            >
+            <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
               <Chip
                 label="🌅 Morning"
                 onClick={() => handleUpdate('preferMorning', !preferences.preferMorning)}
@@ -387,24 +279,10 @@ export function SchedulePreferences({
 
           <Divider />
 
-          {/* Credit & Schedule */}
           <Box>
-            <Stack
-              direction="row"
-              spacing={0.5}
-              sx={{
-                alignItems: 'center',
-                mb: 1.5,
-              }}
-            >
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 1.5 }}>
               <CalendarToday fontSize="small" sx={{ color: 'text.secondary' }} />
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  fontWeight: 600,
-                  color: 'text.secondary',
-                }}
-              >
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
                 SCHEDULE
               </Typography>
             </Stack>
@@ -418,9 +296,7 @@ export function SchedulePreferences({
                   label="Min Credits"
                   value={preferences.minCredits}
                   onChange={(e) => handleCreditsChange('min', parseInt(e.target.value) || 0)}
-                  slotProps={{
-                    htmlInput: { min: 0, max: 24 },
-                  }}
+                  slotProps={{ htmlInput: { min: 0, max: 24 } }}
                 />
               </Grid>
               <Grid size={{ xs: 6 }}>
@@ -431,32 +307,17 @@ export function SchedulePreferences({
                   label="Max Credits"
                   value={preferences.maxCredits}
                   onChange={(e) => handleCreditsChange('max', parseInt(e.target.value) || 0)}
-                  slotProps={{
-                    htmlInput: { min: 0, max: 24 },
-                  }}
+                  slotProps={{ htmlInput: { min: 0, max: 24 } }}
                 />
               </Grid>
             </Grid>
 
-            <Box
-              sx={{
-                mt: 2,
-              }}
-            >
+            <Box sx={{ mt: 2 }}>
               <Stack
                 direction="row"
-                sx={{
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  mb: 1,
-                }}
+                sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1 }}
               >
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'text.secondary',
-                  }}
-                >
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                   Max Gap Between Classes
                 </Typography>
                 <Chip
@@ -476,16 +337,9 @@ export function SchedulePreferences({
                 valueLabelDisplay="auto"
                 valueLabelFormat={(value) => `${value} min`}
                 sx={{
-                  '& .MuiSlider-thumb': {
-                    width: 18,
-                    height: 18,
-                  },
-                  '& .MuiSlider-track': {
-                    bgcolor: 'primary.main',
-                  },
-                  '& .MuiSlider-rail': {
-                    opacity: 0.3,
-                  },
+                  '& .MuiSlider-thumb': { width: 18, height: 18 },
+                  '& .MuiSlider-track': { bgcolor: 'primary.main' },
+                  '& .MuiSlider-rail': { opacity: 0.3 },
                   '& .MuiSlider-valueLabel': {
                     bgcolor: 'primary.main',
                     color: 'primary.contrastText',
@@ -498,28 +352,14 @@ export function SchedulePreferences({
               />
             </Box>
 
-            <Box
-              sx={{
-                mt: 2,
-              }}
-            >
+            <Box sx={{ mt: 2 }}>
               <Typography
                 variant="caption"
-                sx={{
-                  color: 'text.secondary',
-                  mb: 1,
-                  display: 'block',
-                }}
+                sx={{ color: 'text.secondary', mb: 1, display: 'block' }}
               >
                 Days to Avoid
               </Typography>
-              <Stack
-                direction="row"
-                spacing={1}
-                sx={{
-                  flexWrap: 'wrap',
-                }}
-              >
+              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
                 {DAYS.map((day) => {
                   const isActive = preferences.avoidDays.includes(day.value);
                   return (
@@ -554,12 +394,7 @@ export function SchedulePreferences({
                 />
               }
               label={
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: 'text.secondary',
-                  }}
-                >
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                   Prefer consecutive days (MWF or TTh)
                 </Typography>
               }
@@ -569,24 +404,10 @@ export function SchedulePreferences({
 
           <Divider />
 
-          {/* Instructor Preferences */}
           <Box>
-            <Stack
-              direction="row"
-              spacing={0.5}
-              sx={{
-                alignItems: 'center',
-                mb: 1.5,
-              }}
-            >
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 1.5 }}>
               <School fontSize="small" sx={{ color: 'text.secondary' }} />
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  fontWeight: 600,
-                  color: 'text.secondary',
-                }}
-              >
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
                 INSTRUCTORS
               </Typography>
             </Stack>
@@ -612,7 +433,6 @@ export function SchedulePreferences({
           </Box>
         </Stack>
 
-        {/* Validation Errors */}
         {!isValid && validationErrors.length > 0 && (
           <Box sx={{ mt: 2 }}>
             {validationErrors.map((error, index) => (
@@ -620,11 +440,7 @@ export function SchedulePreferences({
                 key={index}
                 variant="caption"
                 color="error"
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 0.5,
-                }}
+                sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
               >
                 ⚠️ {error}
               </Typography>
@@ -632,8 +448,7 @@ export function SchedulePreferences({
           </Box>
         )}
 
-        {/* Action Buttons (only in manual save mode) */}
-        {showActions && (
+        {!autoSave && (
           <CardActions
             sx={{
               pt: 3,
@@ -660,17 +475,12 @@ export function SchedulePreferences({
                 </Typography>
               )}
               <Button
-                onClick={handleSaveClick}
+                onClick={performSave}
                 variant="contained"
                 color="secondary"
                 disabled={saving || saved || !isValid}
                 startIcon={saving ? undefined : <Save />}
-                sx={{
-                  borderRadius: 3,
-                  px: 3,
-                  py: 1.5,
-                  fontWeight: 600,
-                }}
+                sx={{ borderRadius: 3, px: 3, py: 1.5, fontWeight: 600 }}
               >
                 {saving ? 'Saving...' : saved ? 'Saved' : 'Save'}
               </Button>
@@ -678,17 +488,11 @@ export function SchedulePreferences({
           </CardActions>
         )}
 
-        {/* Auto-save status indicator */}
         {autoSave && saved && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
             <Typography
               variant="body2"
-              sx={{
-                color: 'success.main',
-                display: 'flex',
-                alignItems: 'center',
-                fontWeight: 600,
-              }}
+              sx={{ color: 'success.main', display: 'flex', alignItems: 'center', fontWeight: 600 }}
             >
               ✓ Saved
             </Typography>
