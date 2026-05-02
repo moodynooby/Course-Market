@@ -58,7 +58,6 @@ const DAYS: { value: DayOfWeek; label: string }[] = [
 function validatePreferences(prefs: Preferences): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
-  // Validate time range
   const startMinutes = parseInt(prefs.preferredStartTime.replace(':', ''), 10);
   const endMinutes = parseInt(prefs.preferredEndTime.replace(':', ''), 10);
 
@@ -66,7 +65,6 @@ function validatePreferences(prefs: Preferences): { valid: boolean; errors: stri
     errors.push('Start time must be before end time');
   }
 
-  // Validate credits range
   if (prefs.minCredits > prefs.maxCredits) {
     errors.push('Min credits cannot exceed max credits');
   }
@@ -75,7 +73,6 @@ function validatePreferences(prefs: Preferences): { valid: boolean; errors: stri
     errors.push('Credits must be between 0 and 24');
   }
 
-  // Validate max gap
   if (prefs.maxGapMinutes < 0 || prefs.maxGapMinutes > 180) {
     errors.push('Max gap must be between 0 and 180 minutes');
   }
@@ -114,14 +111,12 @@ export function SchedulePreferences({
   const [isValid, setIsValid] = useState(true);
   const [expanded, setExpanded] = useState(defaultExpanded);
 
-  // Validate on mount and when preferences change
   useEffect(() => {
     const validation = validatePreferences(preferences);
     setIsValid(validation.valid);
     setValidationErrors(validation.errors);
   }, [preferences]);
 
-  // Auto-save on preference change (debounced)
   const handleSave = useCallback(async () => {
     if (!onSave) return;
 
@@ -152,7 +147,7 @@ export function SchedulePreferences({
       if (isValid) {
         handleSave();
       }
-    }, 5000); // 5 second debounce
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, [handleSave, autoSave, onSave, isValid]);
@@ -270,7 +265,6 @@ export function SchedulePreferences({
         }}
       >
         <Stack spacing={3}>
-          {/* Time Preferences */}
           <Box>
             <Stack
               direction="row"
@@ -347,7 +341,6 @@ export function SchedulePreferences({
 
           <Divider />
 
-          {/* Credit & Schedule */}
           <Box>
             <Stack
               direction="row"
@@ -529,7 +522,6 @@ export function SchedulePreferences({
 
           <Divider />
 
-          {/* Instructor Preferences */}
           <Box>
             <Stack
               direction="row"
@@ -572,7 +564,6 @@ export function SchedulePreferences({
           </Box>
         </Stack>
 
-        {/* Validation Errors */}
         {!isValid && validationErrors.length > 0 && (
           <Box sx={{ mt: 2 }}>
             {validationErrors.map((error, index) => (
@@ -592,7 +583,6 @@ export function SchedulePreferences({
           </Box>
         )}
 
-        {/* Action Buttons (only in manual save mode) */}
         {showActions && (
           <CardActions
             sx={{
@@ -638,7 +628,6 @@ export function SchedulePreferences({
           </CardActions>
         )}
 
-        {/* Auto-save status indicator */}
         {autoSave && saved && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
             <Typography

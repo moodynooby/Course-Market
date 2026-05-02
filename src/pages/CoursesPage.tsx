@@ -215,7 +215,6 @@ export default function CoursesPage() {
         }
       }
 
-      // Try cache first before fetching
       if (selectedSemester?.id) {
         setCurrentSemesterId(selectedSemester.id);
         setCurrentSemesterName(selectedSemester.name);
@@ -382,7 +381,6 @@ export default function CoursesPage() {
     [currentSemesterId, fetchAndParse],
   );
 
-  // Virtualizer with dynamic measurement
   const parentRef = useRef<HTMLDivElement>(null);
 
   const virtualizer = useVirtualizer({

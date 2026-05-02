@@ -117,7 +117,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     refreshProfile();
   }, [isAuthenticated, authLoading, refreshProfile]);
 
-  // Set loading to false when not authenticated
   useEffect(() => {
     if (!isAuthenticated && !authLoading) {
       setLoading(false);

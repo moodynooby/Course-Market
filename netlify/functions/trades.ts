@@ -56,7 +56,6 @@ export const handler = async (event: any) => {
         return jsonResponse(400, { error: 'Invalid JSON' });
       }
 
-      // Fetch user profile to get phone
       const [userProfile] = await db
         .select()
         .from(schema.userProfiles)
@@ -120,7 +119,6 @@ export const handler = async (event: any) => {
         });
       }
 
-      // Fetch user profile to get updated phone number
       const [userProfile] = await db
         .select()
         .from(schema.userProfiles)

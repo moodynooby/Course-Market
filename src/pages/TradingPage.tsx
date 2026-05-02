@@ -427,7 +427,6 @@ export default function TradingPage() {
     return searchTrades(trades, search);
   }, [trades, search]);
 
-  // Reset visible count when search changes
   useEffect(() => {
     setVisibleCount(INITIAL_VISIBLE_COUNT);
   }, []);

@@ -2,7 +2,6 @@ import MiniSearch from 'minisearch';
 import type { Course, Section, TradePost } from '../types';
 import type { GeneratedSchedule, SearchResult } from '../utils/schedule-types';
 
-// MiniSearch options for courses
 const courseSearchOptions = {
   fields: ['code', 'name', 'subject', 'description'],
   storeFields: ['id'],
@@ -12,7 +11,6 @@ const courseSearchOptions = {
   },
 };
 
-// MiniSearch options for trades
 const tradeSearchOptions = {
   fields: [
     'courseCode',
@@ -29,7 +27,6 @@ const tradeSearchOptions = {
   },
 };
 
-// MiniSearch options for schedules
 const scheduleSearchOptions = {
   fields: ['courseCodes', 'courseNames', 'instructors', 'days', 'times', 'tags'],
   storeFields: ['id'],
@@ -126,7 +123,6 @@ export const searchSchedules = (schedules: GeneratedSchedule[], query: string): 
       .flatMap((sec) => sec.timeSlots.map((ts) => `${ts.startTime} ${ts.endTime}`))
       .join(' ');
 
-    // Get course codes and names from the courseMap if available
     const courseCodes = s.sections
       .map((sec) => {
         const course = courseMap.get(sec.courseId);
@@ -141,7 +137,6 @@ export const searchSchedules = (schedules: GeneratedSchedule[], query: string): 
       })
       .join(' ');
 
-    // Semantic tags
     const tags: string[] = [];
     const hasMorning = s.sections.some((sec) =>
       sec.timeSlots.some((ts) => {

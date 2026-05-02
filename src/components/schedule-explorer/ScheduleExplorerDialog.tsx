@@ -34,7 +34,6 @@ import type { GeneratedSchedule, SearchResult } from '../../utils/schedule-types
 import CalendarView from '../CalendarView';
 import { EmptyState } from '../EmptyState';
 
-// Constants
 const MAX_DISPLAY_SCHEDULES = 50;
 const CLUSTER_COUNT = 5;
 const SCORE_EXCELLENT = 80;
@@ -79,7 +78,6 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
   const [explorerTab, setExplorerTab] = useState(0);
   const [filterTime, setFilterTime] = useState<'all' | 'morning' | 'afternoon'>('all');
 
-  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!open) return;
@@ -105,7 +103,6 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
     }
     let filtered = showConflicting ? generatedSchedules : conflictFreeSchedules;
 
-    // Apply time filter
     if (filterTime !== 'all') {
       filtered = filtered.filter((schedule) => {
         const hasMorning = schedule.sections.some((s) =>
@@ -391,7 +388,6 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
   );
 });
 
-// Schedule List Component
 interface ScheduleListProps {
   explorerTab: number;
   searchResults: SearchResult[];
@@ -463,7 +459,6 @@ const ScheduleList = memo(function ScheduleList({
   );
 });
 
-// Extracted Schedule List Item
 interface ScheduleListItemProps {
   schedule: GeneratedSchedule;
   idx: number;
@@ -582,7 +577,6 @@ const ScheduleListItem = memo(function ScheduleListItem({
   );
 });
 
-// Cluster Group Component
 interface ClusterGroupProps {
   cluster: { label: string; schedules: GeneratedSchedule[] };
   selectedSchedule: GeneratedSchedule | null;
@@ -650,7 +644,6 @@ const ClusterGroup = memo(function ClusterGroup({
   );
 });
 
-// Schedule Details Component
 interface ScheduleDetailsProps {
   selectedSchedule: GeneratedSchedule;
   courses: Course[];
