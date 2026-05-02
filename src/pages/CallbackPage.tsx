@@ -1,20 +1,29 @@
 import { useAuth0 } from '@auth0/auth0-react';
 import { Box, CircularProgress, Typography } from '@mui/material';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
 
 export default function CallbackPage() {
-  const { isAuthenticated } = useAuth0();
+  const { isAuthenticated, isLoading: authLoading } = useAuth0();
   const { profile, loading } = useAuthContext();
   const navigate = useNavigate();
+  const handled = useRef(false);
 
   useEffect(() => {
-    if (!loading && isAuthenticated) {
-      const redirectPath = profile?.semesterId ? '/' : '/onboarding';
-      navigate(redirectPath, { replace: true });
+    if (handled.current) return;
+    if (authLoading || loading) return;
+
+    if (!isAuthenticated) {
+      handled.current = true;
+      navigate('/login', { replace: true });
+      return;
     }
-  }, [isAuthenticated, loading, profile, navigate]);
+
+    const redirectPath = profile?.semesterId ? '/' : '/onboarding';
+    handled.current = true;
+    navigate(redirectPath, { replace: true });
+  }, [isAuthenticated, authLoading, loading, profile, navigate]);
 
   return (
     <Box
