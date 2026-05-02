@@ -9,6 +9,7 @@ import {
   ListItemText,
   Menu,
   MenuItem,
+  Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
@@ -217,17 +218,29 @@ export default function Layout() {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton onClick={toggleMode} size="small" sx={{ color: 'text.secondary' }}>
-              {ModeIcon}
-            </IconButton>
-
-            <IconButton
-              onClick={() => navigate('/settings')}
-              size="small"
-              sx={{ color: 'text.secondary', display: { xs: 'flex', md: 'none' } }}
+            <Tooltip
+              title={`Switch to ${mode === 'light' ? 'dark' : mode === 'dark' ? 'system' : 'light'} mode`}
             >
-              <Settings fontSize="small" />
-            </IconButton>
+              <IconButton
+                onClick={toggleMode}
+                size="small"
+                sx={{ color: 'text.secondary' }}
+                aria-label="Toggle color mode"
+              >
+                {ModeIcon}
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Settings">
+              <IconButton
+                onClick={() => navigate('/settings')}
+                size="small"
+                sx={{ color: 'text.secondary', display: { xs: 'flex', md: 'none' } }}
+                aria-label="Settings"
+              >
+                <Settings fontSize="small" />
+              </IconButton>
+            </Tooltip>
 
             {user ? (
               <Box sx={{ ml: 1 }}>
