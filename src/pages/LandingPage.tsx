@@ -1,6 +1,7 @@
 import { ArrowForward, AutoAwesome } from '@mui/icons-material';
 import {
   alpha,
+  Alert,
   Box,
   Button,
   Card,
@@ -111,6 +112,8 @@ export default function LandingPage() {
 
   const loadData = useCallback(async () => {
     try {
+      setLoading(true);
+      setError('');
       const { getSemesters } = await import('../services/coursesApi');
       const { semesters } = await getSemesters();
 
@@ -119,7 +122,6 @@ export default function LandingPage() {
         setAllCourses([]);
         setAllSections([]);
         setCoursesImported(false);
-        setLoading(false);
         return;
       }
 
@@ -154,6 +156,7 @@ export default function LandingPage() {
       }
     } catch (error) {
       console.error('Failed to load semester data:', error);
+      setError('Failed to load course data. Please check your connection or try again later.');
       setAllCourses([]);
       setAllSections([]);
       setCoursesImported(false);
@@ -165,7 +168,9 @@ export default function LandingPage() {
   useEffect(() => {
     loadData();
     setWebllmAvailable('gpu' in navigator);
+  }, [loadData]);
 
+  useEffect(() => {
     const handleStorageChange = () => {
       if (allCourses.length > 0 && allSections.length > 0) {
         loadScheduleFromSelections(allCourses, allSections);
@@ -176,7 +181,7 @@ export default function LandingPage() {
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [allCourses, allSections, loadScheduleFromSelections, loadData]);
+  }, [allCourses, allSections, loadScheduleFromSelections]);
 
   useEffect(() => {
     if (!searchQuery.trim() || generatedSchedules.length === 0) {
@@ -347,6 +352,13 @@ export default function LandingPage() {
           Welcome to your centralized AuraIsHub control center
         </Typography>
       </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 4, borderRadius: 3 }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
+
       {loading ? (
         <Card
           variant="outlined"
