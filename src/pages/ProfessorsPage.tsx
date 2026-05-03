@@ -85,7 +85,7 @@ export default function ProfessorsPage() {
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Box>
           <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
-            Professors
+            Rate My Prof
           </Typography>
           <Typography variant="body1" sx={{ color: 'text.secondary' }}>
             Browse and rate your instructors

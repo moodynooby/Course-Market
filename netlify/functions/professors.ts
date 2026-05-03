@@ -37,7 +37,7 @@ export const handler = async (event: any) => {
     if (httpMethod === 'GET') {
       // GET /professors
       if (path.endsWith('/professors')) {
-        const professors = await db
+        let professors = await db
           .select({
             id: schema.professors.id,
             name: schema.professors.name,
@@ -53,6 +53,75 @@ export const handler = async (event: any) => {
           )
           .groupBy(schema.professors.id)
           .orderBy(schema.professors.name);
+
+        // Auto-sync if empty
+        if (professors.length === 0) {
+          console.log('No professors found, triggering auto-sync...');
+          const host = event.headers.host || 'localhost:8888';
+          const protocol = host.includes('localhost') ? 'http' : 'https';
+          const siteUrl = `${protocol}://${host}`;
+
+          const semesters = await db.select().from(schema.semesters);
+          const allInstructors = new Set<string>();
+
+          for (const semester of semesters) {
+            if (!semester.jsonUrl) continue;
+            try {
+              let url = semester.jsonUrl;
+              if (!url.startsWith('http')) {
+                url = `${siteUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+              }
+              const response = await fetch(url);
+              if (response.ok) {
+                const data = await response.json();
+                if (data.sections && Array.isArray(data.sections)) {
+                  for (const section of data.sections) {
+                    if (section.instructor) {
+                      const names = section.instructor
+                        .split(',')
+                        .map((s: string) => s.trim().replace(/\.\.\.$/, ''));
+                      for (const name of names) {
+                        if (name && !['Not added', 'To Be Announced', 'TBA'].includes(name)) {
+                          allInstructors.add(name);
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            } catch (e) {
+              console.error('Auto-sync fetch error:', e);
+            }
+          }
+
+          if (allInstructors.size > 0) {
+            for (const name of allInstructors) {
+              try {
+                await db.insert(schema.professors).values({ name }).onConflictDoNothing();
+              } catch (_e) {
+                /* ignore */
+              }
+            }
+
+            // Re-fetch
+            professors = await db
+              .select({
+                id: schema.professors.id,
+                name: schema.professors.name,
+                department: schema.professors.department,
+                avgRating: sql<number>`COALESCE(avg(${schema.professorRatings.rating}), 0)`,
+                avgDifficulty: sql<number>`COALESCE(avg(${schema.professorRatings.difficulty}), 0)`,
+                ratingCount: sql<number>`count(${schema.professorRatings.id})`,
+              })
+              .from(schema.professors)
+              .leftJoin(
+                schema.professorRatings,
+                eq(schema.professors.id, schema.professorRatings.professorId),
+              )
+              .groupBy(schema.professors.id)
+              .orderBy(schema.professors.name);
+          }
+        }
 
         return jsonResponse(200, { professors });
       }
@@ -129,27 +198,37 @@ export const handler = async (event: any) => {
         // The AGENTS.md says: "Fetch JSON directly from CDN (/semesters/*.json)"
         // In the function, we can try to fetch from the site's own URL.
 
-        const siteUrl = process.env.URL || 'http://localhost:8888';
+        const host = event.headers.host || 'localhost:8888';
+        const protocol = host.includes('localhost') ? 'http' : 'https';
+        const siteUrl = `${protocol}://${host}`;
 
         for (const semester of semesters) {
           if (!semester.jsonUrl) continue;
 
           try {
-            const url = semester.jsonUrl.startsWith('http')
-              ? semester.jsonUrl
-              : `${siteUrl}${semester.jsonUrl}`;
+            let url = semester.jsonUrl;
+            if (!url.startsWith('http')) {
+              url = `${siteUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+            }
 
+            console.log(`Syncing from ${url}`);
             const response = await fetch(url);
             if (!response.ok) {
-              console.error(`Failed to fetch ${url}: ${response.statusText}`);
+              const errorText = await response.text();
+              console.error(
+                `Failed to fetch ${url}: ${response.status} ${response.statusText} - ${errorText}`,
+              );
               continue;
             }
 
             const data = await response.json();
+            console.log(`Fetched ${data.sections?.length} sections from ${semester.id}`);
             if (data.sections && Array.isArray(data.sections)) {
               for (const section of data.sections) {
                 if (section.instructor) {
-                  const names = section.instructor.split(',').map((s: string) => s.trim());
+                  const names = section.instructor
+                    .split(',')
+                    .map((s: string) => s.trim().replace(/\.\.\.$/, ''));
                   for (const name of names) {
                     if (
                       name &&

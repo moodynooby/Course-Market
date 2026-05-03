@@ -1,4 +1,11 @@
-import { DarkMode, LightMode, Logout, Settings, SettingsBrightness } from '@mui/icons-material';
+import {
+  DarkMode,
+  LightMode,
+  Logout,
+  RateReview,
+  Settings,
+  SettingsBrightness,
+} from '@mui/icons-material';
 import {
   Avatar,
   Box,
@@ -198,23 +205,32 @@ export default function Layout() {
                 />
                 <NavLink to="/trading" label="Trading" primary currentPath={location.pathname} />
               </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <RateReview sx={{ width: 24, height: 24, color: 'text.secondary' }} />
+                <NavLink
+                  to="/professors"
+                  label="Rate My Prof"
+                  primary
+                  currentPath={location.pathname}
+                />
+              </Box>
             </Box>
 
-            {!location.pathname.startsWith('/trading') && (
-              <Box
-                sx={{
-                  display: { xs: 'none', md: 'flex' },
-                  alignItems: 'center',
-                  gap: 3,
-                  ml: 2,
-                  pl: 4,
-                  borderLeft: 'none',
-                }}
-              >
-                <NavLink to="/courses" label="Courses" currentPath={location.pathname} />
-                <NavLink to="/professors" label="Professors" currentPath={location.pathname} />
-              </Box>
-            )}
+            {!location.pathname.startsWith('/trading') &&
+              !location.pathname.startsWith('/professors') && (
+                <Box
+                  sx={{
+                    display: { xs: 'none', md: 'flex' },
+                    alignItems: 'center',
+                    gap: 3,
+                    ml: 2,
+                    pl: 4,
+                    borderLeft: 'none',
+                  }}
+                >
+                  <NavLink to="/courses" label="Courses" currentPath={location.pathname} />
+                </Box>
+              )}
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
