@@ -1,11 +1,4 @@
-import {
-  DarkMode,
-  LightMode,
-  Logout,
-  RateReview,
-  Settings,
-  SettingsBrightness,
-} from '@mui/icons-material';
+import { DarkMode, LightMode, Logout, Settings, SettingsBrightness } from '@mui/icons-material';
 import {
   Avatar,
   Box,
@@ -88,6 +81,8 @@ function NavLink({ to, label, primary = false, currentPath }: NavLinkProps) {
 import callMissedIcon from '../assets/3dicons-call-missed-dynamic-color.png';
 import lockIcon from '../assets/3dicons-locker-dynamic-premium.png';
 import logoIcon from '../assets/logo.png';
+import ProfIcon from '../assets/3dicons-skull-dynamic-color.png';
+
 export default function Layout() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const _theme = useTheme();
@@ -150,7 +145,13 @@ export default function Layout() {
             justifyContent: 'space-between',
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, md: 4 } }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: { xs: 2, md: 4 },
+            }}
+          >
             <Box
               sx={{
                 display: 'flex',
@@ -178,7 +179,13 @@ export default function Layout() {
               </Typography>
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 2, sm: 4 } }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: { xs: 2, sm: 4 },
+              }}
+            >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Box
                   component="img"
@@ -206,7 +213,17 @@ export default function Layout() {
                 <NavLink to="/trading" label="Trading" primary currentPath={location.pathname} />
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <RateReview sx={{ width: 24, height: 24, color: 'text.secondary' }} />
+                <Box
+                  component="img"
+                  src={ProfIcon}
+                  alt=""
+                  sx={{
+                    width: 24,
+                    height: 24,
+                    display: 'block',
+                  }}
+                />
+
                 <NavLink
                   to="/professors"
                   label="Rate My Prof"
@@ -241,7 +258,10 @@ export default function Layout() {
             <IconButton
               onClick={() => navigate('/settings')}
               size="small"
-              sx={{ color: 'text.secondary', display: { xs: 'flex', md: 'none' } }}
+              sx={{
+                color: 'text.secondary',
+                display: { xs: 'flex', md: 'none' },
+              }}
             >
               <Settings fontSize="small" />
             </IconButton>

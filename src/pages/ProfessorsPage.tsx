@@ -140,6 +140,7 @@ export default function ProfessorsPage() {
               <Card
                 component={Link}
                 to={`/professors/${professor.id}`}
+                variant='outlined'
                 sx={{
                   textDecoration: 'none',
                   height: '100%',

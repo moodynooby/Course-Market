@@ -3,7 +3,6 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "packageManager": "pnpm@9.0.0",
   "scripts": {
     "dev": "npx netlify dev",
     "build": "tsc -b && vite build && echo '/*  /index.html  200' > dist/_redirects",
@@ -55,9 +54,12 @@
     "drizzle-kit": "^0.31.10",
     "happy-dom": "^20.9.0",
     "lefthook": "^2.1.6",
+    "sharp": "^0.34.5",
+    "svgo": "^4.0.1",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.10",
+    "vite-plugin-image-optimizer": "^2.0.3",
     "vitest": "^4.1.5"
   }
 }

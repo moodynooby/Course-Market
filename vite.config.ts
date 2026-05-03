@@ -2,6 +2,7 @@ import netlify from '@netlify/vite-plugin';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
+import { ViteImageOptimizer } from 'vite-plugin-image-optimizer';
 
 export default defineConfig({
   plugins: [
@@ -10,6 +11,15 @@ export default defineConfig({
       ...reactCompilerPreset(),
     }),
     netlify(),
+    ViteImageOptimizer({
+      logStats: true,
+      includePublic: true,
+      png: { quality: 90 },
+      jpeg: { quality: 90 },
+      webp: { lossless: true },
+      avif: { lossless: true },
+      cache: true,
+    }),
   ],
   resolve: {
     alias: {
