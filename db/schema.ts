@@ -6,6 +6,7 @@ import {
   serial,
   text,
   timestamp,
+  unique,
   varchar,
 } from 'drizzle-orm/pg-core';
 
@@ -77,20 +78,32 @@ export const professors = pgTable('professors', {
 export type Professor = typeof professors.$inferSelect;
 export type NewProfessor = typeof professors.$inferInsert;
 
-export const professorRatings = pgTable('professor_ratings', {
-  id: serial('id').primaryKey(),
-  professorId: integer('professor_id')
-    .notNull()
-    .references(() => professors.id),
-  auth0UserId: varchar('auth0_user_id', { length: 255 }).notNull(),
-  rating: integer('rating').notNull(), // 1-5
-  difficulty: integer('difficulty').notNull(), // 1-5
-  comment: text('comment').notNull(),
-  courseCode: varchar('course_code', { length: 50 }).notNull(),
-  semesterId: varchar('semester_id', { length: 50 }).notNull(),
-  takeAgain: boolean('take_again').default(true),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+export const professorRatings = pgTable(
+  'professor_ratings',
+  {
+    id: serial('id').primaryKey(),
+    professorId: integer('professor_id')
+      .notNull()
+      .references(() => professors.id),
+    auth0UserId: varchar('auth0_user_id', { length: 255 }).notNull(),
+    rating: integer('rating').notNull(), // 1-5
+    difficulty: integer('difficulty').notNull(), // 1-5
+    comment: text('comment').notNull(),
+    courseCode: varchar('course_code', { length: 50 }).notNull(),
+    semesterId: varchar('semester_id', { length: 50 }).notNull(),
+    takeAgain: boolean('take_again').default(true),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    unique('unique_rating').on(
+      table.auth0UserId,
+      table.professorId,
+      table.courseCode,
+      table.semesterId,
+    ),
+  ],
+);
 
 export type ProfessorRating = typeof professorRatings.$inferSelect;
 export type NewProfessorRating = typeof professorRatings.$inferInsert;

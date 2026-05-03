@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { neon } from '@netlify/neon';
 import { eq, sql, desc } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/neon-http';
@@ -21,6 +23,92 @@ function jsonResponse(statusCode: number, body: object) {
     statusCode,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
+  };
+}
+
+export async function syncProfessors(dbInstance: any, semesterId?: string, siteUrl?: string) {
+  const semestersQuery = await dbInstance.select().from(schema.semesters);
+  const semestersToProcess = semesterId
+    ? semestersQuery.filter((s: any) => s.id === semesterId)
+    : semestersQuery;
+
+  const allInstructors = new Set<string>();
+
+  for (const semester of semestersToProcess) {
+    if (!semester.jsonUrl) continue;
+    try {
+      let url = semester.jsonUrl;
+      let data: any;
+
+      if (!url.startsWith('http') && !siteUrl) {
+        // Local fallback when running via CLI
+        const cleanUrl = url.startsWith('/') ? url.slice(1) : url;
+        const filePath = path.join(process.cwd(), 'public', cleanUrl);
+        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        data = JSON.parse(fileContent);
+      } else {
+        if (!url.startsWith('http') && siteUrl) {
+          url = `${siteUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+        }
+        console.log(`Syncing from ${url}`);
+        const response = await fetch(url);
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(
+            `Failed to fetch ${url}: ${response.status} ${response.statusText} - ${errorText}`,
+          );
+          continue;
+        }
+        data = await response.json();
+      }
+
+      if (data.sections && Array.isArray(data.sections)) {
+        for (const section of data.sections) {
+          if (section.instructor) {
+            const names = section.instructor
+              .split(',')
+              .map((s: string) => s.trim().replace(/\.\.\.$/, ''));
+            for (const name of names) {
+              if (name && name !== 'Not added' && name !== 'To Be Announced' && name !== 'TBA') {
+                allInstructors.add(name);
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error(`Error processing semester ${semester.id}:`, e);
+    }
+  }
+
+  const instructorsList = Array.from(allInstructors);
+  let processedCount = 0;
+
+  const CHUNK_SIZE = 100;
+  for (let i = 0; i < instructorsList.length; i += CHUNK_SIZE) {
+    const chunk = instructorsList.slice(i, i + CHUNK_SIZE);
+    const valuesToInsert = chunk.map((name) => ({
+      name,
+      updatedAt: new Date(),
+    }));
+
+    try {
+      await dbInstance
+        .insert(schema.professors)
+        .values(valuesToInsert)
+        .onConflictDoUpdate({
+          target: schema.professors.name,
+          set: { updatedAt: new Date() },
+        });
+      processedCount += chunk.length;
+    } catch (e) {
+      console.error('Bulk insert error:', e);
+    }
+  }
+
+  return {
+    instructorsFound: instructorsList.length,
+    processed: processedCount,
   };
 }
 
@@ -61,48 +149,9 @@ export const handler = async (event: any) => {
           const protocol = host.includes('localhost') ? 'http' : 'https';
           const siteUrl = `${protocol}://${host}`;
 
-          const semesters = await db.select().from(schema.semesters);
-          const allInstructors = new Set<string>();
+          const { instructorsFound } = await syncProfessors(db, undefined, siteUrl);
 
-          for (const semester of semesters) {
-            if (!semester.jsonUrl) continue;
-            try {
-              let url = semester.jsonUrl;
-              if (!url.startsWith('http')) {
-                url = `${siteUrl}${url.startsWith('/') ? '' : '/'}${url}`;
-              }
-              const response = await fetch(url);
-              if (response.ok) {
-                const data = await response.json();
-                if (data.sections && Array.isArray(data.sections)) {
-                  for (const section of data.sections) {
-                    if (section.instructor) {
-                      const names = section.instructor
-                        .split(',')
-                        .map((s: string) => s.trim().replace(/\.\.\.$/, ''));
-                      for (const name of names) {
-                        if (name && !['Not added', 'To Be Announced', 'TBA'].includes(name)) {
-                          allInstructors.add(name);
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            } catch (e) {
-              console.error('Auto-sync fetch error:', e);
-            }
-          }
-
-          if (allInstructors.size > 0) {
-            for (const name of allInstructors) {
-              try {
-                await db.insert(schema.professors).values({ name }).onConflictDoNothing();
-              } catch (_e) {
-                /* ignore */
-              }
-            }
-
+          if (instructorsFound > 0) {
             // Re-fetch
             professors = await db
               .select({
@@ -189,80 +238,15 @@ export const handler = async (event: any) => {
 
       // POST /professors/sync
       if (path.endsWith('/sync')) {
-        const semesters = await db.select().from(schema.semesters);
-        const allInstructors = new Set<string>();
-
-        // We assume the function is running on Netlify or locally where the JSON files are accessible via URL or filesystem
-        // Since it's a Netlify function, it might be better to fetch from the URL if provided,
-        // but for local dev we can't easily fetch from localhost:8888.
-        // The AGENTS.md says: "Fetch JSON directly from CDN (/semesters/*.json)"
-        // In the function, we can try to fetch from the site's own URL.
-
         const host = event.headers.host || 'localhost:8888';
         const protocol = host.includes('localhost') ? 'http' : 'https';
         const siteUrl = `${protocol}://${host}`;
 
-        for (const semester of semesters) {
-          if (!semester.jsonUrl) continue;
-
-          try {
-            let url = semester.jsonUrl;
-            if (!url.startsWith('http')) {
-              url = `${siteUrl}${url.startsWith('/') ? '' : '/'}${url}`;
-            }
-
-            console.log(`Syncing from ${url}`);
-            const response = await fetch(url);
-            if (!response.ok) {
-              const errorText = await response.text();
-              console.error(
-                `Failed to fetch ${url}: ${response.status} ${response.statusText} - ${errorText}`,
-              );
-              continue;
-            }
-
-            const data = await response.json();
-            console.log(`Fetched ${data.sections?.length} sections from ${semester.id}`);
-            if (data.sections && Array.isArray(data.sections)) {
-              for (const section of data.sections) {
-                if (section.instructor) {
-                  const names = section.instructor
-                    .split(',')
-                    .map((s: string) => s.trim().replace(/\.\.\.$/, ''));
-                  for (const name of names) {
-                    if (
-                      name &&
-                      name !== 'Not added' &&
-                      name !== 'To Be Announced' &&
-                      name !== 'TBA'
-                    ) {
-                      allInstructors.add(name);
-                    }
-                  }
-                }
-              }
-            }
-          } catch (e) {
-            console.error(`Error processing semester ${semester.id}:`, e);
-          }
-        }
-
-        const instructorsList = Array.from(allInstructors);
-        let addedCount = 0;
-
-        for (const name of instructorsList) {
-          try {
-            await db.insert(schema.professors).values({ name }).onConflictDoNothing();
-            addedCount++;
-          } catch (_e) {
-            // Ignore individual insert errors
-          }
-        }
+        const result = await syncProfessors(db, undefined, siteUrl);
 
         return jsonResponse(200, {
           message: 'Sync completed',
-          instructorsFound: instructorsList.length,
-          processed: addedCount,
+          ...result,
         });
       }
     }
