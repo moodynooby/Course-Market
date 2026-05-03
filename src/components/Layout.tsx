@@ -9,6 +9,7 @@ import {
   ListItemText,
   Menu,
   MenuItem,
+  Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
@@ -104,6 +105,8 @@ export default function Layout() {
     else if (mode === 'dark') setMode('system');
     else setMode('light');
   }, [mode, setMode]);
+
+  const nextModeLabel = mode === 'light' ? 'dark' : mode === 'dark' ? 'system' : 'light';
 
   const ModeIcon =
     mode === 'light' ? (
@@ -251,20 +254,30 @@ export default function Layout() {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton onClick={toggleMode} size="small" sx={{ color: 'text.secondary' }}>
-              {ModeIcon}
-            </IconButton>
+            <Tooltip title={`Switch to ${nextModeLabel} mode`}>
+              <IconButton
+                onClick={toggleMode}
+                size="small"
+                sx={{ color: 'text.secondary' }}
+                aria-label={`Switch to ${nextModeLabel} mode`}
+              >
+                {ModeIcon}
+              </IconButton>
+            </Tooltip>
 
-            <IconButton
-              onClick={() => navigate('/settings')}
-              size="small"
-              sx={{
-                color: 'text.secondary',
-                display: { xs: 'flex', md: 'none' },
-              }}
-            >
-              <Settings fontSize="small" />
-            </IconButton>
+            <Tooltip title="Settings">
+              <IconButton
+                onClick={() => navigate('/settings')}
+                size="small"
+                sx={{
+                  color: 'text.secondary',
+                  display: { xs: 'flex', md: 'none' },
+                }}
+                aria-label="Settings"
+              >
+                <Settings fontSize="small" />
+              </IconButton>
+            </Tooltip>
 
             {user ? (
               <Box sx={{ ml: 1 }}>
