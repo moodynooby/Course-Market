@@ -127,3 +127,31 @@ export interface SectionJSON {
   enrolled: number;
   timeSlots: TimeSlot[];
 }
+
+export interface Professor {
+  id: number;
+  name: string;
+  department?: string | null;
+  avgRating?: number;
+  avgDifficulty?: number;
+  ratingCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProfessorRating {
+  id: number;
+  professorId: number;
+  auth0UserId: string;
+  rating: number;
+  difficulty: number;
+  comment: string;
+  courseCode: string;
+  semesterId: string;
+  takeAgain: boolean;
+  createdAt: string;
+}
+
+export interface ProfessorDetails extends Professor {
+  ratings: ProfessorRating[];
+}

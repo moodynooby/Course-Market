@@ -58,6 +58,18 @@ export const llmRequestSchema = z.object({
 
 export type LlmRequest = z.infer<typeof llmRequestSchema>;
 
+export const professorRatingSchema = z.object({
+  professorId: z.number().int().positive(),
+  rating: z.number().int().min(1).max(5),
+  difficulty: z.number().int().min(1).max(5),
+  comment: z.string().min(10, 'Comment must be at least 10 characters').max(1000),
+  courseCode: z.string().min(1, 'Course code is required').max(50),
+  semesterId: z.string().min(1, 'Semester ID is required').max(50),
+  takeAgain: z.boolean().default(true),
+});
+
+export type ProfessorRatingInput = z.infer<typeof professorRatingSchema>;
+
 export function formatZodError(error: z.ZodError): {
   error: string;
   details: { field: string; message: string }[];

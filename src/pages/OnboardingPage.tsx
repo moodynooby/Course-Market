@@ -6,7 +6,6 @@ import {
   Button,
   Card,
   CardContent,
-  CircularProgress,
   Container,
   Grid,
   Stack,
@@ -36,14 +35,10 @@ export default function OnboardingPage() {
   const loadSemesters = useCallback(async () => {
     try {
       setLoadingSemesters(true);
-      setError(null);
       const response = await getSemesters();
       setSemesters(response.semesters);
     } catch (err) {
       console.error('[Onboarding] Error loading semesters:', err);
-      setError(
-        'Failed to load available semesters. Please check your connection or refresh the page.',
-      );
     } finally {
       setLoadingSemesters(false);
     }
@@ -72,7 +67,6 @@ export default function OnboardingPage() {
 
   const handleSelectSemester = async (semesterId: string) => {
     try {
-      setError(null);
       setSelectingSemester(semesterId);
       const cachedData = await getCachedSemesterData(semesterId);
       if (!cachedData) {
@@ -97,7 +91,6 @@ export default function OnboardingPage() {
       setSelectedSemester(semesterId);
     } catch (err) {
       console.error('[Onboarding] Error loading semester data:', err);
-      setError('Failed to load course data for this semester. Please try again.');
     } finally {
       setSelectingSemester(null);
     }
@@ -220,17 +213,14 @@ export default function OnboardingPage() {
                     </Typography>
 
                     {loadingSemesters ? (
-                      <Box sx={{ py: 3, textAlign: 'center' }}>
-                        <CircularProgress size={24} sx={{ mb: 1 }} />
-                        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                          Loading available semesters...
-                        </Typography>
-                      </Box>
-                    ) : semesters.length === 0 && !error ? (
+                      <Typography variant="body2" sx={{ color: 'text.secondary', py: 2 }}>
+                        Loading semesters...
+                      </Typography>
+                    ) : semesters.length === 0 ? (
                       <Alert severity="warning">
                         No semesters available. Please contact your administrator.
                       </Alert>
-                    ) : semesters.length > 0 ? (
+                    ) : (
                       <Grid container spacing={2}>
                         {semesters.map((semester) => (
                           <Grid size={{ xs: 12, sm: 6 }} key={semester.id}>
@@ -260,16 +250,14 @@ export default function OnboardingPage() {
                                 <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                                   {selectedSemester === semester.id
                                     ? 'Selected'
-                                    : selectingSemester === semester.id
-                                      ? 'Loading...'
-                                      : 'Click to select'}
+                                    : 'Click to select'}
                                 </Typography>
                               </Box>
                             </Card>
                           </Grid>
                         ))}
                       </Grid>
-                    ) : null}
+                    )}
                   </Box>
 
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -277,7 +265,7 @@ export default function OnboardingPage() {
                       variant="contained"
                       color="secondary"
                       onClick={handleSave}
-                      disabled={saving || !phone.trim() || !selectedSemester || loadingSemesters}
+                      disabled={saving || !phone.trim() || !selectedSemester}
                       sx={{ borderRadius: 3, px: 3, py: 1.5, fontWeight: 600 }}
                     >
                       {saving ? 'Saving...' : 'Save & Continue'}
