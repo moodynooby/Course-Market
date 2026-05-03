@@ -13,7 +13,8 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { forwardRef, memo, useCallback } from 'react';
+import { forwardRef, memo, useCallback, Fragment } from 'react';
+import { Link } from 'react-router-dom';
 import type { Course, Section } from '../types';
 import { formatTimeSlots } from '../utils/schedule';
 
@@ -164,7 +165,37 @@ export const CourseCard = memo(
                                     }}
                                   >
                                     <Person sx={{ fontSize: 16 }} />
-                                    <Typography variant="caption">{section.instructor}</Typography>
+                                    <Typography variant="caption">
+                                      {section.instructor.split(',').map((name, index, array) => {
+                                        const trimmedName = name.trim();
+                                        if (
+                                          !trimmedName ||
+                                          trimmedName === 'Not added' ||
+                                          trimmedName === 'To Be Announced' ||
+                                          trimmedName === 'TBA'
+                                        ) {
+                                          return trimmedName;
+                                        }
+                                        return (
+                                          <Fragment key={trimmedName}>
+                                            <Typography
+                                              component={Link}
+                                              to={`/professors?search=${encodeURIComponent(trimmedName)}`}
+                                              variant="caption"
+                                              onClick={(e) => e.stopPropagation()}
+                                              sx={{
+                                                color: 'primary.main',
+                                                textDecoration: 'none',
+                                                '&:hover': { textDecoration: 'underline' },
+                                              }}
+                                            >
+                                              {trimmedName}
+                                            </Typography>
+                                            {index < array.length - 1 && ', '}
+                                          </Fragment>
+                                        );
+                                      })}
+                                    </Typography>
                                   </Stack>
                                   <Stack
                                     direction="row"

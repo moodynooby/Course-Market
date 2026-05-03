@@ -1,4 +1,13 @@
-import { boolean, jsonb, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  integer,
+  jsonb,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  varchar,
+} from 'drizzle-orm/pg-core';
 
 export const trades = pgTable('trades', {
   id: serial('id').primaryKey(),
@@ -56,3 +65,32 @@ export const semesters = pgTable('semesters', {
 
 export type Semester = typeof semesters.$inferSelect;
 export type NewSemester = typeof semesters.$inferInsert;
+
+export const professors = pgTable('professors', {
+  id: serial('id').primaryKey(),
+  name: varchar('name', { length: 255 }).notNull().unique(),
+  department: varchar('department', { length: 100 }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export type Professor = typeof professors.$inferSelect;
+export type NewProfessor = typeof professors.$inferInsert;
+
+export const professorRatings = pgTable('professor_ratings', {
+  id: serial('id').primaryKey(),
+  professorId: integer('professor_id')
+    .notNull()
+    .references(() => professors.id),
+  auth0UserId: varchar('auth0_user_id', { length: 255 }).notNull(),
+  rating: integer('rating').notNull(), // 1-5
+  difficulty: integer('difficulty').notNull(), // 1-5
+  comment: text('comment').notNull(),
+  courseCode: varchar('course_code', { length: 50 }).notNull(),
+  semesterId: varchar('semester_id', { length: 50 }).notNull(),
+  takeAgain: boolean('take_again').default(true),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export type ProfessorRating = typeof professorRatings.$inferSelect;
+export type NewProfessorRating = typeof professorRatings.$inferInsert;
