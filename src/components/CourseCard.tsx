@@ -9,6 +9,7 @@ import {
   FormControlLabel,
   IconButton,
   Radio,
+  Tooltip,
   Stack,
   Typography,
   useTheme,
@@ -88,9 +89,14 @@ export const CourseCard = memo(
                   color="success"
                 />
               )}
-              <IconButton onClick={onExpand}>
-                {isExpanded ? <ExpandLess /> : <ExpandMore />}
-              </IconButton>
+              <Tooltip title={isExpanded ? 'Hide sections' : 'Show sections'}>
+                <IconButton
+                  onClick={onExpand}
+                  aria-label={isExpanded ? 'Hide sections' : 'Show sections'}
+                >
+                  {isExpanded ? <ExpandLess /> : <ExpandMore />}
+                </IconButton>
+              </Tooltip>
             </Stack>
           </Stack>
         </CardContent>

@@ -7,6 +7,7 @@ import {
   Chip,
   IconButton,
   Paper,
+  Tooltip,
   Stack,
   Typography,
   useTheme,
@@ -237,15 +238,19 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
               alignItems: 'center',
             }}
           >
-            <IconButton onClick={goToPrev} size="small">
-              <ChevronLeft />
-            </IconButton>
+            <Tooltip title="Previous">
+              <IconButton onClick={goToPrev} size="small" aria-label="Previous week/day">
+                <ChevronLeft />
+              </IconButton>
+            </Tooltip>
             <Button variant="outlined" size="small" onClick={goToToday} sx={{ minWidth: 80 }}>
               Today
             </Button>
-            <IconButton onClick={goToNext} size="small">
-              <ChevronRight />
-            </IconButton>
+            <Tooltip title="Next">
+              <IconButton onClick={goToNext} size="small" aria-label="Next week/day">
+                <ChevronRight />
+              </IconButton>
+            </Tooltip>
             <Typography
               variant="h6"
               sx={{

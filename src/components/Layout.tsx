@@ -7,6 +7,7 @@ import {
   IconButton,
   ListItemIcon,
   ListItemText,
+  Tooltip,
   Menu,
   MenuItem,
   Typography,
@@ -251,20 +252,34 @@ export default function Layout() {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton onClick={toggleMode} size="small" sx={{ color: 'text.secondary' }}>
-              {ModeIcon}
-            </IconButton>
-
-            <IconButton
-              onClick={() => navigate('/settings')}
-              size="small"
-              sx={{
-                color: 'text.secondary',
-                display: { xs: 'flex', md: 'none' },
-              }}
+            <Tooltip
+              title={`Switch to ${
+                mode === 'light' ? 'dark mode' : mode === 'dark' ? 'system theme' : 'light mode'
+              }`}
             >
-              <Settings fontSize="small" />
-            </IconButton>
+              <IconButton
+                onClick={toggleMode}
+                size="small"
+                sx={{ color: 'text.secondary' }}
+                aria-label="Toggle color theme"
+              >
+                {ModeIcon}
+              </IconButton>
+            </Tooltip>
+
+            <Tooltip title="Settings">
+              <IconButton
+                onClick={() => navigate('/settings')}
+                size="small"
+                sx={{
+                  color: 'text.secondary',
+                  display: { xs: 'flex', md: 'none' },
+                }}
+                aria-label="Open settings"
+              >
+                <Settings fontSize="small" />
+              </IconButton>
+            </Tooltip>
 
             {user ? (
               <Box sx={{ ml: 1 }}>
