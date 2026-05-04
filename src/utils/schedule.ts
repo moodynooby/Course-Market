@@ -18,7 +18,15 @@ const DAY_TO_NUMBER: Record<DayOfWeek, number> = {
   Su: 0,
 };
 
-const DAY_ORDER: DayOfWeek[] = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su'];
+const DAY_ORDER_MAP: Record<string, number> = {
+  M: 0,
+  T: 1,
+  W: 2,
+  Th: 3,
+  F: 4,
+  Sa: 5,
+  Su: 6,
+};
 
 function getWeekStartDate(): Date {
   const now = new Date();
@@ -33,10 +41,12 @@ export function sectionsToCalendarEvents(sections: Section[], courses: Course[])
   const events: CalendarEvent[] = [];
   const weekStart = getWeekStartDate();
 
-  sections.forEach((section) => {
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i];
     const course = courses.find((c) => c.id === section.courseId);
 
-    section.timeSlots.forEach((slot, index) => {
+    for (let j = 0; j < section.timeSlots.length; j++) {
+      const slot = section.timeSlots[j];
       const dayOffset = DAY_TO_NUMBER[slot.day];
       const startMinutes = timeToMinutesCached(slot.startTime);
       const endMinutes = timeToMinutesCached(slot.endTime);
@@ -49,17 +59,16 @@ export function sectionsToCalendarEvents(sections: Section[], courses: Course[])
       endDate.setDate(endDate.getDate() + dayOffset);
       endDate.setHours(Math.floor(endMinutes / 60), endMinutes % 60, 0, 0);
 
-      // Include index to ensure unique IDs for potentially duplicate time slots
       events.push({
-        id: `${section.id}-${slot.day}-${slot.startTime}-${index}`,
+        id: `${section.id}-${slot.day}-${slot.startTime}-${j}`,
         title: `${course?.code || 'Course'} - ${section.sectionNumber}`,
         start: startDate,
         end: endDate,
         allDay: false,
         resource: { section, course },
       });
-    });
-  });
+    }
+  }
 
   return events;
 }
@@ -84,7 +93,10 @@ export function formatTimeSlots(timeSlots: TimeSlot[]): {
     return { dayDisplay: '', timeDisplay: 'TBA' };
   }
 
-  const uniqueDays = new Set(timeSlots.map((slot) => slot.day));
+  const uniqueDays = new Set<string>();
+  for (let i = 0; i < timeSlots.length; i++) {
+    uniqueDays.add(timeSlots[i].day);
+  }
   const dayDisplay = Array.from(uniqueDays).join('');
 
   const firstSlot = timeSlots[0];
@@ -94,9 +106,11 @@ export function formatTimeSlots(timeSlots: TimeSlot[]): {
 }
 
 export function hasSectionConflict(section1: Section, section2: Section): boolean {
-  for (const slot1 of section1.timeSlots) {
-    for (const slot2 of section2.timeSlots) {
-      if (hasTimeConflict(slot1, slot2)) {
+  const slots1 = section1.timeSlots;
+  const slots2 = section2.timeSlots;
+  for (let i = 0; i < slots1.length; i++) {
+    for (let j = 0; j < slots2.length; j++) {
+      if (hasTimeConflict(slots1[i], slots2[j])) {
         return true;
       }
     }
@@ -143,7 +157,30 @@ export function hasTimeConflict(slot1: TimeSlot, slot2: TimeSlot): boolean {
   return start1 < end2 && start2 < end1;
 }
 
-export function calculateScheduleScore(schedule: Schedule, preferences: Preferences): number {
+/**
+ * Context for schedule scoring to avoid repeated allocations and calculations.
+ */
+export interface ScoringContext {
+  avoidDaysSet: Set<DayOfWeek>;
+  excludeInstructorsSet: Set<string>;
+  preferredStart: number;
+  preferredEnd: number;
+}
+
+export function createScoringContext(preferences: Preferences): ScoringContext {
+  return {
+    avoidDaysSet: new Set(preferences.avoidDays),
+    excludeInstructorsSet: new Set(preferences.excludeInstructors),
+    preferredStart: timeToMinutesCached(preferences.preferredStartTime),
+    preferredEnd: timeToMinutesCached(preferences.preferredEndTime),
+  };
+}
+
+export function calculateScheduleScore(
+  schedule: Schedule,
+  preferences: Preferences,
+  context?: ScoringContext,
+): number {
   let score = 100;
   const { sections, totalCredits } = schedule;
 
@@ -154,19 +191,16 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
     score -= 20;
   }
 
-  const avoidDaysSet = new Set(preferences.avoidDays);
-  const excludeInstructorsSet = new Set(preferences.excludeInstructors);
+  const ctx = context || createScoringContext(preferences);
   const daysUsed = new Set<DayOfWeek>();
-
-  const preferredStart = timeToMinutesCached(preferences.preferredStartTime);
-  const preferredEnd = timeToMinutesCached(preferences.preferredEndTime);
-
   const allSlots: { day: DayOfWeek; start: number; end: number }[] = [];
 
-  sections.forEach((section) => {
-    const isExcludedInstructor = excludeInstructorsSet.has(section.instructor);
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i];
+    const isExcludedInstructor = ctx.excludeInstructorsSet.has(section.instructor);
 
-    section.timeSlots.forEach((slot) => {
+    for (let j = 0; j < section.timeSlots.length; j++) {
+      const slot = section.timeSlots[j];
       daysUsed.add(slot.day);
       const startTime = timeToMinutesCached(slot.startTime);
       const endTime = timeToMinutesCached(slot.endTime);
@@ -179,31 +213,29 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
       if (preferences.preferAfternoon && startTime >= 720 && startTime < 1020) {
         score += 5;
       }
-      if (startTime < preferredStart || endTime > preferredEnd) {
+      if (startTime < ctx.preferredStart || endTime > ctx.preferredEnd) {
         score -= 10;
       }
 
       if (isExcludedInstructor) {
         score -= 20;
       }
-    });
-  });
+    }
+  }
 
   daysUsed.forEach((day) => {
-    if (avoidDaysSet.has(day)) {
+    if (ctx.avoidDaysSet.has(day)) {
       score -= 15;
     }
   });
 
   if (preferences.preferConsecutiveDays && daysUsed.size > 0) {
-    const sortedDays = Array.from(daysUsed).sort(
-      (a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b),
-    );
+    const sortedDays = Array.from(daysUsed).sort((a, b) => DAY_ORDER_MAP[a] - DAY_ORDER_MAP[b]);
 
     let gaps = 0;
     for (let i = 0; i < sortedDays.length - 1; i++) {
-      const currentIdx = DAY_ORDER.indexOf(sortedDays[i]);
-      const nextIdx = DAY_ORDER.indexOf(sortedDays[i + 1]);
+      const currentIdx = DAY_ORDER_MAP[sortedDays[i]];
+      const nextIdx = DAY_ORDER_MAP[sortedDays[i + 1]];
       if (nextIdx - currentIdx > 1) {
         gaps++;
       }
@@ -215,7 +247,7 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
   if (preferences.maxGapMinutes > 0 && allSlots.length > 1) {
     allSlots.sort((a, b) => {
       if (a.day !== b.day) {
-        return DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day);
+        return DAY_ORDER_MAP[a.day] - DAY_ORDER_MAP[b.day];
       }
       return a.start - b.start;
     });
