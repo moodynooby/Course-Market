@@ -1,5 +1,5 @@
 import { neon } from '@netlify/neon';
-import { eq, sql, desc } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/neon-http';
 import { ZodError } from 'zod';
 import * as schema from '../../db/schema';

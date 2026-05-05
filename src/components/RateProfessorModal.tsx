@@ -19,8 +19,8 @@ import {
 } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useAuthContext } from '../context/AuthContext';
-import { professorsApi } from '../services/professorsApi';
 import { getSemesters } from '../services/coursesApi';
+import { professorsApi } from '../services/professorsApi';
 import type { Semester } from '../types';
 
 interface RateProfessorModalProps {

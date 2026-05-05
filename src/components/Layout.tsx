@@ -80,8 +80,8 @@ function NavLink({ to, label, primary = false, currentPath }: NavLinkProps) {
 
 import callMissedIcon from '../assets/3dicons-call-missed-dynamic-color.png';
 import lockIcon from '../assets/3dicons-locker-dynamic-premium.png';
-import logoIcon from '../assets/logo.png';
 import ProfIcon from '../assets/3dicons-skull-dynamic-color.png';
+import logoIcon from '../assets/logo.png';
 
 export default function Layout() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);

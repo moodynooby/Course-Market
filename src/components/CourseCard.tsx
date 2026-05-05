@@ -13,7 +13,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { forwardRef, memo, useCallback, Fragment } from 'react';
+import { Fragment, forwardRef, memo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import type { Course, Section } from '../types';
 import { formatTimeSlots } from '../utils/schedule';

@@ -1,31 +1,6 @@
-import type { Course, Preferences, Schedule, Section } from '../types';
-import { calculateScheduleScore, hasSectionConflict } from './schedule';
+import type { Course, Preferences, Section } from '../types';
+import { calculateScheduleScore, createScoringContext, hasSectionConflict } from './schedule';
 import type { GeneratedSchedule, GeneratorOptions, ScheduleCluster } from './schedule-types';
-
-function* generateValidCombinations(
-  arrays: Section[][],
-  current: Section[] = [],
-): Generator<Section[]> {
-  if (arrays.length === 0) {
-    yield current;
-    return;
-  }
-
-  const [first, ...rest] = arrays;
-  for (const section of first) {
-    let hasConflict = false;
-    for (const selected of current) {
-      if (hasSectionConflict(section, selected)) {
-        hasConflict = true;
-        break;
-      }
-    }
-
-    if (!hasConflict) {
-      yield* generateValidCombinations(rest, [...current, section]);
-    }
-  }
-}
 
 /**
  * Generates all valid schedule combinations from provided courses and sections.
@@ -52,44 +27,62 @@ export function generateSchedules(
 
   const sectionArrays = Array.from(sectionsByCourse.values());
   const schedules: GeneratedSchedule[] = [];
+  const scoringContext = createScoringContext(preferences);
+  const currentCombination: Section[] = [];
   let count = 0;
   let iterations = 0;
 
-  for (const combination of generateValidCombinations(sectionArrays)) {
-    iterations++;
-    if (onProgress && iterations % 100 === 0) {
-      onProgress(iterations);
+  function backtrack(arrayIndex: number, currentCredits: number) {
+    if (schedules.length >= maxSchedules) return;
+
+    if (arrayIndex === sectionArrays.length) {
+      iterations++;
+      if (onProgress && iterations % 100 === 0) {
+        onProgress(iterations);
+      }
+
+      if (currentCredits < minCredits) return;
+
+      const schedule = {
+        id: `gen-${count}`,
+        sections: [...currentCombination],
+        totalCredits: currentCredits,
+        score: 0,
+        conflicts: [] as string[],
+      };
+
+      schedule.score = calculateScheduleScore(schedule as any, preferences, scoringContext);
+      schedules.push(schedule);
+      count++;
+      return;
     }
 
-    if (schedules.length >= maxSchedules) break;
+    const currentSections = sectionArrays[arrayIndex];
+    for (let i = 0; i < currentSections.length; i++) {
+      const section = currentSections[i];
+      const credits = courseCreditsMap.get(section.courseId) || 3;
 
-    // Currently checking total credits here; pruning could be added for earlier termination
-    const totalCredits = combination.reduce((sum, s) => {
-      return sum + (courseCreditsMap.get(s.courseId) || 3);
-    }, 0);
+      if (currentCredits + credits > maxCredits) continue;
 
-    if (totalCredits < minCredits || totalCredits > maxCredits) continue;
+      let hasConflict = false;
+      for (let j = 0; j < currentCombination.length; j++) {
+        if (hasSectionConflict(section, currentCombination[j])) {
+          hasConflict = true;
+          break;
+        }
+      }
 
-    const schedule: Schedule = {
-      id: `gen-${count}`,
-      name: `Generated Schedule ${count + 1}`,
-      sections: combination,
-      totalCredits,
-      score: 0,
-      conflicts: [],
-    };
+      if (!hasConflict) {
+        currentCombination.push(section);
+        backtrack(arrayIndex + 1, currentCredits + credits);
+        currentCombination.pop();
+        if (schedules.length >= maxSchedules) return;
+      }
+    }
+  }
 
-    const score = calculateScheduleScore(schedule, preferences);
-
-    schedules.push({
-      id: schedule.id,
-      sections: combination,
-      totalCredits,
-      score,
-      conflicts: [],
-    });
-
-    count++;
+  if (sectionArrays.length > 0) {
+    backtrack(0, 0);
   }
 
   return schedules.sort((a, b) => b.score - a.score);
