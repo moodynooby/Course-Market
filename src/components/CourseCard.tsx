@@ -10,6 +10,7 @@ import {
   IconButton,
   Radio,
   Stack,
+  Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
@@ -88,9 +89,16 @@ export const CourseCard = memo(
                   color="success"
                 />
               )}
-              <IconButton onClick={onExpand}>
-                {isExpanded ? <ExpandLess /> : <ExpandMore />}
-              </IconButton>
+              <Tooltip title={isExpanded ? 'Hide sections' : 'Show sections'}>
+                <span>
+                  <IconButton
+                    onClick={onExpand}
+                    aria-label={isExpanded ? 'Hide sections' : 'Show sections'}
+                  >
+                    {isExpanded ? <ExpandLess /> : <ExpandMore />}
+                  </IconButton>
+                </span>
+              </Tooltip>
             </Stack>
           </Stack>
         </CardContent>
