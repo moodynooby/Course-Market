@@ -1,0 +1,3 @@
+## 2025-05-14 - [Schedule Generation Bottleneck]
+**Learning:** The previous schedule generation used recursive generators and array spreads, which caused excessive memory allocations and garbage collection overhead. Furthermore, recalculating `Set` objects from preferences and parsing time strings within the scoring loop (which runs for every valid combination) was a significant bottleneck.
+**Action:** Use manual backtracking with a shared array and `push`/`pop` to minimize allocations. Hoist repeated calculations (like `Set` creation and time parsing) into a `ScoringContext` that is passed down to the scoring function. Implement early pruning in the search space (e.g., credit limit checks) to skip invalid branches as early as possible.
