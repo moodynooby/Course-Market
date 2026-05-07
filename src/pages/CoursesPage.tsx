@@ -16,6 +16,7 @@ import {
   Snackbar,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useVirtualizer } from '@tanstack/react-virtual';
@@ -634,9 +635,16 @@ export default function CoursesPage() {
               endAdornment: (
                 <InputAdornment position="end">
                   {search && (
-                    <IconButton size="small" onClick={() => setSearch('')} sx={{ mr: 0.5 }}>
-                      <Clear fontSize="small" />
-                    </IconButton>
+                    <Tooltip title="Clear search">
+                      <IconButton
+                        size="small"
+                        onClick={() => setSearch('')}
+                        sx={{ mr: 0.5 }}
+                        aria-label="Clear search"
+                      >
+                        <Clear fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   )}
                 </InputAdornment>
               ),
