@@ -1,31 +1,6 @@
 import type { Course, Preferences, Schedule, Section } from '../types';
-import { calculateScheduleScore, hasSectionConflict } from './schedule';
+import { calculateScheduleScore, createScoringContext, hasSectionConflict } from './schedule';
 import type { GeneratedSchedule, GeneratorOptions, ScheduleCluster } from './schedule-types';
-
-function* generateValidCombinations(
-  arrays: Section[][],
-  current: Section[] = [],
-): Generator<Section[]> {
-  if (arrays.length === 0) {
-    yield current;
-    return;
-  }
-
-  const [first, ...rest] = arrays;
-  for (const section of first) {
-    let hasConflict = false;
-    for (const selected of current) {
-      if (hasSectionConflict(section, selected)) {
-        hasConflict = true;
-        break;
-      }
-    }
-
-    if (!hasConflict) {
-      yield* generateValidCombinations(rest, [...current, section]);
-    }
-  }
-}
 
 /**
  * Generates all valid schedule combinations from provided courses and sections.
@@ -52,44 +27,68 @@ export function generateSchedules(
 
   const sectionArrays = Array.from(sectionsByCourse.values());
   const schedules: GeneratedSchedule[] = [];
-  let count = 0;
   let iterations = 0;
 
-  for (const combination of generateValidCombinations(sectionArrays)) {
-    iterations++;
-    if (onProgress && iterations % 100 === 0) {
-      onProgress(iterations);
+  const currentCombination: Section[] = [];
+
+  function backtrack(index: number, currentCredits: number) {
+    if (schedules.length >= maxSchedules) return;
+
+    // Prune if current credits already exceed maxCredits
+    if (currentCredits > maxCredits) return;
+
+    if (index === sectionArrays.length) {
+      iterations++;
+      if (onProgress && iterations % 100 === 0) {
+        onProgress(iterations);
+      }
+
+      if (currentCredits >= minCredits) {
+        schedules.push({
+          id: `gen-${schedules.length}`,
+          sections: [...currentCombination],
+          totalCredits: currentCredits,
+          score: 0, // Placeholder
+          conflicts: [],
+        });
+      }
+      return;
     }
 
-    if (schedules.length >= maxSchedules) break;
+    const sections = sectionArrays[index];
+    for (let i = 0; i < sections.length; i++) {
+      const section = sections[i];
+      let hasConflict = false;
+      for (let j = 0; j < currentCombination.length; j++) {
+        if (hasSectionConflict(section, currentCombination[j])) {
+          hasConflict = true;
+          break;
+        }
+      }
 
-    // Currently checking total credits here; pruning could be added for earlier termination
-    const totalCredits = combination.reduce((sum, s) => {
-      return sum + (courseCreditsMap.get(s.courseId) || 3);
-    }, 0);
+      if (!hasConflict) {
+        const sectionCredits = courseCreditsMap.get(section.courseId) || 3;
+        currentCombination.push(section);
+        backtrack(index + 1, currentCredits + sectionCredits);
+        currentCombination.pop();
+        if (schedules.length >= maxSchedules) return;
+      }
+    }
+  }
 
-    if (totalCredits < minCredits || totalCredits > maxCredits) continue;
+  backtrack(0, 0);
 
-    const schedule: Schedule = {
-      id: `gen-${count}`,
-      name: `Generated Schedule ${count + 1}`,
-      sections: combination,
-      totalCredits,
-      score: 0,
-      conflicts: [],
+  // Pre-create scoring context for optimization
+  const scoringContext = createScoringContext(preferences);
+
+  // Calculate scores for generated schedules
+  for (let i = 0; i < schedules.length; i++) {
+    const schedule = schedules[i];
+    const internalSchedule: Schedule = {
+      ...schedule,
+      name: `Generated Schedule ${schedule.id}`,
     };
-
-    const score = calculateScheduleScore(schedule, preferences);
-
-    schedules.push({
-      id: schedule.id,
-      sections: combination,
-      totalCredits,
-      score,
-      conflicts: [],
-    });
-
-    count++;
+    schedule.score = calculateScheduleScore(internalSchedule, preferences, scoringContext);
   }
 
   return schedules.sort((a, b) => b.score - a.score);
@@ -124,7 +123,8 @@ export function clusterSchedules(
 
   const buckets: Map<number, GeneratedSchedule[]> = new Map();
 
-  for (const schedule of schedules) {
+  for (let i = 0; i < schedules.length; i++) {
+    const schedule = schedules[i];
     const bucketIndex = Math.min(
       Math.floor((schedule.score - minScore) / bucketSize),
       nClusters - 1,
