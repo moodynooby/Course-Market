@@ -143,40 +143,71 @@ export function hasTimeConflict(slot1: TimeSlot, slot2: TimeSlot): boolean {
   return start1 < end2 && start2 < end1;
 }
 
-export function calculateScheduleScore(schedule: Schedule, preferences: Preferences): number {
+/**
+ * Context object for schedule scoring to avoid repeated work in hot loops.
+ */
+export interface ScoringContext {
+  preferences: Preferences;
+  avoidDaysSet: Set<DayOfWeek>;
+  excludeInstructorsSet: Set<string>;
+  preferredStart: number;
+  preferredEnd: number;
+}
+
+/**
+ * Creates a scoring context from user preferences.
+ * Hoists expensive operations like Set creation and time parsing.
+ */
+export function createScoringContext(preferences: Preferences): ScoringContext {
+  return {
+    preferences,
+    avoidDaysSet: new Set(preferences.avoidDays),
+    excludeInstructorsSet: new Set(preferences.excludeInstructors),
+    preferredStart: timeToMinutesCached(preferences.preferredStartTime),
+    preferredEnd: timeToMinutesCached(preferences.preferredEndTime),
+  };
+}
+
+/**
+ * Calculates a score for a schedule based on user preferences.
+ * Supports an optional ScoringContext for performance in hot loops.
+ */
+export function calculateScheduleScore(
+  schedule: Schedule,
+  preferences: Preferences,
+  context?: ScoringContext,
+): number {
+  const ctx = context || createScoringContext(preferences);
+  const { avoidDaysSet, excludeInstructorsSet, preferredStart, preferredEnd } = ctx;
+  const prefs = ctx.preferences;
+
   let score = 100;
   const { sections, totalCredits } = schedule;
 
-  if (totalCredits > preferences.maxCredits) {
+  if (totalCredits > prefs.maxCredits) {
     score -= 20;
   }
-  if (totalCredits < preferences.minCredits) {
+  if (totalCredits < prefs.minCredits) {
     score -= 20;
   }
 
-  const avoidDaysSet = new Set(preferences.avoidDays);
-  const excludeInstructorsSet = new Set(preferences.excludeInstructors);
   const daysUsed = new Set<DayOfWeek>();
-
-  const preferredStart = timeToMinutesCached(preferences.preferredStartTime);
-  const preferredEnd = timeToMinutesCached(preferences.preferredEndTime);
-
   const allSlots: { day: DayOfWeek; start: number; end: number }[] = [];
 
-  sections.forEach((section) => {
+  for (const section of sections) {
     const isExcludedInstructor = excludeInstructorsSet.has(section.instructor);
 
-    section.timeSlots.forEach((slot) => {
+    for (const slot of section.timeSlots) {
       daysUsed.add(slot.day);
       const startTime = timeToMinutesCached(slot.startTime);
       const endTime = timeToMinutesCached(slot.endTime);
 
       allSlots.push({ day: slot.day, start: startTime, end: endTime });
 
-      if (preferences.preferMorning && startTime < 720 && startTime >= 480) {
+      if (prefs.preferMorning && startTime < 720 && startTime >= 480) {
         score += 5;
       }
-      if (preferences.preferAfternoon && startTime >= 720 && startTime < 1020) {
+      if (prefs.preferAfternoon && startTime >= 720 && startTime < 1020) {
         score += 5;
       }
       if (startTime < preferredStart || endTime > preferredEnd) {
@@ -186,16 +217,16 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
       if (isExcludedInstructor) {
         score -= 20;
       }
-    });
-  });
+    }
+  }
 
-  daysUsed.forEach((day) => {
+  for (const day of daysUsed) {
     if (avoidDaysSet.has(day)) {
       score -= 15;
     }
-  });
+  }
 
-  if (preferences.preferConsecutiveDays && daysUsed.size > 0) {
+  if (prefs.preferConsecutiveDays && daysUsed.size > 0) {
     const sortedDays = Array.from(daysUsed).sort(
       (a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b),
     );
@@ -212,7 +243,7 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
     score -= gaps * 5;
   }
 
-  if (preferences.maxGapMinutes > 0 && allSlots.length > 1) {
+  if (prefs.maxGapMinutes > 0 && allSlots.length > 1) {
     allSlots.sort((a, b) => {
       if (a.day !== b.day) {
         return DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day);
@@ -223,7 +254,7 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
     for (let i = 0; i < allSlots.length - 1; i++) {
       if (allSlots[i].day === allSlots[i + 1].day) {
         const gapMinutes = allSlots[i + 1].start - allSlots[i].end;
-        if (gapMinutes > preferences.maxGapMinutes) {
+        if (gapMinutes > prefs.maxGapMinutes) {
           score -= Math.floor(gapMinutes / 30) * 3;
         }
       }
