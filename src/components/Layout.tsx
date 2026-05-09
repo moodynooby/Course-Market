@@ -114,6 +114,13 @@ export default function Layout() {
       <SettingsBrightness fontSize="small" />
     );
 
+  const modeLabel =
+    mode === 'light'
+      ? 'Switch to dark mode'
+      : mode === 'dark'
+        ? 'Switch to system mode'
+        : 'Switch to light mode';
+
   return (
     <Box
       sx={{
@@ -251,20 +258,30 @@ export default function Layout() {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconButton onClick={toggleMode} size="small" sx={{ color: 'text.secondary' }}>
-              {ModeIcon}
-            </IconButton>
+            <Tooltip title={modeLabel}>
+              <IconButton
+                onClick={toggleMode}
+                size="small"
+                sx={{ color: 'text.secondary' }}
+                aria-label={modeLabel}
+              >
+                {ModeIcon}
+              </IconButton>
+            </Tooltip>
 
-            <IconButton
-              onClick={() => navigate('/settings')}
-              size="small"
-              sx={{
-                color: 'text.secondary',
-                display: { xs: 'flex', md: 'none' },
-              }}
-            >
-              <Settings fontSize="small" />
-            </IconButton>
+            <Tooltip title="Settings">
+              <IconButton
+                onClick={() => navigate('/settings')}
+                size="small"
+                sx={{
+                  color: 'text.secondary',
+                  display: { xs: 'flex', md: 'none' },
+                }}
+                aria-label="Settings"
+              >
+                <Settings fontSize="small" />
+              </IconButton>
+            </Tooltip>
 
             {user ? (
               <Box sx={{ ml: 1 }}>

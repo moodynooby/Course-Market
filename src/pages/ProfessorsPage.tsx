@@ -1,4 +1,4 @@
-import { Search, Sync } from '@mui/icons-material';
+import { Clear, Person, Search, Sync } from '@mui/icons-material';
 import {
   Box,
   Button,
@@ -14,9 +14,11 @@ import {
   CircularProgress,
   Alert,
   Tooltip,
+  IconButton,
 } from '@mui/material';
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { EmptyState } from '../components/EmptyState';
 import { useAuthContext } from '../context/AuthContext';
 import { professorsApi } from '../services/professorsApi';
 import type { Professor } from '../types';
@@ -119,6 +121,20 @@ export default function ProfessorsPage() {
                 <Search />
               </InputAdornment>
             ),
+            endAdornment: searchTerm && (
+              <InputAdornment position="end">
+                <Tooltip title="Clear search">
+                  <IconButton
+                    aria-label="Clear search"
+                    onClick={() => setSearchTerm('')}
+                    edge="end"
+                    size="small"
+                  >
+                    <Clear fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </InputAdornment>
+            ),
           },
         }}
       />
@@ -140,7 +156,7 @@ export default function ProfessorsPage() {
               <Card
                 component={Link}
                 to={`/professors/${professor.id}`}
-                variant='outlined'
+                variant="outlined"
                 sx={{
                   textDecoration: 'none',
                   height: '100%',
@@ -196,11 +212,22 @@ export default function ProfessorsPage() {
           ))}
           {filteredProfessors.length === 0 && (
             <Grid size={{ xs: 12 }}>
-              <Box sx={{ textAlign: 'center', py: 8 }}>
-                <Typography variant="h6" sx={{ color: 'text.secondary' }}>
-                  No professors found matching your search.
-                </Typography>
-              </Box>
+              <EmptyState
+                icon={<Person sx={{ fontSize: 40 }} />}
+                title="No professors found"
+                description={
+                  searchTerm
+                    ? `No results for "${searchTerm}". Try adjusting your search term.`
+                    : "We couldn't find any professors in the database."
+                }
+                action={
+                  searchTerm ? (
+                    <Button variant="outlined" onClick={() => setSearchTerm('')}>
+                      Clear Search
+                    </Button>
+                  ) : null
+                }
+              />
             </Grid>
           )}
         </Grid>

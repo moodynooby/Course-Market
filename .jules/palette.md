@@ -1,0 +1,3 @@
+## 2025-05-15 - Accessibility and Empty State Polish
+**Learning:** Accessibility for icon-only buttons (like theme toggles or settings) is often overlooked. Providing both a descriptive `aria-label` and a `Tooltip` ensures the UI is accessible to screen readers and discoverable for sighted users. Additionally, using a reusable `EmptyState` component maintains visual consistency and provides clear next steps for users when no data is available (e.g., search results).
+**Action:** Always wrap icon-only buttons with `Tooltip` and provide `aria-label`. Use the `EmptyState` component for all "no results" or "no data" scenarios across the app.
