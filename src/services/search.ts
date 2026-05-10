@@ -49,6 +49,14 @@ interface MiniSearchResult {
 let courseIndex: MiniSearch | null = null;
 const courseMap = new Map<string, Course>();
 
+// Cache for trades search to avoid rebuilding index on every keystroke
+let tradeIndex: MiniSearch | null = null;
+let lastTrades: TradePost[] | null = null;
+
+// Cache for schedules search to avoid expensive re-indexing
+let scheduleIndex: MiniSearch | null = null;
+let lastSchedules: GeneratedSchedule[] | null = null;
+
 /**
  * Build long-lived course index
  * @param courses List of courses to index
@@ -81,12 +89,17 @@ export const searchCourses = (query: string): string[] => {
 
 /**
  * Search trades by query
+ * Optimized: Caches the MiniSearch index if the trades array reference hasn't changed.
  */
 export const searchTrades = (trades: TradePost[], query: string): TradePost[] => {
   if (!query.trim()) return trades;
 
-  const tradeIndex = new MiniSearch(tradeSearchOptions);
-  tradeIndex.addAll(trades);
+  // Rebuild index only if trades array has changed
+  if (tradeIndex === null || lastTrades !== trades) {
+    tradeIndex = new MiniSearch(tradeSearchOptions);
+    tradeIndex.addAll(trades);
+    lastTrades = trades;
+  }
 
   const results = tradeIndex.search(query) as unknown as MiniSearchResult[];
   const resultIds = new Set(results.map((r) => r.id));
@@ -102,6 +115,7 @@ export const searchTrades = (trades: TradePost[], query: string): TradePost[] =>
 
 /**
  * Search schedules by query
+ * Optimized: Caches the MiniSearch index and processed documents if the schedules array hasn't changed.
  */
 export const searchSchedules = (schedules: GeneratedSchedule[], query: string): SearchResult[] => {
   if (!query.trim()) {
@@ -112,71 +126,76 @@ export const searchSchedules = (schedules: GeneratedSchedule[], query: string): 
     }));
   }
 
-  const scheduleIndex = new MiniSearch(scheduleSearchOptions);
+  // Rebuild index only if schedules array has changed
+  if (scheduleIndex === null || lastSchedules !== schedules) {
+    scheduleIndex = new MiniSearch(scheduleSearchOptions);
 
-  const documents = schedules.map((s) => {
-    const instructors = Array.from(new Set(s.sections.map((sec) => sec.instructor))).join(' ');
-    const days = Array.from(
-      new Set(s.sections.flatMap((sec) => sec.timeSlots.map((ts) => ts.day))),
-    ).join(' ');
-    const times = s.sections
-      .flatMap((sec) => sec.timeSlots.map((ts) => `${ts.startTime} ${ts.endTime}`))
-      .join(' ');
+    const documents = schedules.map((s) => {
+      const instructors = Array.from(new Set(s.sections.map((sec) => sec.instructor))).join(' ');
+      const days = Array.from(
+        new Set(s.sections.flatMap((sec) => sec.timeSlots.map((ts) => ts.day))),
+      ).join(' ');
+      const times = s.sections
+        .flatMap((sec) => sec.timeSlots.map((ts) => `${ts.startTime} ${ts.endTime}`))
+        .join(' ');
 
-    const courseCodes = s.sections
-      .map((sec) => {
-        const course = courseMap.get(sec.courseId);
-        return course ? course.code : sec.courseId;
-      })
-      .join(' ');
+      const courseCodes = s.sections
+        .map((sec) => {
+          const course = courseMap.get(sec.courseId);
+          return course ? course.code : sec.courseId;
+        })
+        .join(' ');
 
-    const courseNames = s.sections
-      .map((sec) => {
-        const course = courseMap.get(sec.courseId);
-        return course ? course.name : '';
-      })
-      .join(' ');
+      const courseNames = s.sections
+        .map((sec) => {
+          const course = courseMap.get(sec.courseId);
+          return course ? course.name : '';
+        })
+        .join(' ');
 
-    const tags: string[] = [];
-    const hasMorning = s.sections.some((sec) =>
-      sec.timeSlots.some((ts) => {
-        const hour = Number.parseInt(ts.startTime.split(':')[0], 10);
-        return hour < 12;
-      }),
-    );
-    const hasAfternoon = s.sections.some((sec) =>
-      sec.timeSlots.some((ts) => {
-        const hour = Number.parseInt(ts.startTime.split(':')[0], 10);
-        return hour >= 12 && hour < 17;
-      }),
-    );
-    const hasEvening = s.sections.some((sec) =>
-      sec.timeSlots.some((ts) => {
-        const hour = Number.parseInt(ts.startTime.split(':')[0], 10);
-        return hour >= 17;
-      }),
-    );
+      const tags: string[] = [];
+      const hasMorning = s.sections.some((sec) =>
+        sec.timeSlots.some((ts) => {
+          const hour = Number.parseInt(ts.startTime.split(':')[0], 10);
+          return hour < 12;
+        }),
+      );
+      const hasAfternoon = s.sections.some((sec) =>
+        sec.timeSlots.some((ts) => {
+          const hour = Number.parseInt(ts.startTime.split(':')[0], 10);
+          return hour >= 12 && hour < 17;
+        }),
+      );
+      const hasEvening = s.sections.some((sec) =>
+        sec.timeSlots.some((ts) => {
+          const hour = Number.parseInt(ts.startTime.split(':')[0], 10);
+          return hour >= 17;
+        }),
+      );
 
-    if (hasMorning) tags.push('morning');
-    if (hasAfternoon) tags.push('afternoon');
-    if (hasEvening) tags.push('evening');
+      if (hasMorning) tags.push('morning');
+      if (hasAfternoon) tags.push('afternoon');
+      if (hasEvening) tags.push('evening');
 
-    const allDays = s.sections.flatMap((sec) => sec.timeSlots.map((ts) => ts.day));
-    if (allDays.includes('M') && allDays.includes('W') && allDays.includes('F')) tags.push('MWF');
-    if (allDays.includes('T') && allDays.includes('Th')) tags.push('TTh');
+      const allDays = s.sections.flatMap((sec) => sec.timeSlots.map((ts) => ts.day));
+      if (allDays.includes('M') && allDays.includes('W') && allDays.includes('F')) tags.push('MWF');
+      if (allDays.includes('T') && allDays.includes('Th')) tags.push('TTh');
 
-    return {
-      id: s.id,
-      courseCodes,
-      courseNames,
-      instructors,
-      days,
-      times,
-      tags: tags.join(' '),
-    };
-  });
+      return {
+        id: s.id,
+        courseCodes,
+        courseNames,
+        instructors,
+        days,
+        times,
+        tags: tags.join(' '),
+      };
+    });
 
-  scheduleIndex.addAll(documents);
+    scheduleIndex.addAll(documents);
+    lastSchedules = schedules;
+  }
+
   const results = scheduleIndex.search(query) as unknown as MiniSearchResult[];
 
   return results.map((r) => {
