@@ -1,0 +1,3 @@
+## 2025-05-15 - [Search UX & Accessibility Standard]
+**Learning:** Icon-only buttons (like "Clear" search) in Material UI TextField components often lack ARIA labels and Tooltips, making them inaccessible to screen readers and non-obvious to sighted users. Consistent use of `EmptyState` for "no results" scenarios provides a much better UX than simple `Alert` or `Typography` messages, especially when paired with actionable recovery buttons (e.g., "Clear Search").
+**Action:** Always wrap `IconButton` in a `Tooltip`, provide an explicit `aria-label`, and use the reusable `EmptyState` component for all "no data" or "no results" views.
