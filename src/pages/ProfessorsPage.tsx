@@ -1,22 +1,24 @@
-import { Search, Sync } from '@mui/icons-material';
+import { Clear, Person, Search, Sync } from '@mui/icons-material';
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
+  CircularProgress,
   Container,
   Grid,
+  IconButton,
   InputAdornment,
   Rating,
-  TextField,
-  Typography,
   Stack,
-  CircularProgress,
-  Alert,
+  TextField,
   Tooltip,
+  Typography,
 } from '@mui/material';
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { EmptyState } from '../components/EmptyState';
 import { useAuthContext } from '../context/AuthContext';
 import { professorsApi } from '../services/professorsApi';
 import type { Professor } from '../types';
@@ -93,14 +95,16 @@ export default function ProfessorsPage() {
         </Box>
         {isAuthenticated && (
           <Tooltip title="Sync professors from semester data">
-            <Button
-              variant="outlined"
-              startIcon={syncing ? <CircularProgress size={20} /> : <Sync />}
-              onClick={handleSync}
-              disabled={syncing}
-            >
-              Sync Data
-            </Button>
+            <span>
+              <Button
+                variant="outlined"
+                startIcon={syncing ? <CircularProgress size={20} /> : <Sync />}
+                onClick={handleSync}
+                disabled={syncing}
+              >
+                Sync Data
+              </Button>
+            </span>
           </Tooltip>
         )}
       </Stack>
@@ -117,6 +121,18 @@ export default function ProfessorsPage() {
             startAdornment: (
               <InputAdornment position="start">
                 <Search />
+              </InputAdornment>
+            ),
+            endAdornment: searchTerm && (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label="Clear search"
+                  onClick={() => setSearchTerm('')}
+                  size="small"
+                  edge="end"
+                >
+                  <Clear fontSize="small" />
+                </IconButton>
               </InputAdornment>
             ),
           },
@@ -140,7 +156,7 @@ export default function ProfessorsPage() {
               <Card
                 component={Link}
                 to={`/professors/${professor.id}`}
-                variant='outlined'
+                variant="outlined"
                 sx={{
                   textDecoration: 'none',
                   height: '100%',
@@ -196,11 +212,16 @@ export default function ProfessorsPage() {
           ))}
           {filteredProfessors.length === 0 && (
             <Grid size={{ xs: 12 }}>
-              <Box sx={{ textAlign: 'center', py: 8 }}>
-                <Typography variant="h6" sx={{ color: 'text.secondary' }}>
-                  No professors found matching your search.
-                </Typography>
-              </Box>
+              <EmptyState
+                icon={<Person sx={{ fontSize: 40 }} />}
+                title="No professors found"
+                description={`No instructors found matching "${searchTerm}". Try a different name or department.`}
+                action={
+                  <Button variant="outlined" onClick={() => setSearchTerm('')}>
+                    Clear Search
+                  </Button>
+                }
+              />
             </Grid>
           )}
         </Grid>
