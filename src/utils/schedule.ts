@@ -143,7 +143,27 @@ export function hasTimeConflict(slot1: TimeSlot, slot2: TimeSlot): boolean {
   return start1 < end2 && start2 < end1;
 }
 
-export function calculateScheduleScore(schedule: Schedule, preferences: Preferences): number {
+export interface ScoringContext {
+  avoidDays: Set<DayOfWeek>;
+  excludeInstructors: Set<string>;
+  preferredStart: number;
+  preferredEnd: number;
+}
+
+export function createScoringContext(preferences: Preferences): ScoringContext {
+  return {
+    avoidDays: new Set(preferences.avoidDays),
+    excludeInstructors: new Set(preferences.excludeInstructors),
+    preferredStart: timeToMinutesCached(preferences.preferredStartTime),
+    preferredEnd: timeToMinutesCached(preferences.preferredEndTime),
+  };
+}
+
+export function calculateScheduleScore(
+  schedule: Schedule,
+  preferences: Preferences,
+  context?: ScoringContext,
+): number {
   let score = 100;
   const { sections, totalCredits } = schedule;
 
@@ -154,19 +174,16 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
     score -= 20;
   }
 
-  const avoidDaysSet = new Set(preferences.avoidDays);
-  const excludeInstructorsSet = new Set(preferences.excludeInstructors);
+  const { avoidDays, excludeInstructors, preferredStart, preferredEnd } =
+    context || createScoringContext(preferences);
+
   const daysUsed = new Set<DayOfWeek>();
-
-  const preferredStart = timeToMinutesCached(preferences.preferredStartTime);
-  const preferredEnd = timeToMinutesCached(preferences.preferredEndTime);
-
   const allSlots: { day: DayOfWeek; start: number; end: number }[] = [];
 
-  sections.forEach((section) => {
-    const isExcludedInstructor = excludeInstructorsSet.has(section.instructor);
+  for (const section of sections) {
+    const isExcludedInstructor = excludeInstructors.has(section.instructor);
 
-    section.timeSlots.forEach((slot) => {
+    for (const slot of section.timeSlots) {
       daysUsed.add(slot.day);
       const startTime = timeToMinutesCached(slot.startTime);
       const endTime = timeToMinutesCached(slot.endTime);
@@ -186,14 +203,14 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
       if (isExcludedInstructor) {
         score -= 20;
       }
-    });
-  });
+    }
+  }
 
-  daysUsed.forEach((day) => {
-    if (avoidDaysSet.has(day)) {
+  for (const day of daysUsed) {
+    if (avoidDays.has(day)) {
       score -= 15;
     }
-  });
+  }
 
   if (preferences.preferConsecutiveDays && daysUsed.size > 0) {
     const sortedDays = Array.from(daysUsed).sort(
