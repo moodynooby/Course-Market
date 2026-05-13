@@ -153,7 +153,7 @@ export default function CoursesPage() {
 
   useEffect(() => {
     if (parsedResult) {
-      const semesterId = parsedResult.semesterId.toLowerCase();
+      const semesterId = parsedResult.semesterId;
 
       cacheSemesterData(
         semesterId,
@@ -161,7 +161,7 @@ export default function CoursesPage() {
         parsedResult.sections,
         parsedResult.version,
       );
-      buildCourseIndex(parsedResult.courses, parsedResult.sections);
+      buildCourseIndex(parsedResult.courses);
 
       setCourses(parsedResult.courses);
       setSections(parsedResult.sections);
@@ -204,8 +204,7 @@ export default function CoursesPage() {
 
       if (profile?.semesterId) {
         const { semesters } = await getSemesters();
-        const normalizedId = profile.semesterId.toLowerCase();
-        selectedSemester = semesters.find((s) => s.id === normalizedId) || null;
+        selectedSemester = semesters.find((s) => s.id === profile.semesterId) || null;
       }
 
       if (!selectedSemester) {
@@ -223,7 +222,7 @@ export default function CoursesPage() {
         if (cachedData && cachedData.courses.length > 0) {
           setCourses(cachedData.courses);
           setSections(cachedData.sections);
-          buildCourseIndex(cachedData.courses, cachedData.sections);
+          buildCourseIndex(cachedData.courses);
           setLoading(false);
           console.log('[CoursesPage] Loaded from IndexedDB cache for', selectedSemester.id);
           return;
@@ -365,7 +364,7 @@ export default function CoursesPage() {
         if (cachedData && cachedData.courses.length > 0) {
           setCourses(cachedData.courses);
           setSections(cachedData.sections);
-          buildCourseIndex(cachedData.courses, cachedData.sections);
+          buildCourseIndex(cachedData.courses);
           setLoading(false);
           console.log('[CoursesPage] Switched to semester from IndexedDB cache:', semesterId);
           return;

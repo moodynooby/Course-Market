@@ -1,7 +1,5 @@
 // Storage keys for localStorage
 export const STORAGE_KEYS = {
-  COURSES: 'auraishub_courses',
-  SECTIONS: 'auraishub_sections',
   PREFERENCES: 'auraishub_preferences',
   COURSE_SELECTIONS: 'auraishub_course_selections',
   THEME_MODE: 'theme-mode',

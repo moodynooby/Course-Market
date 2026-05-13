@@ -1,5 +1,5 @@
 import MiniSearch from 'minisearch';
-import type { Course, Section, TradePost } from '../types';
+import type { Course, TradePost } from '../types';
 import type { GeneratedSchedule, SearchResult } from '../utils/schedule-types';
 
 const courseSearchOptions = {
@@ -49,12 +49,7 @@ interface MiniSearchResult {
 let courseIndex: MiniSearch | null = null;
 const courseMap = new Map<string, Course>();
 
-/**
- * Build long-lived course index
- * @param courses List of courses to index
- * @param _sections Sections (currently unused for course index)
- */
-export const buildCourseIndex = (courses: Course[], _sections: Section[]) => {
+export const buildCourseIndex = (courses: Course[]) => {
   courseIndex = new MiniSearch(courseSearchOptions);
   courseMap.clear();
 

@@ -78,10 +78,10 @@ export async function cacheCourses(
   const tx = db.transaction('courses', 'readwrite');
 
   await tx.store.put({
-    id: `courses:${semesterId.toLowerCase()}`,
+    id: `courses:${semesterId}`,
     data: courses,
     timestamp: Date.now(),
-    semesterId: semesterId.toLowerCase(),
+    semesterId,
     version,
   });
 
@@ -95,12 +95,12 @@ export async function getCachedCourses(
   semesterId: string,
 ): Promise<{ courses: Course[]; timestamp: number; version: string } | null> {
   const db = await getDB();
-  const cached = await db.get('courses', `courses:${semesterId.toLowerCase()}`);
+  const cached = await db.get('courses', `courses:${semesterId}`);
 
   if (!cached) return null;
 
   if (Date.now() - cached.timestamp > CACHE_TTL) {
-    await db.delete('courses', `courses:${semesterId.toLowerCase()}`);
+    await db.delete('courses', `courses:${semesterId}`);
     return null;
   }
 
@@ -123,10 +123,10 @@ export async function cacheSections(
   const tx = db.transaction('sections', 'readwrite');
 
   await tx.store.put({
-    id: `sections:${semesterId.toLowerCase()}`,
+    id: `sections:${semesterId}`,
     data: sections,
     timestamp: Date.now(),
-    semesterId: semesterId.toLowerCase(),
+    semesterId,
     version,
   });
 
@@ -140,12 +140,12 @@ export async function getCachedSections(
   semesterId: string,
 ): Promise<{ sections: Section[]; timestamp: number; version: string } | null> {
   const db = await getDB();
-  const cached = await db.get('sections', `sections:${semesterId.toLowerCase()}`);
+  const cached = await db.get('sections', `sections:${semesterId}`);
 
   if (!cached) return null;
 
   if (Date.now() - cached.timestamp > CACHE_TTL) {
-    await db.delete('sections', `sections:${semesterId.toLowerCase()}`);
+    await db.delete('sections', `sections:${semesterId}`);
     return null;
   }
 

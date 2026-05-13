@@ -1,4 +1,4 @@
-import type { Course, SectionJSON, SemesterJSON } from '../types';
+import type { SectionJSON, SemesterJSON } from '../types';
 import { api } from './apiClient';
 
 /**
@@ -15,8 +15,12 @@ export async function getSemesters(): Promise<{
  * This is the primary data loading method - fetches JSON directly from CDN
  */
 export async function getSemesterData(semesterId: string): Promise<SemesterJSON> {
-  // First get semester metadata to find the JSON URL
   const { semesters } = await getSemesters();
+
+  if (!semesters || semesters.length === 0) {
+    throw new Error('No semesters available');
+  }
+
   const semester = semesters.find((s) => s.id === semesterId);
 
   if (!semester) {
@@ -32,50 +36,14 @@ export async function getSemesterData(semesterId: string): Promise<SemesterJSON>
 }
 
 /**
- * Direct fetch of semester JSON from a known URL
- */
-export async function fetchSemesterJSON(jsonUrl: string): Promise<SemesterJSON> {
-  const response = await fetch(jsonUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch JSON: ${response.status}`);
-  }
-  return response.json();
-}
-
-/**
  * Extract unique subjects from semester data
  */
 export function getSubjectsFromSemester(semesterData: SemesterJSON): string[] {
+  if (!semesterData.sections) return [];
   return (
-    semesterData.metadata.subjects ||
+    semesterData.metadata?.subjects ||
     Array.from(new Set(semesterData.sections.map((s) => s.subject))).sort()
   );
-}
-
-/**
- * Transform semester sections into courses grouped by subject
- */
-export function getCoursesBySubject(semesterData: SemesterJSON): Record<string, Course[]> {
-  const courses: Record<string, Course[]> = {};
-
-  for (const section of semesterData.sections) {
-    if (!courses[section.subject]) {
-      courses[section.subject] = [];
-    }
-
-    const exists = courses[section.subject].some((c) => c.code === section.courseCode);
-    if (!exists) {
-      courses[section.subject].push({
-        id: section.courseCode,
-        code: section.courseCode,
-        name: section.courseName,
-        subject: section.subject,
-        credits: section.credits,
-      });
-    }
-  }
-
-  return courses;
 }
 
 /**

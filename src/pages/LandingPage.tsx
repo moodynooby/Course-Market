@@ -23,8 +23,9 @@ import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
 import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
 import { buildCourseIndex } from '../services/search';
-import type { Course, Schedule, Section } from '../types';
+import type { Course, Schedule, Section, SemesterJSON } from '../types';
 import { STORAGE_KEYS } from '../utils/constants';
+import { transformSections } from '../utils/semester-transform';
 import { checkConflicts } from '../utils/schedule';
 import type { GeneratedSchedule, SearchResult } from '../utils/schedule-types';
 import { storage } from '../utils/storage';
@@ -133,23 +134,22 @@ export default function LandingPage() {
         const sections = cachedData.sections;
         setAllCourses(courses);
         setAllSections(sections);
-        buildCourseIndex(courses, sections);
+        buildCourseIndex(courses);
         loadScheduleFromSelections(courses, sections);
       } else {
         const response = await fetch(activeSemester.jsonUrl);
         if (!response.ok) {
           throw new Error(`Failed to fetch semester JSON: ${response.status}`);
         }
-        const semesterData = await response.json();
+        const semesterData: SemesterJSON = await response.json();
 
-        const courses: Course[] = semesterData.courses || [];
-        const sections: Section[] = semesterData.sections || [];
+        const { courses, sections } = transformSections(semesterData.sections);
 
         await cacheSemesterData(semesterId, courses, sections, semesterData.version || '1.0');
 
         setAllCourses(courses);
         setAllSections(sections);
-        buildCourseIndex(courses, sections);
+        buildCourseIndex(courses);
         loadScheduleFromSelections(courses, sections);
       }
     } catch (error) {

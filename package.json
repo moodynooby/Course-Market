@@ -14,8 +14,7 @@
     "db:generate": "npx netlify dev:exec drizzle-kit generate",
     "db:push": "npx netlify dev:exec drizzle-kit push",
     "db:check": "npx netlify dev:exec drizzle-kit check",
-    "db:studio": "npx netlify dev:exec drizzle-kit studio",
-    "load-semester": "npx netlify dev:exec tsx scripts/load-semester.ts"
+    "db:studio": "npx netlify dev:exec drizzle-kit studio"
   },
   "dependencies": {
     "@ai-sdk/groq": "^3.0.38",

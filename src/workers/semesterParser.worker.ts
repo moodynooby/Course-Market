@@ -3,6 +3,8 @@
  * Runs parsing in background thread to avoid blocking main thread
  */
 
+import { transformSections } from '../utils/semester-transform';
+
 type ParserMessage =
   | {
       type: 'PARSE_JSON';
@@ -56,59 +58,28 @@ type ParserResponse =
       };
     };
 
-function transformData(data: any): {
-  courses: import('../types').Course[];
-  sections: import('../types').Section[];
-  metadata: any;
-} {
-  const coursesMap = new Map<string, import('../types').Course>();
-  const sections: import('../types').Section[] = [];
-
+function computeMetadata(
+  data: any,
+  courses: import('../types').Course[],
+  sections: import('../types').Section[],
+) {
+  const subjectsSet = new Set<string>();
   let minCredits = Infinity;
   let maxCredits = -Infinity;
-  const subjectsSet = new Set<string>();
 
-  data.sections.forEach((section: any) => {
-    if (!coursesMap.has(section.courseCode)) {
-      const course: import('../types').Course = {
-        id: section.courseCode,
-        code: section.courseCode,
-        name: section.courseName,
-        subject: section.subject,
-        credits: section.credits,
-      };
-      coursesMap.set(section.courseCode, course);
-    }
-
-    const sectionEntry: import('../types').Section = {
-      id: section.id,
-      courseId: section.courseCode,
-      sectionNumber: section.sectionNumber,
-      instructor: section.instructor,
-      timeSlots: section.timeSlots || [],
-      capacity: section.capacity || 0,
-      enrolled: section.enrolled || 0,
-    };
-    sections.push(sectionEntry);
-
+  for (const section of data.sections) {
     subjectsSet.add(section.subject);
     minCredits = Math.min(minCredits, section.credits);
     maxCredits = Math.max(maxCredits, section.credits);
-  });
-
-  const courses = Array.from(coursesMap.values());
+  }
 
   return {
-    courses,
-    sections,
-    metadata: {
-      totalSections: sections.length,
-      totalCourses: courses.length,
-      subjects: Array.from(subjectsSet).sort(),
-      creditsRange: {
-        min: minCredits === Infinity ? 0 : minCredits,
-        max: maxCredits === -Infinity ? 0 : maxCredits,
-      },
+    totalSections: sections.length,
+    totalCourses: courses.length,
+    subjects: Array.from(subjectsSet).sort(),
+    creditsRange: {
+      min: minCredits === Infinity ? 0 : minCredits,
+      max: maxCredits === -Infinity ? 0 : maxCredits,
     },
   };
 }
@@ -139,7 +110,7 @@ self.onmessage = async (event: MessageEvent<ParserMessage>) => {
         },
       } as ParserResponse);
 
-      const { courses, sections, metadata } = transformData(data);
+      const { courses, sections } = transformSections(data.sections);
 
       const parseTime = performance.now() - startTime;
 
@@ -151,7 +122,7 @@ self.onmessage = async (event: MessageEvent<ParserMessage>) => {
           version: data.version || '1.0.0',
           courses,
           sections,
-          metadata,
+          metadata: computeMetadata(data, courses, sections),
           parseTime,
         },
       } as ParserResponse);
@@ -199,7 +170,7 @@ self.onmessage = async (event: MessageEvent<ParserMessage>) => {
         },
       } as ParserResponse);
 
-      const { courses, sections, metadata } = transformData(data);
+      const { courses, sections } = transformSections(data.sections);
 
       const parseTime = performance.now() - startTime;
 
@@ -211,7 +182,7 @@ self.onmessage = async (event: MessageEvent<ParserMessage>) => {
           version: data.version || '1.0.0',
           courses,
           sections,
-          metadata,
+          metadata: computeMetadata(data, courses, sections),
           parseTime,
         },
       } as ParserResponse);
@@ -228,5 +199,3 @@ self.onmessage = async (event: MessageEvent<ParserMessage>) => {
     } as ParserResponse);
   }
 };
-
-export {};

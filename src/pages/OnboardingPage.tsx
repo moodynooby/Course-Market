@@ -18,6 +18,7 @@ import { useAuthContext } from '../context/AuthContext';
 import { getSemesters } from '../services/coursesApi';
 import { getCachedSemesterData } from '../services/dbCache';
 import type { Semester } from '../types';
+import { transformSections } from '../utils/semester-transform';
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
@@ -71,21 +72,11 @@ export default function OnboardingPage() {
       const cachedData = await getCachedSemesterData(semesterId);
       if (!cachedData) {
         const { cacheSemesterData } = await import('../services/dbCache');
-        const { getSemesterData: fetchSemesterData, getCoursesBySubject } = await import(
-          '../services/coursesApi'
-        );
+        const { getSemesterData: fetchSemesterData } = await import('../services/coursesApi');
         const semesterData = await fetchSemesterData(semesterId);
-        const coursesBySubject = getCoursesBySubject(semesterData);
-        const allCourses = Object.values(coursesBySubject).flat();
-        const allSections = semesterData.sections.map((s) => ({
-          id: s.id,
-          courseId: s.courseCode,
-          sectionNumber: s.sectionNumber,
-          instructor: s.instructor,
-          timeSlots: s.timeSlots,
-          capacity: s.capacity,
-          enrolled: s.enrolled,
-        }));
+        const { courses: allCourses, sections: allSections } = transformSections(
+          semesterData.sections,
+        );
         await cacheSemesterData(semesterId, allCourses, allSections, semesterData.version);
       }
       setSelectedSemester(semesterId);
