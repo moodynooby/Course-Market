@@ -1,0 +1,3 @@
+## 2025-05-15 - Improving Search Clarity and Accessibility
+**Learning:** Users often get lost when search results are empty without a clear path back or feedback. Providing an explicit "Clear Search" button in the empty state, alongside a standard "Clear" (X) icon in the search field, significantly improves recovery. Additionally, Material UI's `IconButton` components must have explicit `aria-label` even if they are within a `Tooltip` for robust screen reader support.
+**Action:** Always pair `EmptyState` with a recovery action (like clearing filters) and ensure all `IconButton` elements have descriptive `aria-label` attributes.

@@ -34,7 +34,7 @@ interface CourseCardProps {
  */
 export const CourseCard = memo(
   forwardRef<HTMLDivElement, CourseCardProps>(function CourseCard(
-    { course, sections, selectedSectionId, isExpanded, conflictIds, onExpand },
+    { course, sections, selectedSectionId, isExpanded, conflictIds, onExpand, onSelectSection },
     ref,
   ) {
     const theme = useTheme();
@@ -81,7 +81,10 @@ export const CourseCard = memo(
                   color="success"
                 />
               )}
-              <IconButton onClick={onExpand}>
+              <IconButton
+                onClick={onExpand}
+                aria-label={isExpanded ? 'Collapse course details' : 'Expand course details'}
+              >
                 {isExpanded ? <ExpandLess /> : <ExpandMore />}
               </IconButton>
             </Stack>
@@ -134,7 +137,7 @@ export const CourseCard = memo(
                             control={
                               <Radio
                                 checked={isSelected}
-                                onChange={() => handleCardClick(section.id)}
+                                onChange={() => onSelectSection(section.id)}
                                 color="success"
                                 sx={{ ml: -1.5, mr: 1 }}
                               />

@@ -1,4 +1,4 @@
-import { Search, Sync } from '@mui/icons-material';
+import { Clear, Search, Sync } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -8,6 +8,7 @@ import {
   CircularProgress,
   Container,
   Grid,
+  IconButton,
   InputAdornment,
   Rating,
   Stack,
@@ -17,6 +18,7 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { EmptyState } from '../components/EmptyState';
 import { useAuthContext } from '../context/AuthContext';
 import { professorsApi } from '../services/professorsApi';
 import { searchProfessors } from '../services/search';
@@ -114,6 +116,20 @@ export default function ProfessorsPage() {
                 <Search />
               </InputAdornment>
             ),
+            endAdornment: searchTerm && (
+              <InputAdornment position="end">
+                <Tooltip title="Clear search">
+                  <IconButton
+                    aria-label="Clear search"
+                    onClick={() => setSearchTerm('')}
+                    size="small"
+                    edge="end"
+                  >
+                    <Clear fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </InputAdornment>
+            ),
           },
         }}
       />
@@ -191,11 +207,16 @@ export default function ProfessorsPage() {
           ))}
           {filteredProfessors.length === 0 && (
             <Grid size={{ xs: 12 }}>
-              <Box sx={{ textAlign: 'center', py: 8 }}>
-                <Typography variant="h6" sx={{ color: 'text.secondary' }}>
-                  No professors found matching your search.
-                </Typography>
-              </Box>
+              <EmptyState
+                icon={<Search sx={{ fontSize: 40 }} />}
+                title="No professors found"
+                description={`We couldn't find any professors matching "${searchTerm}". Try a different search term.`}
+                action={
+                  <Button variant="outlined" onClick={() => setSearchTerm('')}>
+                    Clear Search
+                  </Button>
+                }
+              />
             </Grid>
           )}
         </Grid>
