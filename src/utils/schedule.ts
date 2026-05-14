@@ -9,13 +9,13 @@ import type {
 } from '../types';
 
 const DAY_TO_NUMBER: Record<DayOfWeek, number> = {
-  M: 1,
-  T: 2,
-  W: 3,
-  Th: 4,
-  F: 5,
-  Sa: 6,
-  Su: 0,
+  M: 0,
+  T: 1,
+  W: 2,
+  Th: 3,
+  F: 4,
+  Sa: 5,
+  Su: 6,
 };
 
 const DAY_ORDER: DayOfWeek[] = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su'];
