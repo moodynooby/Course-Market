@@ -60,6 +60,10 @@ let tradeIndex: MiniSearch | null = null;
 let tradeList: TradePost[] = [];
 const courseMap = new Map<string, Course>();
 
+// Cache for MiniSearch indexes to avoid re-indexing same data repeatedly
+const professorIndexCache = new WeakMap<Professor[], MiniSearch>();
+const scheduleIndexCache = new WeakMap<GeneratedSchedule[], MiniSearch>();
+
 export const buildCourseIndex = (courses: Course[], sections?: Section[]) => {
   courseIndex = new MiniSearch(courseSearchOptions);
   courseMap.clear();
@@ -136,71 +140,78 @@ export const searchSchedules = (schedules: GeneratedSchedule[], query: string): 
     }));
   }
 
-  const scheduleIndex = new MiniSearch(scheduleSearchOptions);
+  // Use cached index if available for this specific schedules array reference
+  let scheduleIndex = scheduleIndexCache.get(schedules);
 
-  const documents = schedules.map((s) => {
-    const instructors = Array.from(new Set(s.sections.map((sec) => sec.instructor))).join(' ');
-    const days = Array.from(
-      new Set(s.sections.flatMap((sec) => sec.timeSlots.map((ts) => ts.day))),
-    ).join(' ');
-    const times = s.sections
-      .flatMap((sec) => sec.timeSlots.map((ts) => `${ts.startTime} ${ts.endTime}`))
-      .join(' ');
+  if (!scheduleIndex) {
+    scheduleIndex = new MiniSearch(scheduleSearchOptions);
 
-    const courseCodes = s.sections
-      .map((sec) => {
-        const course = courseMap.get(sec.courseId);
-        return course ? course.code : sec.courseId;
-      })
-      .join(' ');
+    const documents = schedules.map((s) => {
+      const instructors = Array.from(new Set(s.sections.map((sec) => sec.instructor))).join(' ');
+      const days = Array.from(
+        new Set(s.sections.flatMap((sec) => sec.timeSlots.map((ts) => ts.day))),
+      ).join(' ');
+      const times = s.sections
+        .flatMap((sec) => sec.timeSlots.map((ts) => `${ts.startTime} ${ts.endTime}`))
+        .join(' ');
 
-    const courseNames = s.sections
-      .map((sec) => {
-        const course = courseMap.get(sec.courseId);
-        return course ? course.name : '';
-      })
-      .join(' ');
+      const courseCodes = s.sections
+        .map((sec) => {
+          const course = courseMap.get(sec.courseId);
+          return course ? course.code : sec.courseId;
+        })
+        .join(' ');
 
-    const tags: string[] = [];
-    const hasMorning = s.sections.some((sec) =>
-      sec.timeSlots.some((ts) => {
-        const hour = Number.parseInt(ts.startTime.split(':')[0], 10);
-        return hour < 12;
-      }),
-    );
-    const hasAfternoon = s.sections.some((sec) =>
-      sec.timeSlots.some((ts) => {
-        const hour = Number.parseInt(ts.startTime.split(':')[0], 10);
-        return hour >= 12 && hour < 17;
-      }),
-    );
-    const hasEvening = s.sections.some((sec) =>
-      sec.timeSlots.some((ts) => {
-        const hour = Number.parseInt(ts.startTime.split(':')[0], 10);
-        return hour >= 17;
-      }),
-    );
+      const courseNames = s.sections
+        .map((sec) => {
+          const course = courseMap.get(sec.courseId);
+          return course ? course.name : '';
+        })
+        .join(' ');
 
-    if (hasMorning) tags.push('morning');
-    if (hasAfternoon) tags.push('afternoon');
-    if (hasEvening) tags.push('evening');
+      const tags: string[] = [];
+      const hasMorning = s.sections.some((sec) =>
+        sec.timeSlots.some((ts) => {
+          const hour = Number.parseInt(ts.startTime.split(':')[0], 10);
+          return hour < 12;
+        }),
+      );
+      const hasAfternoon = s.sections.some((sec) =>
+        sec.timeSlots.some((ts) => {
+          const hour = Number.parseInt(ts.startTime.split(':')[0], 10);
+          return hour >= 12 && hour < 17;
+        }),
+      );
+      const hasEvening = s.sections.some((sec) =>
+        sec.timeSlots.some((ts) => {
+          const hour = Number.parseInt(ts.startTime.split(':')[0], 10);
+          return hour >= 17;
+        }),
+      );
 
-    const allDays = s.sections.flatMap((sec) => sec.timeSlots.map((ts) => ts.day));
-    if (allDays.includes('M') && allDays.includes('W') && allDays.includes('F')) tags.push('MWF');
-    if (allDays.includes('T') && allDays.includes('Th')) tags.push('TTh');
+      if (hasMorning) tags.push('morning');
+      if (hasAfternoon) tags.push('afternoon');
+      if (hasEvening) tags.push('evening');
 
-    return {
-      id: s.id,
-      courseCodes,
-      courseNames,
-      instructors,
-      days,
-      times,
-      tags: tags.join(' '),
-    };
-  });
+      const allDays = s.sections.flatMap((sec) => sec.timeSlots.map((ts) => ts.day));
+      if (allDays.includes('M') && allDays.includes('W') && allDays.includes('F')) tags.push('MWF');
+      if (allDays.includes('T') && allDays.includes('Th')) tags.push('TTh');
 
-  scheduleIndex.addAll(documents);
+      return {
+        id: s.id,
+        courseCodes,
+        courseNames,
+        instructors,
+        days,
+        times,
+        tags: tags.join(' '),
+      };
+    });
+
+    scheduleIndex.addAll(documents);
+    scheduleIndexCache.set(schedules, scheduleIndex);
+  }
+
   const results = scheduleIndex.search(query) as unknown as MiniSearchResult[];
 
   return results.map((r) => {
@@ -220,8 +231,14 @@ export const searchSchedules = (schedules: GeneratedSchedule[], query: string): 
 export const searchProfessors = (professors: Professor[], query: string): Professor[] => {
   if (!query.trim()) return professors;
 
-  const profIndex = new MiniSearch(professorSearchOptions);
-  profIndex.addAll(professors);
+  // Use cached index if available for this specific professors array reference
+  let profIndex = professorIndexCache.get(professors);
+
+  if (!profIndex) {
+    profIndex = new MiniSearch(professorSearchOptions);
+    profIndex.addAll(professors);
+    professorIndexCache.set(professors, profIndex);
+  }
 
   const results = profIndex.search(query) as unknown as MiniSearchResult[];
   const resultIds = new Set(results.map((r) => r.id));

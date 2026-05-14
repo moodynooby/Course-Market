@@ -1,0 +1,3 @@
+## 2025-05-15 - Index caching for MiniSearch
+**Learning:** In client-side search implementations using MiniSearch, re-indexing on every keystroke/search call is a significant bottleneck, especially for complex objects like schedules that require pre-processing (mapping to searchable documents). Reference-based caching using `WeakMap` is an ideal solution as it pairs the index lifecycle with the data lifecycle without manual cache invalidation.
+**Action:** Always check if search indexes are being built inside the search execution path. Implement `WeakMap` caching for indexes keyed by the input data reference to ensure sub-millisecond response times for repeated searches or filtering.
