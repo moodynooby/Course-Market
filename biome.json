@@ -18,25 +18,15 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "complexity": {
-        "noImportantStyles": "off",
-        "useLiteralKeys": "off"
-      },
-      "correctness": {
-        "useParseIntRadix": "off"
-      },
       "style": {
         "noNonNullAssertion": "off",
-        "useImportType": "off",
-        "useTemplate": "off",
-        "useNodejsImportProtocol": "off"
+        "useImportType": "off"
       },
       "suspicious": {
         "noExplicitAny": "off",
         "noArrayIndexKey": "off",
         "noImplicitAnyLet": "off",
-        "noAssignInExpressions": "off",
-        "useIterableCallbackReturn": "off"
+        "noAssignInExpressions": "off"
       },
       "a11y": "off"
     }
@@ -62,11 +52,7 @@
     {
       "includes": ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}"],
       "linter": {
-        "rules": {
-          "suspicious": {
-            "noConsole": "off"
-          }
-        }
+        "rules": {}
       }
     }
   ]

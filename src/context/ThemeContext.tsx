@@ -1,7 +1,7 @@
 import { CssBaseline, ThemeProvider as MuiThemeProvider } from '@mui/material';
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { createAppTheme } from '../theme';
-import { useConfigContext } from './ConfigContext';
+import { STORAGE_KEYS } from '../utils/constants';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -23,8 +23,24 @@ interface ThemeProviderProps {
   children: ReactNode;
 }
 
+function getInitialMode(): ThemeMode {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.THEME_MODE);
+    if (stored) return JSON.parse(stored) as ThemeMode;
+
+    const prefsRaw = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
+    if (prefsRaw) {
+      const prefs = JSON.parse(prefsRaw);
+      if (prefs.theme) return prefs.theme as ThemeMode;
+    }
+  } catch {
+    /* ignore */
+  }
+  return 'system';
+}
+
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const { preferences, updatePreferences } = useConfigContext();
+  const [mode, setModeState] = useState<ThemeMode>(getInitialMode);
   const [systemDark, setSystemDark] = useState(false);
 
   useEffect(() => {
@@ -36,10 +52,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
 
-  const mode = preferences.theme || 'system';
-
   const setMode = (newMode: ThemeMode) => {
-    updatePreferences({ theme: newMode });
+    setModeState(newMode);
+    localStorage.setItem(STORAGE_KEYS.THEME_MODE, JSON.stringify(newMode));
   };
 
   const isDark = mode === 'system' ? systemDark : mode === 'dark';

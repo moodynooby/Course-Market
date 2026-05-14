@@ -1,25 +1,14 @@
+import path from 'node:path';
 import netlify from '@netlify/vite-plugin';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
-import path from 'path';
 import { defineConfig } from 'vite';
-import { ViteImageOptimizer } from 'vite-plugin-image-optimizer';
 
 export default defineConfig({
   plugins: [
     react({
-      jsxRuntime: 'automatic',
       ...reactCompilerPreset(),
     }),
     netlify(),
-    ViteImageOptimizer({
-      logStats: true,
-      includePublic: true,
-      png: { quality: 90 },
-      jpeg: { quality: 90 },
-      webp: { lossless: true },
-      avif: { lossless: true },
-      cache: true,
-    }),
   ],
   resolve: {
     alias: {
@@ -31,7 +20,6 @@ export default defineConfig({
       '@utils': path.resolve(__dirname, './src/utils'),
       '@types': path.resolve(__dirname, './src/types'),
       '@services': path.resolve(__dirname, './src/services'),
-      '@constants': path.resolve(__dirname, './src/constants'),
       '@assets': path.resolve(__dirname, './src/assets'),
     },
   },
@@ -52,9 +40,5 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
-    headers: {
-      'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
-    },
   },
 });

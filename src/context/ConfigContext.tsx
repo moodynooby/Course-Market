@@ -1,15 +1,17 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { Preferences } from '../types';
+import type { BYOKConfig } from '../utils/constants';
 import { DEFAULT_LLM_CONFIG, DEFAULT_PREFERENCES, STORAGE_KEYS } from '../utils/constants';
 import { storage } from '../utils/storage';
-
-interface BYOKConfig {
-  provider: 'webllm' | 'groq';
-  apiKey: string;
-  model?: string;
-  temperature?: number;
-  maxTokens?: number;
-}
+import { useAuthContext } from './AuthContext';
 
 interface ConfigContextValue {
   preferences: Preferences;
@@ -28,44 +30,80 @@ interface ConfigProviderProps {
 }
 
 export function ConfigProvider({ children }: ConfigProviderProps) {
-  const [preferences, setPreferences] = useState<Preferences>(DEFAULT_PREFERENCES);
-  const [llmConfig, setLlmConfig] = useState<BYOKConfig>(DEFAULT_LLM_CONFIG);
+  const { profile, updateProfile } = useAuthContext();
+  const profileLoadedRef = useRef(false);
+
+  const [preferences, setPreferences] = useState<Preferences>(() =>
+    storage.get(STORAGE_KEYS.PREFERENCES, DEFAULT_PREFERENCES),
+  );
+  const [llmConfig, setLlmConfig] = useState<BYOKConfig>(() =>
+    storage.get(STORAGE_KEYS.LLM_CONFIG, DEFAULT_LLM_CONFIG),
+  );
   const [loading, setLoading] = useState(true);
 
-  // Load configs from localStorage on mount
+  // Sync from backend profile on first load (source of truth across devices)
   useEffect(() => {
-    try {
-      setPreferences(storage.get(STORAGE_KEYS.PREFERENCES, DEFAULT_PREFERENCES));
-      setLlmConfig(storage.get(STORAGE_KEYS.LLM_CONFIG, DEFAULT_LLM_CONFIG));
-    } catch (error) {
-      console.error('[ConfigContext] Failed to load configs:', error);
-    } finally {
+    if (profile && !profileLoadedRef.current) {
+      profileLoadedRef.current = true;
+      if (profile.preferences) {
+        setPreferences(profile.preferences);
+        storage.set(STORAGE_KEYS.PREFERENCES, profile.preferences);
+      }
+      if (profile.llmConfig) {
+        const config = profile.llmConfig as unknown as BYOKConfig;
+        setLlmConfig(config);
+        storage.set(STORAGE_KEYS.LLM_CONFIG, config);
+      }
+      setLoading(false);
+    } else if (profile === null) {
       setLoading(false);
     }
-  }, []);
+  }, [profile]);
 
-  const updatePreferences = useCallback((updates: Partial<Preferences>) => {
-    setPreferences((prev) => {
-      const merged = { ...prev, ...updates };
-      storage.set(STORAGE_KEYS.PREFERENCES, merged);
-      return merged;
-    });
-  }, []);
+  const saveToBackend = useCallback(
+    async (fields: Record<string, unknown>) => {
+      try {
+        await updateProfile(fields);
+      } catch (error) {
+        console.error('[ConfigContext] Failed to sync to backend:', error);
+      }
+    },
+    [updateProfile],
+  );
 
-  const updateLlmConfig = useCallback((config: BYOKConfig) => {
-    setLlmConfig(config);
-    storage.set(STORAGE_KEYS.LLM_CONFIG, config);
-  }, []);
+  const updatePreferences = useCallback(
+    (updates: Partial<Preferences>) => {
+      setPreferences((prev) => {
+        const merged = { ...prev, ...updates };
+        storage.set(STORAGE_KEYS.PREFERENCES, merged);
+        saveToBackend({ preferences: merged });
+        return merged;
+      });
+    },
+    [saveToBackend],
+  );
+
+  const updateLlmConfig = useCallback(
+    (config: BYOKConfig) => {
+      setLlmConfig(config);
+      storage.set(STORAGE_KEYS.LLM_CONFIG, config);
+      const { initProgressCallback: _, ...persistedConfig } = config;
+      saveToBackend({ llmConfig: persistedConfig });
+    },
+    [saveToBackend],
+  );
 
   const resetPreferences = useCallback(() => {
     setPreferences(DEFAULT_PREFERENCES);
     storage.set(STORAGE_KEYS.PREFERENCES, DEFAULT_PREFERENCES);
-  }, []);
+    saveToBackend({ preferences: DEFAULT_PREFERENCES });
+  }, [saveToBackend]);
 
   const resetLlmConfig = useCallback(() => {
     setLlmConfig(DEFAULT_LLM_CONFIG);
     storage.set(STORAGE_KEYS.LLM_CONFIG, DEFAULT_LLM_CONFIG);
-  }, []);
+    saveToBackend({ llmConfig: DEFAULT_LLM_CONFIG });
+  }, [saveToBackend]);
 
   const value = useMemo(
     () => ({

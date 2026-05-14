@@ -85,6 +85,8 @@ export interface UserProfile {
   phone: string;
   semesterId?: string;
   preferences?: Preferences;
+  courseSelections?: Record<string, string>;
+  llmConfig?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }

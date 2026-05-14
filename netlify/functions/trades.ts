@@ -1,32 +1,14 @@
-import { neon } from '@netlify/neon';
 import { desc, eq } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/neon-http';
 import { ZodError } from 'zod';
+import { db } from '../../db';
 import * as schema from '../../db/schema';
-import { formatZodError, tradeSchema, tradeUpdateSchema } from '../../src/lib/schemas';
+import { formatZodError, tradeSchema, tradeUpdateSchema } from '../../db/validation';
 import { validateToken } from './lib/auth';
-
-const client = neon();
-const db = drizzle({ client, schema });
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE, PATCH',
-  'Access-Control-Max-Age': '86400',
-};
-
-function jsonResponse(statusCode: number, body: object) {
-  return {
-    statusCode,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  };
-}
+import { corsResponse, jsonResponse } from './lib/response';
 
 export const handler = async (event: any) => {
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: corsHeaders, body: '' };
+    return corsResponse();
   }
 
   try {
@@ -89,7 +71,7 @@ export const handler = async (event: any) => {
     }
 
     if (httpMethod === 'PUT' && tradeId) {
-      const idNum = parseInt(tradeId);
+      const idNum = parseInt(tradeId, 10);
       if (Number.isNaN(idNum)) {
         return jsonResponse(400, { error: 'Invalid trade ID' });
       }
@@ -143,7 +125,7 @@ export const handler = async (event: any) => {
     }
 
     if (httpMethod === 'DELETE' && tradeId) {
-      const idNum = parseInt(tradeId);
+      const idNum = parseInt(tradeId, 10);
       if (Number.isNaN(idNum)) {
         return jsonResponse(400, { error: 'Invalid trade ID' });
       }

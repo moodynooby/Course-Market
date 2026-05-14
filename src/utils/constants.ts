@@ -1,14 +1,13 @@
 // Storage keys for localStorage
 export const STORAGE_KEYS = {
   PREFERENCES: 'auraishub_preferences',
-  COURSE_SELECTIONS: 'auraishub_course_selections',
   THEME_MODE: 'theme-mode',
   LLM_CONFIG: 'llm-byok-config',
 } as const;
 
-export type LLMProvider = 'webllm' | 'groq';
+import type { DayOfWeek, LLMProvider } from '../types';
+
 export type LLMTask = 'OPTIMIZE' | 'DRAFT' | 'DEFAULT';
-export type DayOfWeek = 'M' | 'T' | 'W' | 'Th' | 'F' | 'Sa' | 'Su';
 
 export interface BYOKConfig {
   provider: LLMProvider;

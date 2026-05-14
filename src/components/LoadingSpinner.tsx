@@ -30,21 +30,3 @@ export function LoadingSpinner({
 
   return content;
 }
-
-export function LoadingPage({ message }: { message?: string }) {
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        gap: 2,
-      }}
-    >
-      <CircularProgress />
-      {message && <Box sx={{ color: 'text.secondary', mt: 1 }}>{message}</Box>}
-    </Box>
-  );
-}

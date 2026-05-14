@@ -13,7 +13,8 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useAuthContext } from '../context/AuthContext';
 import { getSemesters } from '../services/coursesApi';
 import { getCachedSemesterData } from '../services/dbCache';
@@ -22,7 +23,8 @@ import { transformSections } from '../utils/semester-transform';
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
-  const { profile, updateProfile } = useAuthContext();
+  const location = useLocation();
+  const { profile, updateProfile, loading, signOut } = useAuthContext();
 
   const [phone, setPhone] = useState(profile?.phone || '');
   const [phoneError, setPhoneError] = useState<string | null>(null);
@@ -49,12 +51,23 @@ export default function OnboardingPage() {
     loadSemesters();
   }, [loadSemesters]);
 
+  useEffect(() => {
+    if (profile?.semesterId) {
+      navigate('/', { replace: true });
+    }
+  }, [profile, navigate]);
+
+  useEffect(() => {
+    if (profile?.phone) setPhone(profile.phone);
+    if (profile?.semesterId) setSelectedSemester(profile.semesterId);
+  }, [profile?.phone, profile?.semesterId]);
+
   const validatePhone = (value: string): boolean => {
     if (!value.trim()) {
       setPhoneError('Phone number is required');
       return false;
     }
-    if (!/[\d\s\-+()]+$/.test(value)) {
+    if (!/^[\d\s\-+()]+$/.test(value)) {
       setPhoneError('Invalid phone number format');
       return false;
     }
@@ -98,7 +111,8 @@ export default function OnboardingPage() {
     setError(null);
     try {
       await updateProfile({ phone, semesterId: selectedSemester });
-      navigate('/');
+      const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
+      navigate(from, { replace: true });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to save your details';
       setError(`${errorMessage}. Please try again or refresh the page.`);
@@ -107,6 +121,8 @@ export default function OnboardingPage() {
       setSaving(false);
     }
   };
+
+  if (loading) return <LoadingSpinner fullScreen />;
 
   return (
     <Box
@@ -266,6 +282,14 @@ export default function OnboardingPage() {
               </CardContent>
             </Card>
           </Box>
+          <Button
+            variant="text"
+            color="inherit"
+            onClick={() => signOut()}
+            sx={{ textTransform: 'none', color: 'text.secondary' }}
+          >
+            Sign out
+          </Button>
         </Stack>
       </Container>
     </Box>

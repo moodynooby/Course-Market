@@ -133,8 +133,6 @@ dist
 # Local Netlify folder
 .netlify
 
-# Prettier
-.prettiercache
 
 # Husky
 .husky/_

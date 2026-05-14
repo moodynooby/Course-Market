@@ -15,6 +15,7 @@ import { addWeeks, format, getDay, parse, startOfWeek, subWeeks } from 'date-fns
 
 import { enUS } from 'date-fns/locale/en-US';
 import { memo, useCallback, useMemo, useState } from 'react';
+import type { View } from 'react-big-calendar';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import type { CalendarEvent, Course, Section } from '../types';
 import { sectionsToCalendarEvents } from '../utils/schedule';
@@ -110,7 +111,7 @@ const EventComponent = memo(function EventComponent({ event }: EventProps) {
 
 export default function CalendarView({ sections, courses, conflicts }: CalendarViewProps) {
   const theme = useTheme();
-  const [view, setView] = useState<string>(Views.WEEK);
+  const [view, setView] = useState<View>(Views.WEEK as View);
   const [date, setDate] = useState(new Date());
 
   const events = useMemo(() => sectionsToCalendarEvents(sections, courses), [sections, courses]);
@@ -119,7 +120,7 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
     setDate(newDate);
   };
 
-  const handleViewChange = (newView: string) => {
+  const handleViewChange = (newView: View) => {
     setView(newView);
   };
 
@@ -128,11 +129,23 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
   };
 
   const goToPrev = () => {
-    setDate(view === Views.WEEK ? subWeeks(date, 1) : new Date(date.setDate(date.getDate() - 1)));
+    if (view === Views.WEEK) {
+      setDate(subWeeks(date, 1));
+    } else {
+      const next = new Date(date);
+      next.setDate(next.getDate() - 1);
+      setDate(next);
+    }
   };
 
   const goToNext = () => {
-    setDate(view === Views.WEEK ? addWeeks(date, 1) : new Date(date.setDate(date.getDate() + 1)));
+    if (view === Views.WEEK) {
+      setDate(addWeeks(date, 1));
+    } else {
+      const next = new Date(date);
+      next.setDate(next.getDate() + 1);
+      setDate(next);
+    }
   };
 
   const eventStyleGetter = useCallback(
@@ -359,7 +372,7 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
           }}
         >
           <Calendar
-            localizer={localizer as unknown as object}
+            localizer={localizer}
             events={events}
             startAccessor="start"
             endAccessor="end"
@@ -370,8 +383,8 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
             views={[Views.WEEK, Views.DAY]}
             step={30}
             timeslots={2}
-            min={new Date(1970, 1, 1, 8, 0, 0)}
-            max={new Date(1970, 1, 1, 21, 0, 0)}
+            min={new Date(1970, 0, 1, 8, 0, 0)}
+            max={new Date(1970, 0, 1, 21, 0, 0)}
             eventPropGetter={eventStyleGetter}
             components={{
               event: EventComponent,

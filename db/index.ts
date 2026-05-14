@@ -1,4 +1,5 @@
 import { neon } from '@netlify/neon';
+import { eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from './schema';
 
@@ -30,13 +31,13 @@ export async function updateTrade(id: number, data: Partial<schema.NewTrade>) {
   const [result] = await db
     .update(schema.trades)
     .set({ ...data, updatedAt: new Date() })
-    .where((trades, { eq }) => eq(trades.id, id))
+    .where(eq(schema.trades.id, id))
     .returning();
   return result;
 }
 
 export async function deleteTrade(id: number) {
-  await db.delete(schema.trades).where((trades, { eq }) => eq(trades.id, id));
+  await db.delete(schema.trades).where(eq(schema.trades.id, id));
 }
 
 export async function getTradesByUser(auth0UserId: string) {

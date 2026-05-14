@@ -1,4 +1,4 @@
-import { alpha, Box, CircularProgress, Paper, Stack, Typography, useTheme } from '@mui/material';
+import { alpha, Box, Paper, Stack, Typography, useTheme } from '@mui/material';
 import type { ReactNode } from 'react';
 
 export type EmptyStateVariant = 'default' | 'compact' | 'fullscreen';
@@ -120,39 +120,5 @@ export function EmptyState({
         </Stack>
       )}
     </Paper>
-  );
-}
-
-interface LoadingStateProps {
-  message?: string;
-  variant?: 'default' | 'fullscreen';
-}
-
-export function LoadingState({ message = 'Loading...', variant = 'default' }: LoadingStateProps) {
-  const isFullscreen = variant === 'fullscreen';
-
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: isFullscreen ? '100vh' : 200,
-        py: 4,
-      }}
-    >
-      <CircularProgress sx={{ mb: 2 }} />
-      {message && (
-        <Typography
-          variant="body2"
-          sx={{
-            color: 'text.secondary',
-          }}
-        >
-          {message}
-        </Typography>
-      )}
-    </Box>
   );
 }

@@ -15,12 +15,12 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import RateProfessorModal from '../components/RateProfessorModal';
 import { useAuthContext } from '../context/AuthContext';
 import { professorsApi } from '../services/professorsApi';
 import type { ProfessorDetails } from '../types';
-import RateProfessorModal from '../components/RateProfessorModal';
 
 export default function ProfessorDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,7 +35,7 @@ export default function ProfessorDetailsPage() {
     if (!id) return;
     try {
       setLoading(true);
-      const data = await professorsApi.getProfessorDetails(parseInt(id));
+      const data = await professorsApi.getProfessorDetails(parseInt(id, 10));
       setProfessor(data);
       setError(null);
     } catch (err) {

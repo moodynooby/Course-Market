@@ -24,11 +24,9 @@ import { useConfigContext } from '../context/ConfigContext';
 import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
 import { buildCourseIndex } from '../services/search';
 import type { Course, Schedule, Section, SemesterJSON } from '../types';
-import { STORAGE_KEYS } from '../utils/constants';
-import { transformSections } from '../utils/semester-transform';
 import { checkConflicts } from '../utils/schedule';
 import type { GeneratedSchedule, SearchResult } from '../utils/schedule-types';
-import { storage } from '../utils/storage';
+import { transformSections } from '../utils/semester-transform';
 
 const ScheduleExplorerDialog = lazy(() =>
   import('../components/schedule-explorer/ScheduleExplorerDialog').then((module) => ({
@@ -38,7 +36,7 @@ const ScheduleExplorerDialog = lazy(() =>
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { getToken } = useAuthContext();
+  const { getToken, profile, updateProfile } = useAuthContext();
   const { preferences, llmConfig, updateLlmConfig } = useConfigContext();
   const theme = useTheme();
 
@@ -66,49 +64,52 @@ export default function LandingPage() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showConflicting, setShowConflicting] = useState(false);
 
-  const loadScheduleFromSelections = useCallback((courses: Course[], sections: Section[]) => {
-    const selections = storage.get<Record<string, string>>(STORAGE_KEYS.COURSE_SELECTIONS, {});
+  const loadScheduleFromSelections = useCallback(
+    (courses: Course[], sections: Section[]) => {
+      const selections = profile?.courseSelections || {};
 
-    if (Object.keys(selections).length === 0) {
-      setSchedule(null);
-      setCoursesImported(courses.length > 0);
-      return;
-    }
-
-    try {
-      const sectionMap = new Map(sections.map((s) => [s.id, s]));
-      const selectedSections: Section[] = [];
-      Object.entries(selections).forEach(([, sectionId]) => {
-        const section = sectionMap.get(sectionId);
-        if (section) selectedSections.push(section);
-      });
-
-      if (selectedSections.length === 0) {
+      if (Object.keys(selections).length === 0) {
         setSchedule(null);
         setCoursesImported(courses.length > 0);
         return;
       }
 
-      const totalCredits = selectedSections.reduce((sum, s) => {
-        const course = courses.find((c) => c.id === s.courseId);
-        return sum + (course?.credits || 3);
-      }, 0);
+      try {
+        const sectionMap = new Map(sections.map((s) => [s.id, s]));
+        const selectedSections: Section[] = [];
+        Object.entries(selections).forEach(([, sectionId]) => {
+          const section = sectionMap.get(sectionId);
+          if (section) selectedSections.push(section);
+        });
 
-      setSchedule({
-        id: 'current',
-        name: 'Current Selection',
-        sections: selectedSections,
-        totalCredits,
-        score: 0,
-        conflicts: checkConflicts(selectedSections),
-      });
-      setCoursesImported(courses.length > 0);
-    } catch (err) {
-      console.error('Failed to load schedule from selections:', err);
-      setSchedule(null);
-      setCoursesImported(courses.length > 0);
-    }
-  }, []);
+        if (selectedSections.length === 0) {
+          setSchedule(null);
+          setCoursesImported(courses.length > 0);
+          return;
+        }
+
+        const totalCredits = selectedSections.reduce((sum, s) => {
+          const course = courses.find((c) => c.id === s.courseId);
+          return sum + (course?.credits || 3);
+        }, 0);
+
+        setSchedule({
+          id: 'current',
+          name: 'Current Selection',
+          sections: selectedSections,
+          totalCredits,
+          score: 0,
+          conflicts: checkConflicts(selectedSections),
+        });
+        setCoursesImported(courses.length > 0);
+      } catch (err) {
+        console.error('Failed to load schedule from selections:', err);
+        setSchedule(null);
+        setCoursesImported(courses.length > 0);
+      }
+    },
+    [profile],
+  );
 
   const loadData = useCallback(async () => {
     try {
@@ -165,18 +166,7 @@ export default function LandingPage() {
   useEffect(() => {
     loadData();
     setWebllmAvailable('gpu' in navigator);
-
-    const handleStorageChange = () => {
-      if (allCourses.length > 0 && allSections.length > 0) {
-        loadScheduleFromSelections(allCourses, allSections);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [allCourses, allSections, loadScheduleFromSelections, loadData]);
+  }, [loadData]);
 
   useEffect(() => {
     if (!searchQuery.trim() || generatedSchedules.length === 0) {
@@ -237,8 +227,7 @@ export default function LandingPage() {
           },
           {} as Record<string, string>,
         );
-        storage.set(STORAGE_KEYS.COURSE_SELECTIONS, selections);
-        window.dispatchEvent(new Event('storage'));
+        updateProfile({ courseSelections: selections });
       }
 
       setAiAnalysis(result.aiAnalysis || 'Schedule optimized successfully.');
@@ -299,28 +288,30 @@ export default function LandingPage() {
     }
   }, [schedule, allCourses, allSections, preferences]);
 
-  const handleApplySchedule = useCallback((genSchedule: GeneratedSchedule) => {
-    const selections = genSchedule.sections.reduce(
-      (acc: Record<string, string>, section: Section) => {
-        acc[section.courseId] = section.id;
-        return acc;
-      },
-      {} as Record<string, string>,
-    );
-    storage.set(STORAGE_KEYS.COURSE_SELECTIONS, selections);
-    window.dispatchEvent(new Event('storage'));
-    setScheduleExplorerOpen(false);
+  const handleApplySchedule = useCallback(
+    (genSchedule: GeneratedSchedule) => {
+      const selections = genSchedule.sections.reduce(
+        (acc: Record<string, string>, section: Section) => {
+          acc[section.courseId] = section.id;
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+      updateProfile({ courseSelections: selections });
+      setScheduleExplorerOpen(false);
 
-    const newSchedule: Schedule = {
-      id: genSchedule.id,
-      name: 'Applied Schedule',
-      sections: genSchedule.sections,
-      totalCredits: genSchedule.totalCredits,
-      score: genSchedule.score,
-      conflicts: genSchedule.conflicts,
-    };
-    setSchedule(newSchedule);
-  }, []);
+      const newSchedule: Schedule = {
+        id: genSchedule.id,
+        name: 'Applied Schedule',
+        sections: genSchedule.sections,
+        totalCredits: genSchedule.totalCredits,
+        score: genSchedule.score,
+        conflicts: genSchedule.conflicts,
+      };
+      setSchedule(newSchedule);
+    },
+    [updateProfile],
+  );
 
   const hasCourses = schedule && schedule.sections.length > 0;
   const showOptimization = hasCourses;

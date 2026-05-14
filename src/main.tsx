@@ -8,7 +8,7 @@ const auth0Config = {
   domain: env.AUTH0_DOMAIN,
   clientId: env.AUTH0_CLIENT_ID,
   authorizationParams: {
-    redirect_uri: window.location.origin + '/callback',
+    redirect_uri: `${window.location.origin}/callback`,
     audience: env.AUTH0_AUDIENCE,
     scope: 'openid profile email',
   },

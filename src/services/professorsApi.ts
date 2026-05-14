@@ -1,6 +1,6 @@
-import { api } from './apiClient';
-import type { Professor, ProfessorDetails, ProfessorRating } from '../types';
 import type { ProfessorRatingInput } from '../lib/schemas';
+import type { Professor, ProfessorDetails, ProfessorRating } from '../types';
+import { api } from './apiClient';
 
 export const professorsApi = {
   getProfessors: async () => {

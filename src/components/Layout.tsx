@@ -80,8 +80,8 @@ function NavLink({ to, label, primary = false, currentPath }: NavLinkProps) {
 
 import callMissedIcon from '../assets/3dicons-call-missed-dynamic-color.png';
 import lockIcon from '../assets/3dicons-locker-dynamic-premium.png';
-import logoIcon from '../assets/logo.png';
 import ProfIcon from '../assets/3dicons-skull-dynamic-color.png';
+import logoIcon from '../assets/logo.png';
 
 export default function Layout() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -162,7 +162,7 @@ export default function Layout() {
                 borderLeft: 'none',
               }}
             >
-              <img src={logoIcon} alt="Logo" width={32} height={32} />{' '}
+              <img src={logoIcon} alt="Logo" width={32} height={32} loading="lazy" />{' '}
               <Typography
                 component={Link}
                 to="/"
@@ -191,6 +191,7 @@ export default function Layout() {
                   component="img"
                   src={callMissedIcon}
                   alt=""
+                  loading="lazy"
                   sx={{
                     width: 24,
                     height: 24,
@@ -204,6 +205,7 @@ export default function Layout() {
                   component="img"
                   src={lockIcon}
                   alt=""
+                  loading="lazy"
                   sx={{
                     width: 24,
                     height: 24,
@@ -217,6 +219,7 @@ export default function Layout() {
                   component="img"
                   src={ProfIcon}
                   alt=""
+                  loading="lazy"
                   sx={{
                     width: 24,
                     height: 24,

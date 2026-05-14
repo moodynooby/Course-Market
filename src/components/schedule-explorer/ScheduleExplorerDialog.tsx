@@ -107,13 +107,13 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
       filtered = filtered.filter((schedule) => {
         const hasMorning = schedule.sections.some((s) =>
           s.timeSlots.some((ts) => {
-            const hour = parseInt(ts.startTime.split(':')[0]);
+            const hour = parseInt(ts.startTime.split(':')[0], 10);
             return hour < 12;
           }),
         );
         const hasAfternoon = schedule.sections.some((s) =>
           s.timeSlots.some((ts) => {
-            const hour = parseInt(ts.startTime.split(':')[0]);
+            const hour = parseInt(ts.startTime.split(':')[0], 10);
             return hour >= 12;
           }),
         );

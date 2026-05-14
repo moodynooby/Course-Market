@@ -1,21 +1,21 @@
 import { Search, Sync } from '@mui/icons-material';
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
+  CircularProgress,
   Container,
   Grid,
   InputAdornment,
   Rating,
-  TextField,
-  Typography,
   Stack,
-  CircularProgress,
-  Alert,
+  TextField,
   Tooltip,
+  Typography,
 } from '@mui/material';
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
 import { professorsApi } from '../services/professorsApi';

@@ -1,32 +1,15 @@
-import { neon } from '@netlify/neon';
 import { eq } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/neon-http';
 import { ZodError } from 'zod';
+import { db } from '../../db';
 import * as schema from '../../db/schema';
-import { formatZodError, userProfileSchema, userProfileUpdateSchema } from '../../src/lib/schemas';
+import type { UserProfileInput, UserProfileUpdateInput } from '../../db/validation';
+import { formatZodError, userProfileSchema, userProfileUpdateSchema } from '../../db/validation';
 import { validateToken } from './lib/auth';
-
-const client = neon();
-const db = drizzle({ client, schema });
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, PATCH',
-  'Access-Control-Max-Age': '86400',
-};
-
-function jsonResponse(statusCode: number, body: object, headers: Record<string, string> = {}) {
-  return {
-    statusCode,
-    headers: { ...corsHeaders, ...headers, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  };
-}
+import { corsResponse, jsonResponse } from './lib/response';
 
 export const handler = async (event: any) => {
   if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers: corsHeaders, body: '' };
+    return corsResponse();
   }
 
   try {
@@ -70,25 +53,31 @@ export const handler = async (event: any) => {
 
       if (existingProfile) {
         // Update existing profile - only update provided fields
+        const input = requestBody as UserProfileUpdateInput;
         [profile] = await db
           .update(schema.userProfiles)
           .set({
-            phone: requestBody.phone ?? existingProfile.phone,
-            semesterId: requestBody.semesterId ?? existingProfile.semesterId,
-            preferences: requestBody.preferences ?? existingProfile.preferences,
+            phone: input.phone ?? existingProfile.phone,
+            semesterId: input.semesterId ?? existingProfile.semesterId,
+            preferences: input.preferences ?? existingProfile.preferences,
+            courseSelections: input.courseSelections ?? existingProfile.courseSelections,
+            llmConfig: input.llmConfig ?? existingProfile.llmConfig,
             updatedAt: new Date(),
           })
           .where(eq(schema.userProfiles.auth0UserId, user.sub))
           .returning();
       } else {
         // Create new profile - all required fields must be present
+        const input = requestBody as UserProfileInput;
         [profile] = await db
           .insert(schema.userProfiles)
           .values({
             auth0UserId: user.sub,
-            phone: requestBody.phone,
-            semesterId: requestBody.semesterId || null,
-            preferences: requestBody.preferences || null,
+            phone: input.phone,
+            semesterId: input.semesterId || null,
+            preferences: input.preferences || null,
+            courseSelections: input.courseSelections || null,
+            llmConfig: input.llmConfig || null,
           })
           .returning();
       }

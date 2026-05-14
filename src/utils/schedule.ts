@@ -24,7 +24,8 @@ function getWeekStartDate(): Date {
   const now = new Date();
   const day = now.getDay();
   const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  const weekStart = new Date(now.setDate(diff));
+  const weekStart = new Date(now);
+  weekStart.setDate(diff);
   weekStart.setHours(0, 0, 0, 0);
   return weekStart;
 }

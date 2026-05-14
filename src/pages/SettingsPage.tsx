@@ -28,14 +28,13 @@ import { SchedulePreferences } from '../components/SchedulePreferences';
 import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
 import { useThemeMode } from '../context/ThemeContext';
-import { api } from '../services/apiClient';
 import { getSemesters } from '../services/coursesApi';
 import type { LLMProvider, Preferences, Semester } from '../types';
 import { PROVIDER_OPTIONS, STORAGE_KEYS } from '../utils/constants';
 export default function SettingsPage() {
-  const { user, profile, getToken, updateProfile } = useAuthContext();
-  const { mode } = useThemeMode();
-  const { preferences, llmConfig, updatePreferences, updateLlmConfig } = useConfigContext();
+  const { user, profile, updateProfile } = useAuthContext();
+  const { mode, setMode } = useThemeMode();
+  const { llmConfig, updateLlmConfig } = useConfigContext();
   const [saved, setSaved] = useState(false);
   const [clearDataOpen, setClearDataOpen] = useState(false);
   const [semesterDialogOpen, setSemesterDialogOpen] = useState(false);
@@ -43,7 +42,6 @@ export default function SettingsPage() {
   const [currentSemester, setCurrentSemester] = useState<string>('');
   const [loadingSemesters, setLoadingSemesters] = useState(false);
 
-  const themeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadSemesters = useCallback(async () => {
@@ -64,27 +62,9 @@ export default function SettingsPage() {
     loadSemesters();
   }, [loadSemesters]);
 
-  useEffect(() => {
-    if (preferences.theme && preferences.theme !== mode) {
-      setSaved(true);
-      if (themeTimeoutRef.current) {
-        clearTimeout(themeTimeoutRef.current);
-      }
-      themeTimeoutRef.current = setTimeout(() => setSaved(false), 3000);
-    }
-
-    return () => {
-      if (themeTimeoutRef.current) {
-        clearTimeout(themeTimeoutRef.current);
-      }
-    };
-  }, [preferences.theme, mode]);
-
   const handleSemesterChange = async (semesterId: string) => {
     try {
-      const token = await getToken();
-      await api.post('/user-profile', { semesterId }, token);
-      localStorage.setItem('auraishub_semester', semesterId);
+      await updateProfile({ semesterId, courseSelections: {} });
       setCurrentSemester(semesterId);
       setSemesterDialogOpen(false);
       window.location.reload();
@@ -95,7 +75,7 @@ export default function SettingsPage() {
 
   const handleClearData = () => {
     const APP_KEY_PREFIX = 'auraishub_';
-    const APP_SPECIFIC_KEYS = [STORAGE_KEYS.COURSE_SELECTIONS, STORAGE_KEYS.THEME_MODE];
+    const APP_SPECIFIC_KEYS = [STORAGE_KEYS.THEME_MODE, STORAGE_KEYS.LLM_CONFIG];
 
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith(APP_KEY_PREFIX) || APP_SPECIFIC_KEYS.includes(key as any)) {
@@ -190,12 +170,7 @@ export default function SettingsPage() {
                     <Select
                       value={mode}
                       label="Theme"
-                      onChange={(e) =>
-                        updatePreferences({
-                          ...preferences,
-                          theme: e.target.value as 'light' | 'dark' | 'system',
-                        })
-                      }
+                      onChange={(e) => setMode(e.target.value as 'light' | 'dark' | 'system')}
                     >
                       <MenuItem value="light">Light</MenuItem>
                       <MenuItem value="dark">Dark</MenuItem>
@@ -356,7 +331,10 @@ export default function SettingsPage() {
                   label="Max Tokens"
                   value={llmConfig.maxTokens}
                   onChange={(e) =>
-                    updateLlmConfig({ ...llmConfig, maxTokens: parseInt(e.target.value) || 1024 })
+                    updateLlmConfig({
+                      ...llmConfig,
+                      maxTokens: parseInt(e.target.value, 10) || 1024,
+                    })
                   }
                   slotProps={{
                     htmlInput: { step: 64, min: 256, max: 8192 },

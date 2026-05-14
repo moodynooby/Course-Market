@@ -127,13 +127,13 @@ const router = createBrowserRouter([
 function App() {
   return (
     <ErrorBoundary>
-      <ConfigProvider>
-        <ThemeProvider>
-          <AuthProvider>
+      <AuthProvider>
+        <ConfigProvider>
+          <ThemeProvider>
             <RouterProvider router={router} />
-          </AuthProvider>
-        </ThemeProvider>
-      </ConfigProvider>
+          </ThemeProvider>
+        </ConfigProvider>
+      </AuthProvider>
     </ErrorBoundary>
   );
 }

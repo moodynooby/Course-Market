@@ -1,0 +1,28 @@
+export const corsHeaders: Record<string, string> = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+  'Access-Control-Max-Age': '86400',
+};
+
+export const cacheHeaders: Record<string, string> = {
+  'Cache-Control': 'public, max-age=3600',
+  'CDN-Cache-Control': 'public, max-age=3600',
+  'Netlify-CDN-Cache-Control': 'public, max-age=3600',
+};
+
+export function jsonResponse(
+  statusCode: number,
+  body: object,
+  extraHeaders?: Record<string, string>,
+) {
+  return {
+    statusCode,
+    headers: { ...corsHeaders, ...extraHeaders, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  };
+}
+
+export function corsResponse() {
+  return { statusCode: 200, headers: corsHeaders, body: '' };
+}

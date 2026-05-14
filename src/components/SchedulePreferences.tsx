@@ -295,7 +295,7 @@ export function SchedulePreferences({
                   type="number"
                   label="Min Credits"
                   value={preferences.minCredits}
-                  onChange={(e) => handleCreditsChange('min', parseInt(e.target.value) || 0)}
+                  onChange={(e) => handleCreditsChange('min', parseInt(e.target.value, 10) || 0)}
                   slotProps={{ htmlInput: { min: 0, max: 24 } }}
                 />
               </Grid>
@@ -306,7 +306,7 @@ export function SchedulePreferences({
                   type="number"
                   label="Max Credits"
                   value={preferences.maxCredits}
-                  onChange={(e) => handleCreditsChange('max', parseInt(e.target.value) || 0)}
+                  onChange={(e) => handleCreditsChange('max', parseInt(e.target.value, 10) || 0)}
                   slotProps={{ htmlInput: { min: 0, max: 24 } }}
                 />
               </Grid>

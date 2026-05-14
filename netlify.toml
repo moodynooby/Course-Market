@@ -28,11 +28,8 @@
     Cache-Control = "public, max-age=31536000, immutable"
 
 [functions]
-  directory = "netlify/functions"
   node_bundler = "esbuild"
   external_node_modules = []
-  
-  included_files = [".env"]
 
   [functions."*"]
     node_version = "20"

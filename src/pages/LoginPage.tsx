@@ -113,8 +113,8 @@ export default function LoginPage() {
                       color: 'text.secondary',
                     }}
                   >
-                    Get Free AI ADVICE totally private if you device supports it or a free of cost
-                    ai service
+                    Get free AI advice, totally private if your device supports it, or a free cloud
+                    AI service
                   </Typography>
                 </li>
               </ul>

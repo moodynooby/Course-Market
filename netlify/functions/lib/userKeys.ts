@@ -1,10 +1,6 @@
-import { neon } from '@netlify/neon';
 import { eq } from 'drizzle-orm';
-import { drizzle } from 'drizzle-orm/neon-http';
+import { db } from '../../../db';
 import { userLlmKeys } from '../../../db/schema';
-
-const client = neon();
-const db = drizzle({ client, schema: { userLlmKeys } });
 
 export async function getUserKey(auth0UserId: string, provider: string): Promise<string | null> {
   const result = await db
@@ -33,10 +29,9 @@ export async function saveUserKey(
       apiKey,
     })
     .onConflictDoUpdate({
-      target: userLlmKeys.auth0UserId,
+      target: [userLlmKeys.auth0UserId, userLlmKeys.provider],
       set: {
         apiKey,
-        provider,
         updatedAt: new Date(),
       },
     });

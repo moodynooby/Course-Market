@@ -23,21 +23,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CourseCard } from '../components/CourseCard';
 import { useAuthContext } from '../context/AuthContext';
 import { useSemesterParser } from '../hooks/useSemesterParser';
-import { api } from '../services/apiClient';
 import { getSemesters } from '../services/coursesApi';
 import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
 import { buildCourseIndex, searchCourses } from '../services/search';
 import type { Course, Section } from '../types';
-import { STORAGE_KEYS } from '../utils/constants';
 import { hasSectionConflict } from '../utils/schedule';
-import { storage } from '../utils/storage';
 
 const SEARCH_DEBOUNCE_MS = 150;
-const SAVE_DEBOUNCE_MS = 500;
+const SAVE_DEBOUNCE_MS = 2000;
 const INITIAL_ESTIMATE_SIZE = 200;
 
 export default function CoursesPage() {
-  const { isAuthenticated, getToken } = useAuthContext();
+  const { isAuthenticated, profile, updateProfile } = useAuthContext();
   const [courses, setCourses] = useState<Course[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [search, setSearch] = useState('');
@@ -67,29 +64,34 @@ export default function CoursesPage() {
 
   const { progress, result: parsedResult, error: parseError, fetchAndParse } = useSemesterParser();
 
-  const [selectedSections, setSelectedSections] = useState<Map<string, string>>(() => {
-    const saved = storage.get<Record<string, string>>(STORAGE_KEYS.COURSE_SELECTIONS, {});
-    return new Map(Object.entries(saved));
-  });
+  const [selectedSections, setSelectedSections] = useState<Map<string, string>>(new Map());
 
+  const initialSyncDoneRef = useRef(false);
   const previousSelectionsRef = useRef<Map<string, string>>(new Map());
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const saveSelections = useCallback((selections: Map<string, string>) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
+  useEffect(() => {
+    if (profile && !initialSyncDoneRef.current) {
+      initialSyncDoneRef.current = true;
+      if (profile.courseSelections) {
+        setSelectedSections(new Map(Object.entries(profile.courseSelections)));
+      }
     }
+  }, [profile]);
 
-    saveTimeoutRef.current = setTimeout(() => {
-      const saved = Object.fromEntries(selections);
-      storage.set(STORAGE_KEYS.COURSE_SELECTIONS, saved);
-      console.log(
-        `[CoursesPage] Saved ${selections.size} course selection(s) to localStorage`,
-        saved,
-      );
-      window.dispatchEvent(new Event('storage'));
-    }, SAVE_DEBOUNCE_MS);
-  }, []);
+  const saveSelections = useCallback(
+    (selections: Map<string, string>) => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      saveTimeoutRef.current = setTimeout(() => {
+        const saved = Object.fromEntries(selections);
+        updateProfile({ courseSelections: saved }).catch(console.error);
+      }, SAVE_DEBOUNCE_MS);
+    },
+    [updateProfile],
+  );
 
   useEffect(() => {
     const prev = previousSelectionsRef.current;
@@ -128,6 +130,8 @@ export default function CoursesPage() {
   }, [selectedSections]);
 
   useEffect(() => {
+    if (!initialSyncDoneRef.current) return;
+
     saveSelections(selectedSections);
 
     return () => {
@@ -138,10 +142,10 @@ export default function CoursesPage() {
   }, [selectedSections, saveSelections]);
 
   const loadCoursesFromSemester = useCallback(
-    async (jsonUrl: string, semesterName: string) => {
+    async (jsonUrl: string, semesterId: string, semesterName: string) => {
       try {
         setLoadingMessage(`Loading ${semesterName} courses...`);
-        fetchAndParse(jsonUrl, semesterName, semesterName);
+        fetchAndParse(jsonUrl, semesterId, semesterName);
       } catch (err) {
         console.error('Error loading courses:', err);
         setError('Failed to load courses. Please try again.');
@@ -196,9 +200,6 @@ export default function CoursesPage() {
 
     try {
       setLoadingMessage('Checking your profile...');
-      const token = await getToken();
-      const result = await api.get<{ profile?: { semesterId?: string } }>('/user-profile', token);
-      const profile = result.profile;
 
       let selectedSemester: { id: string; name: string; jsonUrl: string } | null = null;
 
@@ -230,7 +231,11 @@ export default function CoursesPage() {
       }
 
       if (selectedSemester?.jsonUrl) {
-        await loadCoursesFromSemester(selectedSemester.jsonUrl, selectedSemester.name);
+        await loadCoursesFromSemester(
+          selectedSemester.jsonUrl,
+          selectedSemester.id,
+          selectedSemester.name,
+        );
       } else {
         setError('No semester data available. Please complete onboarding first.');
         setLoading(false);
@@ -240,7 +245,7 @@ export default function CoursesPage() {
       setError('Failed to load courses. Please try again later.');
       setLoading(false);
     }
-  }, [isAuthenticated, getToken, loadCoursesFromSemester]);
+  }, [isAuthenticated, profile?.semesterId, loadCoursesFromSemester]);
 
   useEffect(() => {
     autoLoadCourses();
@@ -354,6 +359,7 @@ export default function CoursesPage() {
       setSemesterMenuAnchor(null);
       if (semesterId === currentSemesterId) return;
 
+      setSelectedSections(new Map());
       setLoading(true);
       setLoadingMessage(`Loading ${semesterName} courses...`);
       setCurrentSemesterId(semesterId);
@@ -370,7 +376,7 @@ export default function CoursesPage() {
           return;
         }
 
-        fetchAndParse(jsonUrl, semesterName, semesterName);
+        fetchAndParse(jsonUrl, semesterId, semesterName);
       } catch (err) {
         console.error('Error switching semester:', err);
         setError('Failed to load semester courses. Please try again.');
