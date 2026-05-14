@@ -1,9 +1,9 @@
 import MiniSearch from 'minisearch';
-import type { Course, TradePost } from '../types';
+import type { Course, Professor, Section, TradePost } from '../types';
 import type { GeneratedSchedule, SearchResult } from '../utils/schedule-types';
 
 const courseSearchOptions = {
-  fields: ['code', 'name', 'subject', 'description'],
+  fields: ['code', 'name', 'subject', 'description', 'instructors', 'sectionNumbers'],
   storeFields: ['id'],
   searchOptions: {
     prefix: true,
@@ -46,14 +46,42 @@ interface MiniSearchResult {
   [key: string]: any;
 }
 
+const professorSearchOptions = {
+  fields: ['name', 'department'],
+  storeFields: ['id'],
+  searchOptions: {
+    prefix: true,
+    fuzzy: 0.2,
+  },
+};
+
 let courseIndex: MiniSearch | null = null;
+let tradeIndex: MiniSearch | null = null;
+let tradeList: TradePost[] = [];
 const courseMap = new Map<string, Course>();
 
-export const buildCourseIndex = (courses: Course[]) => {
+export const buildCourseIndex = (courses: Course[], sections?: Section[]) => {
   courseIndex = new MiniSearch(courseSearchOptions);
   courseMap.clear();
 
+  const sectionInfoMap = new Map<
+    string,
+    { instructors: Set<string>; sectionNumbers: Set<string> }
+  >();
+  if (sections) {
+    for (const section of sections) {
+      let info = sectionInfoMap.get(section.courseId);
+      if (!info) {
+        info = { instructors: new Set(), sectionNumbers: new Set() };
+        sectionInfoMap.set(section.courseId, info);
+      }
+      info.instructors.add(section.instructor);
+      info.sectionNumbers.add(section.sectionNumber);
+    }
+  }
+
   for (const course of courses) {
+    const info = sectionInfoMap.get(course.id);
     courseMap.set(course.id, course);
     courseIndex.add({
       id: course.id,
@@ -61,8 +89,30 @@ export const buildCourseIndex = (courses: Course[]) => {
       name: course.name,
       subject: course.subject,
       description: course.description || '',
+      instructors: info ? Array.from(info.instructors).join(' ') : '',
+      sectionNumbers: info ? Array.from(info.sectionNumbers).join(' ') : '',
     });
   }
+};
+
+export const buildTradeIndex = (trades: TradePost[]) => {
+  tradeIndex = new MiniSearch(tradeSearchOptions);
+  tradeList = trades;
+  tradeIndex.addAll(trades);
+};
+
+/**
+ * Search trades by query
+ */
+export const searchTradeIndex = (query: string): TradePost[] => {
+  if (!tradeIndex || !query.trim()) return tradeList;
+
+  const results = tradeIndex.search(query) as unknown as MiniSearchResult[];
+  const resultIds = new Map(results.map((r) => [r.id, r.score]));
+
+  return tradeList
+    .filter((t) => resultIds.has(t.id))
+    .sort((a, b) => (resultIds.get(b.id) || 0) - (resultIds.get(a.id) || 0));
 };
 
 /**
@@ -72,27 +122,6 @@ export const searchCourses = (query: string): string[] => {
   if (!courseIndex || !query.trim()) return [];
   const results = courseIndex.search(query) as unknown as MiniSearchResult[];
   return results.map((r) => r.id);
-};
-
-/**
- * Search trades by query
- */
-export const searchTrades = (trades: TradePost[], query: string): TradePost[] => {
-  if (!query.trim()) return trades;
-
-  const tradeIndex = new MiniSearch(tradeSearchOptions);
-  tradeIndex.addAll(trades);
-
-  const results = tradeIndex.search(query) as unknown as MiniSearchResult[];
-  const resultIds = new Set(results.map((r) => r.id));
-
-  return trades
-    .filter((t) => resultIds.has(t.id))
-    .sort((a, b) => {
-      const scoreA = results.find((r) => r.id === a.id)?.score || 0;
-      const scoreB = results.find((r) => r.id === b.id)?.score || 0;
-      return scoreB - scoreA;
-    });
 };
 
 /**
@@ -183,4 +212,19 @@ export const searchSchedules = (schedules: GeneratedSchedule[], query: string): 
       explanation: `Matched ${Object.keys(r.match).join(', ')}`,
     };
   });
+};
+
+/**
+ * Search professors by name or department using MiniSearch
+ */
+export const searchProfessors = (professors: Professor[], query: string): Professor[] => {
+  if (!query.trim()) return professors;
+
+  const profIndex = new MiniSearch(professorSearchOptions);
+  profIndex.addAll(professors);
+
+  const results = profIndex.search(query) as unknown as MiniSearchResult[];
+  const resultIds = new Set(results.map((r) => r.id));
+
+  return professors.filter((p) => resultIds.has(p.id));
 };

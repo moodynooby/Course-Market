@@ -19,13 +19,15 @@ import ApiKeyDialog from '../components/ApiKeyDialog';
 import { OptimizationPanel } from '../components/dashboard/OptimizationPanel';
 import { ScheduleOverview } from '../components/dashboard/ScheduleOverview';
 import { SelectedCoursesList } from '../components/dashboard/SelectedCoursesList';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
 import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
-import { buildCourseIndex } from '../services/search';
+import { buildCourseIndex, searchSchedules } from '../services/search';
 import type { Course, Schedule, Section, SemesterJSON } from '../types';
 import { checkConflicts } from '../utils/schedule';
 import type { GeneratedSchedule, SearchResult } from '../utils/schedule-types';
+import { DEFAULT_MAX_SCHEDULES } from '../utils/schedule-types';
 import { transformSections } from '../utils/semester-transform';
 
 const ScheduleExplorerDialog = lazy(() =>
@@ -135,7 +137,7 @@ export default function LandingPage() {
         const sections = cachedData.sections;
         setAllCourses(courses);
         setAllSections(sections);
-        buildCourseIndex(courses);
+        buildCourseIndex(courses, sections);
         loadScheduleFromSelections(courses, sections);
       } else {
         const response = await fetch(activeSemester.jsonUrl);
@@ -150,7 +152,7 @@ export default function LandingPage() {
 
         setAllCourses(courses);
         setAllSections(sections);
-        buildCourseIndex(courses);
+        buildCourseIndex(courses, sections);
         loadScheduleFromSelections(courses, sections);
       }
     } catch (error) {
@@ -174,18 +176,12 @@ export default function LandingPage() {
       return;
     }
 
-    const performSearch = async () => {
-      try {
-        const { searchSchedulesByIntent } = await import('../utils/nlp-parser');
-        const results = searchSchedulesByIntent(searchQuery, generatedSchedules);
-        setSearchResults(results);
-      } catch (err) {
-        console.error('Search failed:', err);
-        setSearchResults([]);
-      }
-    };
+    const timer = setTimeout(() => {
+      const results = searchSchedules(generatedSchedules, searchQuery);
+      setSearchResults(results);
+    }, 300);
 
-    performSearch();
+    return () => clearTimeout(timer);
   }, [searchQuery, generatedSchedules]);
 
   const handleOptimize = async () => {
@@ -272,7 +268,7 @@ export default function LandingPage() {
       }
 
       const schedules = generateSchedules(allCourses, sectionsByCourse, prefs, {
-        maxSchedules: 500,
+        maxSchedules: DEFAULT_MAX_SCHEDULES,
         onProgress: setGenerationProgress,
       });
 
@@ -604,22 +600,22 @@ export default function LandingPage() {
         }}
       />
       <Suspense fallback={null}>
-        <ScheduleExplorerDialog
-          open={scheduleExplorerOpen}
-          onClose={() => setScheduleExplorerOpen(false)}
-          generatedSchedules={generatedSchedules}
-          selectedSchedule={selectedSchedule}
-          onSelectSchedule={setSelectedSchedule}
-          onApplySchedule={handleApplySchedule}
-          courses={allCourses}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onSearch={() => {}}
-          searching={false}
-          searchResults={searchResults}
-          showConflicting={showConflicting}
-          onToggleConflicting={() => setShowConflicting(!showConflicting)}
-        />
+        <ErrorBoundary>
+          <ScheduleExplorerDialog
+            open={scheduleExplorerOpen}
+            onClose={() => setScheduleExplorerOpen(false)}
+            generatedSchedules={generatedSchedules}
+            selectedSchedule={selectedSchedule}
+            onSelectSchedule={setSelectedSchedule}
+            onApplySchedule={handleApplySchedule}
+            courses={allCourses}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchResults={searchResults}
+            showConflicting={showConflicting}
+            onToggleConflicting={() => setShowConflicting(!showConflicting)}
+          />
+        </ErrorBoundary>
       </Suspense>
     </Box>
   );

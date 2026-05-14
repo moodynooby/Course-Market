@@ -41,9 +41,6 @@ importers:
       ai:
         specifier: ^6.0.180
         version: 6.0.180(zod@4.4.3)
-      chrono-node:
-        specifier: ^2.9.1
-        version: 2.9.1
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
@@ -2154,10 +2151,6 @@ packages:
   chownr@3.0.0:
     resolution: {integrity: sha512-+IxzY9BZOQd/XuYPRmrvEVjF/nqj5kgT4kEq7VofrDoM1MxoRjEWkrCC3EtLi59TVawxTAn+orJwFQcrqEN1+g==}
     engines: {node: '>=18'}
-
-  chrono-node@2.9.1:
-    resolution: {integrity: sha512-nqP8Zp11efCYQIESXPxeDM8ikzN5BDb3Zzou+a66fZq+X2hzKFdsNLQE2/uBAh//BZEMbaMo1eTnagK7hOenAg==}
-    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
   citty@0.1.6:
     resolution: {integrity: sha512-tskPPKEs8D2KPafUypv2gxwJP8h/OaJmC82QQGGDQcHvXX43xF2VDACcJVmZ0EuSxkpO9Kc4MlrA3q0+FG58AQ==}
@@ -6486,8 +6479,6 @@ snapshots:
       readdirp: 5.0.0
 
   chownr@3.0.0: {}
-
-  chrono-node@2.9.1: {}
 
   citty@0.1.6:
     dependencies:

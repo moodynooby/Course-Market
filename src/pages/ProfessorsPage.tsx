@@ -19,6 +19,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
 import { professorsApi } from '../services/professorsApi';
+import { searchProfessors } from '../services/search';
 import type { Professor } from '../types';
 
 export default function ProfessorsPage() {
@@ -71,13 +72,7 @@ export default function ProfessorsPage() {
   };
 
   const filteredProfessors = useMemo(() => {
-    if (!searchTerm) return professors;
-    const lowerSearch = searchTerm.toLowerCase();
-    return professors.filter(
-      (p) =>
-        p.name.toLowerCase().includes(lowerSearch) ||
-        p.department?.toLowerCase().includes(lowerSearch),
-    );
+    return searchProfessors(professors, searchTerm);
   }, [professors, searchTerm]);
 
   return (

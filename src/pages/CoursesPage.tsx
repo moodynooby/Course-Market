@@ -1,6 +1,7 @@
 import { CalendarToday, Clear, KeyboardArrowDown } from '@mui/icons-material';
 import {
   Alert,
+  alpha,
   Box,
   Button,
   Card,
@@ -52,6 +53,8 @@ export default function CoursesPage() {
   >([]);
   const [loadingSemesters, setLoadingSemesters] = useState(false);
 
+  const [showSelectedOnly, setShowSelectedOnly] = useState(false);
+
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -94,6 +97,8 @@ export default function CoursesPage() {
   );
 
   useEffect(() => {
+    if (!initialSyncDoneRef.current) return;
+
     const prev = previousSelectionsRef.current;
     const curr = selectedSections;
 
@@ -165,7 +170,7 @@ export default function CoursesPage() {
         parsedResult.sections,
         parsedResult.version,
       );
-      buildCourseIndex(parsedResult.courses);
+      buildCourseIndex(parsedResult.courses, parsedResult.sections);
 
       setCourses(parsedResult.courses);
       setSections(parsedResult.sections);
@@ -223,7 +228,7 @@ export default function CoursesPage() {
         if (cachedData && cachedData.courses.length > 0) {
           setCourses(cachedData.courses);
           setSections(cachedData.sections);
-          buildCourseIndex(cachedData.courses);
+          buildCourseIndex(cachedData.courses, cachedData.sections);
           setLoading(false);
           console.log('[CoursesPage] Loaded from IndexedDB cache for', selectedSemester.id);
           return;
@@ -276,8 +281,16 @@ export default function CoursesPage() {
       result = result.filter((c) => c.subject === subject);
     }
 
+    if (showSelectedOnly) {
+      result = result.filter((course) => selectedSections.has(course.id));
+    } else if (debouncedSearch.trim() || subject !== 'all') {
+      const selected = result.filter((course) => selectedSections.has(course.id));
+      const unselected = result.filter((course) => !selectedSections.has(course.id));
+      result = [...selected, ...unselected];
+    }
+
     return result;
-  }, [courses, debouncedSearch, subject]);
+  }, [courses, debouncedSearch, subject, selectedSections, showSelectedOnly]);
 
   const courseSectionsMap = useMemo(() => {
     const map = new Map<string, Section[]>();
@@ -289,19 +302,38 @@ export default function CoursesPage() {
     return map;
   }, [sections]);
 
+  const selectedCourseInfo = useMemo(() => {
+    let totalCredits = 0;
+    const items: Array<{ course: Course; section: Section }> = [];
+    selectedSections.forEach((sectionId, courseId) => {
+      const course = courses.find((c) => c.id === courseId);
+      const section = sections.find((s) => s.id === sectionId);
+      if (course && section) {
+        items.push({ course, section });
+        totalCredits += course.credits;
+      }
+    });
+    return { items, totalCredits };
+  }, [selectedSections, courses, sections]);
+
   const selectedSectionList = useMemo(() => {
     const ids = new Set(selectedSections.values());
     return sections.filter((section) => ids.has(section.id));
   }, [selectedSections, sections]);
 
-  const hasConflict = useCallback(
-    (section: Section): boolean => {
-      return selectedSectionList.some(
-        (sel) => sel.id !== section.id && hasSectionConflict(section, sel),
-      );
-    },
-    [selectedSectionList],
-  );
+  const conflictIds = useMemo(() => {
+    const set = new Set<string>();
+    const selected = selectedSectionList;
+    sections.forEach((section) => {
+      for (const sel of selected) {
+        if (sel.id !== section.id && hasSectionConflict(section, sel)) {
+          set.add(section.id);
+          break;
+        }
+      }
+    });
+    return set;
+  }, [sections, selectedSectionList]);
 
   const handleSelectSection = useCallback((courseId: string, sectionId: string) => {
     setSelectedSections((prev) => {
@@ -311,7 +343,11 @@ export default function CoursesPage() {
       } else {
         newMap.set(courseId, sectionId);
       }
-      return newMap;
+      if (newMap.size !== prev.size) return newMap;
+      for (const [key, val] of newMap) {
+        if (!prev.has(key) || prev.get(key) !== val) return newMap;
+      }
+      return prev;
     });
   }, []);
 
@@ -370,7 +406,7 @@ export default function CoursesPage() {
         if (cachedData && cachedData.courses.length > 0) {
           setCourses(cachedData.courses);
           setSections(cachedData.sections);
-          buildCourseIndex(cachedData.courses);
+          buildCourseIndex(cachedData.courses, cachedData.sections);
           setLoading(false);
           console.log('[CoursesPage] Switched to semester from IndexedDB cache:', semesterId);
           return;
@@ -627,6 +663,31 @@ export default function CoursesPage() {
           {error}
         </Alert>
       )}
+      {selectedCourseInfo.items.length > 0 && (
+        <Card variant="outlined" sx={{ mb: 2, borderRadius: 3, bgcolor: alpha('#22c55e', 0.05) }}>
+          <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+            <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {selectedCourseInfo.items.length} course
+                {selectedCourseInfo.items.length > 1 ? 's' : ''} selected (
+                {selectedCourseInfo.totalCredits} credits)
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                <Button
+                  size="small"
+                  variant={showSelectedOnly ? 'contained' : 'outlined'}
+                  onClick={() => setShowSelectedOnly((v) => !v)}
+                >
+                  View Selected
+                </Button>
+                <Button size="small" color="error" variant="outlined" onClick={handleClearAll}>
+                  Clear All
+                </Button>
+              </Stack>
+            </Stack>
+          </CardContent>
+        </Card>
+      )}
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
         <TextField
           placeholder="Search courses..."
@@ -659,11 +720,6 @@ export default function CoursesPage() {
             ))}
           </Select>
         </FormControl>
-        {selectedSections.size > 0 && (
-          <Button variant="outlined" color="error" onClick={handleClearAll} size="small">
-            Clear ({selectedSections.size})
-          </Button>
-        )}
       </Stack>
       {filteredCourses.length === 0 && (
         <Alert severity="info">No courses found matching your criteria.</Alert>
@@ -709,7 +765,7 @@ export default function CoursesPage() {
                   sections={sectionList}
                   selectedSectionId={selectedSectionId}
                   isExpanded={isExpanded}
-                  hasConflict={hasConflict}
+                  conflictIds={conflictIds}
                   onExpand={() => handleExpand(course.id)}
                   onSelectSection={(sectionId) => handleSelectSection(course.id, sectionId)}
                 />

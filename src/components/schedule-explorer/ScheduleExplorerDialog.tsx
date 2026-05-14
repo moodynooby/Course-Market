@@ -1,12 +1,4 @@
-import {
-  CalendarToday,
-  Close,
-  FilterList,
-  GridView,
-  Search,
-  Star,
-  Timelapse,
-} from '@mui/icons-material';
+import { CalendarToday, Close, FilterList, GridView, Search, Star } from '@mui/icons-material';
 import {
   alpha,
   Box,
@@ -51,8 +43,6 @@ interface ScheduleExplorerDialogProps {
   courses: Course[];
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  onSearch: () => void;
-  searching: boolean;
   searchResults: SearchResult[];
   showConflicting: boolean;
   onToggleConflicting: () => void;
@@ -68,15 +58,18 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
   courses,
   searchQuery,
   onSearchChange,
-  onSearch,
-  searching,
   searchResults,
   showConflicting,
   onToggleConflicting,
 }: ScheduleExplorerDialogProps) {
   const theme = useTheme();
   const [explorerTab, setExplorerTab] = useState(0);
-  const [filterTime, setFilterTime] = useState<'all' | 'morning' | 'afternoon'>('all');
+
+  useEffect(() => {
+    if (open) {
+      setExplorerTab(0);
+    }
+  }, [open]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -87,11 +80,6 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [open, onClose]);
 
-  const conflictFreeSchedules = useMemo(
-    () => generatedSchedules.filter((s) => s.conflicts.length === 0),
-    [generatedSchedules],
-  );
-
   const conflictingSchedules = useMemo(
     () => generatedSchedules.filter((s) => s.conflicts.length > 0),
     [generatedSchedules],
@@ -101,28 +89,11 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
     if (searchResults.length > 0) {
       return searchResults.map((r) => r.schedule);
     }
-    let filtered = showConflicting ? generatedSchedules : conflictFreeSchedules;
-
-    if (filterTime !== 'all') {
-      filtered = filtered.filter((schedule) => {
-        const hasMorning = schedule.sections.some((s) =>
-          s.timeSlots.some((ts) => {
-            const hour = parseInt(ts.startTime.split(':')[0], 10);
-            return hour < 12;
-          }),
-        );
-        const hasAfternoon = schedule.sections.some((s) =>
-          s.timeSlots.some((ts) => {
-            const hour = parseInt(ts.startTime.split(':')[0], 10);
-            return hour >= 12;
-          }),
-        );
-        return filterTime === 'morning' ? hasMorning : hasAfternoon;
-      });
-    }
-
+    const filtered = showConflicting
+      ? generatedSchedules
+      : generatedSchedules.filter((s) => s.conflicts.length === 0);
     return [...filtered].sort((a, b) => b.score - a.score);
-  }, [searchResults, generatedSchedules, conflictFreeSchedules, showConflicting, filterTime]);
+  }, [searchResults, generatedSchedules, showConflicting]);
 
   const clusteredSchedules = useMemo(() => {
     if (activeSchedules.length === 0) return [];
@@ -133,10 +104,9 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
 
   const handleClearSearch = useCallback(() => {
     onSearchChange('');
-    setFilterTime('all');
   }, [onSearchChange]);
 
-  const hasActiveFilters = !!searchQuery.trim() || filterTime !== 'all';
+  const hasActiveFilters = !!searchQuery.trim();
 
   return (
     <Dialog
@@ -219,10 +189,9 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
             <TextField
               fullWidth
               size="small"
-              placeholder='Try: "morning classes" or "no Friday"'
+              placeholder="Search schedules..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && onSearch()}
               slotProps={{
                 input: {
                   startAdornment: (
@@ -232,19 +201,15 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
                   ),
                   endAdornment: (
                     <InputAdornment position="end">
-                      {hasActiveFilters ? (
+                      {hasActiveFilters && (
                         <IconButton
                           size="small"
                           onClick={handleClearSearch}
                           edge="end"
                           sx={{ mr: 0.5, borderRadius: 2 }}
-                          title="Clear search and filters"
+                          title="Clear search"
                         >
                           <Close fontSize="small" />
-                        </IconButton>
-                      ) : (
-                        <IconButton onClick={onSearch} edge="end" disabled={!searchQuery.trim()}>
-                          <Search />
                         </IconButton>
                       )}
                     </InputAdornment>
@@ -253,58 +218,17 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
                 },
               }}
             />
-            <IconButton
-              onClick={() =>
-                setFilterTime(
-                  filterTime === 'all' ? 'morning' : filterTime === 'morning' ? 'afternoon' : 'all',
-                )
-              }
-              sx={{
-                borderRadius: 3,
-                bgcolor: filterTime !== 'all' ? alpha(theme.palette.primary.main, 0.1) : undefined,
-              }}
-              title="Filter by time of day"
-            >
-              <Timelapse />
-            </IconButton>
           </Stack>
 
-          {hasActiveFilters && (
-            <Stack direction="row" spacing={1}>
-              {filterTime !== 'all' && (
-                <Chip
-                  label={`Time: ${filterTime}`}
-                  size="small"
-                  onDelete={() => setFilterTime('all')}
-                  sx={{ borderRadius: 2 }}
-                />
-              )}
-              {searching && (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'text.secondary',
-                  }}
-                >
-                  Searching...
-                </Typography>
-              )}
-              {searchResults.length > 0 && !searching && (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: 'text.secondary',
-                  }}
-                >
-                  Found {searchResults.length} match{searchResults.length !== 1 ? 'es' : ''}
-                </Typography>
-              )}
-            </Stack>
+          {hasActiveFilters && searchResults.length > 0 && (
+            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+              Found {searchResults.length} match{searchResults.length !== 1 ? 'es' : ''}
+            </Typography>
           )}
         </Stack>
       </DialogTitle>
       <DialogContent sx={{ p: 0 }}>
-        {activeSchedules.length === 0 && !searching ? (
+        {activeSchedules.length === 0 ? (
           <EmptyState
             icon={
               generatedSchedules.length > 0 ? (
@@ -349,9 +273,12 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
                 value={explorerTab}
                 onChange={(_, v) => setExplorerTab(v)}
                 variant="fullWidth"
-                sx={{ borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}` }}
+                sx={{
+                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+                  '& .MuiTab-root': { borderRadius: 2, textTransform: 'none', fontWeight: 600 },
+                }}
               >
-                <Tab label={`All (${activeSchedules.length})`} sx={{ borderRadius: 2 }} />
+                <Tab label={`All (${activeSchedules.length})`} />
                 {clusteredSchedules.length > 0 && <Tab label="Grouped" />}
               </Tabs>
 
@@ -362,6 +289,7 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
                 clusteredSchedules={clusteredSchedules}
                 selectedSchedule={selectedSchedule}
                 onSelectSchedule={onSelectSchedule}
+                courses={courses}
               />
             </Grid>
 
@@ -395,6 +323,7 @@ interface ScheduleListProps {
   clusteredSchedules: ReturnType<typeof clusterSchedules>;
   selectedSchedule: GeneratedSchedule | null;
   onSelectSchedule: (schedule: GeneratedSchedule) => void;
+  courses: Course[];
 }
 
 const ScheduleList = memo(function ScheduleList({
@@ -404,17 +333,13 @@ const ScheduleList = memo(function ScheduleList({
   clusteredSchedules,
   selectedSchedule,
   onSelectSchedule,
+  courses,
 }: ScheduleListProps) {
   if (explorerTab === 0) {
     const displayList = searchResults.length > 0 ? searchResults : activeSchedules;
 
     return (
-      <Stack
-        spacing={1}
-        sx={{
-          p: 2,
-        }}
-      >
+      <Stack spacing={1} sx={{ p: 2 }}>
         {displayList.slice(0, MAX_DISPLAY_SCHEDULES).map((item, idx) => {
           const isSearchResult = searchResults.length > 0;
           const genSched = isSearchResult
@@ -433,6 +358,7 @@ const ScheduleList = memo(function ScheduleList({
               relevanceScore={relevanceScore}
               explanation={explanation}
               onSelect={() => onSelectSchedule(genSched)}
+              courses={courses}
             />
           );
         })}
@@ -441,12 +367,7 @@ const ScheduleList = memo(function ScheduleList({
   }
 
   return (
-    <Stack
-      spacing={2}
-      sx={{
-        p: 2,
-      }}
-    >
+    <Stack spacing={2} sx={{ p: 2 }}>
       {clusteredSchedules.map((cluster, cIdx) => (
         <ClusterGroup
           key={cIdx}
@@ -467,6 +388,7 @@ interface ScheduleListItemProps {
   relevanceScore?: number;
   explanation?: string;
   onSelect: () => void;
+  courses: Course[];
 }
 
 const ScheduleListItem = memo(function ScheduleListItem({
@@ -477,7 +399,13 @@ const ScheduleListItem = memo(function ScheduleListItem({
   relevanceScore,
   explanation,
   onSelect,
+  courses,
 }: ScheduleListItemProps) {
+  const courseCodeList = useMemo(() => {
+    const courseMap = new Map(courses.map((c) => [c.id, c.code]));
+    return schedule.sections.map((s) => courseMap.get(s.courseId) || s.courseId).join(', ');
+  }, [schedule, courses]);
+
   return (
     <Card
       variant="outlined"
@@ -492,85 +420,65 @@ const ScheduleListItem = memo(function ScheduleListItem({
       onClick={onSelect}
     >
       <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-        <Stack
-          direction="row"
-          spacing={1}
-          sx={{
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <Stack spacing={0.5} sx={{ flex: 1 }}>
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <Stack
-                direction="row"
-                spacing={1}
-                sx={{
-                  alignItems: 'center',
-                }}
-              >
-                {idx === 0 && !isSearchResult && (
-                  <Star sx={{ color: 'warning.main', fontSize: 16 }} />
-                )}
-                <Typography
-                  variant="body2"
-                  sx={{
-                    fontWeight: 600,
-                  }}
-                >
-                  {schedule.totalCredits} credits
-                </Typography>
-              </Stack>
-              {isSearchResult && relevanceScore !== undefined ? (
-                <Chip
-                  label={`${Math.round(relevanceScore * 100)}% match`}
-                  size="small"
-                  color={
-                    relevanceScore >= MATCH_EXCELLENT
-                      ? 'success'
-                      : relevanceScore >= MATCH_GOOD
-                        ? 'warning'
-                        : 'default'
-                  }
-                  sx={{ borderRadius: 2, fontWeight: 600 }}
-                />
-              ) : (
-                <Chip
-                  label={schedule.score}
-                  size="small"
-                  color={
-                    schedule.score >= SCORE_EXCELLENT
-                      ? 'success'
-                      : schedule.score >= SCORE_GOOD
-                        ? 'warning'
-                        : 'error'
-                  }
-                  sx={{ borderRadius: 2, fontWeight: 600, minWidth: 48 }}
-                />
+        <Stack spacing={0.5} sx={{ flex: 1 }}>
+          <Stack
+            direction="row"
+            spacing={1}
+            sx={{ alignItems: 'center', justifyContent: 'space-between' }}
+          >
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              {idx === 0 && !isSearchResult && (
+                <Star sx={{ color: 'warning.main', fontSize: 16 }} />
               )}
-            </Stack>
-            {explanation && (
-              <Typography
-                variant="caption"
-                sx={{
-                  color: 'text.secondary',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                }}
-              >
-                {explanation}
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {schedule.totalCredits} credits
               </Typography>
+            </Stack>
+            {isSearchResult && relevanceScore !== undefined ? (
+              <Chip
+                label={`${Math.round(relevanceScore * 100)}% match`}
+                size="small"
+                color={
+                  relevanceScore >= MATCH_EXCELLENT
+                    ? 'success'
+                    : relevanceScore >= MATCH_GOOD
+                      ? 'warning'
+                      : 'default'
+                }
+                sx={{ borderRadius: 2, fontWeight: 600 }}
+              />
+            ) : (
+              <Chip
+                label={schedule.score}
+                size="small"
+                color={
+                  schedule.score >= SCORE_EXCELLENT
+                    ? 'success'
+                    : schedule.score >= SCORE_GOOD
+                      ? 'warning'
+                      : 'error'
+                }
+                sx={{ borderRadius: 2, fontWeight: 600, minWidth: 48 }}
+              />
             )}
           </Stack>
+          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            {courseCodeList}
+          </Typography>
+          {explanation && (
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+              }}
+            >
+              {explanation}
+            </Typography>
+          )}
         </Stack>
       </CardContent>
     </Card>

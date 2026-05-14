@@ -8,6 +8,7 @@ import {
   IconButton,
   Paper,
   Stack,
+  Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
@@ -55,57 +56,82 @@ const COURSE_COLORS = [
 
 const EventComponent = memo(function EventComponent({ event }: EventProps) {
   const courseCode = event.resource?.course?.code || '';
+  const courseName = event.resource?.course?.name || '';
   const sectionNumber = event.resource?.section?.sectionNumber || '';
   const colorIndex = courseCode.length > 0 ? courseCode.charCodeAt(0) % COURSE_COLORS.length : 0;
   const backgroundColor = COURSE_COLORS[colorIndex];
+  const timeStr = `${format(event.start, 'h:mm a')} - ${format(event.end, 'h:mm a')}`;
 
   return (
-    <Box
-      sx={{
-        px: 0.75,
-        py: 0.5,
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-        fontSize: '0.75rem',
-        fontWeight: 600,
-        backgroundColor,
-        color: '#fff',
-        borderRadius: 1,
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        lineHeight: 1.2,
-      }}
+    <Tooltip
+      title={
+        <Box sx={{ py: 0.5 }}>
+          <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>
+            {courseCode}
+            {sectionNumber ? ` - ${sectionNumber}` : ''}
+          </Typography>
+          {courseName && (
+            <Typography variant="body2" sx={{ fontSize: '0.75rem', opacity: 0.9, mt: 0.25 }}>
+              {courseName}
+            </Typography>
+          )}
+          <Typography variant="body2" sx={{ fontSize: '0.75rem', opacity: 0.8, mt: 0.25 }}>
+            {timeStr}
+          </Typography>
+        </Box>
+      }
+      arrow
+      enterDelay={200}
+      enterNextDelay={200}
+      leaveDelay={0}
     >
-      <Typography
-        variant="caption"
+      <Box
         sx={{
-          fontWeight: 700,
-          lineHeight: 1.1,
-          display: 'block',
+          px: 0.5,
+          py: 0.5,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
           fontSize: '0.75rem',
+          fontWeight: 600,
+          backgroundColor,
+          color: '#fff',
+          borderRadius: 1,
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          lineHeight: 1.2,
         }}
       >
-        {courseCode}
-      </Typography>
-      {sectionNumber && (
         <Typography
           variant="caption"
           sx={{
-            fontSize: '0.65rem',
+            fontWeight: 700,
             lineHeight: 1.1,
-            opacity: 0.9,
-            fontWeight: 500,
+            display: 'block',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            fontSize: '0.7rem',
           }}
         >
-          {sectionNumber}
+          {courseCode}
         </Typography>
-      )}
-    </Box>
+        {sectionNumber && (
+          <Typography
+            variant="caption"
+            sx={{
+              fontSize: '0.6rem',
+              lineHeight: 1.1,
+              opacity: 0.9,
+              fontWeight: 500,
+            }}
+          >
+            {sectionNumber}
+          </Typography>
+        )}
+      </Box>
+    </Tooltip>
   );
 });
 
@@ -333,6 +359,9 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
             '& .rbc-event': {
               padding: '2px 4px',
               border: 'none',
+            },
+            '& .rbc-event-content': {
+              color: 'inherit',
             },
             '& .rbc-current-time-indicator': {
               bgcolor: theme.palette.error.main,

@@ -34,7 +34,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuthContext } from '../context/AuthContext';
 import { formatZodError, tradeSchema } from '../lib/schemas';
 import { ApiError } from '../services/apiClient';
-import { searchTrades } from '../services/search';
+import { buildTradeIndex, searchTradeIndex } from '../services/search';
 import {
   createTrade,
   deleteTrade,
@@ -284,6 +284,7 @@ export default function TradingPage() {
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [editingTrade, setEditingTrade] = useState<TradePost | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
@@ -307,6 +308,7 @@ export default function TradingPage() {
       const token = await getToken();
       const result = await fetchTrades(token);
       setTrades(result);
+      buildTradeIndex(result);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -317,6 +319,13 @@ export default function TradingPage() {
   useEffect(() => {
     loadTrades();
   }, [loadTrades]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const handleEdit = useCallback((trade: TradePost) => {
     setEditingTrade(trade);
@@ -424,8 +433,8 @@ export default function TradingPage() {
   );
 
   const filteredTrades = useMemo(() => {
-    return searchTrades(trades, search);
-  }, [trades, search]);
+    return searchTradeIndex(debouncedSearch);
+  }, [debouncedSearch]);
 
   useEffect(() => {
     setVisibleCount(INITIAL_VISIBLE_COUNT);

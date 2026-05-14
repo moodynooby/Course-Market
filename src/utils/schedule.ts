@@ -120,17 +120,24 @@ export function checkConflicts(sections: Section[]): string[] {
 }
 
 const timeCache = new Map<string, number>();
+const MAX_CACHE_SIZE = 100;
+const cacheKeys: string[] = [];
 
 /**
  * Converts a HH:mm time string to minutes from the start of the day.
- * Uses a cache to avoid repeated string splitting and conversion.
+ * Uses a bounded cache to avoid repeated string splitting and conversion.
  */
 export function timeToMinutesCached(time: string): number {
   let minutes = timeCache.get(time);
   if (minutes === undefined) {
     const [hours, mins] = time.split(':').map(Number);
     minutes = hours * 60 + mins;
+    if (timeCache.size >= MAX_CACHE_SIZE) {
+      const oldest = cacheKeys.shift();
+      if (oldest) timeCache.delete(oldest);
+    }
     timeCache.set(time, minutes);
+    cacheKeys.push(time);
   }
   return minutes;
 }

@@ -1,78 +1,47 @@
-import { Box, Button, Container, Paper, Typography } from '@mui/material';
-import { Component, type ReactNode } from 'react';
+import { Box, Button, Typography } from '@mui/material';
+import type { ErrorInfo, ReactNode } from 'react';
+import { Component } from 'react';
 
-interface Props {
+interface ErrorBoundaryProps {
   children: ReactNode;
-  fallback?: ReactNode;
 }
 
-interface State {
+interface ErrorBoundaryState {
   hasError: boolean;
-  error?: Error;
+  error: Error | null;
 }
 
-export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
-  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    if (import.meta.env.DEV) {
-      console.error('ErrorBoundary caught an error:', error, errorInfo);
-    }
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    console.error('ErrorBoundary caught:', error, errorInfo);
   }
 
-  handleReset = () => {
-    this.setState({ hasError: false, error: undefined });
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null });
   };
 
   override render() {
     if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
-
       return (
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100vh',
-            bgcolor: 'background.default',
-          }}
-        >
-          <Container maxWidth="md">
-            <Paper
-              elevation={3}
-              sx={{
-                p: 4,
-                textAlign: 'center',
-                borderRadius: 3,
-              }}
-            >
-              <Typography variant="h4" component="h1" gutterBottom color="error">
-                Oops! Something went wrong
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  color: 'text.secondary',
-                  mb: 3,
-                }}
-              >
-                {this.state.error?.message || 'An unexpected error occurred'}
-              </Typography>
-              <Button variant="contained" onClick={this.handleReset} size="large">
-                Try Again
-              </Button>
-            </Paper>
-          </Container>
+        <Box sx={{ p: 4, textAlign: 'center' }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+            Something went wrong
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+            {this.state.error?.message || 'An unexpected error occurred'}
+          </Typography>
+          <Button variant="outlined" onClick={this.handleRetry} sx={{ borderRadius: 3 }}>
+            Try Again
+          </Button>
         </Box>
       );
     }

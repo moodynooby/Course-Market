@@ -1,4 +1,4 @@
-import type { DayOfWeek, Section } from '../types';
+import type { Section } from '../types';
 
 export interface GeneratedSchedule {
   id: string;
@@ -20,25 +20,7 @@ export interface ScheduleCluster {
   representative: GeneratedSchedule;
 }
 
-/**
- * Intent extracted from natural language query
- */
-export interface ScheduleIntent {
-  /** Prefer morning classes (before noon) */
-  preferMorning?: boolean;
-  /** Prefer afternoon classes (after noon) */
-  preferAfternoon?: boolean;
-  /** Days to avoid */
-  avoidDays?: DayOfWeek[];
-  /** Earliest acceptable start time (e.g., "10:00") */
-  earliestTime?: string;
-  /** Latest acceptable end time (e.g., "17:00") */
-  latestTime?: string;
-  /** Specific days requested (e.g., ["M", "W", "F"]) */
-  specificDays?: DayOfWeek[];
-  /** Raw query for reference */
-  rawQuery?: string;
-}
+export const DEFAULT_MAX_SCHEDULES = 1000;
 
 /**
  * Result of natural language search

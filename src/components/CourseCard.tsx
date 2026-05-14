@@ -13,7 +13,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { Fragment, forwardRef, memo, useCallback } from 'react';
+import { Fragment, forwardRef, memo } from 'react';
 import { Link } from 'react-router-dom';
 import type { Course, Section } from '../types';
 import { formatTimeSlots } from '../utils/schedule';
@@ -23,7 +23,7 @@ interface CourseCardProps {
   sections: Section[];
   selectedSectionId?: string;
   isExpanded: boolean;
-  hasConflict: (section: Section) => boolean;
+  conflictIds: Set<string>;
   onExpand: () => void;
   onSelectSection: (sectionId: string) => void;
 }
@@ -34,17 +34,10 @@ interface CourseCardProps {
  */
 export const CourseCard = memo(
   forwardRef<HTMLDivElement, CourseCardProps>(function CourseCard(
-    { course, sections, selectedSectionId, isExpanded, hasConflict, onExpand, onSelectSection },
+    { course, sections, selectedSectionId, isExpanded, conflictIds, onExpand },
     ref,
   ) {
     const theme = useTheme();
-
-    const handleCardClick = useCallback(
-      (sectionId: string) => {
-        onSelectSection(sectionId);
-      },
-      [onSelectSection],
-    );
 
     return (
       <Card ref={ref} variant="outlined" sx={{ mb: 2 }}>
@@ -99,7 +92,7 @@ export const CourseCard = memo(
             <Stack spacing={2} sx={{ width: '100%' }}>
               {sections.map((section) => {
                 const isSelected = selectedSectionId === section.id;
-                const conflict = hasConflict(section);
+                const conflict = conflictIds.has(section.id);
                 const { dayDisplay, timeDisplay } = formatTimeSlots(section.timeSlots);
 
                 return (
