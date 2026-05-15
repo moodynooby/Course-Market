@@ -33,13 +33,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (this.state.hasError) {
       return (
         <Box sx={{ p: 4, textAlign: 'center' }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
             Something went wrong
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-            {this.state.error?.message || 'An unexpected error occurred'}
+            {this.state.error?.message || 'An unexpected error occurred. Please try again or refresh the page.'}
           </Typography>
-          <Button variant="outlined" onClick={this.handleRetry} sx={{ borderRadius: 3 }}>
+          <Button variant="outlined" onClick={this.handleRetry}>
             Try Again
           </Button>
         </Box>

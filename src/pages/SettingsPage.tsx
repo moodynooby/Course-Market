@@ -111,13 +111,7 @@ export default function SettingsPage() {
 
   return (
     <Box>
-      <Typography
-        variant="h4"
-        gutterBottom
-        sx={{
-          fontWeight: 700,
-        }}
-      >
+      <Typography variant="h4" gutterBottom>
         Settings
       </Typography>
       <Grid container spacing={3}>
@@ -222,12 +216,7 @@ export default function SettingsPage() {
                       <MenuItem key={option.value} value={option.value}>
                         <Box>
                           <Typography variant="body1">{option.label}</Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: 'text.secondary',
-                            }}
-                          >
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
                             {option.description}
                           </Typography>
                         </Box>
@@ -235,9 +224,8 @@ export default function SettingsPage() {
                     ))}
                   </Select>
                   <FormHelperText>
-                    {selectedOption?.description}
                     {selectedOption?.learnMoreUrl && (
-                      <>
+                      <span>
                         {' '}
                         <Link
                           href={selectedOption.learnMoreUrl}
@@ -247,7 +235,7 @@ export default function SettingsPage() {
                         >
                           Learn more
                         </Link>
-                      </>
+                      </span>
                     )}
                   </FormHelperText>
                 </FormControl>
@@ -457,7 +445,7 @@ export default function SettingsPage() {
             </Stack>
           )}
           <Alert severity="info" sx={{ mt: 2 }}>
-            Changing your semester will reload the page with the new course data.
+            Changing your semester will clear your course selections and load data for the new semester.
           </Alert>
         </DialogContent>
         <DialogActions>

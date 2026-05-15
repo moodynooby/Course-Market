@@ -154,23 +154,11 @@ export default function OnboardingPage() {
             >
               <School sx={{ fontSize: 36 }} />
             </Avatar>
-            <Typography
-              variant="h4"
-              sx={{
-                fontWeight: 700,
-              }}
-            >
+            <Typography variant="h4">
               Welcome to AuraIsHub!
             </Typography>
-            <Typography
-              variant="body1"
-              sx={{
-                color: 'text.secondary',
-                maxWidth: 600,
-                textAlign: 'center',
-              }}
-            >
-              Let's set up your contact details and semester to get you started
+            <Typography variant="body1" sx={{ color: 'text.secondary', mb: 1 }}>
+              We need your phone number for trade contacts and your semester to load courses
             </Typography>
           </Stack>
 
@@ -210,7 +198,7 @@ export default function OnboardingPage() {
                       if (phoneError) validatePhone(e.target.value);
                     }}
                     error={!!phoneError}
-                    helperText={phoneError || "We'll keep it safe"}
+                    helperText={phoneError || "Used only for trade contacts — never shared publicly."}
                     required
                   />
 
@@ -271,9 +259,9 @@ export default function OnboardingPage() {
                     <Button
                       variant="contained"
                       color="secondary"
+                      size="large"
                       onClick={handleSave}
                       disabled={saving || !phone.trim() || !selectedSemester}
-                      sx={{ borderRadius: 3, px: 3, py: 1.5, fontWeight: 600 }}
                     >
                       {saving ? 'Saving...' : 'Save & Continue'}
                     </Button>

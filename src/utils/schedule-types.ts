@@ -13,13 +13,6 @@ export interface GeneratorOptions {
   onProgress?: (count: number) => void;
 }
 
-export interface ScheduleCluster {
-  id: string;
-  label: string;
-  schedules: GeneratedSchedule[];
-  representative: GeneratedSchedule;
-}
-
 export const DEFAULT_MAX_SCHEDULES = 1000;
 
 /**

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { GeneratedSchedule } from '../schedule-types';
 import { cosineSimilarity, getScheduleFeatureVector } from '../embeddings';
+import type { GeneratedSchedule } from '../schedule-types';
 
 function makeSchedule(overrides: Partial<GeneratedSchedule>): GeneratedSchedule {
   return {
@@ -20,11 +20,13 @@ describe('getScheduleFeatureVector', () => {
   });
 
   it('all values are 0 for empty schedule', () => {
-    const vec = getScheduleFeatureVector(makeSchedule({
-      totalCredits: 0,
-      score: 0,
-      sections: [],
-    }));
+    const vec = getScheduleFeatureVector(
+      makeSchedule({
+        totalCredits: 0,
+        score: 0,
+        sections: [],
+      }),
+    );
     expect(vec.every((v) => v === 0)).toBe(true);
   });
 
@@ -39,7 +41,9 @@ describe('getScheduleFeatureVector', () => {
   });
 
   it('caps conflict count at 1', () => {
-    const vec = getScheduleFeatureVector(makeSchedule({ conflicts: ['a', 'b', 'c', 'd', 'e', 'f'] }));
+    const vec = getScheduleFeatureVector(
+      makeSchedule({ conflicts: ['a', 'b', 'c', 'd', 'e', 'f'] }),
+    );
     expect(vec[3]).toBe(1);
   });
 
@@ -53,9 +57,7 @@ describe('getScheduleFeatureVector', () => {
           instructor: 'Dr. A',
           capacity: 30,
           enrolled: 0,
-          timeSlots: [
-            { day: 'M' as const, startTime: '09:00', endTime: '10:00' },
-          ],
+          timeSlots: [{ day: 'M' as const, startTime: '09:00', endTime: '10:00' }],
         },
       ],
     });
@@ -76,9 +78,7 @@ describe('getScheduleFeatureVector', () => {
           instructor: 'Dr. A',
           capacity: 30,
           enrolled: 0,
-          timeSlots: [
-            { day: 'M' as const, startTime: '14:00', endTime: '15:00' },
-          ],
+          timeSlots: [{ day: 'M' as const, startTime: '14:00', endTime: '15:00' }],
         },
       ],
     });
@@ -97,9 +97,7 @@ describe('getScheduleFeatureVector', () => {
           instructor: 'Dr. A',
           capacity: 30,
           enrolled: 0,
-          timeSlots: [
-            { day: 'M' as const, startTime: '09:00', endTime: '10:00' },
-          ],
+          timeSlots: [{ day: 'M' as const, startTime: '09:00', endTime: '10:00' }],
         },
       ],
     });

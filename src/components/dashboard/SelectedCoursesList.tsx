@@ -1,14 +1,19 @@
-import { ArrowForward } from '@mui/icons-material';
-import { alpha, Box, Button, Card, Stack, Typography, useTheme } from '@mui/material';
+import { ArrowForward, PushPin } from '@mui/icons-material';
+import { alpha, Box, Button, Card, Chip, Stack, Typography, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import type { Course, Section } from '../../types';
 
 interface SelectedCoursesListProps {
   sections: Section[];
   courses: Course[];
+  pinnedSectionIds?: Set<string>;
 }
 
-export function SelectedCoursesList({ sections, courses }: SelectedCoursesListProps) {
+export function SelectedCoursesList({
+  sections,
+  courses,
+  pinnedSectionIds,
+}: SelectedCoursesListProps) {
   const navigate = useNavigate();
   const theme = useTheme();
 
@@ -81,17 +86,28 @@ export function SelectedCoursesList({ sections, courses }: SelectedCoursesListPr
               >
                 {course?.name}
               </Typography>
-              <Typography
-                variant="caption"
-                sx={{
-                  fontWeight: 600,
-                  color: 'secondary.main',
-                  mt: 0.5,
-                  display: 'inline-block',
-                }}
-              >
-                Section {section.sectionNumber}
-              </Typography>
+              <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mt: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontWeight: 600,
+                    color: 'secondary.main',
+                    display: 'inline-block',
+                  }}
+                >
+                  Section {section.sectionNumber}
+                </Typography>
+                {pinnedSectionIds?.has(section.id) && (
+                  <Chip
+                    icon={<PushPin sx={{ fontSize: 12 }} />}
+                    label="Pinned"
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                    sx={{ height: 20, '& .MuiChip-label': { fontSize: 10, px: 0.5 } }}
+                  />
+                )}
+              </Stack>
             </Box>
           );
         })}

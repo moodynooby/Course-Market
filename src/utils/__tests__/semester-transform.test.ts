@@ -62,18 +62,20 @@ describe('transformSections', () => {
   });
 
   it('handles missing optional fields gracefully', () => {
-    const input: SectionJSON[] = [{
-      id: 'sec1',
-      courseCode: 'CS101',
-      courseName: 'Intro',
-      sectionNumber: '001',
-      instructor: 'Dr. X',
-      credits: 3,
-      subject: 'CS',
-      capacity: 0,
-      enrolled: 0,
-      timeSlots: [],
-    }];
+    const input: SectionJSON[] = [
+      {
+        id: 'sec1',
+        courseCode: 'CS101',
+        courseName: 'Intro',
+        sectionNumber: '001',
+        instructor: 'Dr. X',
+        credits: 3,
+        subject: 'CS',
+        capacity: 0,
+        enrolled: 0,
+        timeSlots: [],
+      },
+    ];
     const result = transformSections(input);
 
     expect(result.courses).toHaveLength(1);
@@ -83,9 +85,7 @@ describe('transformSections', () => {
   });
 
   it('captures correct credits per course', () => {
-    const input = [
-      makeSectionJSON({ courseCode: 'CS101', credits: 4 }),
-    ];
+    const input = [makeSectionJSON({ courseCode: 'CS101', credits: 4 })];
     const result = transformSections(input);
 
     expect(result.courses[0].credits).toBe(4);

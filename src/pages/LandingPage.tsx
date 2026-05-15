@@ -26,6 +26,8 @@ import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
 import { buildCourseIndex, searchSchedules } from '../services/search';
 import type { Course, Schedule, Section, SemesterJSON } from '../types';
 import { checkConflicts } from '../utils/schedule';
+import type { ScheduleDiagnostics } from '../utils/schedule-diagnostics';
+import { diagnoseEmptyGeneration } from '../utils/schedule-diagnostics';
 import type { GeneratedSchedule, SearchResult } from '../utils/schedule-types';
 import { DEFAULT_MAX_SCHEDULES } from '../utils/schedule-types';
 import { transformSections } from '../utils/semester-transform';
@@ -65,6 +67,7 @@ export default function LandingPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showConflicting, setShowConflicting] = useState(false);
+  const [scheduleDiagnostics, setScheduleDiagnostics] = useState<ScheduleDiagnostics | null>(null);
 
   const loadScheduleFromSelections = useCallback(
     (courses: Course[], sections: Section[]) => {
@@ -246,6 +249,7 @@ export default function LandingPage() {
     setGenerationProgress(0);
     setGeneratedSchedules([]);
     setSelectedSchedule(null);
+    setScheduleDiagnostics(null);
 
     try {
       const { generateSchedules } = await import('../utils/schedule-generator');
@@ -267,10 +271,26 @@ export default function LandingPage() {
         return;
       }
 
+      const pinnedSelections = profile?.pinnedSelections || {};
+      const pinnedMap = new Map(Object.entries(pinnedSelections));
+      pinnedMap.forEach((sectionId, courseId) => {
+        if (sectionsByCourse.has(courseId)) {
+          const pinnedSection = allSections.find((s) => s.id === sectionId);
+          if (pinnedSection) {
+            sectionsByCourse.set(courseId, [pinnedSection]);
+          }
+        }
+      });
+
       const schedules = generateSchedules(allCourses, sectionsByCourse, prefs, {
         maxSchedules: DEFAULT_MAX_SCHEDULES,
         onProgress: setGenerationProgress,
       });
+
+      if (schedules.length === 0) {
+        const diagnostics = diagnoseEmptyGeneration(allCourses, sectionsByCourse, prefs, pinnedMap);
+        setScheduleDiagnostics(diagnostics);
+      }
 
       setGeneratedSchedules(schedules);
       if (schedules.length > 0) {
@@ -282,7 +302,7 @@ export default function LandingPage() {
     } finally {
       setGenerating(false);
     }
-  }, [schedule, allCourses, allSections, preferences]);
+  }, [schedule, allCourses, allSections, preferences, profile]);
 
   const handleApplySchedule = useCallback(
     (genSchedule: GeneratedSchedule) => {
@@ -315,23 +335,11 @@ export default function LandingPage() {
   return (
     <Box>
       <Box component="header" sx={{ mb: 5 }}>
-        <Typography
-          variant="h4"
-          gutterBottom
-          sx={{
-            fontWeight: 800,
-            letterSpacing: '-0.02em',
-          }}
-        >
+        <Typography variant="h4" gutterBottom>
           Dashboard
         </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            color: 'text.secondary',
-          }}
-        >
-          Welcome to your centralized AuraIsHub control center
+        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+          Review your schedule, browse courses, and optimize your timetable.
         </Typography>
       </Box>
       {loading ? (
@@ -351,7 +359,7 @@ export default function LandingPage() {
               color: 'text.secondary',
             }}
           >
-            Loading semester data...
+            Loading your courses...
           </Typography>
         </Card>
       ) : !coursesImported ? (
@@ -526,13 +534,6 @@ export default function LandingPage() {
             size="large"
             onClick={() => navigate('/courses')}
             startIcon={<ArrowForward />}
-            sx={{
-              borderRadius: 3,
-              px: 4,
-              py: 1.5,
-              fontWeight: 600,
-              fontSize: '1rem',
-            }}
           >
             Browse Courses
           </Button>
@@ -549,7 +550,11 @@ export default function LandingPage() {
 
           <Grid size={{ xs: 12, lg: 4 }}>
             <Stack spacing={3}>
-              <SelectedCoursesList sections={schedule?.sections || []} courses={allCourses} />
+              <SelectedCoursesList
+                sections={schedule?.sections || []}
+                courses={allCourses}
+                pinnedSectionIds={new Set(Object.values(profile?.pinnedSelections || {}))}
+              />
 
               {showOptimization && (
                 <OptimizationPanel
@@ -614,6 +619,13 @@ export default function LandingPage() {
             searchResults={searchResults}
             showConflicting={showConflicting}
             onToggleConflicting={() => setShowConflicting(!showConflicting)}
+            diagnostics={scheduleDiagnostics}
+            onDiagnosticAction={(action) => {
+              if (action.includes('Browse') || action.includes('Select')) {
+                navigate('/courses');
+              }
+              setScheduleExplorerOpen(false);
+            }}
           />
         </ErrorBoundary>
       </Suspense>

@@ -21,13 +21,14 @@ import {
 } from '@mui/material';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import type { Course } from '../../types';
-import { clusterSchedules } from '../../utils/schedule-generator';
+import type { ScheduleDiagnostics } from '../../utils/schedule-diagnostics';
+import { groupSchedulesByStructure } from '../../utils/schedule-generator';
 import type { GeneratedSchedule, SearchResult } from '../../utils/schedule-types';
 import CalendarView from '../CalendarView';
 import { EmptyState } from '../EmptyState';
+import { ScheduleDiagnosticsPanel } from './ScheduleDiagnosticsPanel';
 
 const MAX_DISPLAY_SCHEDULES = 50;
-const CLUSTER_COUNT = 5;
 const SCORE_EXCELLENT = 80;
 const SCORE_GOOD = 60;
 const MATCH_EXCELLENT = 0.8;
@@ -46,6 +47,8 @@ interface ScheduleExplorerDialogProps {
   searchResults: SearchResult[];
   showConflicting: boolean;
   onToggleConflicting: () => void;
+  diagnostics?: ScheduleDiagnostics | null;
+  onDiagnosticAction?: (action: string) => void;
 }
 
 export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
@@ -61,6 +64,8 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
   searchResults,
   showConflicting,
   onToggleConflicting,
+  diagnostics,
+  onDiagnosticAction,
 }: ScheduleExplorerDialogProps) {
   const theme = useTheme();
   const [explorerTab, setExplorerTab] = useState(0);
@@ -95,11 +100,11 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
     return [...filtered].sort((a, b) => b.score - a.score);
   }, [searchResults, generatedSchedules, showConflicting]);
 
-  const clusteredSchedules = useMemo(() => {
+  const groupedSchedules = useMemo(() => {
     if (activeSchedules.length === 0) return [];
-    const schedulesToCluster =
+    const schedulesToGroup =
       searchResults.length > 0 ? searchResults.map((r) => r.schedule) : activeSchedules;
-    return clusterSchedules(schedulesToCluster, CLUSTER_COUNT);
+    return groupSchedulesByStructure(schedulesToGroup);
   }, [activeSchedules, searchResults]);
 
   const handleClearSearch = useCallback(() => {
@@ -107,6 +112,9 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
   }, [onSearchChange]);
 
   const hasActiveFilters = !!searchQuery.trim();
+
+  const showDiagnostics =
+    activeSchedules.length === 0 && generatedSchedules.length === 0 && diagnostics?.hasIssues;
 
   return (
     <Dialog
@@ -149,12 +157,14 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
               >
                 Schedule Explorer
               </Typography>
-              <Chip
-                label={`${activeSchedules.length}`}
-                size="small"
-                color={activeSchedules.length > 0 ? 'success' : 'default'}
-                sx={{ borderRadius: 2, fontWeight: 600 }}
-              />
+              {!showDiagnostics && (
+                <Chip
+                  label={`${activeSchedules.length}`}
+                  size="small"
+                  color={activeSchedules.length > 0 ? 'success' : 'default'}
+                  sx={{ borderRadius: 2, fontWeight: 600 }}
+                />
+              )}
             </Stack>
             <Stack
               direction="row"
@@ -179,46 +189,48 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
             </Stack>
           </Stack>
 
-          <Stack
-            direction="row"
-            spacing={2}
-            sx={{
-              alignItems: 'center',
-            }}
-          >
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Search schedules..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      {hasActiveFilters && (
-                        <IconButton
-                          size="small"
-                          onClick={handleClearSearch}
-                          edge="end"
-                          sx={{ mr: 0.5, borderRadius: 2 }}
-                          title="Clear search"
-                        >
-                          <Close fontSize="small" />
-                        </IconButton>
-                      )}
-                    </InputAdornment>
-                  ),
-                  sx: { borderRadius: 3, bgcolor: alpha(theme.palette.divider, 0.1) },
-                },
+          {!showDiagnostics && (
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{
+                alignItems: 'center',
               }}
-            />
-          </Stack>
+            >
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Search schedules..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                slotProps={{
+                  input: {
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <Search />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        {hasActiveFilters && (
+                          <IconButton
+                            size="small"
+                            onClick={handleClearSearch}
+                            edge="end"
+                            sx={{ mr: 0.5, borderRadius: 2 }}
+                            title="Clear search"
+                          >
+                            <Close fontSize="small" />
+                          </IconButton>
+                        )}
+                      </InputAdornment>
+                    ),
+                    sx: { borderRadius: 3, bgcolor: alpha(theme.palette.divider, 0.1) },
+                  },
+                }}
+              />
+            </Stack>
+          )}
 
           {hasActiveFilters && searchResults.length > 0 && (
             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -228,7 +240,12 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
         </Stack>
       </DialogTitle>
       <DialogContent sx={{ p: 0 }}>
-        {activeSchedules.length === 0 ? (
+        {showDiagnostics ? (
+          <ScheduleDiagnosticsPanel
+            diagnostics={diagnostics}
+            onSuggestionClick={(s) => onDiagnosticAction?.(s)}
+          />
+        ) : activeSchedules.length === 0 ? (
           <EmptyState
             icon={
               generatedSchedules.length > 0 ? (
@@ -279,14 +296,16 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
                 }}
               >
                 <Tab label={`All (${activeSchedules.length})`} />
-                {clusteredSchedules.length > 0 && <Tab label="Grouped" />}
+                {groupedSchedules.length > 0 && (
+                  <Tab label={`Grouped (${groupedSchedules.length})`} />
+                )}
               </Tabs>
 
               <ScheduleList
                 explorerTab={explorerTab}
                 searchResults={searchResults}
                 activeSchedules={activeSchedules}
-                clusteredSchedules={clusteredSchedules}
+                groupedSchedules={groupedSchedules}
                 selectedSchedule={selectedSchedule}
                 onSelectSchedule={onSelectSchedule}
                 courses={courses}
@@ -320,7 +339,7 @@ interface ScheduleListProps {
   explorerTab: number;
   searchResults: SearchResult[];
   activeSchedules: GeneratedSchedule[];
-  clusteredSchedules: ReturnType<typeof clusterSchedules>;
+  groupedSchedules: ReturnType<typeof groupSchedulesByStructure>;
   selectedSchedule: GeneratedSchedule | null;
   onSelectSchedule: (schedule: GeneratedSchedule) => void;
   courses: Course[];
@@ -330,7 +349,7 @@ const ScheduleList = memo(function ScheduleList({
   explorerTab,
   searchResults,
   activeSchedules,
-  clusteredSchedules,
+  groupedSchedules,
   selectedSchedule,
   onSelectSchedule,
   courses,
@@ -368,10 +387,10 @@ const ScheduleList = memo(function ScheduleList({
 
   return (
     <Stack spacing={2} sx={{ p: 2 }}>
-      {clusteredSchedules.map((cluster, cIdx) => (
-        <ClusterGroup
-          key={cIdx}
-          cluster={cluster}
+      {groupedSchedules.map((group, gIdx) => (
+        <GroupSection
+          key={gIdx}
+          group={group}
           selectedSchedule={selectedSchedule}
           onSelectSchedule={onSelectSchedule}
         />
@@ -485,17 +504,17 @@ const ScheduleListItem = memo(function ScheduleListItem({
   );
 });
 
-interface ClusterGroupProps {
-  cluster: { label: string; schedules: GeneratedSchedule[] };
+interface GroupSectionProps {
+  group: { id: string; label: string; schedules: GeneratedSchedule[] };
   selectedSchedule: GeneratedSchedule | null;
   onSelectSchedule: (schedule: GeneratedSchedule) => void;
 }
 
-const ClusterGroup = memo(function ClusterGroup({
-  cluster,
+const GroupSection = memo(function GroupSection({
+  group,
   selectedSchedule,
   onSelectSchedule,
-}: ClusterGroupProps) {
+}: GroupSectionProps) {
   return (
     <Box>
       <Typography
@@ -505,10 +524,10 @@ const ClusterGroup = memo(function ClusterGroup({
           mb: 1,
         }}
       >
-        {cluster.label} ({cluster.schedules.length})
+        {group.label} ({group.schedules.length})
       </Typography>
       <Stack spacing={1}>
-        {cluster.schedules.slice(0, MAX_DISPLAY_SCHEDULES).map((genSched) => (
+        {group.schedules.slice(0, MAX_DISPLAY_SCHEDULES).map((genSched) => (
           <Card
             key={genSched.id}
             variant="outlined"

@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import type { Course, Section, TimeSlot } from '../../types';
 import { formatTime, sectionsToCalendarEvents, timeToMinutesCached } from '../schedule';
 
-function makeTimeSlot(day: import('../../types').DayOfWeek, startTime: string, endTime: string): TimeSlot {
+function makeTimeSlot(
+  day: import('../../types').DayOfWeek,
+  startTime: string,
+  endTime: string,
+): TimeSlot {
   return { day, startTime, endTime };
 }
 
@@ -98,10 +102,7 @@ describe('sectionsToCalendarEvents', () => {
 
   it('creates multiple events for multiple time slots', () => {
     const section = makeSection({
-      timeSlots: [
-        makeTimeSlot('M', '09:00', '10:00'),
-        makeTimeSlot('W', '09:00', '10:00'),
-      ],
+      timeSlots: [makeTimeSlot('M', '09:00', '10:00'), makeTimeSlot('W', '09:00', '10:00')],
     });
 
     const events = sectionsToCalendarEvents([section], []);

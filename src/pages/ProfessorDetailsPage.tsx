@@ -83,9 +83,9 @@ export default function ProfessorDetailsPage() {
 
       <Grid container spacing={4}>
         <Grid size={{ xs: 12, md: 4 }}>
-          <Card elevation={3} sx={{ position: 'sticky', top: 24 }}>
+          <Card variant="outlined" sx={{ position: 'sticky', top: 24 }}>
             <CardContent>
-              <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
+              <Typography variant="h4" component="h1" gutterBottom>
                 {professor.name}
               </Typography>
               <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }} gutterBottom>
@@ -95,7 +95,7 @@ export default function ProfessorDetailsPage() {
               <Divider sx={{ my: 3 }} />
 
               <Box sx={{ mb: 3 }}>
-                <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                <Typography variant="h3" sx={{ color: 'primary.main' }}>
                   {Number(professor.avgRating).toFixed(1)}
                 </Typography>
                 <Rating value={Number(professor.avgRating)} precision={0.5} readOnly size="large" />
@@ -108,7 +108,7 @@ export default function ProfessorDetailsPage() {
                 <Box>
                   <Stack direction="row" sx={{ justifyContent: 'space-between', mb: 0.5 }}>
                     <Typography variant="body2">Would take again</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
                       {takeAgainPercent}%
                     </Typography>
                   </Stack>
@@ -122,7 +122,7 @@ export default function ProfessorDetailsPage() {
                 <Box>
                   <Stack direction="row" sx={{ justifyContent: 'space-between', mb: 0.5 }}>
                     <Typography variant="body2">Difficulty</Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>
                       {Number(professor.avgDifficulty).toFixed(1)} / 5
                     </Typography>
                   </Stack>
@@ -155,7 +155,7 @@ export default function ProfessorDetailsPage() {
         </Grid>
 
         <Grid size={{ xs: 12, md: 8 }}>
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
+          <Typography variant="h5" gutterBottom>
             Student Ratings
           </Typography>
 
@@ -169,7 +169,7 @@ export default function ProfessorDetailsPage() {
                         <Typography variant="overline" sx={{ color: 'text.secondary' }}>
                           QUALITY
                         </Typography>
-                        <Typography variant="h4" sx={{ color: 'primary.main', fontWeight: 'bold' }}>
+                        <Typography variant="h4" sx={{ color: 'primary.main' }}>
                           {rating.rating}
                         </Typography>
 

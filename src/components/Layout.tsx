@@ -236,21 +236,18 @@ export default function Layout() {
               </Box>
             </Box>
 
-            {!location.pathname.startsWith('/trading') &&
-              !location.pathname.startsWith('/professors') && (
-                <Box
-                  sx={{
-                    display: { xs: 'none', md: 'flex' },
-                    alignItems: 'center',
-                    gap: 3,
-                    ml: 2,
-                    pl: 4,
-                    borderLeft: 'none',
-                  }}
-                >
-                  <NavLink to="/courses" label="Courses" currentPath={location.pathname} />
-                </Box>
-              )}
+            <Box
+              sx={{
+                display: { xs: 'none', md: 'flex' },
+                alignItems: 'center',
+                gap: 3,
+                ml: 2,
+                pl: 4,
+                borderLeft: 'none',
+              }}
+            >
+              <NavLink to="/courses" label="Courses" currentPath={location.pathname} />
+            </Box>
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

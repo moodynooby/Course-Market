@@ -85,6 +85,7 @@ export interface UserProfile {
   semesterId?: string;
   preferences?: Preferences;
   courseSelections?: Record<string, string>;
+  pinnedSelections?: Record<string, string>;
   llmConfig?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;

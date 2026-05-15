@@ -79,7 +79,7 @@ export default function ProfessorsPage() {
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Box>
-          <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
+          <Typography variant="h4" component="h1" gutterBottom>
             Rate My Prof
           </Typography>
           <Typography variant="body1" sx={{ color: 'text.secondary' }}>
@@ -141,10 +141,10 @@ export default function ProfessorsPage() {
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  transition: 'transform 0.2s',
                   '&:hover': {
                     transform: 'translateY(-4px)',
-                    boxShadow: 4,
+                    borderColor: 'secondary.main',
                   },
                 }}
               >

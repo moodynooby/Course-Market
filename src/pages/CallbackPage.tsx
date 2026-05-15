@@ -43,7 +43,7 @@ export default function CallbackPage() {
           color: 'text.secondary',
         }}
       >
-        Completing sign in...
+        Signing you in...
       </Typography>
     </Box>
   );

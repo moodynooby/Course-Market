@@ -57,7 +57,7 @@ export function OptimizationPanel({
           mb: 3,
         }}
       >
-        Use AI to synthesize your selected courses into the perfect conflict-free timetable
+        Use AI to create your perfect, conflict-free timetable
       </Typography>
       <Stack spacing={2}>
         <Button
@@ -92,7 +92,7 @@ export function OptimizationPanel({
         >
           {generating
             ? `Generating... (${generationProgress}%)`
-            : `View All Alternatives${schedule ? ` (${schedule.sections.length} courses)` : ''}`}
+            : 'View All Alternatives'}
         </Button>
 
         {initProgress && (

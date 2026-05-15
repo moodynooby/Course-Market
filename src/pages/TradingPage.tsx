@@ -198,26 +198,17 @@ const TradeCard = memo(function TradeCard({
         >
           <Stack direction="row" spacing={1}>
             {!isOwner && (
-              <Button
-                size="small"
-                variant="contained"
-                color="secondary"
-                startIcon={<ContactPhone />}
-                onClick={() => onContact(trade.contactPhone)}
-                sx={{ borderRadius: 2 }}
-              >
-                Contact
-              </Button>
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="secondary"
+                  startIcon={<ContactPhone />}
+                  onClick={() => onContact(trade.contactPhone)}
+                >
+                  Contact
+                </Button>
             )}
           </Stack>
-          <Typography
-            variant="caption"
-            sx={{
-              color: 'text.secondary',
-            }}
-          >
-            Posted {timeAgo(trade.createdAt)}
-          </Typography>
         </Stack>
       </CardContent>
       {isOwner && (
@@ -374,11 +365,9 @@ export default function TradingPage() {
       if (e instanceof Error && e.constructor.name === 'ZodError') {
         const zodError = e as import('zod').ZodError;
         const formatted = formatZodError(zodError);
-        const messages = formatted.details.map((d) => `${d.field}: ${d.message}`).join('\n');
-        setError(`Validation failed:\n${messages}`);
+        setError(formatted.details.map((d) => `${d.field}: ${d.message}`).join('. '));
       } else if (e instanceof ApiError && e.details) {
-        const messages = e.details.map((d) => `${d.field}: ${d.message}`).join('\n');
-        setError(`Validation failed:\n${messages}`);
+        setError(e.details.map((d) => `${d.field}: ${d.message}`).join('. '));
       } else {
         setError((e as Error).message);
       }
@@ -422,8 +411,7 @@ export default function TradingPage() {
         setTrades((prev) => prev.filter((t) => t.id !== id));
       } catch (e) {
         if (e instanceof ApiError && e.details) {
-          const messages = e.details.map((d) => `${d.field}: ${d.message}`).join('\n');
-          setError(`Validation failed:\n${messages}`);
+          setError(e.details.map((d) => `${d.field}: ${d.message}`).join('. '));
         } else {
           setError((e as Error).message);
         }
@@ -461,12 +449,7 @@ export default function TradingPage() {
             mb: 3,
           }}
         >
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-            }}
-          >
+          <Typography variant="h4">
             Course Trading
           </Typography>
         </Stack>
@@ -520,14 +503,9 @@ export default function TradingPage() {
           mb: 3,
         }}
       >
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 700,
-          }}
-        >
-          Course Trading
-        </Typography>
+          <Typography variant="h4">
+            Course Trading
+          </Typography>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" onClick={loadTrades} disabled={loading}>
             Refresh
@@ -561,7 +539,7 @@ export default function TradingPage() {
                 mb: 3,
               }}
             >
-              Be the first to post a course trade
+              Find the perfect section swap — post your first trade.
             </Typography>
             <Button
               variant="contained"

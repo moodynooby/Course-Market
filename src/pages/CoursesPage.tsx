@@ -68,6 +68,7 @@ export default function CoursesPage() {
   const { progress, result: parsedResult, error: parseError, fetchAndParse } = useSemesterParser();
 
   const [selectedSections, setSelectedSections] = useState<Map<string, string>>(new Map());
+  const [pinnedSections, setPinnedSections] = useState<Map<string, string>>(new Map());
 
   const initialSyncDoneRef = useRef(false);
   const previousSelectionsRef = useRef<Map<string, string>>(new Map());
@@ -79,18 +80,24 @@ export default function CoursesPage() {
       if (profile.courseSelections) {
         setSelectedSections(new Map(Object.entries(profile.courseSelections)));
       }
+      if (profile.pinnedSelections) {
+        setPinnedSections(new Map(Object.entries(profile.pinnedSelections)));
+      }
     }
   }, [profile]);
 
   const saveSelections = useCallback(
-    (selections: Map<string, string>) => {
+    (selections: Map<string, string>, pins: Map<string, string>) => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
 
       saveTimeoutRef.current = setTimeout(() => {
         const saved = Object.fromEntries(selections);
-        updateProfile({ courseSelections: saved }).catch(console.error);
+        const savedPins = Object.fromEntries(pins);
+        updateProfile({ courseSelections: saved, pinnedSelections: savedPins }).catch(
+          console.error,
+        );
       }, SAVE_DEBOUNCE_MS);
     },
     [updateProfile],
@@ -137,14 +144,14 @@ export default function CoursesPage() {
   useEffect(() => {
     if (!initialSyncDoneRef.current) return;
 
-    saveSelections(selectedSections);
+    saveSelections(selectedSections, pinnedSections);
 
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [selectedSections, saveSelections]);
+  }, [selectedSections, pinnedSections, saveSelections]);
 
   const loadCoursesFromSemester = useCallback(
     async (jsonUrl: string, semesterId: string, semesterName: string) => {
@@ -340,6 +347,11 @@ export default function CoursesPage() {
       const newMap = new Map(prev);
       if (newMap.get(courseId) === sectionId) {
         newMap.delete(courseId);
+        setPinnedSections((p) => {
+          const np = new Map(p);
+          np.delete(courseId);
+          return np;
+        });
       } else {
         newMap.set(courseId, sectionId);
       }
@@ -351,8 +363,21 @@ export default function CoursesPage() {
     });
   }, []);
 
+  const handleTogglePin = useCallback((courseId: string, sectionId: string) => {
+    setPinnedSections((prev) => {
+      const newMap = new Map(prev);
+      if (newMap.get(courseId) === sectionId) {
+        newMap.delete(courseId);
+      } else {
+        newMap.set(courseId, sectionId);
+      }
+      return newMap;
+    });
+  }, []);
+
   const handleClearAll = useCallback(() => {
     setSelectedSections(new Map());
+    setPinnedSections(new Map());
     setSnackbar({
       open: true,
       message: 'Cleared all course selections',
@@ -396,6 +421,7 @@ export default function CoursesPage() {
       if (semesterId === currentSemesterId) return;
 
       setSelectedSections(new Map());
+      setPinnedSections(new Map());
       setLoading(true);
       setLoadingMessage(`Loading ${semesterName} courses...`);
       setCurrentSemesterId(semesterId);
@@ -437,22 +463,10 @@ export default function CoursesPage() {
     return (
       <Box>
         <Box component="header" sx={{ mb: 5 }}>
-          <Typography
-            variant="h4"
-            gutterBottom
-            sx={{
-              fontWeight: 800,
-              letterSpacing: '-0.02em',
-            }}
-          >
+          <Typography variant="h4" gutterBottom>
             Course Browser
           </Typography>
-          <Typography
-            variant="body1"
-            sx={{
-              color: 'text.secondary',
-            }}
-          >
+          <Typography variant="body1" sx={{ color: 'text.secondary' }}>
             {loadingMessage}
           </Typography>
         </Box>
@@ -475,14 +489,7 @@ export default function CoursesPage() {
     return (
       <Box>
         <Box component="header" sx={{ mb: 5 }}>
-          <Typography
-            variant="h4"
-            gutterBottom
-            sx={{
-              fontWeight: 800,
-              letterSpacing: '-0.02em',
-            }}
-          >
+          <Typography variant="h4" gutterBottom>
             Course Browser
           </Typography>
         </Box>
@@ -495,14 +502,7 @@ export default function CoursesPage() {
     return (
       <Box>
         <Box component="header" sx={{ mb: 5 }}>
-          <Typography
-            variant="h4"
-            gutterBottom
-            sx={{
-              fontWeight: 800,
-              letterSpacing: '-0.02em',
-            }}
-          >
+          <Typography variant="h4" gutterBottom>
             Course Browser
           </Typography>
         </Box>
@@ -525,13 +525,8 @@ export default function CoursesPage() {
                 <CalendarToday sx={{ fontSize: 40, color: 'text.secondary' }} />
                 <Box>
                   <Typography variant="h6">No Courses Loaded</Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'text.secondary',
-                    }}
-                  >
-                    Click below to load courses for the current semester.
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    Try switching semesters or check back later.
                   </Typography>
                 </Box>
               </Stack>
@@ -557,14 +552,7 @@ export default function CoursesPage() {
           }}
         >
           <Box>
-            <Typography
-              variant="h4"
-              gutterBottom
-              sx={{
-                fontWeight: 800,
-                letterSpacing: '-0.02em',
-              }}
-            >
+            <Typography variant="h4" gutterBottom>
               Course Browser
             </Typography>
             <Typography
@@ -664,7 +652,7 @@ export default function CoursesPage() {
         </Alert>
       )}
       {selectedCourseInfo.items.length > 0 && (
-        <Card variant="outlined" sx={{ mb: 2, borderRadius: 3, bgcolor: alpha('#22c55e', 0.05) }}>
+        <Card variant="outlined" sx={{ mb: 2, bgcolor: alpha('#22c55e', 0.05) }}>
           <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
             <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -764,10 +752,12 @@ export default function CoursesPage() {
                   course={course}
                   sections={sectionList}
                   selectedSectionId={selectedSectionId}
+                  pinnedSectionId={pinnedSections.get(course.id)}
                   isExpanded={isExpanded}
                   conflictIds={conflictIds}
                   onExpand={() => handleExpand(course.id)}
                   onSelectSection={(sectionId) => handleSelectSection(course.id, sectionId)}
+                  onTogglePin={(sectionId) => handleTogglePin(course.id, sectionId)}
                 />
               </Box>
             );

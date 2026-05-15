@@ -81,14 +81,13 @@ export function ScheduleOverview({ sections, courses, aiAnalysis }: ScheduleOver
               variant="subtitle2"
               gutterBottom
               sx={{
-                fontWeight: 800,
                 color: 'secondary.main',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1,
               }}
             >
-              ✨ AI Optimization Report
+              AI Optimization Report
             </Typography>
             <Box
               sx={{

@@ -1,6 +1,6 @@
-import { describe, expect, it, beforeEach } from 'vitest';
-import { storage } from '../storage';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { STORAGE_KEYS } from '../constants';
+import { storage } from '../storage';
 
 describe('storage', () => {
   beforeEach(() => {

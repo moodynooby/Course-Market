@@ -1,4 +1,4 @@
-import { ExpandLess, ExpandMore, Person, Schedule, Warning } from '@mui/icons-material';
+import { ExpandLess, ExpandMore, Person, PushPin, Schedule, Warning } from '@mui/icons-material';
 import {
   alpha,
   Box,
@@ -10,6 +10,7 @@ import {
   IconButton,
   Radio,
   Stack,
+  Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
@@ -22,10 +23,12 @@ interface CourseCardProps {
   course: Course;
   sections: Section[];
   selectedSectionId?: string;
+  pinnedSectionId?: string;
   isExpanded: boolean;
   conflictIds: Set<string>;
   onExpand: () => void;
   onSelectSection: (sectionId: string) => void;
+  onTogglePin?: (sectionId: string) => void;
 }
 
 /**
@@ -34,7 +37,17 @@ interface CourseCardProps {
  */
 export const CourseCard = memo(
   forwardRef<HTMLDivElement, CourseCardProps>(function CourseCard(
-    { course, sections, selectedSectionId, isExpanded, conflictIds, onExpand, onSelectSection },
+    {
+      course,
+      sections,
+      selectedSectionId,
+      pinnedSectionId,
+      isExpanded,
+      conflictIds,
+      onExpand,
+      onSelectSection,
+      onTogglePin,
+    },
     ref,
   ) {
     const theme = useTheme();
@@ -104,12 +117,11 @@ export const CourseCard = memo(
                       transition:
                         'transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease',
                       borderRadius: 3,
-                      border: 'none',
                       bgcolor: isSelected
                         ? alpha(theme.palette.success.main, 0.08)
                         : conflict
                           ? alpha(theme.palette.error.main, 0.08)
-                          : 'background.paperest',
+                          : alpha(theme.palette.action.hover, 0.15),
                       color: isSelected ? 'success.main' : conflict ? 'error.main' : 'inherit',
                       '&:hover': {
                         transform: 'translateY(-2px)',
@@ -229,7 +241,43 @@ export const CourseCard = memo(
                             alignItems: 'center',
                           }}
                         >
-                          {isSelected && <Chip size="small" label="Selected" color="success" />}
+                          {isSelected && (
+                            <>
+                              {onTogglePin && (
+                                <Tooltip
+                                  title={
+                                    pinnedSectionId === section.id
+                                      ? 'Unpin section — allow alternatives'
+                                      : 'Pin section — only use this section'
+                                  }
+                                >
+                                  <IconButton
+                                    size="small"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onTogglePin(section.id);
+                                    }}
+                                    sx={{ borderRadius: 2 }}
+                                  >
+                                    <PushPin
+                                      fontSize="small"
+                                      color={
+                                        pinnedSectionId === section.id ? 'primary' : 'disabled'
+                                      }
+                                      sx={{
+                                        transform:
+                                          pinnedSectionId === section.id
+                                            ? 'rotate(0deg)'
+                                            : 'rotate(45deg)',
+                                        transition: 'transform 0.2s',
+                                      }}
+                                    />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                              <Chip size="small" label="Selected" color="success" />
+                            </>
+                          )}
                           {conflict && !isSelected && (
                             <Chip
                               size="small"

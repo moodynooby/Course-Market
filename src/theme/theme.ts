@@ -74,6 +74,30 @@ const getComponents = (_isDark: boolean): ThemeOptions['components'] => {
       defaultProps: {
         disableElevation: true,
       },
+      variants: [
+        {
+          props: { variant: 'contained', color: 'secondary', size: 'large' },
+          style: {
+            borderRadius: 9999,
+            padding: '12px 32px',
+            fontWeight: 700,
+          },
+        },
+        {
+          props: { variant: 'contained', size: 'medium' },
+          style: {
+            borderRadius: 9999,
+            padding: '10px 24px',
+            fontWeight: 600,
+          },
+        },
+        {
+          props: { variant: 'outlined', size: 'small' },
+          style: {
+            borderRadius: 9999,
+          },
+        },
+      ],
       styleOverrides: {
         root: {
           borderRadius: 9999,
@@ -300,9 +324,9 @@ export const createAppTheme = (isDark: boolean) => {
         letterSpacing: '-0.01em',
         fontFamily: '"Zilla Slab", serif',
       },
-      h4: { fontSize: '1.25rem', fontWeight: 700, fontFamily: '"Zilla Slab", serif' },
-      h5: { fontSize: '1.125rem', fontWeight: 600, fontFamily: '"Zilla Slab", serif' },
-      h6: { fontSize: '1rem', fontWeight: 600, fontFamily: '"Zilla Slab", serif' },
+      h4: { fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', fontFamily: '"Zilla Slab", serif' },
+      h5: { fontSize: '1.125rem', fontWeight: 700, fontFamily: '"Zilla Slab", serif' },
+      h6: { fontSize: '1rem', fontWeight: 700, fontFamily: '"Zilla Slab", serif' },
       subtitle1: { fontSize: '1rem', fontWeight: 600 },
       subtitle2: { fontSize: '0.875rem', fontWeight: 600 },
       body1: { fontSize: '1rem', fontWeight: 400 },

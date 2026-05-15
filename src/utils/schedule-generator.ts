@@ -1,6 +1,6 @@
-import type { Course, Preferences, Schedule, Section } from '../types';
+import type { Course, DayOfWeek, Preferences, Schedule, Section } from '../types';
 import { calculateScheduleScore, checkConflicts, hasSectionConflict } from './schedule';
-import type { GeneratedSchedule, GeneratorOptions, ScheduleCluster } from './schedule-types';
+import type { GeneratedSchedule, GeneratorOptions } from './schedule-types';
 
 function* generateValidCombinations(
   arrays: Section[][],
@@ -64,6 +64,96 @@ function* generateValidCombinations(
       );
     }
   }
+}
+
+export interface ScheduleGroup {
+  id: string;
+  label: string;
+  schedules: GeneratedSchedule[];
+}
+
+/**
+ * Groups schedules by structural features (day pattern, time preference, compactness).
+ */
+export function groupSchedulesByStructure(schedules: GeneratedSchedule[]): ScheduleGroup[] {
+  if (schedules.length === 0) return [];
+
+  const groups = new Map<string, { label: string; schedules: GeneratedSchedule[] }>();
+
+  const getCategory = (s: GeneratedSchedule): string[] => {
+    const days = new Set<DayOfWeek>();
+    let hasMorning = false;
+    let hasAfternoon = false;
+    let hasEvening = false;
+    let hasFriday = false;
+    let hasWeekend = false;
+
+    for (const section of s.sections) {
+      for (const slot of section.timeSlots) {
+        days.add(slot.day);
+        const hour = Number.parseInt(slot.startTime.split(':')[0], 10);
+        if (hour < 12) hasMorning = true;
+        else if (hour < 17) hasAfternoon = true;
+        else hasEvening = true;
+        if (slot.day === 'F') hasFriday = true;
+        if (slot.day === 'Sa' || slot.day === 'Su') hasWeekend = true;
+      }
+    }
+
+    const categories: string[] = [];
+
+    const hasMWF = days.has('M') || days.has('W') || days.has('F');
+    const hasTTh = days.has('T') || days.has('Th');
+    if (hasMWF && hasTTh) categories.push('mwf-tth');
+    else if (hasMWF && !hasTTh) categories.push('mwf');
+    else if (hasTTh && !hasMWF) categories.push('tth');
+
+    if (days.size <= 3) categories.push('compact');
+    else categories.push('spread');
+
+    if (hasMorning && !hasAfternoon && !hasEvening) categories.push('all-morning');
+    else if (hasAfternoon && !hasMorning && !hasEvening) categories.push('all-afternoon');
+    else if (hasEvening && !hasMorning && !hasAfternoon) categories.push('all-evening');
+    else categories.push('mixed-times');
+
+    if (hasWeekend) categories.push('weekend');
+    if (!hasFriday && !hasWeekend) categories.push('no-friday');
+
+    return categories;
+  };
+
+  for (const schedule of schedules) {
+    const cats = getCategory(schedule);
+    const primary = cats[0] || 'other';
+
+    if (!groups.has(primary)) {
+      const labels: Record<string, string> = {
+        mwf: 'MWF Schedules',
+        tth: 'TTh Schedules',
+        'mwf-tth': 'Mix (MWF + TTh)',
+        compact: 'Compact (≤3 days)',
+        spread: 'Spread Out (4-5 days)',
+        'no-friday': 'No Friday Classes',
+        weekend: 'Weekend Classes',
+        'all-morning': 'All Morning',
+        'all-afternoon': 'All Afternoon',
+        'all-evening': 'All Evening',
+        'mixed-times': 'Mixed Times',
+      };
+      groups.set(primary, { label: labels[primary] || primary, schedules: [] });
+    }
+    groups.get(primary)!.schedules.push(schedule);
+  }
+
+  const sortedGroups = Array.from(groups.entries())
+    .map(([id, g]) => ({
+      id,
+      label: g.label,
+      schedules: g.schedules.sort((a, b) => b.score - a.score),
+    }))
+    .sort((a, b) => b.schedules.length - a.schedules.length);
+
+  return sortedGroups;
 }
 
 /**
@@ -133,73 +223,4 @@ export function generateSchedules(
   }
 
   return schedules.sort((a, b) => b.score - a.score);
-}
-
-/**
- * Clusters schedules into groups based on score ranges.
- * Returns ScheduleCluster[] with representative schedules (highest score in each cluster).
- */
-export function clusterSchedules(
-  schedules: GeneratedSchedule[],
-  nClusters: number = 5,
-): ScheduleCluster[] {
-  if (schedules.length === 0) {
-    return [];
-  }
-
-  if (schedules.length <= nClusters) {
-    return schedules.map((s) => ({
-      id: `cluster-${s.id}`,
-      label: `Score: ${s.score}`,
-      schedules: [s],
-      representative: s,
-    }));
-  }
-
-  const scores = schedules.map((s) => s.score);
-  const minScore = Math.min(...scores);
-  const maxScore = Math.max(...scores);
-  const range = maxScore - minScore || 1;
-  const bucketSize = range / nClusters;
-
-  const buckets: Map<number, GeneratedSchedule[]> = new Map();
-
-  for (const schedule of schedules) {
-    const bucketIndex = Math.min(
-      Math.floor((schedule.score - minScore) / bucketSize),
-      nClusters - 1,
-    );
-    const bucket = buckets.get(bucketIndex) || [];
-    bucket.push(schedule);
-    buckets.set(bucketIndex, bucket);
-  }
-
-  const clusters: ScheduleCluster[] = [];
-  const clusterLabels = [
-    'Best Match',
-    'Great Option',
-    'Good Option',
-    'Viable Option',
-    'Other Options',
-  ];
-
-  for (let i = 0; i < nClusters; i++) {
-    const bucket = buckets.get(i);
-    if (bucket && bucket.length > 0) {
-      const sorted = [...bucket].sort((a, b) => b.score - a.score);
-      const label =
-        i < clusterLabels.length
-          ? clusterLabels[i]
-          : `Score ${Math.round(minScore + i * bucketSize)}-${Math.round(minScore + (i + 1) * bucketSize)}`;
-
-      clusters.push({
-        id: `cluster-${i}`,
-        label,
-        schedules: sorted,
-        representative: sorted[0],
-      });
-    }
-  }
-
-  return clusters;
 }

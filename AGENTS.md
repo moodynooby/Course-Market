@@ -1,27 +1,5 @@
 # AGENTS.md - Quick Start & Guidelines
 
-## Project Overview
-
-- **Stack**: React 19 + Vite + TypeScript + MUI (Emotion)
-- **Backend**: Netlify Functions + Drizzle ORM + Neon PostgreSQL (via Netlify addon)
-- **Auth**: Auth0 (SPA SDK on frontend, `jose` JWT validation on backend)
-- **Goal**: Course marketplace for trading sections based on Auth0 identity
-
-## Commands
-
-```bash
-pnpm run dev  # Vite + Netlify Backend
-pnpm run build # Build + SPA _redirects generation
-```
-
-## Code Standards
-
-- **Linter**: Biome (single quotes, 100 char line length, 2 space indent)
-- **Naming**: PascalCase for components, camelCase for functions/variables, kebab-case for files
-- **State**: Use `useAuthContext` hook (src/context/AuthContext.tsx) for auth + profile state
-- **Styles**: MUI `sx` prop + theme tokens, custom hooks for complex logic
-- **Routing**: Protected routes use `<ProtectedRoute>` wrapper
-
 ## Architecture
 
 ### Database & Backend
@@ -53,70 +31,13 @@ pnpm run build # Build + SPA _redirects generation
 
 **Note**: Course and section data is stored in JSON files, NOT in database tables (removed: `courses`, `sections`, `time_slots`)
 
-### Environment Variables
-
-**Frontend** (browser access requires VITE_ prefix):
-
-- `VITE_AUTH0_DOMAIN`
-- `VITE_AUTH0_CLIENT_ID`
-- `VITE_AUTH0_AUDIENCE`
-
-**Backend** (Netlify Functions, reads from .env file):
-
-- `AUTH0_DOMAIN`
-- `AUTH0_AUDIENCE`
-- `DATABASE_URL` (auto-injected by Neon addon)
-
-**Important**: All environment variables should be set in your local `.env` file. The Netlify Vite plugin loads them automatically.
-
-### Local Development Setup
-
-1. **Link to Netlify**: `netlify link` (REQUIRED for DATABASE_URL)
-2. **Install Neon addon**: `netlify addons:create neon` (if not already installed)
-3. **Configure .env**: Copy `.env.example` and fill in Auth0 credentials
-4. **Push schema**: `pnpm run db:push`
-5. **Start dev server**: `pnpm run dev`
-
-### Routing & Deployment
-
-- **SPA Routing**: `_redirects` file generated in `dist/` at build time
-- **Protected routes**: Use `<ProtectedRoute>` component for auth-required pages
-- **Auth Context**: `AuthProvider` wraps app at root (src/App.tsx), provides unified auth + profile state
-
-## Authentication & Onboarding Flow
-
-### Architecture (Context-Based)
-
-- **AuthProvider** (`src/context/AuthContext.tsx`): Central context managing:
-  - Auth0 authentication state
-  - User profile data (fetched from backend, cached in context)
-  - Onboarding completion status
-  - Profile update/refresh methods
-
-- **Key Hooks**: 
-  - `useAuthContext()` - Primary hook for auth + profile (use this in new code)
-  - `useAuth()` - Legacy hook for Auth0-only access (still available in src/hooks/useAuth.ts)
-
-### User Flow
-
-1. **Login** (`/login`) → Auth0 redirect → **Callback** (`/callback`)
-2. **Callback** checks profile → redirects to `/onboarding` (new) or `/` (returning)
-3. **Onboarding** (`/onboarding`) → 3-step wizard (details → semester → preferences)
-4. **Protected Routes** → Check `profile.onboardingCompleted` before granting access
-
-### ProtectedRoute Behavior
-
-- Skips onboarding check for: `/login`, `/callback`, `/onboarding`
-- Shows `LoadingSpinner` while auth/profile loading
-- Redirects to `/login` if not authenticated
-- Redirects to `/onboarding` if authenticated but `onboardingCompleted === false`
-
 ### Critical Rules
 
 1. **Use `useAuthContext()`** in components needing auth or profile data
 2. **Don't call profile API directly** - use context's `updateProfile()` and `refreshProfile()`
 3. **Profile is cached** in context - avoid redundant fetches
-4. **Onboarding is atomic** - all steps save to backend, final step sets `onboardingCompleted: true`
+4. RUN pre-commit before thing task ic completer
+5. IF you add or modify the arhcitecture make sure to update the testes too
 
 ## Critical Rules for Agents
 
@@ -163,10 +84,3 @@ src/
 netlify/functions/   # Serverless functions
 db/                  # Database schema + helpers
 ```
-
-## Useful Links
-
-- [README](./README.md) - Full project documentation
-- [Netlify Neon Addon](https://docs.netlify.com/integrations/neon/)
-- [Drizzle ORM](https://orm.drizzle.team/)
-- [Auth0 SPA SDK](https://auth0.com/docs/libraries/auth0-react)

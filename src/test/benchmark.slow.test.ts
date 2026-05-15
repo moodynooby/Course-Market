@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  calculateScheduleScore,
-} from '../utils/schedule';
+import { calculateScheduleScore } from '../utils/schedule';
 import { basePreferences, makeSchedule, makeSection, makeTimeSlot } from './performance-helpers';
 
 describe('benchmark', () => {

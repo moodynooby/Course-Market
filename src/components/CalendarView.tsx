@@ -425,64 +425,36 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
           />
         </Box>
       </Paper>
-      <Box sx={{ mt: 2.5 }}>
-        <Typography
-          variant="subtitle2"
-          sx={{
-            color: 'text.secondary',
-            mb: 1.5,
-            fontWeight: 600,
-          }}
-        >
-          Enrolled Courses
-        </Typography>
-        <Stack
-          direction="row"
-          spacing={1}
-          useFlexGap
-          sx={{
-            flexWrap: 'wrap',
-          }}
-        >
-          {sections.map((section) => {
-            const course = courses.find((c) => c.id === section.courseId);
-            const hasConflict = conflicts.some((c) => c.includes(section.sectionNumber));
-            const colorIndex =
-              (course?.code?.length || 0) > 0
-                ? course!.code.charCodeAt(0) % COURSE_COLORS.length
-                : 0;
-
-            return (
-              <Chip
-                key={section.id}
-                label={`${course?.code} - ${section.sectionNumber}`}
-                size="small"
-                sx={{
-                  borderRadius: 2,
-                  bgcolor: hasConflict
-                    ? alpha(theme.palette.error.main, 0.1)
-                    : `${COURSE_COLORS[colorIndex]}15`,
-                  color: hasConflict ? 'error.main' : COURSE_COLORS[colorIndex],
-                  borderColor: hasConflict ? 'error.main' : COURSE_COLORS[colorIndex],
-                  fontWeight: 600,
-                  px: 1.5,
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    bgcolor: hasConflict
-                      ? alpha(theme.palette.error.main, 0.2)
-                      : `${COURSE_COLORS[colorIndex]}25`,
-                    transform: 'translateY(-2px)',
-                  },
-                  '& .MuiChip-label': {
-                    fontWeight: 600,
-                  },
-                }}
-                variant="outlined"
-              />
-            );
-          })}
-        </Stack>
-      </Box>
+      {conflicts.length > 0 && (
+        <Box sx={{ mt: 2.5 }}>
+          <Typography variant="subtitle2" sx={{ color: 'text.secondary', mb: 1.5, fontWeight: 600 }}>
+            Conflicts Detected
+          </Typography>
+          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
+            {sections
+              .filter((section) => conflicts.some((c) => c.includes(section.sectionNumber)))
+              .map((section) => {
+                const course = courses.find((c) => c.id === section.courseId);
+                return (
+                  <Chip
+                    key={section.id}
+                    label={`${course?.code} - ${section.sectionNumber}`}
+                    size="small"
+                    sx={{
+                      borderRadius: 2,
+                      bgcolor: alpha(theme.palette.error.main, 0.1),
+                      color: 'error.main',
+                      borderColor: 'error.main',
+                      fontWeight: 600,
+                      px: 1.5,
+                    }}
+                    variant="outlined"
+                  />
+                );
+              })}
+          </Stack>
+        </Box>
+      )}
     </Box>
   );
 }
