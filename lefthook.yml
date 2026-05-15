@@ -1,4 +1,20 @@
+min-version: 2.0.0
+
 pre-commit:
+  parallel: true
   commands:
-    check:
-      run: pnpm run pre-commit
+    lint:
+      glob: "*.{ts,tsx,js,jsx,json,css,md}"
+      run: pnpm run lint:staged
+    typecheck:
+      glob: "*.{ts,tsx}"
+      run: pnpm run typecheck
+    test-fast:
+      run: pnpm run test:fast
+
+pre-push:
+  commands:
+    test-full:
+      run: pnpm run test
+    lint:
+      run: pnpm run lint
