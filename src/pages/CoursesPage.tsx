@@ -19,8 +19,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useVirtualizer } from '@tanstack/react-virtual';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Virtuoso } from 'react-virtuoso';
 import { CourseCard } from '../components/CourseCard';
 import { useAuthContext } from '../context/AuthContext';
 import { useSemesterParser } from '../hooks/useSemesterParser';
@@ -32,8 +32,6 @@ import { hasSectionConflict } from '../utils/schedule';
 
 const SEARCH_DEBOUNCE_MS = 150;
 const SAVE_DEBOUNCE_MS = 2000;
-const INITIAL_ESTIMATE_SIZE = 200;
-
 export default function CoursesPage() {
   const { isAuthenticated, profile, updateProfile } = useAuthContext();
   const [courses, setCourses] = useState<Course[]>([]);
@@ -448,17 +446,6 @@ export default function CoursesPage() {
     [currentSemesterId, fetchAndParse],
   );
 
-  const parentRef = useRef<HTMLDivElement>(null);
-
-  const virtualizer = useVirtualizer({
-    count: filteredCourses.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => INITIAL_ESTIMATE_SIZE,
-    measureElement: (el) => el.getBoundingClientRect().height,
-    overscan: 3,
-    gap: 8,
-  });
-
   if (loading) {
     return (
       <Box>
@@ -712,58 +699,29 @@ export default function CoursesPage() {
       {filteredCourses.length === 0 && (
         <Alert severity="info">No courses found matching your criteria.</Alert>
       )}
-      {/* Virtualized course list */}
-      <Box
-        ref={parentRef}
-        sx={{
-          height: 'calc(100vh - 280px)',
-          minHeight: '400px',
-          overflow: 'auto',
-          position: 'relative',
+      <Virtuoso
+        data={filteredCourses}
+        overscan={3}
+        itemContent={(_index, course) => {
+          const sectionList = courseSectionsMap.get(course.id) || [];
+          return (
+            <Box sx={{ pb: 1 }}>
+              <CourseCard
+                course={course}
+                sections={sectionList}
+                selectedSectionId={selectedSections.get(course.id)}
+                pinnedSectionId={pinnedSections.get(course.id)}
+                isExpanded={expanded === course.id}
+                conflictIds={conflictIds}
+                onExpand={() => handleExpand(course.id)}
+                onSelectSection={(sectionId) => handleSelectSection(course.id, sectionId)}
+                onTogglePin={(sectionId) => handleTogglePin(course.id, sectionId)}
+              />
+            </Box>
+          );
         }}
-      >
-        <Box
-          sx={{
-            position: 'relative',
-            height: `${virtualizer.getTotalSize()}px`,
-            width: '100%',
-          }}
-        >
-          {virtualizer.getVirtualItems().map((virtualRow) => {
-            const course = filteredCourses[virtualRow.index];
-            const sectionList = courseSectionsMap.get(course.id) || [];
-            const selectedSectionId = selectedSections.get(course.id);
-            const isExpanded = expanded === course.id;
-
-            return (
-              <Box
-                key={course.id}
-                data-index={virtualRow.index}
-                ref={(el: HTMLDivElement | null) => virtualizer.measureElement(el)}
-                sx={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  transform: `translateY(${virtualRow.start}px)`,
-                }}
-              >
-                <CourseCard
-                  course={course}
-                  sections={sectionList}
-                  selectedSectionId={selectedSectionId}
-                  pinnedSectionId={pinnedSections.get(course.id)}
-                  isExpanded={isExpanded}
-                  conflictIds={conflictIds}
-                  onExpand={() => handleExpand(course.id)}
-                  onSelectSection={(sectionId) => handleSelectSection(course.id, sectionId)}
-                  onTogglePin={(sectionId) => handleTogglePin(course.id, sectionId)}
-                />
-              </Box>
-            );
-          })}
-        </Box>
-      </Box>
+        style={{ height: 'calc(100vh - 280px)', minHeight: '400px' }}
+      />
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}

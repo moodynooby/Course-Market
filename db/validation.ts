@@ -35,6 +35,7 @@ export const userProfileSchema = z.object({
   semesterId: z.string().max(50).optional(),
   preferences: z.record(z.string(), z.unknown()).optional(),
   courseSelections: z.record(z.string(), z.string()).optional(),
+  pinnedSelections: z.record(z.string(), z.string()).optional(),
   llmConfig: z.record(z.string(), z.unknown()).optional(),
 });
 

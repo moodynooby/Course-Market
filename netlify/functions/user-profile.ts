@@ -61,6 +61,7 @@ export const handler = async (event: any) => {
             semesterId: input.semesterId ?? existingProfile.semesterId,
             preferences: input.preferences ?? existingProfile.preferences,
             courseSelections: input.courseSelections ?? existingProfile.courseSelections,
+            pinnedSelections: input.pinnedSelections ?? existingProfile.pinnedSelections,
             llmConfig: input.llmConfig ?? existingProfile.llmConfig,
             updatedAt: new Date(),
           })
@@ -77,6 +78,7 @@ export const handler = async (event: any) => {
             semesterId: input.semesterId || null,
             preferences: input.preferences || null,
             courseSelections: input.courseSelections || null,
+            pinnedSelections: input.pinnedSelections || null,
             llmConfig: input.llmConfig || null,
           })
           .returning();

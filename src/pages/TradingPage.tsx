@@ -31,6 +31,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { Virtuoso } from 'react-virtuoso';
 import { useAuthContext } from '../context/AuthContext';
 import { formatZodError, tradeSchema } from '../lib/schemas';
 import { ApiError } from '../services/apiClient';
@@ -264,9 +265,6 @@ const TradeCard = memo(function TradeCard({
   );
 });
 
-const INITIAL_VISIBLE_COUNT = 10;
-const LOAD_MORE_INCREMENT = 10;
-
 export default function TradingPage() {
   const { user, getToken } = useAuthContext();
 
@@ -278,7 +276,6 @@ export default function TradingPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [editingTrade, setEditingTrade] = useState<TradePost | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({
     open: false,
     message: '',
@@ -424,20 +421,6 @@ export default function TradingPage() {
     return searchTradeIndex(debouncedSearch);
   }, [debouncedSearch]);
 
-  useEffect(() => {
-    setVisibleCount(INITIAL_VISIBLE_COUNT);
-  }, []);
-
-  const visibleTrades = useMemo(() => {
-    return filteredTrades.slice(0, visibleCount);
-  }, [filteredTrades, visibleCount]);
-
-  const hasMoreTrades = visibleCount < filteredTrades.length;
-
-  const handleLoadMore = () => {
-    setVisibleCount((prev) => prev + LOAD_MORE_INCREMENT);
-  };
-
   if (loading) {
     return (
       <Box>
@@ -548,7 +531,7 @@ export default function TradingPage() {
           </CardContent>
         </Card>
       ) : (
-        <Stack spacing={2}>
+        <Stack spacing={2} sx={{ flex: 1, minHeight: 0 }}>
           <TextField
             placeholder="Search trades..."
             value={search}
@@ -559,33 +542,41 @@ export default function TradingPage() {
                 startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
               },
             }}
-            sx={{ mb: 1 }}
           />
 
           <Typography variant="h6">
-            Showing {visibleTrades.length} of {filteredTrades.length} Trade
-            {filteredTrades.length !== 1 ? 's' : ''}
+            {filteredTrades.length} Trade{filteredTrades.length !== 1 ? 's' : ''}
           </Typography>
 
-          <Stack spacing={2}>
-            {visibleTrades.map((trade) => (
-              <TradeCard
-                key={trade.id}
-                trade={trade}
-                onUpdate={handleUpdate}
-                onDelete={handleDelete}
-                onEdit={handleEdit}
-                onContact={handleContact}
-              />
-            ))}
-          </Stack>
-
-          {hasMoreTrades && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-              <Button variant="outlined" onClick={handleLoadMore} sx={{ minWidth: 200 }}>
-                Load More ({LOAD_MORE_INCREMENT} more)
-              </Button>
-            </Box>
+          {filteredTrades.length === 0 ? (
+            <Card variant="outlined">
+              <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                <SwapHoriz sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="h6" gutterBottom>
+                  No Trades Found
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                  Try adjusting your search or post a new trade.
+                </Typography>
+              </CardContent>
+            </Card>
+          ) : (
+            <Virtuoso
+              data={filteredTrades}
+              overscan={3}
+              itemContent={(_index, trade) => (
+                <Box sx={{ pb: 1 }}>
+                  <TradeCard
+                    trade={trade}
+                    onUpdate={handleUpdate}
+                    onDelete={handleDelete}
+                    onEdit={handleEdit}
+                    onContact={handleContact}
+                  />
+                </Box>
+              )}
+              style={{ height: 'calc(100vh - 320px)', minHeight: '400px' }}
+            />
           )}
         </Stack>
       )}

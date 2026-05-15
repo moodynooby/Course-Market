@@ -56,6 +56,7 @@ export const userProfiles = pgTable('user_profiles', {
   semesterId: varchar('semester_id', { length: 50 }),
   preferences: jsonb('preferences'),
   courseSelections: jsonb('course_selections'),
+  pinnedSelections: jsonb('pinned_selections'),
   llmConfig: jsonb('llm_config'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
