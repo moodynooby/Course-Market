@@ -79,7 +79,6 @@ export interface CalendarEvent {
   };
 }
 
-// Onboarding and User Profile types
 export interface UserProfile {
   auth0UserId: string;
   phone: string;

@@ -27,12 +27,6 @@ function getInitialMode(): ThemeMode {
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.THEME_MODE);
     if (stored) return JSON.parse(stored) as ThemeMode;
-
-    const prefsRaw = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
-    if (prefsRaw) {
-      const prefs = JSON.parse(prefsRaw);
-      if (prefs.theme) return prefs.theme as ThemeMode;
-    }
   } catch {
     /* ignore */
   }

@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DayOfWeek, Preferences } from '../types';
+import { DEFAULT_PREFERENCES } from '../utils/constants';
 
 interface SchedulePreferencesProps {
   initialPreferences?: Preferences;
@@ -28,19 +29,6 @@ interface SchedulePreferencesProps {
   collapsible?: boolean;
   defaultExpanded?: boolean;
 }
-
-const DEFAULT_PREFERENCES: Preferences = {
-  preferredStartTime: '08:00',
-  preferredEndTime: '20:00',
-  maxGapMinutes: 60,
-  preferConsecutiveDays: false,
-  preferMorning: false,
-  preferAfternoon: true,
-  maxCredits: 18,
-  minCredits: 12,
-  avoidDays: [],
-  excludeInstructors: [],
-};
 
 const DAYS: { value: DayOfWeek; label: string }[] = [
   { value: 'M', label: 'Mon' },

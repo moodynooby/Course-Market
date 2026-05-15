@@ -19,7 +19,7 @@ function* generateValidCombinations(
   }
 
   if (suffixMax.length === 0) {
-    suffixMax = arrays.map((arr, i) => {
+    suffixMax = arrays.map((_arr, i) => {
       let max = 0;
       for (let j = i; j < arrays.length; j++) {
         let maxInArr = 0;

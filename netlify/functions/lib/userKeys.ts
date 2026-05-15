@@ -36,17 +36,3 @@ export async function saveUserKey(
       },
     });
 }
-
-export async function deleteUserKey(auth0UserId: string): Promise<void> {
-  await db.delete(userLlmKeys).where(eq(userLlmKeys.auth0UserId, auth0UserId));
-}
-
-export async function hasUserKey(auth0UserId: string, provider: string): Promise<boolean> {
-  const result = await db
-    .select()
-    .from(userLlmKeys)
-    .where(eq(userLlmKeys.auth0UserId, auth0UserId))
-    .limit(1);
-
-  return result.length > 0 && result[0].provider === provider;
-}

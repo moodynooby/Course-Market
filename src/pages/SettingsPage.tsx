@@ -29,12 +29,13 @@ import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
 import { useThemeMode } from '../context/ThemeContext';
 import { getSemesters } from '../services/coursesApi';
+import { clearCache } from '../services/dbCache';
 import type { LLMProvider, Preferences, Semester } from '../types';
 import { PROVIDER_OPTIONS, STORAGE_KEYS } from '../utils/constants';
 export default function SettingsPage() {
   const { user, profile, updateProfile } = useAuthContext();
   const { mode, setMode } = useThemeMode();
-  const { llmConfig, updateLlmConfig } = useConfigContext();
+  const { llmConfig, updateLlmConfig, updatePreferences } = useConfigContext();
   const [saved, setSaved] = useState(false);
   const [clearDataOpen, setClearDataOpen] = useState(false);
   const [semesterDialogOpen, setSemesterDialogOpen] = useState(false);
@@ -49,14 +50,13 @@ export default function SettingsPage() {
       setLoadingSemesters(true);
       const data = await getSemesters();
       setSemesters(data.semesters);
-      const savedSemester = localStorage.getItem('auraishub_semester') || '';
-      setCurrentSemester(savedSemester);
+      setCurrentSemester(profile?.semesterId || '');
     } catch (error) {
       console.error('Error loading semesters:', error);
     } finally {
       setLoadingSemesters(false);
     }
-  }, []);
+  }, [profile?.semesterId]);
 
   useEffect(() => {
     loadSemesters();
@@ -73,15 +73,11 @@ export default function SettingsPage() {
     }
   };
 
-  const handleClearData = () => {
-    const APP_KEY_PREFIX = 'auraishub_';
-    const APP_SPECIFIC_KEYS = [STORAGE_KEYS.THEME_MODE, STORAGE_KEYS.LLM_CONFIG];
-
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith(APP_KEY_PREFIX) || APP_SPECIFIC_KEYS.includes(key as any)) {
-        localStorage.removeItem(key);
-      }
+  const handleClearData = async () => {
+    Object.values(STORAGE_KEYS).forEach((key) => {
+      localStorage.removeItem(key);
     });
+    await clearCache();
     window.location.reload();
   };
 
@@ -98,17 +94,11 @@ export default function SettingsPage() {
   const selectedOption = PROVIDER_OPTIONS.find((o) => o.value === llmConfig.provider);
   const isLocalProvider = llmConfig.provider === 'webllm';
 
-  const handlePreferencesSave = async (prefs: Preferences) => {
-    try {
-      await updateProfile({ preferences: prefs });
-      setSaved(true);
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-      saveTimeoutRef.current = setTimeout(() => setSaved(false), 3000);
-    } catch (error) {
-      console.error('Error saving schedule preferences:', error);
-    }
+  const handlePreferencesSave = (prefs: Preferences) => {
+    updatePreferences(prefs);
+    setSaved(true);
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => setSaved(false), 3000);
   };
 
   useEffect(() => {

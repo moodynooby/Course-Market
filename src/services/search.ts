@@ -226,5 +226,5 @@ export const searchProfessors = (professors: Professor[], query: string): Profes
   const results = profIndex.search(query) as unknown as MiniSearchResult[];
   const resultIds = new Set(results.map((r) => r.id));
 
-  return professors.filter((p) => resultIds.has(p.id));
+  return professors.filter((p) => resultIds.has(String(p.id)));
 };

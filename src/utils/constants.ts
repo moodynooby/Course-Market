@@ -5,7 +5,7 @@ export const STORAGE_KEYS = {
   LLM_CONFIG: 'llm-byok-config',
 } as const;
 
-import type { DayOfWeek, LLMProvider } from '../types';
+import type { LLMProvider, Preferences } from '../types';
 
 export type LLMTask = 'OPTIMIZE' | 'DRAFT' | 'DEFAULT';
 
@@ -70,7 +70,7 @@ export const DEFAULT_LLM_CONFIG = {
 };
 
 // Default user preferences
-export const DEFAULT_PREFERENCES = {
+export const DEFAULT_PREFERENCES: Preferences = {
   preferredStartTime: '08:00',
   preferredEndTime: '17:00',
   maxGapMinutes: 60,
@@ -79,7 +79,6 @@ export const DEFAULT_PREFERENCES = {
   preferAfternoon: false,
   maxCredits: 18,
   minCredits: 12,
-  avoidDays: [] as DayOfWeek[],
-  excludeInstructors: [] as string[],
-  theme: 'system' as const,
+  avoidDays: [],
+  excludeInstructors: [],
 };
