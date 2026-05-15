@@ -248,23 +248,23 @@ export function SchedulePreferences({
             </Grid>
 
             <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-                <Chip
-                  label="Morning"
-                  icon={<span style={{ fontSize: 14 }}>🌅</span>}
-                  onClick={() => handleUpdate('preferMorning', !preferences.preferMorning)}
-                  color={preferences.preferMorning ? 'primary' : 'default'}
-                  variant={preferences.preferMorning ? 'filled' : 'outlined'}
-                  sx={{ fontSize: '0.75rem' }}
-                />
-                <Chip
-                  label="Afternoon"
-                  icon={<span style={{ fontSize: 14 }}>🌇</span>}
-                  onClick={() => handleUpdate('preferAfternoon', !preferences.preferAfternoon)}
-                  color={preferences.preferAfternoon ? 'primary' : 'default'}
-                  variant={preferences.preferAfternoon ? 'filled' : 'outlined'}
-                  sx={{ fontSize: '0.75rem' }}
-                />
-              </Stack>
+              <Chip
+                label="Morning"
+                icon={<span style={{ fontSize: 14 }}>🌅</span>}
+                onClick={() => handleUpdate('preferMorning', !preferences.preferMorning)}
+                color={preferences.preferMorning ? 'primary' : 'default'}
+                variant={preferences.preferMorning ? 'filled' : 'outlined'}
+                sx={{ fontSize: '0.75rem' }}
+              />
+              <Chip
+                label="Afternoon"
+                icon={<span style={{ fontSize: 14 }}>🌇</span>}
+                onClick={() => handleUpdate('preferAfternoon', !preferences.preferAfternoon)}
+                color={preferences.preferAfternoon ? 'primary' : 'default'}
+                variant={preferences.preferAfternoon ? 'filled' : 'outlined'}
+                sx={{ fontSize: '0.75rem' }}
+              />
+            </Stack>
           </Box>
 
           <Divider />

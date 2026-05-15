@@ -154,9 +154,7 @@ export default function OnboardingPage() {
             >
               <School sx={{ fontSize: 36 }} />
             </Avatar>
-            <Typography variant="h4">
-              Welcome to AuraIsHub!
-            </Typography>
+            <Typography variant="h4">Welcome to AuraIsHub!</Typography>
             <Typography variant="body1" sx={{ color: 'text.secondary', mb: 1 }}>
               We need your phone number for trade contacts and your semester to load courses
             </Typography>
@@ -198,7 +196,9 @@ export default function OnboardingPage() {
                       if (phoneError) validatePhone(e.target.value);
                     }}
                     error={!!phoneError}
-                    helperText={phoneError || "Used only for trade contacts — never shared publicly."}
+                    helperText={
+                      phoneError || 'Used only for trade contacts — never shared publicly.'
+                    }
                     required
                   />
 

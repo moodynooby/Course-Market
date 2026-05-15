@@ -90,9 +90,7 @@ export function OptimizationPanel({
           fullWidth
           sx={{ borderRadius: 3, py: 1.5, fontWeight: 600 }}
         >
-          {generating
-            ? `Generating... (${generationProgress}%)`
-            : 'View All Alternatives'}
+          {generating ? `Generating... (${generationProgress}%)` : 'View All Alternatives'}
         </Button>
 
         {initProgress && (

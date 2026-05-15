@@ -37,7 +37,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             Something went wrong
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-            {this.state.error?.message || 'An unexpected error occurred. Please try again or refresh the page.'}
+            {this.state.error?.message ||
+              'An unexpected error occurred. Please try again or refresh the page.'}
           </Typography>
           <Button variant="outlined" onClick={this.handleRetry}>
             Try Again

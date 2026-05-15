@@ -324,7 +324,12 @@ export const createAppTheme = (isDark: boolean) => {
         letterSpacing: '-0.01em',
         fontFamily: '"Zilla Slab", serif',
       },
-      h4: { fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', fontFamily: '"Zilla Slab", serif' },
+      h4: {
+        fontSize: '1.25rem',
+        fontWeight: 800,
+        letterSpacing: '-0.02em',
+        fontFamily: '"Zilla Slab", serif',
+      },
       h5: { fontSize: '1.125rem', fontWeight: 700, fontFamily: '"Zilla Slab", serif' },
       h6: { fontSize: '1rem', fontWeight: 700, fontFamily: '"Zilla Slab", serif' },
       subtitle1: { fontSize: '1rem', fontWeight: 600 },

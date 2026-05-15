@@ -198,15 +198,15 @@ const TradeCard = memo(function TradeCard({
         >
           <Stack direction="row" spacing={1}>
             {!isOwner && (
-                <Button
-                  size="small"
-                  variant="contained"
-                  color="secondary"
-                  startIcon={<ContactPhone />}
-                  onClick={() => onContact(trade.contactPhone)}
-                >
-                  Contact
-                </Button>
+              <Button
+                size="small"
+                variant="contained"
+                color="secondary"
+                startIcon={<ContactPhone />}
+                onClick={() => onContact(trade.contactPhone)}
+              >
+                Contact
+              </Button>
             )}
           </Stack>
         </Stack>
@@ -449,9 +449,7 @@ export default function TradingPage() {
             mb: 3,
           }}
         >
-          <Typography variant="h4">
-            Course Trading
-          </Typography>
+          <Typography variant="h4">Course Trading</Typography>
         </Stack>
         <Stack spacing={2}>
           {[1, 2, 3].map((i) => (
@@ -503,9 +501,7 @@ export default function TradingPage() {
           mb: 3,
         }}
       >
-          <Typography variant="h4">
-            Course Trading
-          </Typography>
+        <Typography variant="h4">Course Trading</Typography>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" onClick={loadTrades} disabled={loading}>
             Refresh

@@ -445,7 +445,8 @@ export default function SettingsPage() {
             </Stack>
           )}
           <Alert severity="info" sx={{ mt: 2 }}>
-            Changing your semester will clear your course selections and load data for the new semester.
+            Changing your semester will clear your course selections and load data for the new
+            semester.
           </Alert>
         </DialogContent>
         <DialogActions>

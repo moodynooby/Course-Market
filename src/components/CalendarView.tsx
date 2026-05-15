@@ -427,7 +427,10 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
       </Paper>
       {conflicts.length > 0 && (
         <Box sx={{ mt: 2.5 }}>
-          <Typography variant="subtitle2" sx={{ color: 'text.secondary', mb: 1.5, fontWeight: 600 }}>
+          <Typography
+            variant="subtitle2"
+            sx={{ color: 'text.secondary', mb: 1.5, fontWeight: 600 }}
+          >
             Conflicts Detected
           </Typography>
           <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
