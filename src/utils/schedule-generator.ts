@@ -1,5 +1,14 @@
 import type { Course, DayOfWeek, Preferences, Schedule, Section } from '../types';
-import { calculateScheduleScore, checkConflicts, hasSectionConflict } from './schedule';
+import { cosineSimilarity, getScheduleFeatureVector } from './embeddings';
+import {
+  checkConflicts,
+  computeScheduleFeatures,
+  DAY_ORDER,
+  hasSectionConflict,
+  type ScheduleFeatures,
+  scoreSchedulesRelative,
+  timeToMinutesCached,
+} from './schedule';
 import type { GeneratedSchedule, GeneratorOptions } from './schedule-types';
 
 function* generateValidCombinations(
@@ -7,6 +16,7 @@ function* generateValidCombinations(
   courseCreditsMap: Map<string, number>,
   minCredits: number,
   maxCredits: number,
+  depthIndex: number = 0,
   current: Section[] = [],
   currentCredits: number = 0,
   suffixMax: number[] = [],
@@ -24,7 +34,7 @@ function* generateValidCombinations(
       for (let j = i; j < arrays.length; j++) {
         let maxInArr = 0;
         for (const s of arrays[j]) {
-          maxInArr = Math.max(maxInArr, courseCreditsMap.get(s.courseId) || 3);
+          maxInArr = Math.max(maxInArr, courseCreditsMap.get(s.courseId) ?? 3);
         }
         max += maxInArr;
       }
@@ -32,17 +42,15 @@ function* generateValidCombinations(
     });
   }
 
-  const depth = arrays.length;
-  const remainingIdx = depth - arrays.length;
-
   const [first, ...rest] = arrays;
   for (const sec of first) {
-    const secCredits = courseCreditsMap.get(sec.courseId) || 3;
+    const secCredits = courseCreditsMap.get(sec.courseId) ?? 3;
     const newCredits = currentCredits + secCredits;
 
     if (newCredits > maxCredits) continue;
 
-    if (newCredits + suffixMax[remainingIdx] - secCredits < minCredits) continue;
+    const remainingSuffix = depthIndex + 1 < suffixMax.length ? suffixMax[depthIndex + 1] : 0;
+    if (newCredits + remainingSuffix < minCredits) continue;
 
     let hasConflict = false;
     for (const selected of current) {
@@ -58,6 +66,7 @@ function* generateValidCombinations(
         courseCreditsMap,
         minCredits,
         maxCredits,
+        depthIndex + 1,
         [...current, sec],
         newCredits,
         suffixMax,
@@ -66,104 +75,190 @@ function* generateValidCombinations(
   }
 }
 
+export function scheduleFootprint(sections: Section[]): string {
+  const perCourse = sections.map((s) => {
+    const slots = s.timeSlots
+      .map((t) => `${t.day}@${t.startTime}-${t.endTime}`)
+      .sort()
+      .join('|');
+    return `${s.courseId}:${slots}`;
+  });
+  perCourse.sort();
+  return perCourse.join('#');
+}
+
 export interface ScheduleGroup {
   id: string;
   label: string;
+  description: string;
   schedules: GeneratedSchedule[];
+  topScore: number;
 }
 
-/**
- * Groups schedules by structural features (day pattern, time preference, compactness).
- */
-export function groupSchedulesByStructure(schedules: GeneratedSchedule[]): ScheduleGroup[] {
-  if (schedules.length === 0) return [];
+const SIMILARITY_THRESHOLD = 0.94;
+export const REDUNDANT_VARIANT_PENALTY = 1000;
 
-  const groups = new Map<string, { label: string; schedules: GeneratedSchedule[] }>();
+interface SeedSummary {
+  days: DayOfWeek[];
+  daysCount: number;
+  earliestHour: number;
+  latestHour: number;
+  band: 'mornings' | 'afternoons' | 'evenings' | 'mixed';
+  gapTier: 'tight' | 'moderate' | 'loose';
+}
 
-  const getCategory = (s: GeneratedSchedule): string[] => {
-    const days = new Set<DayOfWeek>();
-    let hasMorning = false;
-    let hasAfternoon = false;
-    let hasEvening = false;
-    let hasFriday = false;
-    let hasWeekend = false;
-
-    for (const section of s.sections) {
-      for (const slot of section.timeSlots) {
-        days.add(slot.day);
-        const hour = Number.parseInt(slot.startTime.split(':')[0], 10);
-        if (hour < 12) hasMorning = true;
-        else if (hour < 17) hasAfternoon = true;
-        else hasEvening = true;
-        if (slot.day === 'F') hasFriday = true;
-        if (slot.day === 'Sa' || slot.day === 'Su') hasWeekend = true;
-      }
+function totalGapMinutes(schedule: GeneratedSchedule): number {
+  const byDay = new Map<DayOfWeek, { start: number; end: number }[]>();
+  for (const section of schedule.sections) {
+    for (const slot of section.timeSlots) {
+      const list = byDay.get(slot.day) ?? [];
+      list.push({
+        start: timeToMinutesCached(slot.startTime),
+        end: timeToMinutesCached(slot.endTime),
+      });
+      byDay.set(slot.day, list);
     }
-
-    const categories: string[] = [];
-
-    const hasMWF = days.has('M') || days.has('W') || days.has('F');
-    const hasTTh = days.has('T') || days.has('Th');
-    if (hasMWF && hasTTh) categories.push('mwf-tth');
-    else if (hasMWF && !hasTTh) categories.push('mwf');
-    else if (hasTTh && !hasMWF) categories.push('tth');
-
-    if (days.size <= 3) categories.push('compact');
-    else categories.push('spread');
-
-    if (hasMorning && !hasAfternoon && !hasEvening) categories.push('all-morning');
-    else if (hasAfternoon && !hasMorning && !hasEvening) categories.push('all-afternoon');
-    else if (hasEvening && !hasMorning && !hasAfternoon) categories.push('all-evening');
-    else categories.push('mixed-times');
-
-    if (hasWeekend) categories.push('weekend');
-    if (!hasFriday && !hasWeekend) categories.push('no-friday');
-
-    return categories;
-  };
-
-  for (const schedule of schedules) {
-    const cats = getCategory(schedule);
-    const primary = cats[0] || 'other';
-
-    if (!groups.has(primary)) {
-      const labels: Record<string, string> = {
-        mwf: 'MWF Schedules',
-        tth: 'TTh Schedules',
-        'mwf-tth': 'Mix (MWF + TTh)',
-        compact: 'Compact (≤3 days)',
-        spread: 'Spread Out (4-5 days)',
-        'no-friday': 'No Friday Classes',
-        weekend: 'Weekend Classes',
-        'all-morning': 'All Morning',
-        'all-afternoon': 'All Afternoon',
-        'all-evening': 'All Evening',
-        'mixed-times': 'Mixed Times',
-      };
-      groups.set(primary, { label: labels[primary] || primary, schedules: [] });
+  }
+  let total = 0;
+  for (const list of byDay.values()) {
+    if (list.length < 2) continue;
+    list.sort((a, b) => a.start - b.start);
+    for (let i = 1; i < list.length; i++) {
+      const gap = list[i].start - list[i - 1].end;
+      if (gap > 0) total += gap;
     }
-    groups.get(primary)!.schedules.push(schedule);
+  }
+  return total;
+}
+
+function summarizeSeed(schedule: GeneratedSchedule): SeedSummary {
+  const daySet = new Set<DayOfWeek>();
+  let earliest = 24;
+  let latest = 0;
+  let hasMorning = false;
+  let hasAfternoon = false;
+  let hasEvening = false;
+
+  for (const section of schedule.sections) {
+    for (const slot of section.timeSlots) {
+      daySet.add(slot.day);
+      const startHour = Number.parseInt(slot.startTime.split(':')[0], 10);
+      const endHour = Number.parseInt(slot.endTime.split(':')[0], 10);
+      if (startHour < earliest) earliest = startHour;
+      if (endHour > latest) latest = endHour;
+      if (startHour < 12) hasMorning = true;
+      else if (startHour < 17) hasAfternoon = true;
+      else hasEvening = true;
+    }
   }
 
-  const sortedGroups = Array.from(groups.entries())
-    .map(([id, g]) => ({
-      id,
-      label: g.label,
-      schedules: g.schedules.sort((a, b) => b.score - a.score),
-    }))
-    .filter((g) => g.schedules.length > 1)
-    .sort((a, b) => b.schedules.length - a.schedules.length);
+  const days = DAY_ORDER.filter((d) => daySet.has(d));
+  let band: SeedSummary['band'] = 'mixed';
+  if (hasMorning && !hasAfternoon && !hasEvening) band = 'mornings';
+  else if (hasAfternoon && !hasMorning && !hasEvening) band = 'afternoons';
+  else if (hasEvening && !hasMorning && !hasAfternoon) band = 'evenings';
 
-  return sortedGroups;
+  const gapMinutes = totalGapMinutes(schedule);
+  let gapTier: SeedSummary['gapTier'];
+  if (gapMinutes < 60) gapTier = 'tight';
+  else if (gapMinutes <= 180) gapTier = 'moderate';
+  else gapTier = 'loose';
+
+  return {
+    days,
+    daysCount: daySet.size,
+    earliestHour: earliest,
+    latestHour: latest,
+    band,
+    gapTier,
+  };
+}
+
+function dayPatternLabel(days: DayOfWeek[]): string {
+  if (days.length === 0) return 'No days';
+  const set = new Set(days);
+  const isMWF = (set.has('M') || set.has('W') || set.has('F')) && !set.has('T') && !set.has('Th');
+  const isTTh = set.has('T') && set.has('Th') && !set.has('M') && !set.has('W') && !set.has('F');
+  if (isMWF) return 'MWF';
+  if (isTTh) return 'TTh';
+  return days.join('/');
+}
+
+function formatHour(hour: number): string {
+  if (hour <= 0 || hour >= 24) return '';
+  if (hour === 12) return '12pm';
+  if (hour < 12) return `${hour}am`;
+  return `${hour - 12}pm`;
+}
+
+function labelFromSeed(seed: SeedSummary): string {
+  const dayPart = dayPatternLabel(seed.days);
+  const bandPart = seed.band === 'mixed' ? '' : ` ${seed.band}`;
+  const daysPart = `${seed.daysCount}-day`;
+  const gapPart =
+    seed.gapTier === 'tight' ? 'tight' : seed.gapTier === 'loose' ? 'spread' : 'balanced';
+  return `${dayPart}${bandPart} · ${daysPart} · ${gapPart}`;
+}
+
+function describeSeed(seed: SeedSummary): string {
+  const start = formatHour(seed.earliestHour);
+  const end = formatHour(seed.latestHour);
+  const window = start && end ? `${start}–${end}` : '';
+  const days = seed.days.join(', ');
+  return [days, window].filter(Boolean).join(' · ');
 }
 
 /**
- * Generates all valid schedule combinations from provided courses and sections.
- * @param courses - All available courses
- * @param sectionsByCourse - Map of courseId to available sections for that course
- * @param preferences - User preferences for scoring and filtering
- * @param options - Generation options (max schedules, progress callback)
- * @returns Array of generated schedules sorted by score (highest first)
+ * Clusters schedules by cosine similarity over the existing 12-dim feature vector
+ * (see embeddings.ts). Each schedule is assigned to exactly one cluster — greedy
+ * nearest-seed assignment with a similarity threshold. Schedules are processed
+ * in score-desc order so each cluster's seed is its best schedule.
+ *
+ * Cluster labels are derived from the seed's day pattern and time band.
+ */
+export function clusterSchedulesBySimilarity(schedules: GeneratedSchedule[]): ScheduleGroup[] {
+  if (schedules.length === 0) return [];
+
+  const sorted = [...schedules].sort((a, b) => b.score - a.score);
+
+  const clusters: {
+    seed: GeneratedSchedule;
+    seedVec: number[];
+    items: GeneratedSchedule[];
+  }[] = [];
+
+  for (const s of sorted) {
+    const vec = getScheduleFeatureVector(s);
+    let bestIdx = -1;
+    let bestSim = SIMILARITY_THRESHOLD;
+    for (let i = 0; i < clusters.length; i++) {
+      const sim = cosineSimilarity(vec, clusters[i].seedVec);
+      if (sim > bestSim) {
+        bestSim = sim;
+        bestIdx = i;
+      }
+    }
+    if (bestIdx >= 0) clusters[bestIdx].items.push(s);
+    else clusters.push({ seed: s, seedVec: vec, items: [s] });
+  }
+
+  return clusters
+    .map((c, i) => {
+      const seedSummary = summarizeSeed(c.seed);
+      return {
+        id: `cluster-${i}`,
+        label: labelFromSeed(seedSummary),
+        description: describeSeed(seedSummary),
+        schedules: c.items,
+        topScore: c.items[0].score,
+      };
+    })
+    .sort((a, b) => b.topScore - a.topScore);
+}
+
+/**
+ * Generates all valid schedule combinations from provided courses and sections,
+ * then ranks them relative to each other (best = 100, worst = 0).
  */
 export function generateSchedules(
   courses: Course[],
@@ -171,15 +266,23 @@ export function generateSchedules(
   preferences: Preferences,
   options: GeneratorOptions = {},
 ): GeneratedSchedule[] {
-  const { maxSchedules = 1000, onProgress } = options;
+  const { maxSchedules = 1000, onProgress, signal } = options;
 
   const courseCreditsMap = new Map(courses.map((c) => [c.id, c.credits]));
 
-  const minCredits = preferences.minCredits || 12;
-  const maxCredits = preferences.maxCredits || 18;
+  const minCredits = preferences.minCredits ?? 12;
+  const maxCredits = preferences.maxCredits ?? 18;
 
   const sectionArrays = Array.from(sectionsByCourse.values());
-  const schedules: GeneratedSchedule[] = [];
+
+  interface Pending {
+    id: string;
+    sections: Section[];
+    totalCredits: number;
+    conflicts: string[];
+    features: ScheduleFeatures;
+  }
+  const pending: Pending[] = [];
   let count = 0;
   let iterations = 0;
 
@@ -190,15 +293,17 @@ export function generateSchedules(
     maxCredits,
   )) {
     iterations++;
+    if (signal?.aborted) break;
     if (onProgress && iterations % 100 === 0) {
       onProgress(iterations);
     }
 
-    if (schedules.length >= maxSchedules) break;
+    if (pending.length >= maxSchedules) break;
 
-    const totalCredits = combination.reduce((sum, s) => {
-      return sum + (courseCreditsMap.get(s.courseId) || 3);
-    }, 0);
+    const totalCredits = combination.reduce(
+      (sum, s) => sum + (courseCreditsMap.get(s.courseId) ?? 3),
+      0,
+    );
 
     const schedule: Schedule = {
       id: `gen-${count}`,
@@ -209,19 +314,50 @@ export function generateSchedules(
       conflicts: [],
     };
 
-    const score = calculateScheduleScore(schedule, preferences);
+    const features = computeScheduleFeatures(schedule, preferences);
     const conflicts = checkConflicts(combination);
 
-    schedules.push({
+    pending.push({
       id: schedule.id,
       sections: combination,
       totalCredits,
-      score,
       conflicts,
+      features,
     });
 
     count++;
   }
 
-  return schedules.sort((a, b) => b.score - a.score);
+  const scores = scoreSchedulesRelative(
+    pending.map((p) => p.features),
+    preferences,
+  );
+
+  const generated: GeneratedSchedule[] = pending.map((p, i) => ({
+    id: p.id,
+    sections: p.sections,
+    totalCredits: p.totalCredits,
+    score: scores[i],
+    conflicts: p.conflicts,
+  }));
+
+  // Pick one winner per footprint (highest score; ties broken by first seen).
+  // Every other variant gets a large penalty so it sinks below all unique schedules.
+  const winnerByFootprint = new Map<string, number>();
+  const footprints: string[] = new Array(generated.length);
+  for (let i = 0; i < generated.length; i++) {
+    const fp = scheduleFootprint(generated[i].sections);
+    footprints[i] = fp;
+    const prev = winnerByFootprint.get(fp);
+    if (prev === undefined || generated[i].score > generated[prev].score) {
+      winnerByFootprint.set(fp, i);
+    }
+  }
+  for (let i = 0; i < generated.length; i++) {
+    if (winnerByFootprint.get(footprints[i]) !== i) {
+      generated[i].score -= REDUNDANT_VARIANT_PENALTY;
+    }
+  }
+
+  return generated.sort((a, b) => b.score - a.score);
 }

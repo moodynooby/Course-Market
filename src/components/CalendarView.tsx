@@ -19,7 +19,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { View } from 'react-big-calendar';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import type { CalendarEvent, Course, Section } from '../types';
-import { sectionsToCalendarEvents } from '../utils/schedule';
+import { isSlotActiveDuring, sectionsToCalendarEvents } from '../utils/schedule';
 
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
@@ -37,6 +37,7 @@ interface CalendarViewProps {
   sections: Section[];
   courses: Course[];
   conflicts: string[];
+  similarSectionCounts?: Map<string, number>;
 }
 
 interface EventProps {
@@ -58,6 +59,7 @@ const EventComponent = memo(function EventComponent({ event }: EventProps) {
   const courseCode = event.resource?.course?.code || '';
   const courseName = event.resource?.course?.name || '';
   const sectionNumber = event.resource?.section?.sectionNumber || '';
+  const similarPeers = event.resource?.similarPeers ?? 0;
   const colorIndex = courseCode.length > 0 ? courseCode.charCodeAt(0) % COURSE_COLORS.length : 0;
   const backgroundColor = COURSE_COLORS[colorIndex];
   const timeStr = `${format(event.start, 'h:mm a')} - ${format(event.end, 'h:mm a')}`;
@@ -78,6 +80,14 @@ const EventComponent = memo(function EventComponent({ event }: EventProps) {
           <Typography variant="body2" sx={{ fontSize: '0.75rem', opacity: 0.8, mt: 0.25 }}>
             {timeStr}
           </Typography>
+          {similarPeers > 0 && (
+            <Typography
+              variant="body2"
+              sx={{ fontSize: '0.7rem', opacity: 0.75, mt: 0.5, fontStyle: 'italic' }}
+            >
+              {similarPeers} similar section{similarPeers === 1 ? '' : 's'} available
+            </Typography>
+          )}
         </Box>
       }
       arrow
@@ -135,7 +145,12 @@ const EventComponent = memo(function EventComponent({ event }: EventProps) {
   );
 });
 
-export default function CalendarView({ sections, courses, conflicts }: CalendarViewProps) {
+export default function CalendarView({
+  sections,
+  courses,
+  conflicts,
+  similarSectionCounts,
+}: CalendarViewProps) {
   const theme = useTheme();
   const [view, setView] = useState<View>(Views.WEEK as View);
   const [date, setDate] = useState(new Date());
@@ -144,33 +159,37 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
   useEffect(() => {
     if (autoNavigated.current || sections.length === 0) return;
 
-    const hasActiveSlot = sections.some((section) =>
-      section.timeSlots.some((slot) => {
-        if (!slot.startDate || !slot.endDate) return true;
-        const now = new Date();
-        return now >= new Date(slot.startDate) && now <= new Date(slot.endDate);
-      }),
-    );
+    const now = new Date();
+    let hasActiveSlot = false;
+    let earliest: Date | null = null;
 
-    if (!hasActiveSlot) {
-      let earliest: Date | null = null;
-      for (const section of sections) {
-        for (const slot of section.timeSlots) {
-          if (slot.startDate) {
-            const d = new Date(slot.startDate);
-            if (!earliest || d < earliest) earliest = d;
-          }
+    outer: for (const section of sections) {
+      for (const slot of section.timeSlots) {
+        if (isSlotActiveDuring(slot, now)) {
+          hasActiveSlot = true;
+          break outer;
+        }
+        if (slot.startDate) {
+          const d = new Date(slot.startDate);
+          if (!earliest || d < earliest) earliest = d;
         }
       }
-      if (earliest) setDate(earliest);
     }
+
+    if (!hasActiveSlot && earliest) setDate(earliest);
     autoNavigated.current = true;
   }, [sections]);
 
-  const events = useMemo(
-    () => sectionsToCalendarEvents(sections, courses, date),
-    [sections, courses, date],
-  );
+  const events = useMemo(() => {
+    const base = sectionsToCalendarEvents(sections, courses, date);
+    if (!similarSectionCounts || similarSectionCounts.size === 0) return base;
+    return base.map((ev) => {
+      if (!ev.resource) return ev;
+      const peers = similarSectionCounts.get(ev.resource.section.id) ?? 0;
+      if (peers === 0) return ev;
+      return { ...ev, resource: { ...ev.resource, similarPeers: peers } };
+    });
+  }, [sections, courses, date, similarSectionCounts]);
 
   const handleNavigate = (newDate: Date) => {
     setDate(newDate);

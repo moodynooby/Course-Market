@@ -267,12 +267,17 @@ const getComponents = (_isDark: boolean): ThemeOptions['components'] => {
     },
     MuiTab: {
       styleOverrides: {
-        root: {
+        root: ({ theme }) => ({
           textTransform: 'none',
           fontWeight: 600,
           borderRadius: 9999,
           minHeight: 48,
-        },
+          zIndex: 1,
+          color: theme.palette.text.secondary,
+          '&.Mui-selected': {
+            color: theme.palette.primary.contrastText,
+          },
+        }),
       },
     },
     MuiTabs: {
@@ -280,6 +285,7 @@ const getComponents = (_isDark: boolean): ThemeOptions['components'] => {
         indicator: {
           borderRadius: 9999,
           height: '100%',
+          zIndex: 0,
         },
       },
     },

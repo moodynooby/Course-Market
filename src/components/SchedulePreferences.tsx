@@ -1,4 +1,4 @@
-import { CalendarToday, Save, Timer } from '@mui/icons-material';
+import { CalendarToday, ExpandMore, Save, Timer } from '@mui/icons-material';
 import {
   alpha,
   Box,
@@ -6,6 +6,7 @@ import {
   Card,
   CardActions,
   Chip,
+  Collapse,
   Divider,
   FormControlLabel,
   Grid,
@@ -18,7 +19,7 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DayOfWeek, Preferences } from '../types';
-import { DEFAULT_PREFERENCES } from '../utils/constants';
+import { DEFAULT_PREFERENCES, SCHEDULE_PRESETS } from '../utils/constants';
 
 interface SchedulePreferencesProps {
   initialPreferences?: Preferences;
@@ -39,6 +40,15 @@ const DAYS: { value: DayOfWeek; label: string }[] = [
   { value: 'Sa', label: 'Sat' },
   { value: 'Su', label: 'Sun' },
 ];
+
+function objectMatchesPreset(
+  prefs: Preferences,
+  preset: (typeof SCHEDULE_PRESETS)[number],
+): boolean {
+  const p = preset.preferences;
+  if (Object.keys(p).length === 0) return false;
+  return (Object.keys(p) as (keyof Preferences)[]).every((key) => prefs[key] === p[key]);
+}
 
 function validatePreferences(prefs: Preferences): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
@@ -71,6 +81,11 @@ export function SchedulePreferences({
   defaultExpanded = true,
 }: SchedulePreferencesProps) {
   const theme = useTheme();
+
+  const matchingPreset = SCHEDULE_PRESETS.find(
+    (p) => p.id !== 'custom' && objectMatchesPreset(initialPreferences || DEFAULT_PREFERENCES, p),
+  );
+
   const [preferences, setPreferences] = useState<Preferences>(
     initialPreferences || DEFAULT_PREFERENCES,
   );
@@ -79,6 +94,8 @@ export function SchedulePreferences({
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isValid, setIsValid] = useState(true);
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [activePreset, setActivePreset] = useState<string>(matchingPreset?.id || 'custom');
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -134,6 +151,7 @@ export function SchedulePreferences({
   const handleUpdate = <K extends keyof Preferences>(key: K, value: Preferences[K]) => {
     setPreferences((prev) => ({ ...prev, [key]: value }));
     setSaved(false);
+    setActivePreset('custom');
 
     if (autoSave && onSave) {
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
@@ -207,6 +225,46 @@ export function SchedulePreferences({
       >
         <Stack spacing={3}>
           <Box>
+            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mb: 2 }}>
+              {SCHEDULE_PRESETS.map((preset) => {
+                const isActive = activePreset === preset.id;
+                return (
+                  <Chip
+                    key={preset.id}
+                    label={
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <span>{preset.icon}</span>
+                        <span>{preset.label}</span>
+                      </Box>
+                    }
+                    onClick={() => {
+                      setActivePreset(preset.id);
+                      if (preset.id !== 'custom') {
+                        const merged = { ...preferences, ...preset.preferences };
+                        setPreferences(merged);
+                        if (autoSave && onSave) {
+                          if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+                          debounceTimerRef.current = setTimeout(() => {
+                            onSave(merged);
+                          }, 500);
+                        }
+                      }
+                    }}
+                    color={isActive ? 'secondary' : 'default'}
+                    variant={isActive ? 'filled' : 'outlined'}
+                    size="small"
+                    sx={{
+                      fontWeight: isActive ? 600 : 500,
+                      transition: 'all 0.2s ease',
+                      cursor: 'pointer',
+                      '&:hover': { transform: 'translateY(-1px)' },
+                    }}
+                  />
+                );
+              })}
+            </Stack>
+          </Box>
+          <Box>
             <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 1.5 }}>
               <Timer fontSize="small" sx={{ color: 'text.secondary' }} />
               <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
@@ -239,7 +297,7 @@ export function SchedulePreferences({
               </Grid>
             </Grid>
 
-            <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+            <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: 'wrap' }}>
               <Chip
                 label="Morning"
                 icon={<span style={{ fontSize: 14 }}>🌅</span>}
@@ -254,6 +312,14 @@ export function SchedulePreferences({
                 onClick={() => handleUpdate('preferAfternoon', !preferences.preferAfternoon)}
                 color={preferences.preferAfternoon ? 'primary' : 'default'}
                 variant={preferences.preferAfternoon ? 'filled' : 'outlined'}
+                sx={{ fontSize: '0.75rem' }}
+              />
+              <Chip
+                label="No Evening"
+                icon={<span style={{ fontSize: 14 }}>🌙</span>}
+                onClick={() => handleUpdate('preferNoEvening', !preferences.preferNoEvening)}
+                color={preferences.preferNoEvening ? 'primary' : 'default'}
+                variant={preferences.preferNoEvening ? 'filled' : 'outlined'}
                 sx={{ fontSize: '0.75rem' }}
               />
             </Stack>
@@ -295,46 +361,6 @@ export function SchedulePreferences({
             </Grid>
 
             <Box sx={{ mt: 2 }}>
-              <Stack
-                direction="row"
-                sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1 }}
-              >
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  Max Gap Between Classes
-                </Typography>
-                <Chip
-                  label={`${preferences.maxGapMinutes} min`}
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                  sx={{ fontWeight: 600 }}
-                />
-              </Stack>
-              <Slider
-                value={preferences.maxGapMinutes}
-                onChange={(_, value) => handleUpdate('maxGapMinutes', value as number)}
-                min={0}
-                max={180}
-                step={15}
-                valueLabelDisplay="auto"
-                valueLabelFormat={(value) => `${value} min`}
-                sx={{
-                  '& .MuiSlider-thumb': { width: 18, height: 18 },
-                  '& .MuiSlider-track': { bgcolor: 'primary.main' },
-                  '& .MuiSlider-rail': { opacity: 0.3 },
-                  '& .MuiSlider-valueLabel': {
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
-                    fontWeight: 600,
-                    px: 1,
-                    py: 0.5,
-                    borderRadius: 1,
-                  },
-                }}
-              />
-            </Box>
-
-            <Box sx={{ mt: 2 }}>
               <Typography
                 variant="caption"
                 sx={{ color: 'text.secondary', mb: 1, display: 'block' }}
@@ -367,21 +393,83 @@ export function SchedulePreferences({
               </Stack>
             </Box>
 
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={preferences.preferConsecutiveDays}
-                  onChange={(e) => handleUpdate('preferConsecutiveDays', e.target.checked)}
-                  size="small"
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+              <Button
+                size="small"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                endIcon={
+                  <ExpandMore
+                    sx={{
+                      transform: showAdvanced ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.2s',
+                    }}
+                  />
+                }
+                sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
+              >
+                {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
+              </Button>
+            </Box>
+
+            <Collapse in={showAdvanced}>
+              <Stack spacing={2} sx={{ mt: 1 }}>
+                <Box>
+                  <Stack
+                    direction="row"
+                    sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1 }}
+                  >
+                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                      Max Gap Between Classes
+                    </Typography>
+                    <Chip
+                      label={`${preferences.maxGapMinutes} min`}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                      sx={{ fontWeight: 600 }}
+                    />
+                  </Stack>
+                  <Slider
+                    value={preferences.maxGapMinutes}
+                    onChange={(_, value) => handleUpdate('maxGapMinutes', value as number)}
+                    min={0}
+                    max={180}
+                    step={15}
+                    valueLabelDisplay="auto"
+                    valueLabelFormat={(value) => `${value} min`}
+                    sx={{
+                      '& .MuiSlider-thumb': { width: 18, height: 18 },
+                      '& .MuiSlider-track': { bgcolor: 'primary.main' },
+                      '& .MuiSlider-rail': { opacity: 0.3 },
+                      '& .MuiSlider-valueLabel': {
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        fontWeight: 600,
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: 1,
+                      },
+                    }}
+                  />
+                </Box>
+
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={preferences.preferConsecutiveDays}
+                      onChange={(e) => handleUpdate('preferConsecutiveDays', e.target.checked)}
+                      size="small"
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      Prefer consecutive days (MWF or TTh)
+                    </Typography>
+                  }
+                  sx={{ ml: 0 }}
                 />
-              }
-              label={
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  Prefer consecutive days (MWF or TTh)
-                </Typography>
-              }
-              sx={{ mt: 1, ml: 0 }}
-            />
+              </Stack>
+            </Collapse>
           </Box>
         </Stack>
 

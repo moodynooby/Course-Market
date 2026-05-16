@@ -258,10 +258,7 @@ export default function Layout() {
             <IconButton
               onClick={() => navigate('/settings')}
               size="small"
-              sx={{
-                color: 'text.secondary',
-                display: { xs: 'flex', md: 'none' },
-              }}
+              sx={{ color: 'text.secondary' }}
             >
               <Settings fontSize="small" />
             </IconButton>

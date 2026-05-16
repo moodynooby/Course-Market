@@ -78,6 +78,7 @@ export interface CalendarEvent {
   resource?: {
     section: Section;
     course?: Course;
+    similarPeers?: number;
   };
 }
 

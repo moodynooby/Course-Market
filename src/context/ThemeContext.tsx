@@ -30,6 +30,15 @@ function getInitialMode(): ThemeMode {
   } catch {
     /* ignore */
   }
+  try {
+    const prefs = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
+    if (prefs) {
+      const parsed = JSON.parse(prefs);
+      if (parsed.theme) return parsed.theme as ThemeMode;
+    }
+  } catch {
+    /* ignore */
+  }
   return 'system';
 }
 

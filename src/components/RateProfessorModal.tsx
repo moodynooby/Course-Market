@@ -86,7 +86,6 @@ export default function RateProfessorModal({
       );
       onSuccess();
       onClose();
-      // Reset form
       setRating(5);
       setDifficulty(3);
       setComment('');

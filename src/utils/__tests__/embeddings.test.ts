@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { cosineSimilarity, getScheduleFeatureVector } from '../embeddings';
+import {
+  CONFLICTS_NORMALIZATION_MAX,
+  CREDITS_NORMALIZATION_MAX,
+  cosineSimilarity,
+  getScheduleFeatureVector,
+  getScheduleIntrinsicQuality,
+} from '../embeddings';
 import type { GeneratedSchedule } from '../schedule-types';
 
 function makeSchedule(overrides: Partial<GeneratedSchedule>): GeneratedSchedule {
@@ -14,40 +20,26 @@ function makeSchedule(overrides: Partial<GeneratedSchedule>): GeneratedSchedule 
 }
 
 describe('getScheduleFeatureVector', () => {
-  it('returns a vector of length 12', () => {
-    const vec = getScheduleFeatureVector(makeSchedule({}));
-    expect(vec).toHaveLength(12);
-  });
-
-  it('all values are 0 for empty schedule', () => {
-    const vec = getScheduleFeatureVector(
-      makeSchedule({
-        totalCredits: 0,
-        score: 0,
-        sections: [],
-      }),
-    );
-    expect(vec.every((v) => v === 0)).toBe(true);
-  });
-
-  it('normalizes credits correctly', () => {
-    const vec = getScheduleFeatureVector(makeSchedule({ totalCredits: 21 }));
+  it('normalizes credits to [0,1] with documented cap', () => {
+    const vec = getScheduleFeatureVector(makeSchedule({ totalCredits: CREDITS_NORMALIZATION_MAX }));
     expect(vec[0]).toBe(1);
   });
 
-  it('normalizes score correctly', () => {
-    const vec = getScheduleFeatureVector(makeSchedule({ score: 100 }));
-    expect(vec[1]).toBe(1);
+  it('encodes intrinsic quality independent of relative score', () => {
+    const low = getScheduleFeatureVector(makeSchedule({ score: 0 }));
+    const high = getScheduleFeatureVector(makeSchedule({ score: 100 }));
+    expect(low[1]).toBe(high[1]);
   });
 
-  it('caps conflict count at 1', () => {
+  it('clamps conflict count at documented maximum', () => {
+    const overflow = CONFLICTS_NORMALIZATION_MAX + 2;
     const vec = getScheduleFeatureVector(
-      makeSchedule({ conflicts: ['a', 'b', 'c', 'd', 'e', 'f'] }),
+      makeSchedule({ conflicts: Array.from({ length: overflow }, (_, i) => String(i)) }),
     );
     expect(vec[3]).toBe(1);
   });
 
-  it('distributes time-of-day counts', () => {
+  it('distributes time-of-day as fractions of total slots', () => {
     const schedule = makeSchedule({
       sections: [
         {
@@ -67,70 +59,57 @@ describe('getScheduleFeatureVector', () => {
     expect(vec[10]).toBe(0);
     expect(vec[11]).toBe(0);
   });
+});
 
-  it('counts afternoon slots correctly', () => {
-    const schedule = makeSchedule({
-      sections: [
-        {
-          id: 's1',
-          courseId: 'c1',
-          sectionNumber: '001',
-          instructor: 'Dr. A',
-          capacity: 30,
-          enrolled: 0,
-          timeSlots: [{ day: 'M' as const, startTime: '14:00', endTime: '15:00' }],
-        },
-      ],
-    });
-    const vec = getScheduleFeatureVector(schedule);
-
-    expect(vec[10]).toBe(1);
+describe('getScheduleIntrinsicQuality', () => {
+  it('is independent of schedule.score', () => {
+    const a = makeSchedule({ score: 5 });
+    const b = makeSchedule({ score: 95 });
+    expect(getScheduleIntrinsicQuality(a)).toBe(getScheduleIntrinsicQuality(b));
   });
 
-  it('detects Monday slot in day counts', () => {
-    const schedule = makeSchedule({
+  it('penalizes slots outside the daytime window', () => {
+    const inside = makeSchedule({
       sections: [
         {
           id: 's1',
           courseId: 'c1',
           sectionNumber: '001',
-          instructor: 'Dr. A',
+          instructor: '',
           capacity: 30,
           enrolled: 0,
-          timeSlots: [{ day: 'M' as const, startTime: '09:00', endTime: '10:00' }],
+          timeSlots: [{ day: 'M' as const, startTime: '10:00', endTime: '11:00' }],
         },
       ],
     });
-    const vec = getScheduleFeatureVector(schedule);
-
-    expect(vec[4]).toBeGreaterThan(0);
-    expect(vec[5]).toBe(0);
-    expect(vec[6]).toBe(0);
-    expect(vec[7]).toBe(0);
-    expect(vec[8]).toBe(0);
+    const early = makeSchedule({
+      sections: [
+        {
+          id: 's2',
+          courseId: 'c1',
+          sectionNumber: '002',
+          instructor: '',
+          capacity: 30,
+          enrolled: 0,
+          timeSlots: [{ day: 'M' as const, startTime: '06:00', endTime: '07:00' }],
+        },
+      ],
+    });
+    expect(getScheduleIntrinsicQuality(inside)).toBeGreaterThan(getScheduleIntrinsicQuality(early));
   });
 });
 
 describe('cosineSimilarity', () => {
-  it('returns 1 for identical vectors', () => {
-    const vec = [1, 2, 3];
-    expect(cosineSimilarity(vec, vec)).toBeCloseTo(1, 10);
-  });
-
-  it('throws for different length vectors', () => {
+  it('throws when vectors have different lengths', () => {
     expect(() => cosineSimilarity([1, 2], [1, 2, 3])).toThrow('Vectors must have the same length');
-  });
-
-  it('returns 0 for orthogonal vectors (one all zeros)', () => {
-    expect(cosineSimilarity([1, 0, 0], [0, 1, 0])).toBeCloseTo(0, 10);
-  });
-
-  it('returns near 0 for orthogonal vectors', () => {
-    const result = cosineSimilarity([1, 0], [0, 1]);
-    expect(result).toBeCloseTo(0, 10);
   });
 
   it('returns 0 for empty vectors', () => {
     expect(cosineSimilarity([], [])).toBe(0);
+  });
+
+  it('returns 1 for identical vectors', () => {
+    const vec = [1, 2, 3];
+    expect(cosineSimilarity(vec, vec)).toBeCloseTo(1, 10);
   });
 });

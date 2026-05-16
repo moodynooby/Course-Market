@@ -15,9 +15,7 @@ export const handler = async (event: any) => {
   const pathParts = path.split('/').filter(Boolean);
 
   try {
-    // Public GET routes
     if (httpMethod === 'GET') {
-      // GET /professors
       if (path.endsWith('/professors')) {
         const professors = await db
           .select({
@@ -39,7 +37,6 @@ export const handler = async (event: any) => {
         return jsonResponse(200, { professors });
       }
 
-      // GET /professors/:id
       const id = parseInt(pathParts[pathParts.length - 1], 10);
       if (!Number.isNaN(id)) {
         const [professor] = await db
@@ -73,11 +70,9 @@ export const handler = async (event: any) => {
       }
     }
 
-    // Protected routes
     const user = await validateToken(event.headers.authorization);
 
     if (httpMethod === 'POST') {
-      // POST /professors/rate
       if (path.endsWith('/rate')) {
         let requestBody;
         try {
@@ -100,7 +95,6 @@ export const handler = async (event: any) => {
         return jsonResponse(201, { rating: newRating });
       }
 
-      // POST /professors/sync
       if (path.endsWith('/sync')) {
         const semesters = await db.select().from(schema.semesters);
         const allInstructors = new Set<string>();

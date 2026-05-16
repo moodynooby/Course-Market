@@ -7,7 +7,7 @@ interface OptimizationPanelProps {
   optimizing: boolean;
   generating: boolean;
   generationProgress: number;
-  initProgress: string;
+  initProgress: { text: string; percent: number };
   error: string;
   webllmAvailable: boolean;
   onOptimize: () => void;
@@ -93,11 +93,11 @@ export function OptimizationPanel({
           {generating ? `Generating... (${generationProgress}%)` : 'View All Alternatives'}
         </Button>
 
-        {initProgress && (
+        {initProgress.text && (
           <Box>
             <LinearProgress
               variant="determinate"
-              value={parseFloat(initProgress.match(/\d+/)?.[0] || '0')}
+              value={Math.max(0, Math.min(100, initProgress.percent))}
               sx={{ height: 6, borderRadius: 3, mb: 1 }}
             />
             <Typography
@@ -108,7 +108,7 @@ export function OptimizationPanel({
                 display: 'block',
               }}
             >
-              {initProgress}
+              {initProgress.text} ({Math.round(initProgress.percent)}%)
             </Typography>
           </Box>
         )}

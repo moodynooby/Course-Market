@@ -20,8 +20,10 @@ import { OptimizationPanel } from '../components/dashboard/OptimizationPanel';
 import { ScheduleOverview } from '../components/dashboard/ScheduleOverview';
 import { SelectedCoursesList } from '../components/dashboard/SelectedCoursesList';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { PreferencesSummaryCard } from '../components/PreferencesSummaryCard';
 import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
+import { useThemeMode } from '../context/ThemeContext';
 import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
 import { buildCourseIndex, searchSchedules } from '../services/search';
 import type { Course, Schedule, Section, SemesterJSON } from '../types';
@@ -42,6 +44,7 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const { getToken, profile, updateProfile } = useAuthContext();
   const { preferences, llmConfig, updateLlmConfig } = useConfigContext();
+  const { mode, setMode } = useThemeMode();
   const theme = useTheme();
 
   const [loading, setLoading] = useState(true);
@@ -53,7 +56,10 @@ export default function LandingPage() {
   const [optimizing, setOptimizing] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
   const [webllmAvailable, setWebllmAvailable] = useState(false);
-  const [initProgress, setInitProgress] = useState<string>('');
+  const [initProgress, setInitProgress] = useState<{ text: string; percent: number }>({
+    text: '',
+    percent: 0,
+  });
   const [error, setError] = useState<string>('');
   const [webgpuWarningOpen, setWebgpuWarningOpen] = useState(false);
   const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false);
@@ -74,10 +80,8 @@ export default function LandingPage() {
 
   useEffect(() => {
     coursesRef.current = allCourses;
-  }, [allCourses]);
-  useEffect(() => {
     sectionsRef.current = allSections;
-  }, [allSections]);
+  }, [allCourses, allSections]);
 
   const loadScheduleFromSelections = useCallback(
     (courses: Course[], sections: Section[]) => {
@@ -193,6 +197,12 @@ export default function LandingPage() {
   }, [loadData]);
 
   useEffect(() => {
+    if (profile?.preferences?.theme && profile.preferences.theme !== mode) {
+      setMode(profile.preferences.theme);
+    }
+  }, [profile, mode, setMode]);
+
+  useEffect(() => {
     if (!searchQuery.trim() || generatedSchedules.length === 0) {
       setSearchResults([]);
       return;
@@ -214,14 +224,46 @@ export default function LandingPage() {
 
     setOptimizing(true);
     setError('');
-    setInitProgress('');
+    setInitProgress({ text: '', percent: 0 });
 
     try {
       const { optimizeWithLLM } = await import('../services/llm');
+      const { generateSchedules } = await import('../utils/schedule-generator');
       const token = await getToken();
 
+      const selectedCourseIds = new Set(schedule.sections.map((s) => s.courseId));
+      const relevantSections = allSections.filter((s) => selectedCourseIds.has(s.courseId));
+      const sectionsByCourse = new Map<string, Section[]>();
+      relevantSections.forEach((section) => {
+        const existing = sectionsByCourse.get(section.courseId) || [];
+        existing.push(section);
+        sectionsByCourse.set(section.courseId, existing);
+      });
+      const pinnedSelections = profile?.pinnedSelections || {};
+      Object.entries(pinnedSelections).forEach(([courseId, sectionId]) => {
+        if (sectionsByCourse.has(courseId)) {
+          const pinnedSection = allSections.find((s) => s.id === sectionId);
+          if (pinnedSection) sectionsByCourse.set(courseId, [pinnedSection]);
+        }
+      });
+
+      let candidates = generateSchedules(allCourses, sectionsByCourse, preferences, {
+        maxSchedules: 200,
+      }).map<Schedule>((g) => ({
+        id: g.id,
+        name: `Candidate ${g.id}`,
+        sections: g.sections,
+        totalCredits: g.totalCredits,
+        score: g.score,
+        conflicts: g.conflicts,
+      }));
+
+      if (candidates.length === 0) {
+        candidates = [schedule];
+      }
+
       const result = await optimizeWithLLM(
-        [schedule],
+        candidates,
         preferences,
         token || '',
         {
@@ -230,7 +272,7 @@ export default function LandingPage() {
           temperature: llmConfig.temperature,
           maxTokens: llmConfig.maxTokens,
           initProgressCallback: (report: { progress: number; text: string }) => {
-            setInitProgress(`${report.text} (${Math.round(report.progress * 100)}%)`);
+            setInitProgress({ text: report.text, percent: report.progress * 100 });
           },
         },
         allSections,
@@ -560,36 +602,72 @@ export default function LandingPage() {
       ) : (
         <Grid container spacing={4}>
           <Grid size={{ xs: 12, lg: 8 }}>
-            <ScheduleOverview
-              sections={schedule?.sections || []}
-              courses={allCourses}
-              aiAnalysis={aiAnalysis}
-            />
+            <Stack spacing={3}>
+              <ScheduleOverview
+                sections={schedule?.sections || []}
+                courses={allCourses}
+                aiAnalysis={aiAnalysis}
+              />
+
+              <Grid container spacing={3}>
+                <Grid size={{ xs: 12, sm: 6 }}>
+                  <PreferencesSummaryCard />
+                </Grid>
+                {showOptimization && (
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <OptimizationPanel
+                      schedule={schedule}
+                      optimizing={optimizing}
+                      generating={generating}
+                      generationProgress={generationProgress}
+                      initProgress={initProgress}
+                      error={error}
+                      webllmAvailable={webllmAvailable}
+                      onOptimize={handleOptimize}
+                      onGenerateAll={handleGenerateAll}
+                      onWebgpuWarning={() => setWebgpuWarningOpen(true)}
+                    />
+                  </Grid>
+                )}
+              </Grid>
+            </Stack>
           </Grid>
 
           <Grid size={{ xs: 12, lg: 4 }}>
-            <Stack spacing={3}>
-              <SelectedCoursesList
-                sections={schedule?.sections || []}
-                courses={allCourses}
-                pinnedSectionIds={new Set(Object.values(profile?.pinnedSelections || {}))}
-              />
-
-              {showOptimization && (
-                <OptimizationPanel
-                  schedule={schedule}
-                  optimizing={optimizing}
-                  generating={generating}
-                  generationProgress={generationProgress}
-                  initProgress={initProgress}
-                  error={error}
-                  webllmAvailable={webllmAvailable}
-                  onOptimize={handleOptimize}
-                  onGenerateAll={handleGenerateAll}
-                  onWebgpuWarning={() => setWebgpuWarningOpen(true)}
-                />
-              )}
-            </Stack>
+            <SelectedCoursesList
+              sections={schedule?.sections || []}
+              courses={allCourses}
+              pinnedSectionIds={new Set(Object.values(profile?.pinnedSelections || {}))}
+              onDeselect={(courseId) => {
+                const prev = profile?.courseSelections || {};
+                const updated = { ...prev };
+                delete updated[courseId];
+                updateProfile({ courseSelections: updated });
+                const newSections = (schedule?.sections || []).filter(
+                  (s) => s.courseId !== courseId,
+                );
+                setSchedule(
+                  newSections.length > 0 ? { ...schedule!, sections: newSections } : null,
+                );
+              }}
+              onUndoDeselect={(courseId, sectionId) => {
+                const prev = profile?.courseSelections || {};
+                updateProfile({ courseSelections: { ...prev, [courseId]: sectionId } });
+                const section = allSections.find((s) => s.id === sectionId);
+                if (section && schedule) {
+                  setSchedule({ ...schedule, sections: [...schedule.sections, section] });
+                } else if (section) {
+                  setSchedule({
+                    id: 'current',
+                    name: 'Current Selection',
+                    sections: [section],
+                    totalCredits: 0,
+                    score: 0,
+                    conflicts: [],
+                  });
+                }
+              }}
+            />
           </Grid>
         </Grid>
       )}
@@ -633,6 +711,7 @@ export default function LandingPage() {
             onSelectSchedule={setSelectedSchedule}
             onApplySchedule={handleApplySchedule}
             courses={allCourses}
+            allSections={allSections}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             searchResults={searchResults}

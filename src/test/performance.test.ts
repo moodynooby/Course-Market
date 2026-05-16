@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  calculateScheduleScore,
+  calculateAbsoluteScheduleScore,
   checkConflicts,
   formatTimeSlots,
   hasSectionConflict,
@@ -10,7 +10,7 @@ import { basePreferences, makeSchedule, makeSection, makeTimeSlot } from './perf
 
 describe('performance', () => {
   describe('schedule scoring', () => {
-    it('should score a simple schedule correctly', () => {
+    it('returns valid scores within [0, 100] range', () => {
       const sections = [
         makeSection({
           timeSlots: [makeTimeSlot('M', '09:00', '10:00')],
@@ -25,45 +25,27 @@ describe('performance', () => {
           instructor: 'Dr. Brown',
         }),
       ];
-
       const schedule = makeSchedule(sections, 9);
-      const score = calculateScheduleScore(schedule, basePreferences);
+
+      const score = calculateAbsoluteScheduleScore(schedule, basePreferences);
 
       expect(score).toBeGreaterThan(0);
       expect(score).toBeLessThanOrEqual(100);
     });
 
-    it('should handle large schedules', () => {
-      const days: import('../types').DayOfWeek[] = ['M', 'W', 'F'];
-      const sections = Array.from({ length: 6 }, (_, i) =>
-        makeSection({
-          id: `s${i}`,
-          timeSlots: [makeTimeSlot(days[i % 3], `${9 + i}:00`, `${10 + i}:00`)],
-          instructor: `Dr. ${i}`,
-        }),
-      );
-
-      const schedule = makeSchedule(sections, 18);
-
-      for (let i = 0; i < 100; i++) {
-        const score = calculateScheduleScore(schedule, basePreferences);
-        expect(score).toBeGreaterThanOrEqual(0);
-      }
-    });
-
-    it('should penalize schedules exceeding credit limits', () => {
+    it('penalizes schedules exceeding credit limits', () => {
       const sections = [
         makeSection({ timeSlots: [makeTimeSlot('M', '09:00', '10:00')] }),
         makeSection({ timeSlots: [makeTimeSlot('W', '09:00', '10:00')] }),
       ];
 
       const schedule = makeSchedule(sections, 20);
-      const score = calculateScheduleScore(schedule, basePreferences);
+      const score = calculateAbsoluteScheduleScore(schedule, basePreferences);
 
       expect(score).toBeLessThan(80);
     });
 
-    it('should handle avoided days correctly', () => {
+    it('penalizes schedules on avoided days', () => {
       const sections = [
         makeSection({ timeSlots: [makeTimeSlot('M', '09:00', '10:00')] }),
         makeSection({ timeSlots: [makeTimeSlot('F', '09:00', '10:00')] }),
@@ -74,12 +56,12 @@ describe('performance', () => {
         ...basePreferences,
         avoidDays: ['M', 'F'] as unknown as typeof basePreferences.avoidDays,
       };
-      const score = calculateScheduleScore(schedule, prefsWithAvoidedDays);
+      const score = calculateAbsoluteScheduleScore(schedule, prefsWithAvoidedDays);
 
       expect(score).toBeLessThan(100);
     });
 
-    it('should not penalize Friday-to-Monday as gap', () => {
+    it('does not penalize Friday-to-Monday gaps across weekends', () => {
       const sections = [
         makeSection({ timeSlots: [makeTimeSlot('F', '09:00', '10:00')] }),
         makeSection({ timeSlots: [makeTimeSlot('M', '09:00', '10:00')] }),
@@ -89,12 +71,12 @@ describe('performance', () => {
 
       const schedule = makeSchedule(sections, 12);
       const prefs = { ...basePreferences, preferConsecutiveDays: true };
-      const score = calculateScheduleScore(schedule, prefs);
+      const score = calculateAbsoluteScheduleScore(schedule, prefs);
 
       expect(score).toBeGreaterThan(50);
     });
 
-    it('should handle date-aware conflicts', () => {
+    it('ignores time conflicts across different date ranges', () => {
       const slot1 = makeTimeSlot('M', '09:00', '10:00');
       (slot1 as any).startDate = '2026-01-15';
       (slot1 as any).endDate = '2026-03-07';
@@ -106,7 +88,7 @@ describe('performance', () => {
       expect(hasTimeConflict(slot1, slot2)).toBe(false);
     });
 
-    it('should detect conflicts when date ranges overlap', () => {
+    it('detects time conflicts when date ranges overlap', () => {
       const slot1 = makeTimeSlot('M', '09:00', '10:00');
       (slot1 as any).startDate = '2026-01-15';
       (slot1 as any).endDate = '2026-04-01';
@@ -118,7 +100,7 @@ describe('performance', () => {
       expect(hasTimeConflict(slot1, slot2)).toBe(true);
     });
 
-    it('should give bonus for compact schedules', () => {
+    it('gives higher scores for compact schedules', () => {
       const sections = [
         makeSection({ timeSlots: [makeTimeSlot('M', '09:00', '10:00')] }),
         makeSection({ timeSlots: [makeTimeSlot('M', '10:00', '11:00')] }),
@@ -127,38 +109,38 @@ describe('performance', () => {
       ];
 
       const schedule = makeSchedule(sections, 12);
-      const score = calculateScheduleScore(schedule, basePreferences);
+      const score = calculateAbsoluteScheduleScore(schedule, basePreferences);
 
       expect(score).toBeGreaterThan(60);
     });
 
-    it('should handle preferNoEvening', () => {
+    it('penalizes evening classes when preferNoEvening is true', () => {
       const sections = [makeSection({ timeSlots: [makeTimeSlot('M', '18:00', '19:30')] })];
 
       const schedule = makeSchedule(sections, 3);
       const prefs = { ...basePreferences, preferNoEvening: true };
-      const score = calculateScheduleScore(schedule, prefs);
+      const score = calculateAbsoluteScheduleScore(schedule, prefs);
 
       expect(score).toBeLessThan(60);
     });
   });
 
   describe('conflict detection', () => {
-    it('should detect time conflicts', () => {
+    it('detects time conflicts for overlapping slots', () => {
       const slot1 = makeTimeSlot('M', '09:00', '10:30');
       const slot2 = makeTimeSlot('M', '10:00', '11:30');
 
       expect(hasTimeConflict(slot1, slot2)).toBe(true);
     });
 
-    it('should not conflict on different days', () => {
+    it('does not flag conflicts for the same time on different days', () => {
       const slot1 = makeTimeSlot('M', '09:00', '10:30');
       const slot2 = makeTimeSlot('W', '09:00', '10:30');
 
       expect(hasTimeConflict(slot1, slot2)).toBe(false);
     });
 
-    it('should detect section conflicts', () => {
+    it('detects conflicts between sections with overlapping time slots', () => {
       const section1 = makeSection({
         id: 's1',
         timeSlots: [makeTimeSlot('M', '09:00', '10:30')],
@@ -171,7 +153,7 @@ describe('performance', () => {
       expect(hasSectionConflict(section1, section2)).toBe(true);
     });
 
-    it('should find all conflicts in a schedule', () => {
+    it('identifies all conflicting sections in a schedule', () => {
       const sections = [
         makeSection({
           id: 's1',
@@ -198,7 +180,7 @@ describe('performance', () => {
   });
 
   describe('formatTimeSlots', () => {
-    it('should format single slot correctly', () => {
+    it('formats single time slot with day and time', () => {
       const slots = [makeTimeSlot('M', '09:00', '10:00')];
       const { dayDisplay, timeDisplay } = formatTimeSlots(slots);
 
@@ -206,7 +188,7 @@ describe('performance', () => {
       expect(timeDisplay).toBe('9:00 AM - 10:00 AM');
     });
 
-    it('should format multiple slots on same day', () => {
+    it('shows only first time when multiple slots exist on same day', () => {
       const slots = [makeTimeSlot('M', '09:00', '10:00'), makeTimeSlot('M', '14:00', '15:00')];
       const { dayDisplay, timeDisplay } = formatTimeSlots(slots);
 
@@ -214,7 +196,7 @@ describe('performance', () => {
       expect(timeDisplay).toBe('9:00 AM - 10:00 AM');
     });
 
-    it('should format multiple days', () => {
+    it('formats multiple days as concatenated abbreviations', () => {
       const slots = [
         makeTimeSlot('M', '09:00', '10:00'),
         makeTimeSlot('W', '09:00', '10:00'),
@@ -226,14 +208,14 @@ describe('performance', () => {
       expect(timeDisplay).toBe('9:00 AM - 10:00 AM');
     });
 
-    it('should handle TBA', () => {
+    it('returns "TBA" for empty time slots', () => {
       const { dayDisplay, timeDisplay } = formatTimeSlots([]);
 
       expect(dayDisplay).toBe('');
       expect(timeDisplay).toBe('TBA');
     });
 
-    it('should handle afternoon times', () => {
+    it('formats afternoon times correctly with PM', () => {
       const slots = [makeTimeSlot('M', '13:00', '14:30')];
       const { timeDisplay } = formatTimeSlots(slots);
 

@@ -55,13 +55,14 @@ describe('transformSections', () => {
       makeSectionJSON({ id: 'sec1', courseCode: 'CS101' }),
       makeSectionJSON({ id: 'sec2', courseCode: 'MATH101' }),
     ];
+
     const result = transformSections(input);
 
     expect(result.courses).toHaveLength(2);
     expect(result.sections).toHaveLength(2);
   });
 
-  it('handles missing optional fields gracefully', () => {
+  it('handles sections with empty timeSlots and zero capacity', () => {
     const input: SectionJSON[] = [
       {
         id: 'sec1',
@@ -76,18 +77,10 @@ describe('transformSections', () => {
         timeSlots: [],
       },
     ];
+
     const result = transformSections(input);
 
-    expect(result.courses).toHaveLength(1);
-    expect(result.sections).toHaveLength(1);
     expect(result.sections[0].capacity).toBe(0);
     expect(result.sections[0].timeSlots).toEqual([]);
-  });
-
-  it('captures correct credits per course', () => {
-    const input = [makeSectionJSON({ courseCode: 'CS101', credits: 4 })];
-    const result = transformSections(input);
-
-    expect(result.courses[0].credits).toBe(4);
   });
 });

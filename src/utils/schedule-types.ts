@@ -11,6 +11,7 @@ export interface GeneratedSchedule {
 export interface GeneratorOptions {
   maxSchedules?: number;
   onProgress?: (count: number) => void;
+  signal?: AbortSignal;
 }
 
 export const DEFAULT_MAX_SCHEDULES = 1000;

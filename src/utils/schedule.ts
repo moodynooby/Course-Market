@@ -18,7 +18,7 @@ const DAY_TO_NUMBER: Record<DayOfWeek, number> = {
   Su: 6,
 };
 
-const DAY_ORDER: DayOfWeek[] = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su'];
+export const DAY_ORDER: DayOfWeek[] = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su'];
 
 function getWeekStartDate(date: Date = new Date()): Date {
   const day = date.getDay();
@@ -178,132 +178,228 @@ export function formatSlotDates(slot: TimeSlot): string {
   return `${formatDate(slot.startDate)} - ${formatDate(slot.endDate)}`;
 }
 
-export function calculateScheduleScore(schedule: Schedule, preferences: Preferences): number {
-  let baseScore = 50;
+export const COMPACT_DAY_THRESHOLD = 3;
+const MORNING_END = 720; // 12:00
+const AFTERNOON_END = 1020; // 17:00
+const LUNCH_AFTER = 780; // 13:00
+
+export interface ScheduleFeatures {
+  creditDelta: number;
+  outsideWindowMinutes: number;
+  avoidDayHits: number;
+  prefMismatch: number;
+  daysUsed: number;
+  gapMinutesTotal: number;
+  dayGapCount: number;
+  hasLunchBreak: 0 | 1;
+  fullyInsideWindow: 0 | 1;
+}
+
+export function computeScheduleFeatures(
+  schedule: Schedule,
+  preferences: Preferences,
+): ScheduleFeatures {
   const { sections, totalCredits } = schedule;
-
-  if (totalCredits > preferences.maxCredits) {
-    baseScore -= 20;
-  }
-  if (totalCredits < preferences.minCredits) {
-    baseScore -= 20;
-  }
-
   const avoidDaysSet = new Set(preferences.avoidDays);
   const daysUsed = new Set<DayOfWeek>();
+
   let hasMorning = false;
   let hasAfternoon = false;
   let hasEvening = false;
-  let outsideWindowCount = 0;
+  let outsideWindowMinutes = 0;
+  let avoidDayHits = 0;
 
   const preferredStart = timeToMinutesCached(preferences.preferredStartTime);
   const preferredEnd = timeToMinutesCached(preferences.preferredEndTime);
 
   const allSlots: { day: DayOfWeek; start: number; end: number }[] = [];
 
-  sections.forEach((section) => {
-    section.timeSlots.forEach((slot) => {
+  for (const section of sections) {
+    for (const slot of section.timeSlots) {
       daysUsed.add(slot.day);
-      const startTime = timeToMinutesCached(slot.startTime);
-      const endTime = timeToMinutesCached(slot.endTime);
+      if (avoidDaysSet.has(slot.day)) avoidDayHits++;
 
-      allSlots.push({ day: slot.day, start: startTime, end: endTime });
+      const start = timeToMinutesCached(slot.startTime);
+      const end = timeToMinutesCached(slot.endTime);
+      allSlots.push({ day: slot.day, start, end });
 
-      if (startTime < 720) hasMorning = true;
-      else if (startTime < 1020) hasAfternoon = true;
-      if (startTime >= 1020) hasEvening = true;
+      if (start < MORNING_END) hasMorning = true;
+      if (start >= MORNING_END && start < AFTERNOON_END) hasAfternoon = true;
+      if (start >= AFTERNOON_END) hasEvening = true;
 
-      if (startTime < preferredStart || endTime > preferredEnd) {
-        outsideWindowCount++;
-      }
-    });
-  });
-
-  if (outsideWindowCount > 0) {
-    baseScore -= Math.min(outsideWindowCount * 8, 20);
-  }
-
-  if (preferences.preferMorning && !hasMorning) {
-    baseScore -= 10;
-  }
-  if (preferences.preferAfternoon && !hasAfternoon) {
-    baseScore -= 10;
-  }
-  if (preferences.preferNoEvening && hasEvening) {
-    baseScore -= 10;
-  }
-
-  daysUsed.forEach((day) => {
-    if (avoidDaysSet.has(day)) {
-      baseScore -= 15;
+      if (start < preferredStart) outsideWindowMinutes += preferredStart - start;
+      if (end > preferredEnd) outsideWindowMinutes += end - preferredEnd;
     }
-  });
+  }
 
+  let prefMismatch = 0;
+  if (preferences.preferMorning && !hasMorning) prefMismatch++;
+  if (preferences.preferAfternoon && !hasAfternoon) prefMismatch++;
+  if (preferences.preferNoEvening && hasEvening) prefMismatch++;
+
+  let dayGapCount = 0;
   if (preferences.preferConsecutiveDays && daysUsed.size > 1) {
     const sortedDays = Array.from(daysUsed).sort(
       (a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b),
     );
-
-    let gaps = 0;
     for (let i = 0; i < sortedDays.length - 1; i++) {
-      const currentIdx = DAY_ORDER.indexOf(sortedDays[i]);
+      const curIdx = DAY_ORDER.indexOf(sortedDays[i]);
       const nextIdx = DAY_ORDER.indexOf(sortedDays[i + 1]);
-      if (currentIdx === 4 && nextIdx === 0) continue;
-      if (nextIdx - currentIdx > 1) {
-        gaps++;
-      }
+      if (nextIdx - curIdx > 1) dayGapCount++;
     }
-
-    baseScore -= gaps * 5;
   }
 
-  if (preferences.maxGapMinutes > 0 && allSlots.length > 1) {
+  let gapMinutesTotal = 0;
+  if (allSlots.length > 1) {
     allSlots.sort((a, b) => {
-      if (a.day !== b.day) {
-        return DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day);
-      }
+      if (a.day !== b.day) return DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day);
       return a.start - b.start;
     });
-
+    const gapLimit = preferences.maxGapMinutes > 0 ? preferences.maxGapMinutes : 0;
     for (let i = 0; i < allSlots.length - 1; i++) {
-      if (allSlots[i].day === allSlots[i + 1].day) {
-        const gapMinutes = allSlots[i + 1].start - allSlots[i].end;
-        if (gapMinutes > preferences.maxGapMinutes) {
-          const excess = gapMinutes - preferences.maxGapMinutes;
-          baseScore -= Math.round((excess / 60) * 5);
-        }
-      }
+      if (allSlots[i].day !== allSlots[i + 1].day) continue;
+      const gap = allSlots[i + 1].start - allSlots[i].end;
+      if (gap > gapLimit) gapMinutesTotal += gap - gapLimit;
     }
   }
 
-  if (daysUsed.size <= 3) {
-    baseScore += 10;
+  let hasLunchBreak: 0 | 1 = 0;
+  const slotsByDay = new Map<DayOfWeek, { start: number; end: number }[]>();
+  for (const s of allSlots) {
+    const arr = slotsByDay.get(s.day);
+    if (arr) arr.push(s);
+    else slotsByDay.set(s.day, [s]);
   }
-
-  let hasLunchBreak = false;
-  for (const slot of allSlots) {
-    if (slot.end <= 720) {
-      for (const other of allSlots) {
-        if (other.day === slot.day && other.start >= 780) {
-          hasLunchBreak = true;
-          break;
-        }
-      }
+  for (const arr of slotsByDay.values()) {
+    const endsBeforeLunch = arr.some((s) => s.end <= MORNING_END);
+    const startsAfterLunch = arr.some((s) => s.start >= LUNCH_AFTER);
+    if (endsBeforeLunch && startsAfterLunch) {
+      hasLunchBreak = 1;
+      break;
     }
-    if (hasLunchBreak) break;
-  }
-  if (hasLunchBreak) {
-    baseScore += 5;
   }
 
-  if (outsideWindowCount === 0 && sections.length > 0) {
-    baseScore += 10;
+  const creditTarget = (preferences.minCredits + preferences.maxCredits) / 2;
+  const creditDelta = Math.abs(totalCredits - creditTarget);
+
+  return {
+    creditDelta,
+    outsideWindowMinutes,
+    avoidDayHits,
+    prefMismatch,
+    daysUsed: daysUsed.size,
+    gapMinutesTotal,
+    dayGapCount,
+    hasLunchBreak,
+    fullyInsideWindow: outsideWindowMinutes === 0 && sections.length > 0 ? 1 : 0,
+  };
+}
+
+interface FeatureSpec {
+  key: keyof ScheduleFeatures;
+  weight: number;
+  /** true = lower raw is better (cost); false = higher raw is better (benefit) */
+  costLike: boolean;
+}
+
+function getFeatureSpecs(prefs: Preferences): FeatureSpec[] {
+  return [
+    { key: 'creditDelta', weight: 1.5, costLike: true },
+    { key: 'outsideWindowMinutes', weight: 1.2, costLike: true },
+    { key: 'avoidDayHits', weight: prefs.avoidDays.length > 0 ? 1.5 : 0, costLike: true },
+    { key: 'prefMismatch', weight: 1.0, costLike: true },
+    { key: 'daysUsed', weight: 0.6, costLike: true },
+    { key: 'gapMinutesTotal', weight: prefs.maxGapMinutes > 0 ? 1.0 : 0, costLike: true },
+    { key: 'dayGapCount', weight: prefs.preferConsecutiveDays ? 0.8 : 0, costLike: true },
+    { key: 'hasLunchBreak', weight: 0.3, costLike: false },
+    { key: 'fullyInsideWindow', weight: 0.5, costLike: false },
+  ];
+}
+
+/**
+ * Score schedules relatively against the candidate population.
+ * Best schedule → 100, worst → 0. Identical features → all 100.
+ * Preferences with no signal (e.g. empty avoidDays) drop out via weight=0.
+ */
+export function scoreSchedulesRelative(
+  features: ScheduleFeatures[],
+  preferences: Preferences,
+): number[] {
+  if (features.length === 0) return [];
+  if (features.length === 1) return [100];
+
+  const specs = getFeatureSpecs(preferences).filter((s) => s.weight > 0);
+  if (specs.length === 0) return features.map(() => 100);
+
+  const mins = new Map<keyof ScheduleFeatures, number>();
+  const maxs = new Map<keyof ScheduleFeatures, number>();
+  for (const spec of specs) {
+    let min = Infinity;
+    let max = -Infinity;
+    for (const f of features) {
+      const v = f[spec.key];
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+    mins.set(spec.key, min);
+    maxs.set(spec.key, max);
   }
 
-  const creditTarget = preferences.maxCredits;
-  if (totalCredits >= creditTarget - 2 && totalCredits <= creditTarget) {
-    baseScore += 5;
-  }
+  const combined = features.map((f) => {
+    let total = 0;
+    let totalWeight = 0;
+    for (const spec of specs) {
+      const min = mins.get(spec.key)!;
+      const max = maxs.get(spec.key)!;
+      const range = max - min;
+      let norm: number;
+      if (range === 0) {
+        norm = 1;
+      } else {
+        const raw = (f[spec.key] - min) / range;
+        norm = spec.costLike ? 1 - raw : raw;
+      }
+      total += norm * spec.weight;
+      totalWeight += spec.weight;
+    }
+    return total / totalWeight;
+  });
 
-  return Math.max(0, Math.min(100, baseScore));
+  let cMin = Infinity;
+  let cMax = -Infinity;
+  for (const v of combined) {
+    if (v < cMin) cMin = v;
+    if (v > cMax) cMax = v;
+  }
+  if (cMax === cMin) return combined.map(() => 100);
+
+  return combined.map((v) => Math.round(((v - cMin) / (cMax - cMin)) * 100));
+}
+
+/**
+ * Back-compat absolute scorer (0-100). Used by embeddings.ts for a
+ * schedule-intrinsic quality signal that stays stable across generation runs.
+ * NOT used for ranking — use scoreSchedulesRelative for that.
+ */
+export function calculateAbsoluteScheduleScore(
+  schedule: Schedule,
+  preferences: Preferences,
+): number {
+  const f = computeScheduleFeatures(schedule, preferences);
+  let s = 50;
+  // Penalize only when outside [min, max]; inside the range is fine.
+  if (schedule.totalCredits > preferences.maxCredits) {
+    s -= Math.min((schedule.totalCredits - preferences.maxCredits) * 5, 20);
+  } else if (schedule.totalCredits < preferences.minCredits) {
+    s -= Math.min((preferences.minCredits - schedule.totalCredits) * 5, 20);
+  }
+  s -= Math.min(f.outsideWindowMinutes / 30, 20);
+  s -= Math.min(f.avoidDayHits * 5, 20);
+  s -= f.prefMismatch * 10;
+  s -= Math.min(f.gapMinutesTotal / 60, 10);
+  s -= f.dayGapCount * 5;
+  if (f.daysUsed <= COMPACT_DAY_THRESHOLD) s += 10;
+  if (f.hasLunchBreak) s += 5;
+  if (f.fullyInsideWindow) s += 10;
+  return Math.max(0, Math.min(100, Math.round(s)));
 }

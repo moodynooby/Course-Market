@@ -8,6 +8,7 @@ import {
   type LLMTask,
 } from '../utils/constants';
 import { env } from '../utils/env';
+import { timeToMinutesCached } from '../utils/schedule';
 
 export function buildScheduleAnalysisPrompt(
   schedule: Schedule,
@@ -166,7 +167,6 @@ class UnifiedLLMService {
         if (!('gpu' in navigator) || !navigator.gpu) {
           throw new Error('WebGPU not supported');
         }
-        // WebLLM handles internal initialization lazily on the first use
         this.isInitialized = true;
         return true;
       }
@@ -192,7 +192,6 @@ class UnifiedLLMService {
       });
     }
 
-    // Wrap the model as a custom provider for the 'ai' package
     return {
       modelId: model,
       specificationVersion: 'v1' as const,
@@ -320,6 +319,76 @@ class UnifiedLLMService {
 
 export const llmService = new UnifiedLLMService();
 
+function summarizeScheduleForLLM(s: Schedule): string {
+  const days = new Set<string>();
+  let earliest = 24 * 60;
+  let latest = 0;
+  let totalGapMinutes = 0;
+  const slotsByDay = new Map<string, { start: number; end: number }[]>();
+
+  for (const section of s.sections) {
+    for (const slot of section.timeSlots) {
+      days.add(slot.day);
+      const start = timeToMinutesCached(slot.startTime);
+      const end = timeToMinutesCached(slot.endTime);
+      if (start < earliest) earliest = start;
+      if (end > latest) latest = end;
+      const arr = slotsByDay.get(slot.day);
+      if (arr) arr.push({ start, end });
+      else slotsByDay.set(slot.day, [{ start, end }]);
+    }
+  }
+  for (const arr of slotsByDay.values()) {
+    arr.sort((a, b) => a.start - b.start);
+    for (let i = 0; i < arr.length - 1; i++) {
+      totalGapMinutes += Math.max(0, arr[i + 1].start - arr[i].end);
+    }
+  }
+  const sections = s.sections.map((sec) => `${sec.courseId}-${sec.sectionNumber}`).join(', ');
+  const fmt = (m: number) => `${Math.floor(m / 60)}:${String(m % 60).padStart(2, '0')}`;
+  return `sections=[${sections}]; credits=${s.totalCredits}; days=${Array.from(days).join('')}; window=${fmt(earliest)}-${fmt(latest)}; totalGaps=${totalGapMinutes}min; conflicts=${s.conflicts.length}`;
+}
+
+export function buildOptimizePrompt(candidates: Schedule[], preferences: Preferences): string {
+  const lines = candidates.map((s, i) => `[${i}] score=${s.score} ${summarizeScheduleForLLM(s)}`);
+  return `You are helping a student choose between schedule candidates. The scores are relative — 100 is the best of this batch, 0 is the worst.
+
+User preferences:
+- Preferred window: ${preferences.preferredStartTime}-${preferences.preferredEndTime}
+- Credits: ${preferences.minCredits}-${preferences.maxCredits}
+- Max gap: ${preferences.maxGapMinutes} min
+- Prefer morning: ${preferences.preferMorning}; afternoon: ${preferences.preferAfternoon}; avoid evening: ${preferences.preferNoEvening ?? false}
+- Avoid days: ${preferences.avoidDays.join(', ') || 'none'}
+- Prefer consecutive days: ${preferences.preferConsecutiveDays}
+
+Candidates:
+${lines.join('\n')}
+
+Pick the best candidate by index. Respond with ONLY a JSON object on a single line, no markdown, no prose:
+{"chosenIndex": <number>, "reasoning": "<one sentence>"}`;
+}
+
+interface OptimizeLLMOutput {
+  chosenIndex: number;
+  reasoning: string;
+}
+
+function parseOptimizeOutput(text: string, maxIndex: number): OptimizeLLMOutput | null {
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) return null;
+  try {
+    const parsed = JSON.parse(match[0]);
+    const idx = Number(parsed.chosenIndex);
+    if (!Number.isInteger(idx) || idx < 0 || idx > maxIndex) return null;
+    return {
+      chosenIndex: idx,
+      reasoning: typeof parsed.reasoning === 'string' ? parsed.reasoning : '',
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function optimizeWithLLM(
   schedules: Schedule[],
   preferences: Preferences,
@@ -346,13 +415,38 @@ export async function optimizeWithLLM(
     };
   }
 
-  const analysis = await llmService.analyzeSchedule(schedules[0], preferences, allSections);
+  // Candidates are assumed pre-scored relatively (best first).
+  const ranked = [...schedules].sort((a, b) => b.score - a.score);
+  const topK = ranked.slice(0, Math.min(5, ranked.length));
 
-  return {
-    schedules,
-    bestSchedule: schedules[0] || null,
-    aiAnalysis: analysis,
-  };
+  if (topK.length === 1) {
+    const analysis = await llmService.analyzeSchedule(topK[0], preferences, allSections);
+    return { schedules: ranked, bestSchedule: topK[0], aiAnalysis: analysis };
+  }
+
+  try {
+    const prompt = buildOptimizePrompt(topK, preferences);
+    const raw = await llmService.generateCompletion(prompt);
+    const parsed = parseOptimizeOutput(raw, topK.length - 1);
+
+    if (parsed) {
+      const best = topK[parsed.chosenIndex];
+      const analysis = await llmService.analyzeSchedule(best, preferences, allSections);
+      const header = parsed.reasoning ? `**AI choice:** ${parsed.reasoning}\n\n` : '';
+      return {
+        schedules: ranked,
+        bestSchedule: best,
+        aiAnalysis: header + analysis,
+      };
+    }
+  } catch (error) {
+    if (env.IS_DEV) console.warn('LLM ranking failed, falling back to relative scorer:', error);
+  }
+
+  // Fallback: top-scored candidate.
+  const best = topK[0];
+  const analysis = await llmService.analyzeSchedule(best, preferences, allSections);
+  return { schedules: ranked, bestSchedule: best, aiAnalysis: analysis };
 }
 
 export default llmService;

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import type { Course, Section, TimeSlot } from '../../types';
-import { formatTime, sectionsToCalendarEvents, timeToMinutesCached } from '../schedule';
+import type { Course, Preferences, Schedule, Section, TimeSlot } from '../../types';
+import {
+  computeScheduleFeatures,
+  formatTime,
+  scoreSchedulesRelative,
+  sectionsToCalendarEvents,
+  timeToMinutesCached,
+} from '../schedule';
 
 function makeTimeSlot(
   day: import('../../types').DayOfWeek,
@@ -35,57 +41,33 @@ function makeCourse(overrides: Partial<Course>): Course {
 }
 
 describe('formatTime', () => {
-  it('formats 09:00 as 9:00 AM', () => {
+  it('converts 24-hour to 12-hour format with AM/PM', () => {
     expect(formatTime('09:00')).toBe('9:00 AM');
-  });
-
-  it('formats 12:00 as 12:00 PM', () => {
-    expect(formatTime('12:00')).toBe('12:00 PM');
-  });
-
-  it('formats 13:30 as 1:30 PM', () => {
     expect(formatTime('13:30')).toBe('1:30 PM');
-  });
-
-  it('formats 00:00 as 12:00 AM', () => {
-    expect(formatTime('00:00')).toBe('12:00 AM');
-  });
-
-  it('formats 23:59 as 11:59 PM', () => {
     expect(formatTime('23:59')).toBe('11:59 PM');
+  });
+
+  it('handles noon and midnight correctly', () => {
+    expect(formatTime('12:00')).toBe('12:00 PM');
+    expect(formatTime('00:00')).toBe('12:00 AM');
   });
 });
 
 describe('timeToMinutesCached', () => {
-  it('converts 00:00 to 0', () => {
+  it('converts time strings to minutes since midnight', () => {
     expect(timeToMinutesCached('00:00')).toBe(0);
-  });
-
-  it('converts 01:30 to 90', () => {
     expect(timeToMinutesCached('01:30')).toBe(90);
-  });
-
-  it('converts 12:00 to 720', () => {
     expect(timeToMinutesCached('12:00')).toBe(720);
-  });
-
-  it('converts 23:59 to 1439', () => {
     expect(timeToMinutesCached('23:59')).toBe(1439);
-  });
-
-  it('returns cached result on repeated calls', () => {
-    const first = timeToMinutesCached('09:15');
-    const second = timeToMinutesCached('09:15');
-    expect(first).toBe(second);
   });
 });
 
 describe('sectionsToCalendarEvents', () => {
-  it('returns empty array for no sections', () => {
+  it('returns empty array when no sections provided', () => {
     expect(sectionsToCalendarEvents([], [])).toEqual([]);
   });
 
-  it('creates one event per time slot', () => {
+  it('creates one event per time slot with section and course metadata', () => {
     const section = makeSection({
       timeSlots: [makeTimeSlot('M', '09:00', '10:00')],
     });
@@ -100,7 +82,7 @@ describe('sectionsToCalendarEvents', () => {
     expect(events[0].resource?.course).toBe(course);
   });
 
-  it('creates multiple events for multiple time slots', () => {
+  it('creates multiple events for sections with multiple time slots', () => {
     const section = makeSection({
       timeSlots: [makeTimeSlot('M', '09:00', '10:00'), makeTimeSlot('W', '09:00', '10:00')],
     });
@@ -110,7 +92,7 @@ describe('sectionsToCalendarEvents', () => {
     expect(events).toHaveLength(2);
   });
 
-  it('handles section without matching course', () => {
+  it('handles sections without matching courses', () => {
     const section = makeSection({
       courseId: 'nonexistent',
       timeSlots: [makeTimeSlot('M', '09:00', '10:00')],
@@ -120,5 +102,57 @@ describe('sectionsToCalendarEvents', () => {
 
     expect(events).toHaveLength(1);
     expect(events[0].title).toContain('Course');
+  });
+});
+
+const defaultPrefs: Preferences = {
+  preferredStartTime: '08:00',
+  preferredEndTime: '17:00',
+  maxGapMinutes: 60,
+  preferConsecutiveDays: false,
+  preferMorning: false,
+  preferAfternoon: false,
+  maxCredits: 18,
+  minCredits: 12,
+  avoidDays: [],
+};
+
+function scheduleWithCredits(id: string, totalCredits: number): Schedule {
+  return {
+    id,
+    name: id,
+    sections: [
+      {
+        id: `${id}-sec`,
+        courseId: 'c1',
+        sectionNumber: '001',
+        instructor: '',
+        timeSlots: [makeTimeSlot('M', '10:00', '11:00')],
+        capacity: 30,
+        enrolled: 0,
+      },
+    ],
+    totalCredits,
+    score: 0,
+    conflicts: [],
+  };
+}
+
+describe('scoreSchedulesRelative', () => {
+  it('returns empty array for no schedules', () => {
+    expect(scoreSchedulesRelative([], defaultPrefs)).toEqual([]);
+  });
+
+  it('scores single schedule as 100', () => {
+    const f = computeScheduleFeatures(scheduleWithCredits('a', 15), defaultPrefs);
+    expect(scoreSchedulesRelative([f], defaultPrefs)).toEqual([100]);
+  });
+
+  it('normalizes scores from 0 to 100 relative to all candidates', () => {
+    const fa = computeScheduleFeatures(scheduleWithCredits('a', 15), defaultPrefs);
+    const fb = computeScheduleFeatures(scheduleWithCredits('b', 18), defaultPrefs);
+    const [sa, sb] = scoreSchedulesRelative([fa, fb], defaultPrefs);
+    expect(Math.max(sa, sb)).toBe(100);
+    expect(Math.min(sa, sb)).toBe(0);
   });
 });
