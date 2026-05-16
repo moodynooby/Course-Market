@@ -65,7 +65,8 @@ export function SelectedCoursesList({
                 transition: 'all 0.2s ease',
                 '&:hover': {
                   bgcolor: alpha(theme.palette.secondary.main, 0.12),
-                  transform: 'translateY(-2px)',
+                  transform: 'translateY(-3px)',
+                  boxShadow: 2,
                 },
               }}
             >

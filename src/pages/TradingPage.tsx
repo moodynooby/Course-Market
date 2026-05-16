@@ -8,6 +8,7 @@ import {
   School,
   Search,
   SwapHoriz,
+  Warning,
 } from '@mui/icons-material';
 import {
   Alert,
@@ -27,6 +28,7 @@ import {
   Snackbar,
   Stack,
   TextField,
+  Tooltip,
   Typography,
   useTheme,
 } from '@mui/material';
@@ -42,8 +44,16 @@ import {
   getTrades as fetchTrades,
   updateTrade,
 } from '../services/tradesApi';
-import type { TradePost } from '../types';
+import type { Course, Section, TradePost } from '../types';
 import { timeAgo } from '../utils';
+import { hasSectionConflict } from '../utils/schedule';
+
+interface TradeConflict {
+  type: 'offered' | 'wanted';
+  sectionNumber: string;
+  conflictingCourseCode: string;
+  conflictingSectionNumber: string;
+}
 
 const TradeCard = memo(function TradeCard({
   trade,
@@ -51,12 +61,14 @@ const TradeCard = memo(function TradeCard({
   onDelete,
   onEdit,
   onContact,
+  conflicts,
 }: {
   trade: TradePost;
   onUpdate: (id: string, updates: Partial<TradePost>) => void;
   onDelete: (id: string) => void;
   onEdit: (trade: TradePost) => void;
   onContact: (phone: string) => void;
+  conflicts: TradeConflict[];
 }) {
   const { user } = useAuthContext();
   const isOwner = user && trade.auth0UserId === user.id;
@@ -167,7 +179,7 @@ const TradeCard = memo(function TradeCard({
           </Typography>
         )}
 
-        <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+        <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
           <Chip
             icon={<ArrowForward />}
             label={`Has: ${trade.sectionOffered}`}
@@ -183,6 +195,37 @@ const TradeCard = memo(function TradeCard({
             variant="outlined"
           />
         </Stack>
+
+        {conflicts.length > 0 && (
+          <Stack spacing={0.5} sx={{ mb: 1.5 }}>
+            {conflicts.map((conflict, idx) => (
+              <Tooltip
+                key={idx}
+                title={
+                  conflict.type === 'offered'
+                    ? `Your ${conflict.sectionNumber} conflicts with ${conflict.conflictingCourseCode} (${conflict.conflictingSectionNumber})`
+                    : `Wanted section ${conflict.sectionNumber} conflicts with ${conflict.conflictingCourseCode} (${conflict.conflictingSectionNumber})`
+                }
+              >
+                <Chip
+                  icon={<Warning fontSize="small" />}
+                  size="small"
+                  label={
+                    conflict.type === 'offered'
+                      ? `Has: conflicts with ${conflict.conflictingCourseCode}`
+                      : `Wants: conflicts with ${conflict.conflictingCourseCode}`
+                  }
+                  color="error"
+                  variant="outlined"
+                  sx={{
+                    alignSelf: 'flex-start',
+                    fontWeight: 500,
+                  }}
+                />
+              </Tooltip>
+            ))}
+          </Stack>
+        )}
 
         {trade.description && (
           <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
@@ -266,7 +309,7 @@ const TradeCard = memo(function TradeCard({
 });
 
 export default function TradingPage() {
-  const { user, getToken } = useAuthContext();
+  const { user, getToken, profile } = useAuthContext();
 
   const [trades, setTrades] = useState<TradePost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -280,6 +323,9 @@ export default function TradingPage() {
     open: false,
     message: '',
   });
+
+  const [allCourses, setAllCourses] = useState<Course[]>([]);
+  const [allSections, setAllSections] = useState<Section[]>([]);
 
   const [tradeForm, setTradeForm] = useState({
     courseCode: '',
@@ -304,9 +350,43 @@ export default function TradingPage() {
     }
   }, [getToken]);
 
+  const loadSemesterData = useCallback(async () => {
+    try {
+      const { getSemesters } = await import('../services/coursesApi');
+      const { semesters } = await getSemesters();
+      if (!semesters || semesters.length === 0) return;
+
+      const activeSemester = semesters.find((s) => s.isActive) || semesters[0];
+      const { getCachedSemesterData, cacheSemesterData } = await import('../services/dbCache');
+      const { transformSections } = await import('../utils/semester-transform');
+
+      const cachedData = await getCachedSemesterData(activeSemester.id);
+      if (cachedData?.courses && cachedData.sections) {
+        setAllCourses(cachedData.courses);
+        setAllSections(cachedData.sections);
+      } else {
+        const response = await fetch(activeSemester.jsonUrl);
+        if (!response.ok) return;
+        const semesterData = await response.json();
+        const { courses, sections } = transformSections(semesterData.sections);
+        await cacheSemesterData(
+          activeSemester.id,
+          courses,
+          sections,
+          semesterData.version || '1.0',
+        );
+        setAllCourses(courses);
+        setAllSections(sections);
+      }
+    } catch (e) {
+      console.error('Failed to load semester data:', e);
+    }
+  }, []);
+
   useEffect(() => {
     loadTrades();
-  }, [loadTrades]);
+    loadSemesterData();
+  }, [loadTrades, loadSemesterData]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -416,6 +496,59 @@ export default function TradingPage() {
     },
     [getToken],
   );
+
+  const selectedSections = useMemo(() => {
+    if (!profile?.courseSelections || !allSections.length) return [];
+    const sectionMap = new Map(allSections.map((s) => [s.id, s]));
+    return Object.values(profile.courseSelections)
+      .map((id) => sectionMap.get(id))
+      .filter((s): s is Section => !!s);
+  }, [profile?.courseSelections, allSections]);
+
+  const tradeConflictsMap = useMemo(() => {
+    const map = new Map<string, TradeConflict[]>();
+    if (!selectedSections.length || !allSections.length) return map;
+
+    const courseSectionsMap = new Map<string, Section[]>();
+    for (const section of allSections) {
+      const existing = courseSectionsMap.get(section.courseId) || [];
+      existing.push(section);
+      courseSectionsMap.set(section.courseId, existing);
+    }
+
+    for (const trade of trades) {
+      const conflicts: TradeConflict[] = [];
+      const courseSections = courseSectionsMap.get(trade.courseCode) || [];
+
+      const offeredSection = courseSections.find((s) => s.sectionNumber === trade.sectionOffered);
+      const wantedSection = courseSections.find((s) => s.sectionNumber === trade.sectionWanted);
+
+      for (const selected of selectedSections) {
+        if (offeredSection && hasSectionConflict(offeredSection, selected)) {
+          const selCourse = allCourses.find((c) => c.id === selected.courseId);
+          conflicts.push({
+            type: 'offered',
+            sectionNumber: trade.sectionOffered,
+            conflictingCourseCode: selCourse?.code || selected.courseId,
+            conflictingSectionNumber: selected.sectionNumber,
+          });
+        }
+        if (wantedSection && hasSectionConflict(wantedSection, selected)) {
+          const selCourse = allCourses.find((c) => c.id === selected.courseId);
+          conflicts.push({
+            type: 'wanted',
+            sectionNumber: trade.sectionWanted,
+            conflictingCourseCode: selCourse?.code || selected.courseId,
+            conflictingSectionNumber: selected.sectionNumber,
+          });
+        }
+      }
+
+      map.set(trade.id, conflicts);
+    }
+
+    return map;
+  }, [trades, selectedSections, allSections, allCourses]);
 
   const filteredTrades = useMemo(() => {
     return searchTradeIndex(debouncedSearch);
@@ -568,6 +701,7 @@ export default function TradingPage() {
                 <Box sx={{ pb: 1 }}>
                   <TradeCard
                     trade={trade}
+                    conflicts={tradeConflictsMap.get(trade.id) || []}
                     onUpdate={handleUpdate}
                     onDelete={handleDelete}
                     onEdit={handleEdit}
