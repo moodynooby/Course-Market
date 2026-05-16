@@ -26,7 +26,12 @@ export function buildScheduleAnalysisPrompt(
 
   const timeSlotsInfo = schedule.sections
     .map((s) => {
-      const times = s.timeSlots?.map((t) => `${t.day} ${t.startTime}-${t.endTime}`).join(', ');
+      const times = s.timeSlots
+        ?.map((t) => {
+          const base = `${t.day} ${t.startTime}-${t.endTime}`;
+          return t.startDate && t.endDate ? `${base} (${t.startDate} to ${t.endDate})` : base;
+        })
+        .join(', ');
       return `- ${s.courseId}: ${times || 'TBA'}`;
     })
     .join('\n');
@@ -54,7 +59,12 @@ export function buildScheduleAnalysisPrompt(
       sectionsByCourse.forEach((sections, courseId) => {
         sections.forEach((s) => {
           const timeStr =
-            s.timeSlots?.map((t) => `${t.day} ${t.startTime}-${t.endTime}`).join(', ') || 'TBA';
+            s.timeSlots
+              ?.map((t) => {
+                const base = `${t.day} ${t.startTime}-${t.endTime}`;
+                return t.startDate && t.endDate ? `${base} (${t.startDate} to ${t.endDate})` : base;
+              })
+              .join(', ') || 'TBA';
           availableSectionsInfo += `| ${courseId} | ${s.sectionNumber} | ${s.instructor || 'TBA'} | ${timeStr} |\n`;
         });
       });

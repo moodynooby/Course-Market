@@ -79,16 +79,67 @@ describe('performance', () => {
       expect(score).toBeLessThan(100);
     });
 
-    it('should handle excluded instructors correctly', () => {
+    it('should not penalize Friday-to-Monday as gap', () => {
       const sections = [
-        makeSection({ timeSlots: [makeTimeSlot('M', '09:00', '10:00')], instructor: 'BadProf' }),
+        makeSection({ timeSlots: [makeTimeSlot('F', '09:00', '10:00')] }),
+        makeSection({ timeSlots: [makeTimeSlot('M', '09:00', '10:00')] }),
+        makeSection({ timeSlots: [makeTimeSlot('T', '09:00', '10:00')] }),
+        makeSection({ timeSlots: [makeTimeSlot('W', '09:00', '10:00')] }),
       ];
 
-      const schedule = makeSchedule(sections, 3);
-      const prefsWithExcluded = { ...basePreferences, excludeInstructors: ['BadProf'] };
-      const score = calculateScheduleScore(schedule, prefsWithExcluded);
+      const schedule = makeSchedule(sections, 12);
+      const prefs = { ...basePreferences, preferConsecutiveDays: true };
+      const score = calculateScheduleScore(schedule, prefs);
 
-      expect(score).toBeLessThan(80);
+      expect(score).toBeGreaterThan(50);
+    });
+
+    it('should handle date-aware conflicts', () => {
+      const slot1 = makeTimeSlot('M', '09:00', '10:00');
+      (slot1 as any).startDate = '2026-01-15';
+      (slot1 as any).endDate = '2026-03-07';
+
+      const slot2 = makeTimeSlot('M', '09:00', '10:00');
+      (slot2 as any).startDate = '2026-03-15';
+      (slot2 as any).endDate = '2026-05-01';
+
+      expect(hasTimeConflict(slot1, slot2)).toBe(false);
+    });
+
+    it('should detect conflicts when date ranges overlap', () => {
+      const slot1 = makeTimeSlot('M', '09:00', '10:00');
+      (slot1 as any).startDate = '2026-01-15';
+      (slot1 as any).endDate = '2026-04-01';
+
+      const slot2 = makeTimeSlot('M', '09:00', '10:00');
+      (slot2 as any).startDate = '2026-03-01';
+      (slot2 as any).endDate = '2026-05-01';
+
+      expect(hasTimeConflict(slot1, slot2)).toBe(true);
+    });
+
+    it('should give bonus for compact schedules', () => {
+      const sections = [
+        makeSection({ timeSlots: [makeTimeSlot('M', '09:00', '10:00')] }),
+        makeSection({ timeSlots: [makeTimeSlot('M', '10:00', '11:00')] }),
+        makeSection({ timeSlots: [makeTimeSlot('W', '09:00', '10:00')] }),
+        makeSection({ timeSlots: [makeTimeSlot('W', '10:00', '11:00')] }),
+      ];
+
+      const schedule = makeSchedule(sections, 12);
+      const score = calculateScheduleScore(schedule, basePreferences);
+
+      expect(score).toBeGreaterThan(60);
+    });
+
+    it('should handle preferNoEvening', () => {
+      const sections = [makeSection({ timeSlots: [makeTimeSlot('M', '18:00', '19:30')] })];
+
+      const schedule = makeSchedule(sections, 3);
+      const prefs = { ...basePreferences, preferNoEvening: true };
+      const score = calculateScheduleScore(schedule, prefs);
+
+      expect(score).toBeLessThan(60);
     });
   });
 

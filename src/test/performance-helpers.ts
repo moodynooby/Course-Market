@@ -27,7 +27,6 @@ export const basePreferences: Preferences = {
   maxCredits: 18,
   minCredits: 12,
   avoidDays: [],
-  excludeInstructors: [],
 };
 
 export const makeSchedule = (sections: Section[], totalCredits: number): Schedule => ({

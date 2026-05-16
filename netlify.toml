@@ -7,13 +7,11 @@
   NODE_VERSION = "20"
   PNPM_VERSION = "9"
 
-# SPA routing - all unknown routes serve index.html
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# Security headers
 [[headers]]
   for = "/*"
   [headers.values]

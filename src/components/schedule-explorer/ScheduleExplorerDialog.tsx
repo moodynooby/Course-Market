@@ -29,6 +29,7 @@ import { EmptyState } from '../EmptyState';
 import { ScheduleDiagnosticsPanel } from './ScheduleDiagnosticsPanel';
 
 const MAX_DISPLAY_SCHEDULES = 50;
+const MAX_PER_GROUP = 10;
 const SCORE_EXCELLENT = 80;
 const SCORE_GOOD = 60;
 const MATCH_EXCELLENT = 0.8;
@@ -69,10 +70,12 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
 }: ScheduleExplorerDialogProps) {
   const theme = useTheme();
   const [explorerTab, setExplorerTab] = useState(0);
+  const [showLowQuality, setShowLowQuality] = useState(false);
 
   useEffect(() => {
     if (open) {
       setExplorerTab(0);
+      setShowLowQuality(false);
     }
   }, [open]);
 
@@ -90,6 +93,11 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
     [generatedSchedules],
   );
 
+  const lowQualitySchedules = useMemo(
+    () => generatedSchedules.filter((s) => s.conflicts.length === 0 && s.score < SCORE_GOOD),
+    [generatedSchedules],
+  );
+
   const activeSchedules = useMemo(() => {
     if (searchResults.length > 0) {
       return searchResults.map((r) => r.schedule);
@@ -97,8 +105,12 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
     const filtered = showConflicting
       ? generatedSchedules
       : generatedSchedules.filter((s) => s.conflicts.length === 0);
-    return [...filtered].sort((a, b) => b.score - a.score);
-  }, [searchResults, generatedSchedules, showConflicting]);
+    const sorted = [...filtered].sort((a, b) => b.score - a.score);
+    if (!showLowQuality) {
+      return sorted.filter((s) => s.score >= SCORE_GOOD);
+    }
+    return sorted;
+  }, [searchResults, generatedSchedules, showConflicting, showLowQuality]);
 
   const groupedSchedules = useMemo(() => {
     if (activeSchedules.length === 0) return [];
@@ -173,6 +185,16 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
                 alignItems: 'center',
               }}
             >
+              {lowQualitySchedules.length > 0 && !searchResults.length && (
+                <Chip
+                  label={`${lowQualitySchedules.length} low quality`}
+                  size="small"
+                  color="warning"
+                  variant={showLowQuality ? 'filled' : 'outlined'}
+                  onClick={() => setShowLowQuality((v) => !v)}
+                  sx={{ cursor: 'pointer', borderRadius: 2 }}
+                />
+              )}
               {conflictingSchedules.length > 0 && (
                 <Chip
                   label={`${conflictingSchedules.length} conflicts`}
@@ -515,6 +537,9 @@ const GroupSection = memo(function GroupSection({
   selectedSchedule,
   onSelectSchedule,
 }: GroupSectionProps) {
+  const [showAll, setShowAll] = useState(false);
+  const displaySchedules = showAll ? group.schedules : group.schedules.slice(0, MAX_PER_GROUP);
+
   return (
     <Box>
       <Typography
@@ -527,7 +552,7 @@ const GroupSection = memo(function GroupSection({
         {group.label} ({group.schedules.length})
       </Typography>
       <Stack spacing={1}>
-        {group.schedules.slice(0, MAX_DISPLAY_SCHEDULES).map((genSched) => (
+        {displaySchedules.map((genSched) => (
           <Card
             key={genSched.id}
             variant="outlined"
@@ -559,13 +584,29 @@ const GroupSection = memo(function GroupSection({
                 <Chip
                   label={genSched.score}
                   size="small"
-                  color={genSched.score >= SCORE_EXCELLENT ? 'success' : 'default'}
+                  color={
+                    genSched.score >= SCORE_EXCELLENT
+                      ? 'success'
+                      : genSched.score >= SCORE_GOOD
+                        ? 'warning'
+                        : 'error'
+                  }
                   sx={{ borderRadius: 2, fontWeight: 600 }}
                 />
               </Stack>
             </CardContent>
           </Card>
         ))}
+        {group.schedules.length > MAX_PER_GROUP && (
+          <Button
+            size="small"
+            variant="text"
+            onClick={() => setShowAll((v) => !v)}
+            sx={{ borderRadius: 2, textTransform: 'none' }}
+          >
+            {showAll ? 'Show less' : `View all ${group.schedules.length}`}
+          </Button>
+        )}
       </Stack>
     </Box>
   );

@@ -80,5 +80,4 @@ export const DEFAULT_PREFERENCES: Preferences = {
   maxCredits: 18,
   minCredits: 12,
   avoidDays: [],
-  excludeInstructors: [],
 };

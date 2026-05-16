@@ -140,7 +140,10 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
   const [view, setView] = useState<View>(Views.WEEK as View);
   const [date, setDate] = useState(new Date());
 
-  const events = useMemo(() => sectionsToCalendarEvents(sections, courses), [sections, courses]);
+  const events = useMemo(
+    () => sectionsToCalendarEvents(sections, courses, date),
+    [sections, courses, date],
+  );
 
   const handleNavigate = (newDate: Date) => {
     setDate(newDate);

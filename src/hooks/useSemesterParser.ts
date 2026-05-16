@@ -4,18 +4,8 @@ import type { Course, Section } from '../types';
 interface ParseResult {
   semesterId: string;
   semesterName: string;
-  version: string;
   courses: Course[];
   sections: Section[];
-  metadata: {
-    totalSections: number;
-    totalCourses: number;
-    subjects: string[];
-    creditsRange: {
-      min: number;
-      max: number;
-    };
-  };
   parseTime: number;
 }
 

@@ -17,7 +17,7 @@ import {
 import { Fragment, forwardRef, memo } from 'react';
 import { Link } from 'react-router-dom';
 import type { Course, Section } from '../types';
-import { formatTimeSlots } from '../utils/schedule';
+import { formatSlotDates, formatTimeSlots } from '../utils/schedule';
 
 interface CourseCardProps {
   course: Course;
@@ -218,6 +218,16 @@ export const CourseCard = memo(
                                             •
                                           </Box>{' '}
                                           {timeDisplay}
+                                          {section.timeSlots[0]?.startDate &&
+                                            section.timeSlots[0]?.endDate && (
+                                              <>
+                                                {' '}
+                                                <Box component="span" sx={{ mx: 0.5 }}>
+                                                  •
+                                                </Box>{' '}
+                                                {formatSlotDates(section.timeSlots[0])}
+                                              </>
+                                            )}
                                         </>
                                       ) : (
                                         'No schedule'

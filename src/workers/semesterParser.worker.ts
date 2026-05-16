@@ -35,18 +35,8 @@ type ParserResponse =
       payload: {
         semesterId: string;
         semesterName: string;
-        version: string;
         courses: import('../types').Course[];
         sections: import('../types').Section[];
-        metadata: {
-          totalSections: number;
-          totalCourses: number;
-          subjects: string[];
-          creditsRange: {
-            min: number;
-            max: number;
-          };
-        };
         parseTime: number;
       };
     }
@@ -57,32 +47,6 @@ type ParserResponse =
         message: string;
       };
     };
-
-function computeMetadata(
-  data: any,
-  courses: import('../types').Course[],
-  sections: import('../types').Section[],
-) {
-  const subjectsSet = new Set<string>();
-  let minCredits = Infinity;
-  let maxCredits = -Infinity;
-
-  for (const section of data.sections) {
-    subjectsSet.add(section.subject);
-    minCredits = Math.min(minCredits, section.credits);
-    maxCredits = Math.max(maxCredits, section.credits);
-  }
-
-  return {
-    totalSections: sections.length,
-    totalCourses: courses.length,
-    subjects: Array.from(subjectsSet).sort(),
-    creditsRange: {
-      min: minCredits === Infinity ? 0 : minCredits,
-      max: maxCredits === -Infinity ? 0 : maxCredits,
-    },
-  };
-}
 
 self.onmessage = async (event: MessageEvent<ParserMessage>) => {
   const { type, payload } = event.data;
@@ -119,10 +83,8 @@ self.onmessage = async (event: MessageEvent<ParserMessage>) => {
         payload: {
           semesterId: data.semesterId || semesterId,
           semesterName: data.semesterName || 'Unknown Semester',
-          version: data.version || '1.0.0',
           courses,
           sections,
-          metadata: computeMetadata(data, courses, sections),
           parseTime,
         },
       } as ParserResponse);
@@ -179,10 +141,8 @@ self.onmessage = async (event: MessageEvent<ParserMessage>) => {
         payload: {
           semesterId: data.semesterId || semesterId,
           semesterName: data.semesterName || semesterName,
-          version: data.version || '1.0.0',
           courses,
           sections,
-          metadata: computeMetadata(data, courses, sections),
           parseTime,
         },
       } as ParserResponse);

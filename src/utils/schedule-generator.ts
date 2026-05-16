@@ -151,6 +151,7 @@ export function groupSchedulesByStructure(schedules: GeneratedSchedule[]): Sched
       label: g.label,
       schedules: g.schedules.sort((a, b) => b.score - a.score),
     }))
+    .filter((g) => g.schedules.length > 1)
     .sort((a, b) => b.schedules.length - a.schedules.length);
 
   return sortedGroups;

@@ -169,12 +169,7 @@ export default function CoursesPage() {
     if (parsedResult) {
       const semesterId = parsedResult.semesterId;
 
-      cacheSemesterData(
-        semesterId,
-        parsedResult.courses,
-        parsedResult.sections,
-        parsedResult.version,
-      );
+      cacheSemesterData(semesterId, parsedResult.courses, parsedResult.sections);
       buildCourseIndex(parsedResult.courses, parsedResult.sections);
 
       setCourses(parsedResult.courses);

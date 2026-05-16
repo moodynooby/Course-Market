@@ -144,7 +144,12 @@ export const searchSchedules = (schedules: GeneratedSchedule[], query: string): 
       new Set(s.sections.flatMap((sec) => sec.timeSlots.map((ts) => ts.day))),
     ).join(' ');
     const times = s.sections
-      .flatMap((sec) => sec.timeSlots.map((ts) => `${ts.startTime} ${ts.endTime}`))
+      .flatMap((sec) =>
+        sec.timeSlots.map((ts) => {
+          const base = `${ts.startTime} ${ts.endTime}`;
+          return ts.startDate && ts.endDate ? `${base} ${ts.startDate} ${ts.endDate}` : base;
+        }),
+      )
       .join(' ');
 
     const courseCodes = s.sections

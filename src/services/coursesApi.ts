@@ -1,4 +1,4 @@
-import type { SectionJSON, SemesterJSON } from '../types';
+import type { SemesterJSON } from '../types';
 import { api } from './apiClient';
 
 /**
@@ -33,25 +33,4 @@ export async function getSemesterData(semesterId: string): Promise<SemesterJSON>
     throw new Error(`Failed to fetch semester JSON: ${response.status}`);
   }
   return response.json();
-}
-
-/**
- * Extract unique subjects from semester data
- */
-export function getSubjectsFromSemester(semesterData: SemesterJSON): string[] {
-  if (!semesterData.sections) return [];
-  return (
-    semesterData.metadata?.subjects ||
-    Array.from(new Set(semesterData.sections.map((s) => s.subject))).sort()
-  );
-}
-
-/**
- * Get all sections for a specific course
- */
-export function getSectionsForCourse(
-  semesterData: SemesterJSON,
-  courseCode: string,
-): SectionJSON[] {
-  return semesterData.sections.filter((s) => s.courseCode === courseCode);
 }

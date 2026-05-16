@@ -1,4 +1,4 @@
-import { CalendarToday, RemoveCircleOutlined, Save, School, Timer } from '@mui/icons-material';
+import { CalendarToday, Save, Timer } from '@mui/icons-material';
 import {
   alpha,
   Box,
@@ -147,14 +147,6 @@ export function SchedulePreferences({
     const current = preferences.avoidDays;
     const updated = current.includes(day) ? current.filter((d) => d !== day) : [...current, day];
     handleUpdate('avoidDays', updated);
-  };
-
-  const handleInstructorChange = (value: string) => {
-    const instructors = value
-      .split(',')
-      .map((i) => i.trim())
-      .filter(Boolean);
-    handleUpdate('excludeInstructors', instructors);
   };
 
   const handleCreditsChange = (type: 'min' | 'max', value: number) => {
@@ -389,36 +381,6 @@ export function SchedulePreferences({
                 </Typography>
               }
               sx={{ mt: 1, ml: 0 }}
-            />
-          </Box>
-
-          <Divider />
-
-          <Box>
-            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 1.5 }}>
-              <School fontSize="small" sx={{ color: 'text.secondary' }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                INSTRUCTORS
-              </Typography>
-            </Stack>
-
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Dr. Smith, Prof. Jones"
-              value={preferences.excludeInstructors.join(', ')}
-              onChange={(e) => handleInstructorChange(e.target.value)}
-              helperText="Separate multiple names with commas"
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <RemoveCircleOutlined
-                      fontSize="small"
-                      sx={{ mr: 1, color: 'text.secondary' }}
-                    />
-                  ),
-                },
-              }}
             />
           </Box>
         </Stack>

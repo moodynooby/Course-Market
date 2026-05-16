@@ -369,12 +369,7 @@ export default function TradingPage() {
         if (!response.ok) return;
         const semesterData = await response.json();
         const { courses, sections } = transformSections(semesterData.sections);
-        await cacheSemesterData(
-          activeSemester.id,
-          courses,
-          sections,
-          semesterData.version || '1.0',
-        );
+        await cacheSemesterData(activeSemester.id, courses, sections);
         setAllCourses(courses);
         setAllSections(sections);
       }

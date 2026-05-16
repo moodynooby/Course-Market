@@ -379,6 +379,19 @@ export default function Layout() {
       >
         <Outlet />
       </Box>
+      <Box
+        component="footer"
+        sx={{
+          textAlign: 'center',
+          py: 2,
+          color: 'text.secondary',
+          fontSize: '0.8rem',
+          borderTop: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        Made with ❤️ by Manas Doshi (AU25040285). Contact me for any help ^_^.
+      </Box>
     </Box>
   );
 }

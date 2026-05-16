@@ -39,7 +39,6 @@ const basePrefs: Preferences = {
   maxCredits: 18,
   minCredits: 12,
   avoidDays: [],
-  excludeInstructors: [],
 };
 
 describe('generateSchedules', () => {
@@ -271,6 +270,7 @@ describe('groupSchedulesByStructure', () => {
   it('groups MWF schedules correctly', () => {
     const result = groupSchedulesByStructure([
       { id: 'a', sections: [mwfSection], totalCredits: 3, score: 80, conflicts: [] },
+      { id: 'a2', sections: [mwfSection], totalCredits: 3, score: 70, conflicts: [] },
     ]);
     expect(result.some((g) => g.label === 'MWF Schedules')).toBe(true);
   });
@@ -278,14 +278,17 @@ describe('groupSchedulesByStructure', () => {
   it('groups TTh schedules correctly', () => {
     const result = groupSchedulesByStructure([
       { id: 'b', sections: [tthSection], totalCredits: 3, score: 90, conflicts: [] },
+      { id: 'b2', sections: [tthSection], totalCredits: 3, score: 80, conflicts: [] },
     ]);
     expect(result.some((g) => g.label === 'TTh Schedules')).toBe(true);
   });
 
   it('groups mixed MWF+TTh schedules correctly', () => {
     const sections = [mwfSection, tthSection];
+    const sections2 = [mwfSection, { ...tthSection, instructor: 'Dr. C' }];
     const result = groupSchedulesByStructure([
       { id: 'c', sections, totalCredits: 6, score: 85, conflicts: [] },
+      { id: 'c2', sections: sections2, totalCredits: 6, score: 80, conflicts: [] },
     ]);
     expect(result.some((g) => g.label === 'Mix (MWF + TTh)')).toBe(true);
   });
@@ -295,6 +298,7 @@ describe('groupSchedulesByStructure', () => {
       { id: 'a', sections: [mwfSection], totalCredits: 3, score: 80, conflicts: [] },
       { id: 'b', sections: [tthSection], totalCredits: 3, score: 90, conflicts: [] },
       { id: 'c', sections: [mwfSection], totalCredits: 3, score: 85, conflicts: [] },
+      { id: 'd', sections: [tthSection], totalCredits: 3, score: 85, conflicts: [] },
     ]);
     expect(result[0].schedules.length).toBeGreaterThanOrEqual(result[1].schedules.length);
   });

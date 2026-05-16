@@ -21,6 +21,8 @@ export interface TimeSlot {
   day: DayOfWeek;
   startTime: string;
   endTime: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export type DayOfWeek = 'M' | 'T' | 'W' | 'Th' | 'F' | 'Sa' | 'Su';
@@ -41,10 +43,10 @@ export interface Preferences {
   preferConsecutiveDays: boolean;
   preferMorning: boolean;
   preferAfternoon: boolean;
+  preferNoEvening?: boolean;
   maxCredits: number;
   minCredits: number;
   avoidDays: DayOfWeek[];
-  excludeInstructors: string[];
   theme?: 'light' | 'dark' | 'system';
 }
 
@@ -100,20 +102,9 @@ export interface Semester {
 
 // JSON file structure for semester data
 export interface SemesterJSON {
-  version: string;
   semesterId: string;
   semesterName: string;
-  exportedAt: string;
   sections: SectionJSON[];
-  metadata: {
-    totalSections: number;
-    totalCourses: number;
-    subjects: string[];
-    creditsRange: {
-      min: number;
-      max: number;
-    };
-  };
 }
 
 export interface SectionJSON {

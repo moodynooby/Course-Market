@@ -151,7 +151,7 @@ export default function LandingPage() {
 
         const { courses, sections } = transformSections(semesterData.sections);
 
-        await cacheSemesterData(semesterId, courses, sections, semesterData.version || '1.0');
+        await cacheSemesterData(semesterId, courses, sections);
 
         setAllCourses(courses);
         setAllSections(sections);

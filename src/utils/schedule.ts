@@ -30,14 +30,21 @@ function getWeekStartDate(): Date {
   return weekStart;
 }
 
-export function sectionsToCalendarEvents(sections: Section[], courses: Course[]): CalendarEvent[] {
+export function sectionsToCalendarEvents(
+  sections: Section[],
+  courses: Course[],
+  referenceDate?: Date,
+): CalendarEvent[] {
   const events: CalendarEvent[] = [];
   const weekStart = getWeekStartDate();
+  const refDate = referenceDate || weekStart;
 
   sections.forEach((section) => {
     const course = courses.find((c) => c.id === section.courseId);
 
     section.timeSlots.forEach((slot, index) => {
+      if (!isSlotActiveDuring(slot, refDate)) return;
+
       const dayOffset = DAY_TO_NUMBER[slot.day];
       const startMinutes = timeToMinutesCached(slot.startTime);
       const endMinutes = timeToMinutesCached(slot.endTime);
@@ -50,7 +57,6 @@ export function sectionsToCalendarEvents(sections: Section[], courses: Course[])
       endDate.setDate(endDate.getDate() + dayOffset);
       endDate.setHours(Math.floor(endMinutes / 60), endMinutes % 60, 0, 0);
 
-      // Include index to ensure unique IDs for potentially duplicate time slots
       events.push({
         id: `${section.id}-${slot.day}-${slot.startTime}-${index}`,
         title: `${course?.code || 'Course'} - ${section.sectionNumber}`,
@@ -73,10 +79,6 @@ export function formatTime(time24: string): string {
   return `${displayHour}:${minutes} ${period}`;
 }
 
-/**
- * Formats time slots into a display string (e.g., "MWF 9:00 AM - 10:00 AM")
- * Optimized to avoid recalculating on every render.
- */
 export function formatTimeSlots(timeSlots: TimeSlot[]): {
   dayDisplay: string;
   timeDisplay: string;
@@ -123,10 +125,6 @@ const timeCache = new Map<string, number>();
 const MAX_CACHE_SIZE = 100;
 const cacheKeys: string[] = [];
 
-/**
- * Converts a HH:mm time string to minutes from the start of the day.
- * Uses a bounded cache to avoid repeated string splitting and conversion.
- */
 export function timeToMinutesCached(time: string): number {
   let minutes = timeCache.get(time);
   if (minutes === undefined) {
@@ -142,8 +140,18 @@ export function timeToMinutesCached(time: string): number {
   return minutes;
 }
 
+function dateRangesOverlap(slot1: TimeSlot, slot2: TimeSlot): boolean {
+  if (!slot1.startDate || !slot1.endDate || !slot2.startDate || !slot2.endDate) {
+    return true;
+  }
+  if (slot1.endDate < slot2.startDate) return false;
+  if (slot2.endDate < slot1.startDate) return false;
+  return true;
+}
+
 export function hasTimeConflict(slot1: TimeSlot, slot2: TimeSlot): boolean {
   if (slot1.day !== slot2.day) return false;
+  if (!dateRangesOverlap(slot1, slot2)) return false;
   const start1 = timeToMinutesCached(slot1.startTime);
   const end1 = timeToMinutesCached(slot1.endTime);
   const start2 = timeToMinutesCached(slot2.startTime);
@@ -151,20 +159,43 @@ export function hasTimeConflict(slot1: TimeSlot, slot2: TimeSlot): boolean {
   return start1 < end2 && start2 < end1;
 }
 
+export function isSlotActiveDuring(slot: TimeSlot, referenceDate: Date): boolean {
+  if (!slot.startDate || !slot.endDate) return true;
+  const start = new Date(slot.startDate);
+  const end = new Date(slot.endDate);
+  return referenceDate >= start && referenceDate <= end;
+}
+
+export function filterSlotsByDate(timeSlots: TimeSlot[], referenceDate: Date): TimeSlot[] {
+  return timeSlots.filter((slot) => isSlotActiveDuring(slot, referenceDate));
+}
+
+export function formatSlotDates(slot: TimeSlot): string {
+  if (!slot.startDate || !slot.endDate) return '';
+  const formatDate = (d: string) => {
+    const date = new Date(d);
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  };
+  return `${formatDate(slot.startDate)} - ${formatDate(slot.endDate)}`;
+}
+
 export function calculateScheduleScore(schedule: Schedule, preferences: Preferences): number {
-  let score = 100;
+  let baseScore = 50;
   const { sections, totalCredits } = schedule;
 
   if (totalCredits > preferences.maxCredits) {
-    score -= 20;
+    baseScore -= 20;
   }
   if (totalCredits < preferences.minCredits) {
-    score -= 20;
+    baseScore -= 20;
   }
 
   const avoidDaysSet = new Set(preferences.avoidDays);
-  const excludeInstructorsSet = new Set(preferences.excludeInstructors);
   const daysUsed = new Set<DayOfWeek>();
+  let hasMorning = false;
+  let hasAfternoon = false;
+  let hasEvening = false;
+  let outsideWindowCount = 0;
 
   const preferredStart = timeToMinutesCached(preferences.preferredStartTime);
   const preferredEnd = timeToMinutesCached(preferences.preferredEndTime);
@@ -172,8 +203,6 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
   const allSlots: { day: DayOfWeek; start: number; end: number }[] = [];
 
   sections.forEach((section) => {
-    const isExcludedInstructor = excludeInstructorsSet.has(section.instructor);
-
     section.timeSlots.forEach((slot) => {
       daysUsed.add(slot.day);
       const startTime = timeToMinutesCached(slot.startTime);
@@ -181,29 +210,37 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
 
       allSlots.push({ day: slot.day, start: startTime, end: endTime });
 
-      if (preferences.preferMorning && startTime < 720 && startTime >= 480) {
-        score += 5;
-      }
-      if (preferences.preferAfternoon && startTime >= 720 && startTime < 1020) {
-        score += 5;
-      }
-      if (startTime < preferredStart || endTime > preferredEnd) {
-        score -= 10;
-      }
+      if (startTime < 720) hasMorning = true;
+      else if (startTime < 1020) hasAfternoon = true;
+      if (startTime >= 1020) hasEvening = true;
 
-      if (isExcludedInstructor) {
-        score -= 20;
+      if (startTime < preferredStart || endTime > preferredEnd) {
+        outsideWindowCount++;
       }
     });
   });
 
+  if (outsideWindowCount > 0) {
+    baseScore -= Math.min(outsideWindowCount * 8, 20);
+  }
+
+  if (preferences.preferMorning && !hasMorning) {
+    baseScore -= 10;
+  }
+  if (preferences.preferAfternoon && !hasAfternoon) {
+    baseScore -= 10;
+  }
+  if (preferences.preferNoEvening && hasEvening) {
+    baseScore -= 10;
+  }
+
   daysUsed.forEach((day) => {
     if (avoidDaysSet.has(day)) {
-      score -= 15;
+      baseScore -= 15;
     }
   });
 
-  if (preferences.preferConsecutiveDays && daysUsed.size > 0) {
+  if (preferences.preferConsecutiveDays && daysUsed.size > 1) {
     const sortedDays = Array.from(daysUsed).sort(
       (a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b),
     );
@@ -212,12 +249,13 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
     for (let i = 0; i < sortedDays.length - 1; i++) {
       const currentIdx = DAY_ORDER.indexOf(sortedDays[i]);
       const nextIdx = DAY_ORDER.indexOf(sortedDays[i + 1]);
+      if (currentIdx === 4 && nextIdx === 0) continue;
       if (nextIdx - currentIdx > 1) {
         gaps++;
       }
     }
 
-    score -= gaps * 5;
+    baseScore -= gaps * 5;
   }
 
   if (preferences.maxGapMinutes > 0 && allSlots.length > 1) {
@@ -232,11 +270,41 @@ export function calculateScheduleScore(schedule: Schedule, preferences: Preferen
       if (allSlots[i].day === allSlots[i + 1].day) {
         const gapMinutes = allSlots[i + 1].start - allSlots[i].end;
         if (gapMinutes > preferences.maxGapMinutes) {
-          score -= Math.floor(gapMinutes / 30) * 3;
+          const excess = gapMinutes - preferences.maxGapMinutes;
+          baseScore -= Math.round((excess / 60) * 5);
         }
       }
     }
   }
 
-  return Math.max(0, Math.min(100, score));
+  if (daysUsed.size <= 3) {
+    baseScore += 10;
+  }
+
+  let hasLunchBreak = false;
+  for (const slot of allSlots) {
+    if (slot.end <= 720) {
+      for (const other of allSlots) {
+        if (other.day === slot.day && other.start >= 780) {
+          hasLunchBreak = true;
+          break;
+        }
+      }
+    }
+    if (hasLunchBreak) break;
+  }
+  if (hasLunchBreak) {
+    baseScore += 5;
+  }
+
+  if (outsideWindowCount === 0 && sections.length > 0) {
+    baseScore += 10;
+  }
+
+  const creditTarget = preferences.maxCredits;
+  if (totalCredits >= creditTarget - 2 && totalCredits <= creditTarget) {
+    baseScore += 5;
+  }
+
+  return Math.max(0, Math.min(100, baseScore));
 }

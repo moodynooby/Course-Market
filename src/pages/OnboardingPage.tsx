@@ -90,7 +90,7 @@ export default function OnboardingPage() {
         const { courses: allCourses, sections: allSections } = transformSections(
           semesterData.sections,
         );
-        await cacheSemesterData(semesterId, allCourses, allSections, semesterData.version);
+        await cacheSemesterData(semesterId, allCourses, allSections);
       }
       setSelectedSemester(semesterId);
     } catch (err) {
