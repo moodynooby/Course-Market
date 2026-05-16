@@ -13,7 +13,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ApiKeyDialog from '../components/ApiKeyDialog';
 import { OptimizationPanel } from '../components/dashboard/OptimizationPanel';
@@ -68,6 +68,16 @@ export default function LandingPage() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showConflicting, setShowConflicting] = useState(false);
   const [scheduleDiagnostics, setScheduleDiagnostics] = useState<ScheduleDiagnostics | null>(null);
+  const dataLoadedRef = useRef(false);
+  const coursesRef = useRef<Course[]>([]);
+  const sectionsRef = useRef<Section[]>([]);
+
+  useEffect(() => {
+    coursesRef.current = allCourses;
+  }, [allCourses]);
+  useEffect(() => {
+    sectionsRef.current = allSections;
+  }, [allSections]);
 
   const loadScheduleFromSelections = useCallback(
     (courses: Course[], sections: Section[]) => {
@@ -118,6 +128,13 @@ export default function LandingPage() {
 
   const loadData = useCallback(async () => {
     try {
+      if (dataLoadedRef.current) {
+        if (coursesRef.current.length > 0 && sectionsRef.current.length > 0) {
+          loadScheduleFromSelections(coursesRef.current, sectionsRef.current);
+        }
+        return;
+      }
+
       const { getSemesters } = await import('../services/coursesApi');
       const { semesters } = await getSemesters();
 
@@ -158,6 +175,8 @@ export default function LandingPage() {
         buildCourseIndex(courses, sections);
         loadScheduleFromSelections(courses, sections);
       }
+
+      dataLoadedRef.current = true;
     } catch (error) {
       console.error('Failed to load semester data:', error);
       setAllCourses([]);

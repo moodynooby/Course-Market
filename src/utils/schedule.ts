@@ -20,11 +20,10 @@ const DAY_TO_NUMBER: Record<DayOfWeek, number> = {
 
 const DAY_ORDER: DayOfWeek[] = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su'];
 
-function getWeekStartDate(): Date {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  const weekStart = new Date(now);
+function getWeekStartDate(date: Date = new Date()): Date {
+  const day = date.getDay();
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+  const weekStart = new Date(date);
   weekStart.setDate(diff);
   weekStart.setHours(0, 0, 0, 0);
   return weekStart;
@@ -36,8 +35,8 @@ export function sectionsToCalendarEvents(
   referenceDate?: Date,
 ): CalendarEvent[] {
   const events: CalendarEvent[] = [];
-  const weekStart = getWeekStartDate();
-  const refDate = referenceDate || weekStart;
+  const refDate = referenceDate || new Date();
+  const weekStart = getWeekStartDate(refDate);
 
   sections.forEach((section) => {
     const course = courses.find((c) => c.id === section.courseId);

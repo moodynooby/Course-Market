@@ -15,7 +15,7 @@ import {
 import { addWeeks, format, getDay, parse, startOfWeek, subWeeks } from 'date-fns';
 
 import { enUS } from 'date-fns/locale/en-US';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { View } from 'react-big-calendar';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import type { CalendarEvent, Course, Section } from '../types';
@@ -139,6 +139,33 @@ export default function CalendarView({ sections, courses, conflicts }: CalendarV
   const theme = useTheme();
   const [view, setView] = useState<View>(Views.WEEK as View);
   const [date, setDate] = useState(new Date());
+  const autoNavigated = useRef(false);
+
+  useEffect(() => {
+    if (autoNavigated.current || sections.length === 0) return;
+
+    const hasActiveSlot = sections.some((section) =>
+      section.timeSlots.some((slot) => {
+        if (!slot.startDate || !slot.endDate) return true;
+        const now = new Date();
+        return now >= new Date(slot.startDate) && now <= new Date(slot.endDate);
+      }),
+    );
+
+    if (!hasActiveSlot) {
+      let earliest: Date | null = null;
+      for (const section of sections) {
+        for (const slot of section.timeSlots) {
+          if (slot.startDate) {
+            const d = new Date(slot.startDate);
+            if (!earliest || d < earliest) earliest = d;
+          }
+        }
+      }
+      if (earliest) setDate(earliest);
+    }
+    autoNavigated.current = true;
+  }, [sections]);
 
   const events = useMemo(
     () => sectionsToCalendarEvents(sections, courses, date),
