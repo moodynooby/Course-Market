@@ -1,4 +1,4 @@
-import { Search, Sync } from '@mui/icons-material';
+import { Clear, PersonSearch, Search, Sync } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -7,6 +7,7 @@ import {
   CardContent,
   CircularProgress,
   Container,
+  IconButton,
   InputAdornment,
   Rating,
   Stack,
@@ -17,6 +18,7 @@ import {
 import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { VirtuosoGrid } from 'react-virtuoso';
+import { EmptyState } from '../components/EmptyState';
 import { useAuthContext } from '../context/AuthContext';
 import { professorsApi } from '../services/professorsApi';
 import { searchProfessors } from '../services/search';
@@ -114,6 +116,18 @@ export default function ProfessorsPage() {
                 <Search />
               </InputAdornment>
             ),
+            endAdornment: searchTerm && (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label="clear search"
+                  onClick={() => setSearchTerm('')}
+                  size="small"
+                  edge="end"
+                >
+                  <Clear fontSize="small" />
+                </IconButton>
+              </InputAdornment>
+            ),
           },
         }}
       />
@@ -129,11 +143,22 @@ export default function ProfessorsPage() {
           <CircularProgress />
         </Box>
       ) : filteredProfessors.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 8 }}>
-          <Typography variant="h6" sx={{ color: 'text.secondary' }}>
-            No professors found matching your search.
-          </Typography>
-        </Box>
+        <EmptyState
+          icon={<PersonSearch sx={{ fontSize: 40 }} />}
+          title="No Professors Found"
+          description={
+            searchTerm
+              ? `We couldn't find any professors matching "${searchTerm}"`
+              : 'Try searching for a different name or department.'
+          }
+          action={
+            searchTerm && (
+              <Button variant="outlined" onClick={() => setSearchTerm('')}>
+                Clear Search
+              </Button>
+            )
+          }
+        />
       ) : (
         <VirtuosoGrid
           data={filteredProfessors}
