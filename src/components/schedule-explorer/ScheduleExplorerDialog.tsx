@@ -152,7 +152,7 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
   const similarSectionCounts = useMemo(() => {
     const result = new Map<string, number>();
     if (!allSections || allSections.length === 0) return result;
-    const buckets = new Map<string, string[]>(); 
+    const buckets = new Map<string, string[]>();
     for (const s of allSections) {
       const timeKey = s.timeSlots
         .map((t) => `${t.day}@${t.startTime}-${t.endTime}`)

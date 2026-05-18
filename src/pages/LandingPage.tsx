@@ -430,7 +430,7 @@ export default function LandingPage() {
             p: 5,
             textAlign: 'center',
             mb: 4,
-            borderRadius: 6, 
+            borderRadius: 6,
             bgcolor: 'background.paper',
           }}
         >

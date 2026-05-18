@@ -1,4 +1,4 @@
-import { Search, Sync } from '@mui/icons-material';
+import { Search, Sort, Sync } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -8,34 +8,45 @@ import {
   CircularProgress,
   Container,
   InputAdornment,
+  MenuItem,
   Rating,
+  Snackbar,
   Stack,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
-import { forwardRef, useCallback, useEffect, useMemo, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { VirtuosoGrid } from 'react-virtuoso';
 import { useAuthContext } from '../context/AuthContext';
+import { useProfessorSearch } from '../hooks/useProfessorSearch';
 import { professorsApi } from '../services/professorsApi';
-import { searchProfessors } from '../services/search';
 import type { Professor } from '../types';
+
+type SortKey = 'name' | 'rating' | 'count';
 
 export default function ProfessorsPage() {
   const { isAuthenticated, getToken } = useAuthContext();
-  const [searchParams, _setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [professors, setProfessors] = useState<Professor[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [sortBy, setSortBy] = useState<SortKey>('name');
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+  const initialSearch = searchParams.get('search') || '';
+  const [rawSearch, setRawSearch] = useState(initialSearch);
+  const { results: filteredProfessors, setQuery } = useProfessorSearch(professors);
+
+  useEffect(() => {
+    setQuery(rawSearch);
+  }, [rawSearch, setQuery]);
 
   useEffect(() => {
     const search = searchParams.get('search');
-    if (search) {
-      setSearchTerm(search);
-    }
+    if (search) setRawSearch(search);
   }, [searchParams]);
 
   const fetchProfessors = useCallback(async () => {
@@ -60,9 +71,9 @@ export default function ProfessorsPage() {
     if (!isAuthenticated) return;
     try {
       setSyncing(true);
-      const token = await getToken();
-      await professorsApi.syncProfessors(token);
+      const result = await professorsApi.syncProfessors(await getToken());
       await fetchProfessors();
+      setSyncMessage(`Sync complete — ${result.instructorsFound} instructors found`);
     } catch (err) {
       console.error('Error syncing professors:', err);
       setError('Failed to sync professors.');
@@ -71,13 +82,18 @@ export default function ProfessorsPage() {
     }
   };
 
-  const filteredProfessors = useMemo(() => {
-    return searchProfessors(professors, searchTerm);
-  }, [professors, searchTerm]);
+  const sortedProfessors = [...filteredProfessors].sort((a, b) => {
+    if (sortBy === 'rating') return Number(b.avgRating || 0) - Number(a.avgRating || 0);
+    if (sortBy === 'count') return (b.ratingCount || 0) - (a.ratingCount || 0);
+    return a.name.localeCompare(b.name);
+  });
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+      <Stack
+        direction="row"
+        sx={{ justifyContent: 'space-between', alignItems: 'flex-start', mb: 4 }}
+      >
         <Box>
           <Typography variant="h4" component="h1" gutterBottom>
             Rate My Prof
@@ -100,26 +116,55 @@ export default function ProfessorsPage() {
         )}
       </Stack>
 
-      <TextField
-        fullWidth
-        variant="outlined"
-        placeholder="Search by name or department..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        sx={{ mb: 4 }}
-        slotProps={{
-          input: {
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            ),
-          },
-        }}
-      />
+      <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search by name..."
+          value={rawSearch}
+          onChange={(e) => setRawSearch(e.target.value)}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              ),
+            },
+          }}
+        />
+        <TextField
+          select
+          variant="outlined"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as SortKey)}
+          sx={{ width: 200 }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Sort />
+                </InputAdornment>
+              ),
+            },
+          }}
+        >
+          <MenuItem value="name">Name (A-Z)</MenuItem>
+          <MenuItem value="rating">Highest Rated</MenuItem>
+          <MenuItem value="count">Most Ratings</MenuItem>
+        </TextField>
+      </Stack>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 4 }}>
+        <Alert
+          severity="error"
+          sx={{ mb: 4 }}
+          action={
+            <Button color="inherit" size="small" onClick={fetchProfessors}>
+              Retry
+            </Button>
+          }
+        >
           {error}
         </Alert>
       )}
@@ -128,15 +173,22 @@ export default function ProfessorsPage() {
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
           <CircularProgress />
         </Box>
-      ) : filteredProfessors.length === 0 ? (
+      ) : sortedProfessors.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8 }}>
-          <Typography variant="h6" sx={{ color: 'text.secondary' }}>
-            No professors found matching your search.
+          <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>
+            {professors.length === 0
+              ? 'No professors found. Sync semester data to get started.'
+              : 'No professors found matching your search.'}
           </Typography>
+          {professors.length === 0 && isAuthenticated && (
+            <Button variant="contained" onClick={handleSync} sx={{ mt: 2 }}>
+              Sync Data
+            </Button>
+          )}
         </Box>
       ) : (
         <VirtuosoGrid
-          data={filteredProfessors}
+          data={sortedProfessors}
           overscan={3}
           itemContent={(_index, professor) => (
             <Card
@@ -158,9 +210,6 @@ export default function ProfessorsPage() {
               <CardContent>
                 <Typography variant="h6" component="h2" gutterBottom noWrap>
                   {professor.name}
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }} gutterBottom>
-                  {professor.department || 'General'}
                 </Typography>
 
                 <Box sx={{ mt: 2 }}>
@@ -195,7 +244,7 @@ export default function ProfessorsPage() {
               </CardContent>
             </Card>
           )}
-          style={{ height: 'calc(100vh - 280px)', minHeight: '400px' }}
+          style={{ height: 'calc(100vh - 340px)', minHeight: '400px' }}
           components={{
             List: forwardRef<HTMLDivElement, React.HTMLProps<HTMLDivElement>>(
               ({ children, ...props }, ref) => (
@@ -215,6 +264,13 @@ export default function ProfessorsPage() {
           }}
         />
       )}
+
+      <Snackbar
+        open={!!syncMessage}
+        autoHideDuration={4000}
+        onClose={() => setSyncMessage(null)}
+        message={syncMessage}
+      />
     </Container>
   );
 }

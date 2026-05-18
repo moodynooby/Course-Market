@@ -109,7 +109,7 @@ export interface SemesterJSON {
 
 export interface SectionJSON {
   id: string;
-  courseId?: string; 
+  courseId?: string;
   courseCode: string;
   courseName: string;
   sectionNumber: string;
@@ -124,12 +124,9 @@ export interface SectionJSON {
 export interface Professor {
   id: number;
   name: string;
-  department?: string | null;
   avgRating?: number;
   avgDifficulty?: number;
   ratingCount?: number;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface ProfessorRating {

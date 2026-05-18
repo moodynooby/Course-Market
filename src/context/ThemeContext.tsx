@@ -27,16 +27,14 @@ function getInitialMode(): ThemeMode {
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.THEME_MODE);
     if (stored) return JSON.parse(stored) as ThemeMode;
-  } catch {
-  }
+  } catch {}
   try {
     const prefs = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
     if (prefs) {
       const parsed = JSON.parse(prefs);
       if (parsed.theme) return parsed.theme as ThemeMode;
     }
-  } catch {
-  }
+  } catch {}
   return 'system';
 }
 

@@ -179,9 +179,9 @@ export function formatSlotDates(slot: TimeSlot): string {
 }
 
 export const COMPACT_DAY_THRESHOLD = 3;
-const MORNING_END = 720; 
-const AFTERNOON_END = 1020; 
-const LUNCH_AFTER = 780; 
+const MORNING_END = 720;
+const AFTERNOON_END = 1020;
+const LUNCH_AFTER = 780;
 
 export interface ScheduleFeatures {
   creditDelta: number;

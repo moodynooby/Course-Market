@@ -34,8 +34,8 @@ import {
 } from '@mui/material';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Virtuoso } from 'react-virtuoso';
+import { formatZodError, tradeSchema } from '../../db/validation';
 import { useAuthContext } from '../context/AuthContext';
-import { formatZodError, tradeSchema } from '../lib/schemas';
 import { ApiError } from '../services/apiClient';
 import { buildTradeIndex, searchTradeIndex } from '../services/search';
 import {

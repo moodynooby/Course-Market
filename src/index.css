@@ -1,21 +1,13 @@
 @font-face {
-  font-family: 'Plus Jakarta Sans';
-  src: url('/fonts/PlusJakartaSans-VariableFont_wght.woff2') format('woff2');
+  font-family: "Plus Jakarta Sans";
+  src: url("/fonts/PlusJakartaSans-VariableFont_wght.woff2") format("woff2");
   font-weight: 125 950;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Zilla Slab';
-  src: url('/fonts/ZillaSlab-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
   font-family: "Zilla Slab";
-  src: url("/fonts/ZillaSlab-Bold.ttf") format("truetype");
+  src: url("/fonts/ZillaSlab-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -62,7 +54,7 @@ body {
 .active-indicator {
   width: 8px;
   height: 8px;
-  background: #0061a4; 
+  background: #0061a4;
   border-radius: 50%;
   position: relative;
 }

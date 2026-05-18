@@ -1,4 +1,4 @@
-import { ArrowBack, ThumbDown, ThumbUp } from '@mui/icons-material';
+import { ArrowBack, School, ThumbDown, ThumbUp } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -19,8 +19,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import RateProfessorModal from '../components/RateProfessorModal';
 import { useAuthContext } from '../context/AuthContext';
+import { getSemesters } from '../services/coursesApi';
+import { getCachedSections } from '../services/dbCache';
 import { professorsApi } from '../services/professorsApi';
 import type { ProfessorDetails } from '../types';
+import { splitInstructorNames } from '../utils/instructor-name';
 
 export default function ProfessorDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,6 +33,37 @@ export default function ProfessorDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [coursesTaught, setCoursesTaught] = useState<{ semester: string; courses: string[] }[]>([]);
+
+  useEffect(() => {
+    if (!professor?.name) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { semesters } = await getSemesters();
+        const results: { semester: string; courses: string[] }[] = [];
+        for (const sem of semesters) {
+          const cached = await getCachedSections(sem.id);
+          if (!cached) continue;
+          const courseCodes = new Set<string>();
+          for (const section of cached.sections) {
+            if (splitInstructorNames(section.instructor).includes(professor.name)) {
+              courseCodes.add(section.courseId);
+            }
+          }
+          if (courseCodes.size > 0) {
+            results.push({ semester: sem.name, courses: Array.from(courseCodes).sort() });
+          }
+        }
+        if (!cancelled) setCoursesTaught(results);
+      } catch {
+        // Non-critical — degrades gracefully
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [professor?.name]);
 
   const fetchDetails = useCallback(async () => {
     if (!id) return;
@@ -88,9 +122,6 @@ export default function ProfessorDetailsPage() {
               <Typography variant="h4" component="h1" gutterBottom>
                 {professor.name}
               </Typography>
-              <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }} gutterBottom>
-                {professor.department || 'General'}
-              </Typography>
 
               <Divider sx={{ my: 3 }} />
 
@@ -134,6 +165,30 @@ export default function ProfessorDetailsPage() {
                   />
                 </Box>
               </Stack>
+
+              {coursesTaught.length > 0 && (
+                <Box sx={{ mt: 3 }}>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    <School sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'text-top' }} />
+                    Courses Taught
+                  </Typography>
+                  {coursesTaught.map((entry) => (
+                    <Box key={entry.semester} sx={{ mb: 1 }}>
+                      <Typography
+                        variant="caption"
+                        sx={{ color: 'text.secondary', fontWeight: 600 }}
+                      >
+                        {entry.semester}
+                      </Typography>
+                      <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap', mt: 0.5 }}>
+                        {entry.courses.map((code) => (
+                          <Chip key={code} label={code} size="small" variant="outlined" />
+                        ))}
+                      </Stack>
+                    </Box>
+                  ))}
+                </Box>
+              )}
 
               <Button
                 fullWidth

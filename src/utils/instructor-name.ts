@@ -1,8 +1,4 @@
-const PLACEHOLDER_NAMES = new Set([
-  'Not added',
-  'To Be Announced',
-  'TBA',
-]);
+const PLACEHOLDER_NAMES = new Set(['Not added', 'To Be Announced', 'TBA']);
 
 function normalizeName(name: string): string {
   return name

@@ -80,7 +80,6 @@ export type NewSemester = typeof semesters.$inferInsert;
 export const professors = pgTable('professors', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 255 }).notNull().unique(),
-  department: varchar('department', { length: 100 }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -96,8 +95,8 @@ export const professorRatings = pgTable(
       .notNull()
       .references(() => professors.id),
     auth0UserId: varchar('auth0_user_id', { length: 255 }).notNull(),
-    rating: integer('rating').notNull(), 
-    difficulty: integer('difficulty').notNull(), 
+    rating: integer('rating').notNull(),
+    difficulty: integer('difficulty').notNull(),
     comment: text('comment').notNull(),
     courseCode: varchar('course_code', { length: 50 }).notNull(),
     semesterId: varchar('semester_id', { length: 50 }).notNull(),

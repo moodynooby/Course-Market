@@ -3,10 +3,17 @@ import { ZodError } from 'zod';
 import { db } from '../../db';
 import * as schema from '../../db/schema';
 import { formatZodError, professorRatingSchema } from '../../db/validation';
+import { splitInstructorNames } from '../../src/utils/instructor-name';
 import { validateToken } from './lib/auth';
 import { corsResponse, jsonResponse } from './lib/response';
-import { splitInstructorNames } from '../../src/utils/instructor-name';
 
+const professorWithStats = {
+  id: schema.professors.id,
+  name: schema.professors.name,
+  avgRating: sql<number>`COALESCE(avg(${schema.professorRatings.rating}), 0)`,
+  avgDifficulty: sql<number>`COALESCE(avg(${schema.professorRatings.difficulty}), 0)`,
+  ratingCount: sql<number>`count(${schema.professorRatings.id})`,
+} as const;
 
 export const handler = async (event: any) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -20,14 +27,7 @@ export const handler = async (event: any) => {
     if (httpMethod === 'GET') {
       if (path.endsWith('/professors')) {
         const professors = await db
-          .select({
-            id: schema.professors.id,
-            name: schema.professors.name,
-            department: schema.professors.department,
-            avgRating: sql<number>`COALESCE(avg(${schema.professorRatings.rating}), 0)`,
-            avgDifficulty: sql<number>`COALESCE(avg(${schema.professorRatings.difficulty}), 0)`,
-            ratingCount: sql<number>`count(${schema.professorRatings.id})`,
-          })
+          .select({ ...professorWithStats })
           .from(schema.professors)
           .leftJoin(
             schema.professorRatings,
@@ -42,14 +42,7 @@ export const handler = async (event: any) => {
       const id = parseInt(pathParts[pathParts.length - 1], 10);
       if (!Number.isNaN(id)) {
         const [professor] = await db
-          .select({
-            id: schema.professors.id,
-            name: schema.professors.name,
-            department: schema.professors.department,
-            avgRating: sql<number>`COALESCE(avg(${schema.professorRatings.rating}), 0)`,
-            avgDifficulty: sql<number>`COALESCE(avg(${schema.professorRatings.difficulty}), 0)`,
-            ratingCount: sql<number>`count(${schema.professorRatings.id})`,
-          })
+          .select({ ...professorWithStats })
           .from(schema.professors)
           .where(eq(schema.professors.id, id))
           .leftJoin(
@@ -101,7 +94,6 @@ export const handler = async (event: any) => {
         const semesters = await db.select().from(schema.semesters);
         const allInstructors = new Set<string>();
 
-
         const host = event.headers.host || 'localhost:8888';
         const protocol = host.includes('localhost') ? 'http' : 'https';
         const siteUrl = `${protocol}://${host}`;
@@ -142,36 +134,17 @@ export const handler = async (event: any) => {
         }
 
         const instructorsList = Array.from(allInstructors);
-        let addedCount = 0;
 
-        for (const name of instructorsList) {
-          try {
-            await db.insert(schema.professors).values({ name }).onConflictDoNothing();
-            addedCount++;
-          } catch (_e) {
-          }
-        }
-
-        const existingProfessors = await db
-          .select({ id: schema.professors.id, name: schema.professors.name })
-          .from(schema.professors);
-        let cleanedCount = 0;
-        for (const prof of existingProfessors) {
-          if (splitInstructorNames(prof.name).length > 1) {
-            try {
-              await db.delete(schema.professors).where(eq(schema.professors.id, prof.id));
-              cleanedCount++;
-            } catch (_e) {
-              console.error(`Failed to delete concatenated professor "${prof.name}":`, _e);
-            }
-          }
+        if (instructorsList.length > 0) {
+          await db
+            .insert(schema.professors)
+            .values(instructorsList.map((name) => ({ name })))
+            .onConflictDoNothing();
         }
 
         return jsonResponse(200, {
           message: 'Sync completed',
           instructorsFound: instructorsList.length,
-          processed: addedCount,
-          cleaned: cleanedCount,
         });
       }
     }

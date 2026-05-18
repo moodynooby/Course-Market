@@ -1,4 +1,4 @@
-import type { TradeInput, TradeUpdateInput } from '../lib/schemas';
+import type { TradeInput, TradeUpdateInput } from '../../db/validation';
 import type { TradePost } from '../types';
 import { api } from './apiClient';
 

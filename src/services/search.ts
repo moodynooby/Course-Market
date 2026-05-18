@@ -47,7 +47,7 @@ interface MiniSearchResult {
 }
 
 const professorSearchOptions = {
-  fields: ['name', 'department'],
+  fields: ['name'],
   storeFields: ['id'],
   searchOptions: {
     prefix: true,

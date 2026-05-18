@@ -1,4 +1,4 @@
-import { ExpandLess, ExpandMore, Person, PushPin, Schedule, Warning } from '@mui/icons-material';
+import { ExpandLess, ExpandMore, PushPin, Schedule, Warning } from '@mui/icons-material';
 import {
   alpha,
   Box,
@@ -14,11 +14,11 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { Fragment, forwardRef, memo } from 'react';
-import { Link } from 'react-router-dom';
+import { forwardRef, memo } from 'react';
+import { useProfessorsMap } from '../hooks/useProfessorsMap';
 import type { Course, Section } from '../types';
-import { splitInstructorNames } from '../utils/instructor-name';
 import { formatSlotDates, formatTimeSlots } from '../utils/schedule';
+import { InstructorChip } from './InstructorChip';
 
 interface CourseCardProps {
   course: Course;
@@ -52,6 +52,7 @@ export const CourseCard = memo(
     ref,
   ) {
     const theme = useTheme();
+    const professorRatings = useProfessorsMap();
 
     return (
       <Card ref={ref} variant="outlined" sx={{ mb: 2 }}>
@@ -170,29 +171,10 @@ export const CourseCard = memo(
                                       alignItems: 'center',
                                     }}
                                   >
-                                    <Person sx={{ fontSize: 16 }} />
-                                    <Typography variant="caption">
-                                      {splitInstructorNames(section.instructor).map(
-                                        (name, index, array) => (
-                                          <Fragment key={name}>
-                                            <Typography
-                                              component={Link}
-                                              to={`/professors?search=${encodeURIComponent(name)}`}
-                                              variant="caption"
-                                              onClick={(e) => e.stopPropagation()}
-                                              sx={{
-                                                color: 'primary.main',
-                                                textDecoration: 'none',
-                                                '&:hover': { textDecoration: 'underline' },
-                                              }}
-                                            >
-                                              {name}
-                                            </Typography>
-                                            {index < array.length - 1 && ', '}
-                                          </Fragment>
-                                        ),
-                                      )}
-                                    </Typography>
+                                    <InstructorChip
+                                      instructor={section.instructor}
+                                      professorRatings={professorRatings}
+                                    />
                                   </Stack>
                                   <Stack
                                     direction="row"

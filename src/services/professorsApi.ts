@@ -1,4 +1,4 @@
-import type { ProfessorRatingInput } from '../lib/schemas';
+import type { ProfessorRatingInput } from '../../db/validation';
 import type { Professor, ProfessorDetails, ProfessorRating } from '../types';
 import { api } from './apiClient';
 
@@ -19,10 +19,6 @@ export const professorsApi = {
   },
 
   syncProfessors: async (token: string) => {
-    return api.post<{ message: string; instructorsFound: number; processed: number }>(
-      '/professors/sync',
-      {},
-      token,
-    );
+    return api.post<{ message: string; instructorsFound: number }>('/professors/sync', {}, token);
   },
 };
