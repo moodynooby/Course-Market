@@ -27,7 +27,6 @@ export async function getSemesterData(semesterId: string): Promise<SemesterJSON>
     throw new Error(`Semester '${semesterId}' not found`);
   }
 
-  // Fetch the complete semester JSON from CDN
   const response = await fetch(semester.jsonUrl);
   if (!response.ok) {
     throw new Error(`Failed to fetch semester JSON: ${response.status}`);

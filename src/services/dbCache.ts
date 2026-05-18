@@ -28,7 +28,7 @@ interface CourseMarketDB extends DBSchema {
 
 const DB_NAME = 'course-market-db';
 const DB_VERSION = 2;
-const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_TTL = 24 * 60 * 60 * 1000; 
 const DATA_VERSION_PREFIX = 'v';
 
 let dbPromise: Promise<IDBPDatabase<CourseMarketDB>> | null = null;

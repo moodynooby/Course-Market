@@ -16,8 +16,8 @@ const INTRINSIC_WINDOW_START_MIN = 480; // 08:00
 const INTRINSIC_WINDOW_END_MIN = 1080; // 18:00
 const INTRINSIC_GAP_THRESHOLD_MIN = 60;
 const INTRINSIC_AVOID_DAY_PENALTY = 60;
-const MORNING_END_MIN = 720; // 12:00
-const AFTERNOON_END_MIN = 1020; // 17:00
+const MORNING_END_MIN = 720;
+const AFTERNOON_END_MIN = 1020;
 
 const FEATURE_VECTOR_DIMS = 12;
 const DAY_INDEX: Record<string, number> = { M: 0, T: 1, W: 2, Th: 3, F: 4 };
@@ -32,7 +32,7 @@ interface IntrinsicAccumulator {
   morning: number;
   afternoon: number;
   evening: number;
-  dayCounts: number[]; // length 5, M..F
+  dayCounts: number[];
 }
 
 /**

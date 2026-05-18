@@ -101,7 +101,6 @@ export interface Semester {
   isActive: boolean;
 }
 
-// JSON file structure for semester data
 export interface SemesterJSON {
   semesterId: string;
   semesterName: string;
@@ -110,7 +109,7 @@ export interface SemesterJSON {
 
 export interface SectionJSON {
   id: string;
-  courseId?: string; // Optional for backward compatibility
+  courseId?: string; 
   courseCode: string;
   courseName: string;
   sectionNumber: string;

@@ -179,9 +179,9 @@ export function formatSlotDates(slot: TimeSlot): string {
 }
 
 export const COMPACT_DAY_THRESHOLD = 3;
-const MORNING_END = 720; // 12:00
-const AFTERNOON_END = 1020; // 17:00
-const LUNCH_AFTER = 780; // 13:00
+const MORNING_END = 720; 
+const AFTERNOON_END = 1020; 
+const LUNCH_AFTER = 780; 
 
 export interface ScheduleFeatures {
   creditDelta: number;
@@ -387,7 +387,6 @@ export function calculateAbsoluteScheduleScore(
 ): number {
   const f = computeScheduleFeatures(schedule, preferences);
   let s = 50;
-  // Penalize only when outside [min, max]; inside the range is fine.
   if (schedule.totalCredits > preferences.maxCredits) {
     s -= Math.min((schedule.totalCredits - preferences.maxCredits) * 5, 20);
   } else if (schedule.totalCredits < preferences.minCredits) {

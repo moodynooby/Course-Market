@@ -5,6 +5,8 @@ import * as schema from '../../db/schema';
 import { formatZodError, professorRatingSchema } from '../../db/validation';
 import { validateToken } from './lib/auth';
 import { corsResponse, jsonResponse } from './lib/response';
+import { splitInstructorNames } from '../../src/utils/instructor-name';
+
 
 export const handler = async (event: any) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -99,11 +101,6 @@ export const handler = async (event: any) => {
         const semesters = await db.select().from(schema.semesters);
         const allInstructors = new Set<string>();
 
-        // We assume the function is running on Netlify or locally where the JSON files are accessible via URL or filesystem
-        // Since it's a Netlify function, it might be better to fetch from the URL if provided,
-        // but for local dev we can't easily fetch from localhost:8888.
-        // The AGENTS.md says: "Fetch JSON directly from CDN (/semesters/*.json)"
-        // In the function, we can try to fetch from the site's own URL.
 
         const host = event.headers.host || 'localhost:8888';
         const protocol = host.includes('localhost') ? 'http' : 'https';
@@ -133,18 +130,8 @@ export const handler = async (event: any) => {
             if (data.sections && Array.isArray(data.sections)) {
               for (const section of data.sections) {
                 if (section.instructor) {
-                  const names = section.instructor
-                    .split(',')
-                    .map((s: string) => s.trim().replace(/\.\.\.$/, ''));
-                  for (const name of names) {
-                    if (
-                      name &&
-                      name !== 'Not added' &&
-                      name !== 'To Be Announced' &&
-                      name !== 'TBA'
-                    ) {
-                      allInstructors.add(name);
-                    }
+                  for (const name of splitInstructorNames(section.instructor)) {
+                    allInstructors.add(name);
                   }
                 }
               }
@@ -162,7 +149,21 @@ export const handler = async (event: any) => {
             await db.insert(schema.professors).values({ name }).onConflictDoNothing();
             addedCount++;
           } catch (_e) {
-            // Ignore individual insert errors
+          }
+        }
+
+        const existingProfessors = await db
+          .select({ id: schema.professors.id, name: schema.professors.name })
+          .from(schema.professors);
+        let cleanedCount = 0;
+        for (const prof of existingProfessors) {
+          if (splitInstructorNames(prof.name).length > 1) {
+            try {
+              await db.delete(schema.professors).where(eq(schema.professors.id, prof.id));
+              cleanedCount++;
+            } catch (_e) {
+              console.error(`Failed to delete concatenated professor "${prof.name}":`, _e);
+            }
           }
         }
 
@@ -170,6 +171,7 @@ export const handler = async (event: any) => {
           message: 'Sync completed',
           instructorsFound: instructorsList.length,
           processed: addedCount,
+          cleaned: cleanedCount,
         });
       }
     }

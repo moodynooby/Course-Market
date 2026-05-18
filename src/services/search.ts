@@ -40,7 +40,7 @@ const scheduleSearchOptions = {
  * Search results from MiniSearch
  */
 interface MiniSearchResult {
-  id: string;
+  id: string | number;
   score: number;
   match: Record<string, string[]>;
   [key: string]: any;
@@ -121,7 +121,7 @@ export const searchTradeIndex = (query: string): TradePost[] => {
 export const searchCourses = (query: string): string[] => {
   if (!courseIndex || !query.trim()) return [];
   const results = courseIndex.search(query) as unknown as MiniSearchResult[];
-  return results.map((r) => r.id);
+  return results.map((r) => r.id as string);
 };
 
 /**
@@ -231,5 +231,5 @@ export const searchProfessors = (professors: Professor[], query: string): Profes
   const results = profIndex.search(query) as unknown as MiniSearchResult[];
   const resultIds = new Set(results.map((r) => r.id));
 
-  return professors.filter((p) => resultIds.has(String(p.id)));
+  return professors.filter((p) => resultIds.has(p.id));
 };

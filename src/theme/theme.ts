@@ -28,7 +28,6 @@ const getPalette = (isDark: boolean): ThemeOptions['palette'] => {
     };
   }
 
-  // Dark mode
   return {
     mode: 'dark',
     primary: {
@@ -311,7 +310,7 @@ export const createAppTheme = (isDark: boolean) => {
   return createTheme({
     palette: getPalette(isDark),
     typography: {
-      fontFamily: '"Plus Jakarta Sans", "Inter", sans-serif',
+      fontFamily: '"Plus Jakarta Sans", sans-serif',
       h1: {
         fontSize: '3.5rem',
         fontWeight: 700,
@@ -320,19 +319,19 @@ export const createAppTheme = (isDark: boolean) => {
       },
       h2: {
         fontSize: '1.75rem',
-        fontWeight: 600,
+        fontWeight: 700,
         letterSpacing: '-0.01em',
         fontFamily: '"Zilla Slab", serif',
       },
       h3: {
         fontSize: '1.5rem',
-        fontWeight: 600,
+        fontWeight: 700,
         letterSpacing: '-0.01em',
         fontFamily: '"Zilla Slab", serif',
       },
       h4: {
         fontSize: '1.25rem',
-        fontWeight: 800,
+        fontWeight: 700,
         letterSpacing: '-0.02em',
         fontFamily: '"Zilla Slab", serif',
       },

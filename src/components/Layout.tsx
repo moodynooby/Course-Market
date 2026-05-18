@@ -123,7 +123,6 @@ export default function Layout() {
         bgcolor: 'background.default',
       }}
     >
-      {/* MUI3 Tonal Elevation Navigation Bar - Per DESIGN.md */}
       <Box
         component="nav"
         sx={{
@@ -162,7 +161,7 @@ export default function Layout() {
                 borderLeft: 'none',
               }}
             >
-              <img src={logoIcon} alt="Logo" width={32} height={32} loading="lazy" />{' '}
+              <img src={logoIcon} alt="Logo" width={32} height={32} fetchPriority="high" />
               <Typography
                 component={Link}
                 to="/"
@@ -191,7 +190,6 @@ export default function Layout() {
                   component="img"
                   src={callMissedIcon}
                   alt=""
-                  loading="lazy"
                   sx={{
                     width: 24,
                     height: 24,
@@ -205,7 +203,6 @@ export default function Layout() {
                   component="img"
                   src={lockIcon}
                   alt=""
-                  loading="lazy"
                   sx={{
                     width: 24,
                     height: 24,
@@ -219,7 +216,6 @@ export default function Layout() {
                   component="img"
                   src={ProfIcon}
                   alt=""
-                  loading="lazy"
                   sx={{
                     width: 24,
                     height: 24,

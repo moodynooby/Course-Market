@@ -1,4 +1,3 @@
-// Storage keys for localStorage
 export const STORAGE_KEYS = {
   PREFERENCES: 'auraishub_preferences',
   THEME_MODE: 'theme-mode',
@@ -18,7 +17,6 @@ export interface BYOKConfig {
   initProgressCallback?: (progress: { progress: number; text: string }) => void;
 }
 
-// LLM task-to-model mappings
 export const LLM_TASK_MODELS = {
   OPTIMIZE: {
     webllm: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
@@ -41,7 +39,6 @@ export function getDefaultModel(provider: LLMProvider, task: LLMTask = 'DEFAULT'
   return LLM_TASK_MODELS[taskKey].webllm;
 }
 
-// LLM provider options
 export const PROVIDER_OPTIONS = [
   {
     value: 'webllm',
@@ -60,7 +57,6 @@ export const PROVIDER_OPTIONS = [
   },
 ] as const;
 
-// Default LLM configuration
 export const DEFAULT_LLM_CONFIG = {
   provider: 'webllm' as const,
   apiKey: '',
@@ -69,7 +65,6 @@ export const DEFAULT_LLM_CONFIG = {
   maxTokens: 1024,
 };
 
-// Default user preferences
 export const DEFAULT_PREFERENCES: Preferences = {
   preferredStartTime: '08:00',
   preferredEndTime: '17:00',

@@ -11,9 +11,7 @@ export const handler = async (event: any) => {
   try {
     const { httpMethod } = event;
 
-    // GET: Fetch all semesters from database
     if (httpMethod === 'GET') {
-      // Fetch semesters directly from database, ordered by creation date
       const semesters = await db
         .select()
         .from(schema.semesters)

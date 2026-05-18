@@ -17,6 +17,7 @@ import {
 import { Fragment, forwardRef, memo } from 'react';
 import { Link } from 'react-router-dom';
 import type { Course, Section } from '../types';
+import { splitInstructorNames } from '../utils/instructor-name';
 import { formatSlotDates, formatTimeSlots } from '../utils/schedule';
 
 interface CourseCardProps {
@@ -171,21 +172,12 @@ export const CourseCard = memo(
                                   >
                                     <Person sx={{ fontSize: 16 }} />
                                     <Typography variant="caption">
-                                      {section.instructor.split(',').map((name, index, array) => {
-                                        const trimmedName = name.trim();
-                                        if (
-                                          !trimmedName ||
-                                          trimmedName === 'Not added' ||
-                                          trimmedName === 'To Be Announced' ||
-                                          trimmedName === 'TBA'
-                                        ) {
-                                          return trimmedName;
-                                        }
-                                        return (
-                                          <Fragment key={trimmedName}>
+                                      {splitInstructorNames(section.instructor).map(
+                                        (name, index, array) => (
+                                          <Fragment key={name}>
                                             <Typography
                                               component={Link}
-                                              to={`/professors?search=${encodeURIComponent(trimmedName)}`}
+                                              to={`/professors?search=${encodeURIComponent(name)}`}
                                               variant="caption"
                                               onClick={(e) => e.stopPropagation()}
                                               sx={{
@@ -194,12 +186,12 @@ export const CourseCard = memo(
                                                 '&:hover': { textDecoration: 'underline' },
                                               }}
                                             >
-                                              {trimmedName}
+                                              {name}
                                             </Typography>
                                             {index < array.length - 1 && ', '}
                                           </Fragment>
-                                        );
-                                      })}
+                                        ),
+                                      )}
                                     </Typography>
                                   </Stack>
                                   <Stack
@@ -213,18 +205,17 @@ export const CourseCard = memo(
                                     <Typography variant="caption">
                                       {dayDisplay && timeDisplay ? (
                                         <>
-                                          {dayDisplay}{' '}
+                                          {dayDisplay}
                                           <Box component="span" sx={{ mx: 0.5 }}>
                                             •
-                                          </Box>{' '}
+                                          </Box>
                                           {timeDisplay}
                                           {section.timeSlots[0]?.startDate &&
                                             section.timeSlots[0]?.endDate && (
                                               <>
-                                                {' '}
                                                 <Box component="span" sx={{ mx: 0.5 }}>
                                                   •
-                                                </Box>{' '}
+                                                </Box>
                                                 {formatSlotDates(section.timeSlots[0])}
                                               </>
                                             )}

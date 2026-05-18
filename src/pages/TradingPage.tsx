@@ -407,7 +407,6 @@ export default function TradingPage() {
 
     setSubmitting(true);
     try {
-      // Validate form data using Zod schema
       const validatedData = tradeSchema.parse({
         ...tradeForm,
         courseName: tradeForm.courseName || undefined,

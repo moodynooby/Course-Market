@@ -81,7 +81,6 @@ function getScheduleSignature(schedule: GeneratedSchedule): ScheduleSignature {
   const end = formatHour(latest);
   const timeRange = start && end ? `${start}–${end}` : '';
 
-  // Only surface instructors when the user could care — keep it short.
   const lastNames = Array.from(instructorByCourse.values())
     .map((name) => {
       const parts = name.replace(/^Dr\.?\s*/i, '').split(/\s+/);
@@ -150,13 +149,10 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
 
   const courseMap = useMemo(() => new Map(courses.map((c) => [c.id, c])), [courses]);
 
-  // For each section, count how many *other* sections of the same course meet at
-  // the same set of times. Used by CalendarView to show a "N similar sections
-  // available" tooltip on calendar events.
   const similarSectionCounts = useMemo(() => {
     const result = new Map<string, number>();
     if (!allSections || allSections.length === 0) return result;
-    const buckets = new Map<string, string[]>(); // courseId|timeKey -> [sectionId, ...]
+    const buckets = new Map<string, string[]>(); 
     for (const s of allSections) {
       const timeKey = s.timeSlots
         .map((t) => `${t.day}@${t.startTime}-${t.endTime}`)
@@ -205,7 +201,6 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
     return clusterSchedulesBySimilarity(schedulesToGroup);
   }, [activeSchedules, searchResults]);
 
-  // Constants across the visible set — show once in header, not on every card.
   const creditsAreConstant = useMemo(() => {
     if (activeSchedules.length < 2) return false;
     const first = activeSchedules[0].totalCredits;

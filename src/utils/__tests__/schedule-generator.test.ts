@@ -368,7 +368,6 @@ describe('clusterSchedulesBySimilarity', () => {
     const clusters = clusterSchedulesBySimilarity([
       { id: 'a', sections: [morningMwfSection], totalCredits: 3, score: 90, conflicts: [] },
     ]);
-    // MWF == 3 days; same-time slots on three days produce zero gaps -> tight.
     expect(clusters[0].label).toContain('3-day');
     expect(clusters[0].label).toContain('tight');
   });
@@ -376,9 +375,6 @@ describe('clusterSchedulesBySimilarity', () => {
 
 describe('redundant section-swap penalty', () => {
   it('penalizes all-but-one variant when sections share an identical time footprint', () => {
-    // Course A has 3 interchangeable sections at the same time (M 09–10).
-    // Course B has 2 sections at different times — generates 6 schedules,
-    // but 3 footprint groups of size 2 each (Mon B-slot vs Wed B-slot).
     const courseA = makeCourse({ id: 'A', code: 'A101', credits: 3 });
     const courseB = makeCourse({ id: 'B', code: 'B101', credits: 3 });
     const aSections = [0, 1, 2].map((i) =>
@@ -412,7 +408,6 @@ describe('redundant section-swap penalty', () => {
 
     expect(result).toHaveLength(6);
 
-    // Group by footprint — exactly one winner per group, two penalized below.
     const byFp = new Map<string, number[]>();
     for (const r of result) {
       const fp = scheduleFootprint(r.sections);
@@ -424,7 +419,6 @@ describe('redundant section-swap penalty', () => {
     for (const scores of byFp.values()) {
       expect(scores).toHaveLength(3);
       scores.sort((a, b) => b - a);
-      // Top survivor unpenalized; the next two sank by REDUNDANT_VARIANT_PENALTY.
       expect(scores[0] - scores[1]).toBeGreaterThanOrEqual(REDUNDANT_VARIANT_PENALTY - 1);
       expect(scores[0] - scores[2]).toBeGreaterThanOrEqual(REDUNDANT_VARIANT_PENALTY - 1);
     }
@@ -451,7 +445,6 @@ describe('redundant section-swap penalty', () => {
     });
 
     expect(result).toHaveLength(2);
-    // No two schedules share a footprint, so neither should be penalized into oblivion.
     for (const r of result) {
       expect(r.score).toBeGreaterThan(-REDUNDANT_VARIANT_PENALTY / 2);
     }

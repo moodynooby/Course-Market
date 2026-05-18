@@ -17,7 +17,6 @@ export const handler = async (event: any) => {
 
     const { httpMethod, body } = event;
 
-    // GET: Fetch user profile
     if (httpMethod === 'GET') {
       const [profile] = await db
         .select()
@@ -31,7 +30,6 @@ export const handler = async (event: any) => {
       return jsonResponse(200, { profile });
     }
 
-    // POST: Create or update user profile
     if (httpMethod === 'POST') {
       const [existingProfile] = await db
         .select()
@@ -52,7 +50,6 @@ export const handler = async (event: any) => {
       let profile;
 
       if (existingProfile) {
-        // Update existing profile - only update provided fields
         const input = requestBody as UserProfileUpdateInput;
         [profile] = await db
           .update(schema.userProfiles)
@@ -68,7 +65,6 @@ export const handler = async (event: any) => {
           .where(eq(schema.userProfiles.auth0UserId, user.sub))
           .returning();
       } else {
-        // Create new profile - all required fields must be present
         const input = requestBody as UserProfileInput;
         [profile] = await db
           .insert(schema.userProfiles)

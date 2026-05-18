@@ -37,7 +37,6 @@
     "idb": "^8.0.3",
     "jose": "^6.2.3",
     "minisearch": "^7.2.0",
-    "ml-distance": "^4.0.1",
     "react": "^19.2.6",
     "react-big-calendar": "^1.19.4",
     "react-dom": "^19.2.6",

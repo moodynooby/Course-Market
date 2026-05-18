@@ -415,7 +415,6 @@ export async function optimizeWithLLM(
     };
   }
 
-  // Candidates are assumed pre-scored relatively (best first).
   const ranked = [...schedules].sort((a, b) => b.score - a.score);
   const topK = ranked.slice(0, Math.min(5, ranked.length));
 
@@ -443,7 +442,6 @@ export async function optimizeWithLLM(
     if (env.IS_DEV) console.warn('LLM ranking failed, falling back to relative scorer:', error);
   }
 
-  // Fallback: top-scored candidate.
   const best = topK[0];
   const analysis = await llmService.analyzeSchedule(best, preferences, allSections);
   return { schedules: ranked, bestSchedule: best, aiAnalysis: analysis };

@@ -263,7 +263,6 @@ export default function SettingsPage() {
                 <FormHelperText>
                   {selectedOption?.learnMoreUrl && (
                     <span>
-                      {' '}
                       <Link
                         href={selectedOption.learnMoreUrl}
                         target="_blank"

@@ -234,7 +234,6 @@ export default function CalendarView({
         courseCode.length > 0 ? courseCode.charCodeAt(0) % COURSE_COLORS.length : 0;
       const baseColor = isConflicted ? theme.palette.error.main : COURSE_COLORS[colorIndex];
 
-      // Add pattern overlay for conflicts
       const backgroundStyle = isConflicted
         ? `repeating-linear-gradient(45deg, ${baseColor}, ${baseColor} 10px, rgba(0,0,0,0.15) 10px, rgba(0,0,0,0.15) 20px)`
         : baseColor;
