@@ -1,86 +1,37 @@
-# AGENTS.md - Quick Start & Guidelines
+# AGENTS.md
 
-## Architecture
+## Dev Server
 
-### Database & Backend
+Run `pnpm run dev` — this starts `netlify dev` which serves the app on port **3000** (Vite runs internally on 5173). Not `pnpm run dev:vite` or `vite` directly. The Netlify Vite plugin loads `.env` variables and runs Netlify Functions locally.
 
-- **Schema**: `db/schema.ts` - Tables: `trades`, `user_profiles`, `user_llm_keys`, `semesters`
-- **Identity**: Track users via `auth0UserId` (Auth0 `sub` claim), no local users table
-- **Functions**: `netlify/functions/*.ts` - Use `export const handler` (ESM format)
-- **Database Access**: `@netlify/neon` package with `neon()` - DATABASE_URL auto-injected by addon
-- **Schema Sync**: Use `pnpm run db:push` to sync schema (uses drizzle-kit push, not migrations)
+## Build & Typecheck
 
-### Course Data Architecture (JSON-First)
+`pnpm run build` = `tsc -b && vite build && echo '/* /index.html 200' > dist/_redirects`. The `tsc -b` is a multi-project build across three tsconfigs: `tsconfig.app.json` (src), `tsconfig.netlify.json` (db + netlify/functions), `tsconfig.node.json` (vite.config). `pnpm run typecheck` runs `tsc -b` without emitting.
 
-- **Data Source**: JSON files in `/public/semesters/` (e.g., `Winter2025.json`)
-- **Backend API**: `netlify/functions/semesters.ts` - Reads JSON files, returns semester metadata
-- **Frontend Flow**:
-  1. Fetch `/semesters` API → Get list of semesters with JSON URLs
-  2. Fetch JSON directly from CDN (`/semesters/*.json`)
-  3. Parse and transform data client-side
-  4. Cache in localStorage with 24-hour TTL
-- **Caching**: localStorage with version tracking and timestamp-based invalidation
-- **Benefits**: Single source of truth, faster initial load, no database sync issues
+## Database
 
-### Database Tables
+Schema lives in `db/schema.ts`. Sync changes with `pnpm run db:push` (drizzle-kit push, not db:migrate). The database is Neon Postgres — `neon()` with no arguments reads `DATABASE_URL` from the environment, which is auto-injected by the Netlify Neon addon. Requires `netlify link` for local dev.
 
-- `trades` - Trade posts for course section swapping
-- `user_profiles` - User profile data with onboarding status
-- `user_llm_keys` - User-provided LLM API keys
-- `semesters` - Semester metadata (id, name, jsonUrl, isActive)
+## Auth & Profile
 
-**Note**: Course and section data is stored in JSON files, NOT in database tables (removed: `courses`, `sections`, `time_slots`)
+Auth0 is the identity layer. Every API call needs a `Bearer` token in the Authorization header. Use `useAuthContext()` for auth state and profile — never call `/user-profile` directly. Use `useConfigContext()` for preferences and LLM config (auto-syncs to localStorage and server profile).
 
-### Critical Rules
+## Course Data
 
-1. **Use `useAuthContext()`** in components needing auth or profile data
-2. **Don't call profile API directly** - use context's `updateProfile()` and `refreshProfile()`
-3. **Profile is cached** in context - avoid redundant fetches
-4. RUN pre-commit before thing task ic completer
-5. IF you add or modify the arhcitecture make sure to update the testes too
+Course/section data is JSON-first. Files live in `/public/semesters/*.json` and are fetched from the CDN, parsed client-side via **Web Worker** (`semesterParser.worker.ts`), and cached in **IndexedDB** (24h TTL via `idb` library). There are no `courses` or `sections` tables in the database. Semester metadata (which JSON to fetch) comes from the `semesters` DB table via the `/semesters` API.
 
-## Critical Rules for Agents
+## Code Conventions
 
-1. **Always use `pnpm run dev`** for full stack development (not `dev:vite`)
-   - Reason: Vite plugin handles both frontend and Netlify Functions
+Path aliases (from vite config): `@/`, `@components/`, `@pages/`, `@context/`, `@hooks/`, `@utils/`, `@types/`, `@services/`, `@assets/`. Biome rules: single quotes, trailing commas, semicolons always, 2-space indent, 100 line width, a11y off. React Compiler is enabled via `babel-plugin-react-compiler`. React 19, MUI v9, react-router v7, Emotion for styling.
 
-2. **Course data is JSON-based**
-   - Course/section data lives in `/public/semesters/*.json`
-   - No database tables for courses/sections
-   - Frontend fetches JSON directly from CDN
-   - Cache invalidation: 24-hour TTL in localStorage
+## Testing
 
-3. **Identity is Auth0-based**
-   - Track users via `auth0UserId` (sub claim)
-   - No local users table (except user_profiles for onboarding)
-   - All API calls require Bearer token in Authorization header
+Vitest with `happy-dom` environment and globals enabled (`describe`/`it`/`expect` available without import). Test files live alongside source: `src/**/*.{test,spec}.{ts,tsx}`, `netlify/**/*.{test,spec}.{ts,tsx}`, `db/**/*.{test,spec}.{ts,tsx}`. Tests with `.slow.test.ts` suffix are excluded from `pnpm run test:fast` but included in `pnpm run test`. Auth0 is mocked globally in `src/test/setup.ts`.
 
-4. **Environment variables are in .env only**
-   - Frontend: VITE_ prefix
-   - Backend: No prefix
-   - Vite plugin loads both from .env file
-   - No need for Netlify env vars with Vite plugin
+## Pre-commit Pipeline
 
-5. **Database connection is automatic**
-   - `neon()` with no args reads DATABASE_URL from environment
-   - Netlify addon injects this automatically
-   - Must run `netlify link` first for local dev
+Lefthook runs `lint:staged` + `typecheck` + `test:fast` in parallel on pre-commit. To run them sequentially (as CI would), use `pnpm run pre-commit`. Pre-push runs full `test` and `lint`.
 
-6. **Update this file after architectural changes**
-   - Keep it current for future agents and developers
+## Netlify Functions
 
-## File Structure
-
-```
-src/
-├── components/       # React components
-├── hooks/           # Custom hooks (useAuth, etc.)
-├── pages/           # Route pages
-├── services/        # API clients (tradesApi, llm)
-├── utils/           # Pure functions 
-├── types/           # TypeScript definitions
-└── config/          # App configuration
-
-netlify/functions/   # Serverless functions
-db/                  # Database schema + helpers
-```
+Backend functions in `netlify/functions/*.ts` use `export const handler` in ESM format. Authentication uses `jose` (JWKS via createRemoteJWKSet) to validate Auth0 tokens — shared helpers in `netlify/functions/lib/auth.ts`. CORS and JSON response helpers in `netlify/functions/lib/response.ts`.
