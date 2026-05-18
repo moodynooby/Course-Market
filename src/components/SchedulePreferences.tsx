@@ -315,11 +315,11 @@ export function SchedulePreferences({
                 sx={{ fontSize: '0.75rem' }}
               />
               <Chip
-                label="No Evening"
+                label="Evening"
                 icon={<span style={{ fontSize: 14 }}>🌙</span>}
-                onClick={() => handleUpdate('preferNoEvening', !preferences.preferNoEvening)}
-                color={preferences.preferNoEvening ? 'primary' : 'default'}
-                variant={preferences.preferNoEvening ? 'filled' : 'outlined'}
+                onClick={() => handleUpdate('preferEvening', !preferences.preferEvening)}
+                color={preferences.preferEvening ? 'primary' : 'default'}
+                variant={preferences.preferEvening ? 'filled' : 'outlined'}
                 sx={{ fontSize: '0.75rem' }}
               />
             </Stack>

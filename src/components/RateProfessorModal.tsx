@@ -68,6 +68,11 @@ export default function RateProfessorModal({
       return;
     }
 
+    if (!/[a-zA-Z]/.test(comment)) {
+      setError('Comment must contain meaningful text.');
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError(null);

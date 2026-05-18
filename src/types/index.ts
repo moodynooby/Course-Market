@@ -43,7 +43,7 @@ export interface Preferences {
   preferConsecutiveDays: boolean;
   preferMorning: boolean;
   preferAfternoon: boolean;
-  preferNoEvening?: boolean;
+  preferEvening?: boolean;
   maxCredits: number;
   minCredits: number;
   avoidDays: DayOfWeek[];

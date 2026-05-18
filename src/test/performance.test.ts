@@ -114,11 +114,11 @@ describe('performance', () => {
       expect(score).toBeGreaterThan(60);
     });
 
-    it('penalizes evening classes when preferNoEvening is true', () => {
-      const sections = [makeSection({ timeSlots: [makeTimeSlot('M', '18:00', '19:30')] })];
+    it('penalizes missing evening classes when preferEvening is true', () => {
+      const sections = [makeSection({ timeSlots: [makeTimeSlot('M', '10:00', '11:30')] })];
 
       const schedule = makeSchedule(sections, 3);
-      const prefs = { ...basePreferences, preferNoEvening: true };
+      const prefs = { ...basePreferences, preferEvening: true };
       const score = calculateAbsoluteScheduleScore(schedule, prefs);
 
       expect(score).toBeLessThan(60);

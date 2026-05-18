@@ -103,7 +103,7 @@ interface SeedSummary {
   daysCount: number;
   earliestHour: number;
   latestHour: number;
-  band: 'mornings' | 'afternoons' | 'evenings' | 'mixed';
+  band: 'morning' | 'afternoon' | 'evening' | 'mixed';
   gapTier: 'tight' | 'moderate' | 'loose';
 }
 
@@ -154,9 +154,9 @@ function summarizeSeed(schedule: GeneratedSchedule): SeedSummary {
 
   const days = DAY_ORDER.filter((d) => daySet.has(d));
   let band: SeedSummary['band'] = 'mixed';
-  if (hasMorning && !hasAfternoon && !hasEvening) band = 'mornings';
-  else if (hasAfternoon && !hasMorning && !hasEvening) band = 'afternoons';
-  else if (hasEvening && !hasMorning && !hasAfternoon) band = 'evenings';
+  if (hasMorning && !hasAfternoon && !hasEvening) band = 'morning';
+  else if (hasAfternoon && !hasMorning && !hasEvening) band = 'afternoon';
+  else if (hasEvening && !hasMorning && !hasAfternoon) band = 'evening';
 
   const gapMinutes = totalGapMinutes(schedule);
   let gapTier: SeedSummary['gapTier'];

@@ -87,7 +87,7 @@ ${availableSectionsInfo}
 ## User Preferences
 - **Preferred Time Range**: ${preferences?.preferredStartTime || '08:00'} - ${preferences?.preferredEndTime || '17:00'}
 - **Maximum Gap**: ${preferences?.maxGapMinutes || 60} minutes
-- **Preference**: ${preferences?.preferMorning ? 'Morning classes' : preferences?.preferAfternoon ? 'Afternoon classes' : 'No specific time preference'}
+- **Preference**: ${preferences?.preferMorning ? 'Morning classes' : preferences?.preferAfternoon ? 'Afternoon classes' : preferences?.preferEvening ? 'Evening classes' : 'No specific time preference'}
 - **Avoid Days**: ${preferences?.avoidDays?.join(', ') || 'None'}
 
 ## Instructions
@@ -357,7 +357,7 @@ User preferences:
 - Preferred window: ${preferences.preferredStartTime}-${preferences.preferredEndTime}
 - Credits: ${preferences.minCredits}-${preferences.maxCredits}
 - Max gap: ${preferences.maxGapMinutes} min
-- Prefer morning: ${preferences.preferMorning}; afternoon: ${preferences.preferAfternoon}; avoid evening: ${preferences.preferNoEvening ?? false}
+- Prefer morning: ${preferences.preferMorning}; afternoon: ${preferences.preferAfternoon}; evening: ${preferences.preferEvening ?? false}
 - Avoid days: ${preferences.avoidDays.join(', ') || 'none'}
 - Prefer consecutive days: ${preferences.preferConsecutiveDays}
 

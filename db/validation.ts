@@ -65,7 +65,11 @@ export const professorRatingSchema = z.object({
   professorId: z.number().int().positive(),
   rating: z.number().int().min(1).max(5),
   difficulty: z.number().int().min(1).max(5),
-  comment: z.string().min(10, 'Comment must be at least 10 characters').max(1000),
+  comment: z
+    .string()
+    .min(10, 'Comment must be at least 10 characters')
+    .max(1000)
+    .refine((v) => /[a-zA-Z]/.test(v), 'Comment must contain meaningful text'),
   courseCode: z.string().min(1, 'Course code is required').max(50),
   semesterId: z.string().min(1, 'Semester ID is required').max(50),
   takeAgain: z.boolean().default(true),

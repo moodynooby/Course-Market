@@ -37,6 +37,42 @@ SCHEDULE_PATTERN = re.compile(
 SECTION_PATTERN = re.compile(r'Section\s+(?P<num>\d+)', re.IGNORECASE)
 COURSE_CODE_PATTERN = re.compile(r'^([A-Z]+\s*\d+)')
 
+PLACEHOLDER_NAMES = {'Not added', 'To Be Announced', 'TBA'}
+
+
+def split_instructor_names(raw: str) -> list[str]:
+    """Split concatenated instructor names into individual names.
+
+    Handles three formats:
+    - Comma-separated: "Alice, Bob, Charlie"
+    - Concatenated: "AliceBobCharlie" (no separator)
+    - Mixed: "Alice, BobCharlie"
+
+    Filters out placeholders like "To Be Announced", "Not added", "TBA".
+    """
+    # Normalize double spaces (artifact from comma removal)
+    raw = re.sub(r'\s{2,}', ' ', raw).strip()
+    if not raw:
+        return []
+
+    # Split by comma first
+    parts = [p.strip() for p in raw.split(',') if p.strip()]
+
+    # Split at lowercase→uppercase boundaries (catches concatenated names)
+    split_parts: list[str] = []
+    for part in parts:
+        sub = re.sub(r'([a-z])([A-Z])', r'\1\x00\2', part).split('\x00')
+        split_parts.extend(s.strip() for s in sub if s.strip())
+
+    # Strip trailing ellipsis, filter placeholders
+    result = []
+    for name in split_parts:
+        cleaned = re.sub(r'\.\.\.$', '', name).strip()
+        if cleaned and cleaned not in PLACEHOLDER_NAMES:
+            result.append(cleaned)
+
+    return result
+
 
 def clean_course_code(raw: str) -> str:
     match = COURSE_CODE_PATTERN.match(raw.strip())
@@ -125,7 +161,7 @@ def build_sections(rows: list[dict], semester_id: str) -> list[dict]:
                 "courseCode": course_code,
                 "courseName": row.get("Course Name", "").strip(),
                 "sectionNumber": section_number,
-                "instructor": row.get("Faculty", "").strip(),
+                "instructor": ", ".join(split_instructor_names(row.get("Faculty", ""))),
                 "credits": credits,
                 "subject": subject,
                 "capacity": 0,
@@ -239,6 +275,11 @@ def main():
     sections = result["sections"]
     unique_courses = len(set(s["courseCode"] for s in sections))
     subjects = sorted(set(s["subject"] for s in sections))
+
+    # Instructor cleanup summary
+    multi_instructor = [s for s in sections if ',' in s["instructor"]]
+    print(f"  Multi-instructor sections: {len(multi_instructor)} (names split & joined with commas)")
+
     if args.force_refresh:
         dv_path = PROJECT_ROOT / "public" / "data-version.json"
         if dv_path.exists():

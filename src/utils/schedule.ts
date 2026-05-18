@@ -235,7 +235,7 @@ export function computeScheduleFeatures(
   let prefMismatch = 0;
   if (preferences.preferMorning && !hasMorning) prefMismatch++;
   if (preferences.preferAfternoon && !hasAfternoon) prefMismatch++;
-  if (preferences.preferNoEvening && hasEvening) prefMismatch++;
+  if (preferences.preferEvening && !hasEvening) prefMismatch++;
 
   let dayGapCount = 0;
   if (preferences.preferConsecutiveDays && daysUsed.size > 1) {

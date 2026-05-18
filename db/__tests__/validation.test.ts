@@ -265,6 +265,19 @@ describe('professorRatingSchema', () => {
     ).toThrow();
   });
 
+  it('rejects comment with only non-letter characters', () => {
+    expect(() =>
+      professorRatingSchema.parse({
+        professorId: 1,
+        rating: 3,
+        difficulty: 3,
+        comment: '..........',
+        courseCode: 'CS101',
+        semesterId: 'winter2025',
+      }),
+    ).toThrow();
+  });
+
   it('rejects non-positive professorId', () => {
     expect(() =>
       professorRatingSchema.parse({

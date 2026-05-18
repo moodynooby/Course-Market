@@ -1,13 +1,25 @@
-import { ChevronLeft, ChevronRight, ViewDay, ViewWeek } from '@mui/icons-material';
 import {
+  ChevronLeft,
+  ChevronRight,
+  Close,
+  Fullscreen,
+  FullscreenExit,
+  ViewDay,
+  ViewWeek,
+} from '@mui/icons-material';
+import {
+  AppBar,
   alpha,
   Box,
   Button,
   ButtonGroup,
   Chip,
+  Dialog,
+  DialogContent,
   IconButton,
   Paper,
   Stack,
+  Toolbar,
   Tooltip,
   Typography,
   useTheme,
@@ -154,6 +166,7 @@ export default function CalendarView({
   const theme = useTheme();
   const [view, setView] = useState<View>(Views.WEEK as View);
   const [date, setDate] = useState(new Date());
+  const [fullscreen, setFullscreen] = useState(false);
   const autoNavigated = useRef(false);
 
   useEffect(() => {
@@ -359,6 +372,11 @@ export default function CalendarView({
             >
               Day
             </Button>
+            <Tooltip title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
+              <IconButton size="small" onClick={() => setFullscreen(!fullscreen)} sx={{ ml: 1 }}>
+                {fullscreen ? <FullscreenExit /> : <Fullscreen />}
+              </IconButton>
+            </Tooltip>
           </ButtonGroup>
         </Box>
 
@@ -506,6 +524,173 @@ export default function CalendarView({
           </Stack>
         </Box>
       )}
+      <Dialog
+        fullScreen
+        open={fullscreen}
+        onClose={() => setFullscreen(false)}
+        sx={{
+          '& .MuiDialog-paper': {
+            bgcolor: theme.palette.mode === 'dark' ? '#1a1a2e' : '#ffffff',
+          },
+        }}
+      >
+        <AppBar
+          position="sticky"
+          sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}
+        >
+          <Toolbar>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flex: 1 }}>
+              <IconButton onClick={goToPrev} size="small" edge="start">
+                <ChevronLeft />
+              </IconButton>
+              <Button variant="outlined" size="small" onClick={goToToday} sx={{ minWidth: 80 }}>
+                Today
+              </Button>
+              <IconButton onClick={goToNext} size="small">
+                <ChevronRight />
+              </IconButton>
+              <Typography variant="h6" sx={{ fontWeight: 600, ml: 2 }}>
+                {format(date, view === Views.WEEK ? 'MMMM yyyy' : 'MMMM d, yyyy')}
+              </Typography>
+            </Stack>
+            <ButtonGroup variant="outlined" size="small" sx={{ mr: 2 }}>
+              <Button
+                startIcon={<ViewWeek />}
+                onClick={() => handleViewChange(Views.WEEK)}
+                variant={view === Views.WEEK ? 'contained' : 'outlined'}
+              >
+                Week
+              </Button>
+              <Button
+                startIcon={<ViewDay />}
+                onClick={() => handleViewChange(Views.DAY)}
+                variant={view === Views.DAY ? 'contained' : 'outlined'}
+              >
+                Day
+              </Button>
+            </ButtonGroup>
+            <IconButton
+              edge="end"
+              color="inherit"
+              onClick={() => setFullscreen(false)}
+              aria-label="close"
+            >
+              <Close />
+            </IconButton>
+          </Toolbar>
+        </AppBar>
+        <DialogContent sx={{ p: 0, height: 'calc(100vh - 64px)' }}>
+          <Box
+            sx={{
+              height: '100%',
+              '& .rbc-calendar': {
+                fontFamily: theme.typography.fontFamily,
+              },
+              '& .rbc-header': {
+                py: 1.5,
+                fontWeight: 600,
+                fontSize: '0.8rem',
+                borderBottom: `1px solid ${theme.palette.divider}`,
+                bgcolor:
+                  theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+              },
+              '& .rbc-time-slot': {
+                borderTop: `1px solid ${theme.palette.divider}`,
+              },
+              '& .rbc-timeslot-group': {
+                minHeight: 48,
+                borderColor:
+                  theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+              },
+              '& .rbc-time-content': {
+                borderTop: `1px solid ${theme.palette.divider}`,
+              },
+              '& .rbc-time-header-content': {
+                borderLeft: `1px solid ${theme.palette.divider}`,
+              },
+              '& .rbc-time-gutter': {
+                bgcolor:
+                  theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
+              },
+              '& .rbc-label': {
+                fontSize: '0.7rem',
+                color: theme.palette.text.secondary,
+                fontWeight: 500,
+              },
+              '& .rbc-today': {
+                bgcolor: alpha(theme.palette.secondary.main, 0.08),
+              },
+              '& .rbc-toolbar': {
+                display: 'none',
+              },
+              '& .rbc-event': {
+                padding: '2px 4px',
+                border: 'none',
+              },
+              '& .rbc-event-content': {
+                color: 'inherit',
+              },
+              '& .rbc-current-time-indicator': {
+                bgcolor: theme.palette.error.main,
+                height: 2,
+              },
+              '& .rbc-current-time-indicator::before': {
+                content: '""',
+                position: 'absolute',
+                left: -4,
+                top: -4,
+                width: 10,
+                height: 10,
+                borderRadius: '50%',
+                bgcolor: theme.palette.error.main,
+              },
+              '& .rbc-allday-cell': {
+                display: 'none',
+              },
+              '& .rbc-time-header.rbc-overflowing': {
+                borderRight: `1px solid ${theme.palette.divider}`,
+              },
+              '& .rbc-day-bg + .rbc-day-bg': {
+                borderLeft: `1px solid ${theme.palette.divider}`,
+              },
+              '& .rbc-time-slot + .rbc-time-slot': {
+                borderTop:
+                  theme.palette.mode === 'dark'
+                    ? '1px solid rgba(255,255,255,0.05)'
+                    : '1px solid rgba(0,0,0,0.05)',
+              },
+              '& .rbc-time-slot.rbc-now': {
+                fontWeight: 600,
+                color: theme.palette.secondary.main,
+              },
+            }}
+          >
+            <Calendar
+              localizer={localizer}
+              events={events}
+              startAccessor="start"
+              endAccessor="end"
+              view={view}
+              onView={handleViewChange}
+              date={date}
+              onNavigate={handleNavigate}
+              views={[Views.WEEK, Views.DAY]}
+              step={30}
+              timeslots={2}
+              min={new Date(1970, 0, 1, 8, 0, 0)}
+              max={new Date(1970, 0, 1, 21, 0, 0)}
+              eventPropGetter={eventStyleGetter}
+              components={{
+                event: EventComponent,
+              }}
+              formats={formats}
+              popup
+              selectable={false}
+              showMultiDayTimes={false}
+            />
+          </Box>
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

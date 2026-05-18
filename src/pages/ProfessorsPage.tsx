@@ -33,7 +33,7 @@ export default function ProfessorsPage() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<SortKey>('name');
+  const [sortBy, setSortBy] = useState<SortKey>('count');
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const initialSearch = searchParams.get('search') || '';
