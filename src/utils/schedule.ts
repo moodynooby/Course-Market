@@ -195,12 +195,37 @@ export interface ScheduleFeatures {
   fullyInsideWindow: 0 | 1;
 }
 
+export interface ScoringContext {
+  avoidDaysSet: Set<DayOfWeek>;
+  preferredStart: number;
+  preferredEnd: number;
+  creditTarget: number;
+  preferences: Preferences;
+}
+
+export function createScoringContext(preferences: Preferences): ScoringContext {
+  return {
+    avoidDaysSet: new Set(preferences.avoidDays),
+    preferredStart: timeToMinutesCached(preferences.preferredStartTime),
+    preferredEnd: timeToMinutesCached(preferences.preferredEndTime),
+    creditTarget: (preferences.minCredits + preferences.maxCredits) / 2,
+    preferences,
+  };
+}
+
 export function computeScheduleFeatures(
   schedule: Schedule,
   preferences: Preferences,
 ): ScheduleFeatures {
+  return computeScheduleFeaturesWithContext(schedule, createScoringContext(preferences));
+}
+
+export function computeScheduleFeaturesWithContext(
+  schedule: Schedule,
+  context: ScoringContext,
+): ScheduleFeatures {
   const { sections, totalCredits } = schedule;
-  const avoidDaysSet = new Set(preferences.avoidDays);
+  const { avoidDaysSet, preferredStart, preferredEnd, creditTarget, preferences } = context;
   const daysUsed = new Set<DayOfWeek>();
 
   let hasMorning = false;
@@ -208,9 +233,6 @@ export function computeScheduleFeatures(
   let hasEvening = false;
   let outsideWindowMinutes = 0;
   let avoidDayHits = 0;
-
-  const preferredStart = timeToMinutesCached(preferences.preferredStartTime);
-  const preferredEnd = timeToMinutesCached(preferences.preferredEndTime);
 
   const allSlots: { day: DayOfWeek; start: number; end: number }[] = [];
 
@@ -279,7 +301,6 @@ export function computeScheduleFeatures(
     }
   }
 
-  const creditTarget = (preferences.minCredits + preferences.maxCredits) / 2;
   const creditDelta = Math.abs(totalCredits - creditTarget);
 
   return {
