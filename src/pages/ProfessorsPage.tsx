@@ -1,4 +1,4 @@
-import { Search, Sort, Sync } from '@mui/icons-material';
+import { Clear, Search, Sort, Sync } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -7,6 +7,7 @@ import {
   CardContent,
   CircularProgress,
   Container,
+  IconButton,
   InputAdornment,
   MenuItem,
   Rating,
@@ -19,6 +20,7 @@ import {
 import { forwardRef, useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { VirtuosoGrid } from 'react-virtuoso';
+import { EmptyState } from '../components/EmptyState';
 import { useAuthContext } from '../context/AuthContext';
 import { useProfessorSearch } from '../hooks/useProfessorSearch';
 import { professorsApi } from '../services/professorsApi';
@@ -130,6 +132,22 @@ export default function ProfessorsPage() {
                   <Search />
                 </InputAdornment>
               ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  {rawSearch && (
+                    <Tooltip title="Clear search">
+                      <IconButton
+                        size="small"
+                        onClick={() => setRawSearch('')}
+                        aria-label="Clear search"
+                        edge="end"
+                      >
+                        <Clear fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </InputAdornment>
+              ),
             },
           }}
         />
@@ -174,18 +192,26 @@ export default function ProfessorsPage() {
           <CircularProgress />
         </Box>
       ) : sortedProfessors.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 8 }}>
-          <Typography variant="h6" sx={{ color: 'text.secondary', mb: 1 }}>
-            {professors.length === 0
-              ? 'No professors found. Sync semester data to get started.'
-              : 'No professors found matching your search.'}
-          </Typography>
-          {professors.length === 0 && isAuthenticated && (
-            <Button variant="contained" onClick={handleSync} sx={{ mt: 2 }}>
-              Sync Data
-            </Button>
-          )}
-        </Box>
+        professors.length === 0 ? (
+          <EmptyState
+            icon={<Sync />}
+            title="No professors found"
+            description="Sync semester data to get started."
+            action={
+              isAuthenticated && (
+                <Button variant="contained" onClick={handleSync}>
+                  Sync Data
+                </Button>
+              )
+            }
+          />
+        ) : (
+          <EmptyState
+            icon={<Search />}
+            title="No professors found"
+            description="No professors found matching your search. Try adjusting your query."
+          />
+        )
       ) : (
         <VirtuosoGrid
           data={sortedProfessors}
