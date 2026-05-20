@@ -21,6 +21,7 @@ import {
   Chip,
   Dialog,
   DialogActions,
+  IconButton,
   DialogContent,
   DialogTitle,
   InputAdornment,
@@ -35,6 +36,7 @@ import {
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import { formatZodError, tradeSchema } from '../../db/validation';
+import { EmptyState } from '../components/EmptyState';
 import { useAuthContext } from '../context/AuthContext';
 import { ApiError } from '../services/apiClient';
 import { buildTradeIndex, searchTradeIndex } from '../services/search';
@@ -632,21 +634,11 @@ export default function TradingPage() {
         </Alert>
       )}
       {trades.length === 0 && !loading ? (
-        <Card variant="outlined">
-          <CardContent sx={{ textAlign: 'center', py: 4 }}>
-            <SwapHoriz sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="h6" gutterBottom>
-              No Trades Yet
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                color: 'text.secondary',
-                mb: 3,
-              }}
-            >
-              Find the perfect section swap — post your first trade.
-            </Typography>
+        <EmptyState
+          icon={<SwapHoriz />}
+          title="No Trades Yet"
+          description="Find the perfect section swap — post your first trade."
+          action={
             <Button
               variant="contained"
               color="secondary"
@@ -655,8 +647,8 @@ export default function TradingPage() {
             >
               Post Trade
             </Button>
-          </CardContent>
-        </Card>
+          }
+        />
       ) : (
         <Stack spacing={2} sx={{ flex: 1, minHeight: 0 }}>
           <TextField
@@ -664,9 +656,25 @@ export default function TradingPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             size="small"
+            aria-label="Search trades"
             slotProps={{
               input: {
                 startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+                endAdornment: (
+                  <InputAdornment position="end">
+                    {search && (
+                      <Tooltip title="Clear search">
+                        <IconButton
+                          size="small"
+                          onClick={() => setSearch('')}
+                          aria-label="Clear search"
+                        >
+                          <Close fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </InputAdornment>
+                ),
               },
             }}
           />
@@ -676,17 +684,11 @@ export default function TradingPage() {
           </Typography>
 
           {filteredTrades.length === 0 ? (
-            <Card variant="outlined">
-              <CardContent sx={{ textAlign: 'center', py: 4 }}>
-                <SwapHoriz sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                <Typography variant="h6" gutterBottom>
-                  No Trades Found
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  Try adjusting your search or post a new trade.
-                </Typography>
-              </CardContent>
-            </Card>
+            <EmptyState
+              icon={<SwapHoriz />}
+              title="No Trades Found"
+              description="Try adjusting your search or post a new trade."
+            />
           ) : (
             <Virtuoso
               data={filteredTrades}
