@@ -1,111 +1,91 @@
-# 🎓 AuraIsHub
+# AuraIsHub
 
-**Your AI-powered course scheduler & section trading platform.**
+**Course scheduler + section trading platform. Built because registration is a mess.**
 
-Plan your perfect timetable in minutes. Browse courses, generate every conflict-free schedule, optimize with AI (runs in your browser — free & private), swap sections with other students, and rate professors. Built by students, for students — for this semester and every semester after.
+Pick your courses, generate every conflict-free timetable, have AI rank them by your preferences (runs in-browser, nothing leaves your machine), and trade sections with other students.
 
-> 🌐 [aurais.netlify.app](https://aurais.netlify.app/) · 🐙 [GitHub](https://github.com/moodynooby/Course-Market)
->
-## ✨ Features
+Website [aurais.netlify.app](https://aurais.netlify.app/)
 
-### 📚 Course Browser
+Github [GitHub](https://github.com/moodynooby/Course-Market)
 
-- Subject-based filtering and search functionality
-- Detailed section information with scheduling conflicts detection
-- Visual selection of preferred course sections
-- Responsive card-based layout
+## Features
 
-### ⚙️ Advanced Preferences
+### Course Browser, Preferences & AI Optimization
+- Search and filter by subject; pick sections visually with a card layout
+- Set time windows, gaps, morning vs afternoon, credit range, and day preferences
+- Block specific instructors
+- AI runs via WebLLM — fully in-browser, fully private — scores and ranks schedules against your preferences, with a regular algorithm as fallback
 
-- Personalized scheduling preferences (time windows, gaps between classes)
-- Instructor exclusion lists
-- Day preferences and consecutive day optimization
-- Credit range settings
-- Morning/afternoon time preferences
+### Schedule View
+- Calendar grid + list view
+- Live conflict warnings and scoring
+- Flip between multiple generated options
 
-### 🧠 AI-Powered Schedule Optimization
+### Trading Board
+- Post section swap requests, browse others'
+- Online (Netlify + PostgreSQL) or local-only mode
+- Open → pending → completed status tracking
 
-- Browser-based AI (WebLLM) integration
-- Deterministic fallback scheduling algorithm
-- Comprehensive schedule scoring based on user preferences
-- AI-powered analysis and recommendations
-- Alternative schedule suggestions
+### Rate My Professor
+- Leave ratings and reviews for instructors
+- See ratings while browsing sections so you know what you're signing up for
 
-### 📅 Interactive Schedule View
+## Architecture
 
-- Visual calendar grid with time-based layout
-- Comprehensive schedule list with section details
-- Conflict detection and warning system
-- Real-time score calculation
-- Multiple schedule alternatives
-
-### 🔄 Multi-User Trading Board
-
-- Real-time course/section trading platform
-- Both online (Netlify + Neon/PostgreSQL) and local storage modes
-- User profile creation and management
-- Trade posting with offers/requests
-- Status management (open, pending, completed)
-- Sample data generation for testing
-
-## 🏗️ Architecture
-
-### Frontend Structure
-
+### Frontend
 ```
 src/
-├── components/           # React components
-├── hooks/               # React custom hooks
-│   ├── useCourses.ts    # Course data management
-│   ├── usePreferences.ts # User preferences
-│   ├── useSelections.ts # Section selection
-│   └── useTrading.ts    # Trading functionality
-├── services/            # Business logic
-│   ├── llm.ts          # LLM integration
-│   └── tradesApi.ts    # Trading API
-├── types/              # TypeScript definitions
-├── utils/              # Utility functions
-│   └── schedule.ts     # Schedule optimization
-└── constants/          # Application constants
+├── components/
+├── hooks/
+│   ├── useCourses.ts
+│   ├── usePreferences.ts
+│   ├── useSelections.ts
+│   └── useTrading.ts
+├── services/
+│   ├── llm.ts
+│   └── tradesApi.ts
+├── types/
+├── utils/
+│   └── schedule.ts
+└── constants/
 ```
 
 ### Backend (Netlify Functions)
-
 ```
 netlify/functions/
-└── trades.ts          # Trading board API
+└── trades.ts
 ```
 
-## 🔧 Development
-
-### Available Scripts
+## Dev
 
 ```bash
-pnpm run dev          # Start development server (Vite + Netlify plugin)
-pnpm run build        # Build for production
-pnpm run preview      # Preview production build
-pnpm run test         # Run tests
-pnpm run fix          # Auto-fix linting/formatting
-pnpm run typecheck    # Check TypeScript types
-pnpm run ci           # Full CI check (lint + typecheck + test)
+pnpm run dev          # Vite + Netlify dev server
+pnpm run build        # Production build
+pnpm run preview      # Preview it
+pnpm run test         # Tests
+pnpm run fix          # Lint + format
+pnpm run typecheck    # TS check
+pnpm run ci           # The whole pipeline
 ```
 
-### Database Commands
-
+### Database
 ```bash
-pnpm run db:generate  # Generate migration from schema changes
-pnpm run db:migrate   # Apply migrations
-pnpm run db:studio    # Open Drizzle Studio (DB GUI)
+pnpm run db:generate  # Generate migration
+pnpm run db:migrate   # Apply it
+pnpm run db:studio    # Drizzle Studio GUI
 ```
 
 ## Seeding
 
-## Step 1: Convert CSVs to JSON
+### Step 1 — CSVs to JSON
+```bash
+python scripts/csv_to_semester_json.py \
+  --semester-id Monsoon2026 \
+  --semester-name "Monsoon Semester 2026"
+  # --force-refresh to overwrite
+```
 
-python scripts/csv_to_semester_json.py   --semester-id Monsoon2026 --semester-name "Monsoon Semester 2026"
-
-## --force-refresh for
-
-## Step 2: Seed the database
-
+### Step 2 — Seed
+```bash
 npx tsx scripts/seed-semester.ts Monsoon2026
+```
