@@ -226,7 +226,7 @@ export function computeScheduleFeaturesWithContext(
 ): ScheduleFeatures {
   const { sections, totalCredits } = schedule;
   const { avoidDaysSet, preferredStart, preferredEnd, creditTarget, preferences } = context;
-  const daysUsed = new Set<DayOfWeek>();
+  let daysMask = 0;
 
   let hasMorning = false;
   let hasAfternoon = false;
@@ -238,7 +238,7 @@ export function computeScheduleFeaturesWithContext(
 
   for (const section of sections) {
     for (const slot of section.timeSlots) {
-      daysUsed.add(slot.day);
+      daysMask |= 1 << DAY_TO_NUMBER[slot.day];
       if (avoidDaysSet.has(slot.day)) avoidDayHits++;
 
       const start = timeToMinutesCached(slot.startTime);
@@ -254,50 +254,71 @@ export function computeScheduleFeaturesWithContext(
     }
   }
 
+  let daysCount = 0;
+  let m = daysMask;
+  while (m > 0) {
+    if (m & 1) daysCount++;
+    m >>= 1;
+  }
+
   let prefMismatch = 0;
   if (preferences.preferMorning && !hasMorning) prefMismatch++;
   if (preferences.preferAfternoon && !hasAfternoon) prefMismatch++;
   if (preferences.preferEvening && !hasEvening) prefMismatch++;
 
   let dayGapCount = 0;
-  if (preferences.preferConsecutiveDays && daysUsed.size > 1) {
-    const sortedDays = Array.from(daysUsed).sort(
-      (a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b),
-    );
-    for (let i = 0; i < sortedDays.length - 1; i++) {
-      const curIdx = DAY_ORDER.indexOf(sortedDays[i]);
-      const nextIdx = DAY_ORDER.indexOf(sortedDays[i + 1]);
-      if (nextIdx - curIdx > 1) dayGapCount++;
+  if (preferences.preferConsecutiveDays && daysCount > 1) {
+    let lastDayIdx = -1;
+    for (let i = 0; i < 7; i++) {
+      if ((daysMask >> i) & 1) {
+        if (lastDayIdx !== -1 && i - lastDayIdx > 1) {
+          dayGapCount++;
+        }
+        lastDayIdx = i;
+      }
     }
   }
 
   let gapMinutesTotal = 0;
+  let hasLunchBreak: 0 | 1 = 0;
   if (allSlots.length > 1) {
     allSlots.sort((a, b) => {
-      if (a.day !== b.day) return DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day);
+      const da = DAY_TO_NUMBER[a.day];
+      const db = DAY_TO_NUMBER[b.day];
+      if (da !== db) return da - db;
       return a.start - b.start;
     });
-    const gapLimit = preferences.maxGapMinutes > 0 ? preferences.maxGapMinutes : 0;
-    for (let i = 0; i < allSlots.length - 1; i++) {
-      if (allSlots[i].day !== allSlots[i + 1].day) continue;
-      const gap = allSlots[i + 1].start - allSlots[i].end;
-      if (gap > gapLimit) gapMinutesTotal += gap - gapLimit;
-    }
-  }
 
-  let hasLunchBreak: 0 | 1 = 0;
-  const slotsByDay = new Map<DayOfWeek, { start: number; end: number }[]>();
-  for (const s of allSlots) {
-    const arr = slotsByDay.get(s.day);
-    if (arr) arr.push(s);
-    else slotsByDay.set(s.day, [s]);
-  }
-  for (const arr of slotsByDay.values()) {
-    const endsBeforeLunch = arr.some((s) => s.end <= MORNING_END);
-    const startsAfterLunch = arr.some((s) => s.start >= LUNCH_AFTER);
-    if (endsBeforeLunch && startsAfterLunch) {
+    const gapLimit = preferences.maxGapMinutes > 0 ? preferences.maxGapMinutes : 0;
+    let currentDay = allSlots[0].day;
+    let dayEndsBeforeLunch = false;
+    let dayStartsAfterLunch = false;
+
+    for (let i = 0; i < allSlots.length; i++) {
+      if (hasLunchBreak === 1 && preferences.maxGapMinutes <= 0) {
+        // We only need to continue if gap calculation is active
+        break;
+      }
+      const s = allSlots[i];
+
+      // Gap calculation
+      if (i < allSlots.length - 1 && s.day === allSlots[i + 1].day) {
+        const gap = allSlots[i + 1].start - s.end;
+        if (gap > gapLimit) gapMinutesTotal += gap - gapLimit;
+      }
+
+      // Lunch break detection
+      if (s.day !== currentDay) {
+        if (dayEndsBeforeLunch && dayStartsAfterLunch) hasLunchBreak = 1;
+        currentDay = s.day;
+        dayEndsBeforeLunch = false;
+        dayStartsAfterLunch = false;
+      }
+      if (s.end <= MORNING_END) dayEndsBeforeLunch = true;
+      if (s.start >= LUNCH_AFTER) dayStartsAfterLunch = true;
+    }
+    if (hasLunchBreak === 0 && dayEndsBeforeLunch && dayStartsAfterLunch) {
       hasLunchBreak = 1;
-      break;
     }
   }
 
@@ -308,7 +329,7 @@ export function computeScheduleFeaturesWithContext(
     outsideWindowMinutes,
     avoidDayHits,
     prefMismatch,
-    daysUsed: daysUsed.size,
+    daysUsed: daysCount,
     gapMinutesTotal,
     dayGapCount,
     hasLunchBreak,
