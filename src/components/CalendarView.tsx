@@ -4,10 +4,12 @@ import {
   Close,
   Fullscreen,
   FullscreenExit,
+  Share,
   ViewDay,
   ViewWeek,
 } from '@mui/icons-material';
 import {
+  Alert,
   AppBar,
   alpha,
   Box,
@@ -18,6 +20,7 @@ import {
   DialogContent,
   IconButton,
   Paper,
+  Snackbar,
   Stack,
   Toolbar,
   Tooltip,
@@ -25,8 +28,8 @@ import {
   useTheme,
 } from '@mui/material';
 import { addWeeks, format, getDay, parse, startOfWeek, subWeeks } from 'date-fns';
-
 import { enUS } from 'date-fns/locale/en-US';
+import html2canvas from 'html2canvas';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { View } from 'react-big-calendar';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
@@ -167,7 +170,14 @@ export default function CalendarView({
   const [view, setView] = useState<View>(Views.WEEK as View);
   const [date, setDate] = useState(new Date());
   const [fullscreen, setFullscreen] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  const [shareAlert, setShareAlert] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error';
+  }>({ open: false, message: '', severity: 'success' });
   const autoNavigated = useRef(false);
+  const calendarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (autoNavigated.current || sections.length === 0) return;
@@ -236,6 +246,79 @@ export default function CalendarView({
     }
   };
 
+  const handleShare = useCallback(async () => {
+    if (!calendarRef.current) return;
+
+    setCapturing(true);
+    try {
+      const canvas = await html2canvas(calendarRef.current, {
+        backgroundColor: theme.palette.mode === 'dark' ? '#1a1a2e' : '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          setShareAlert({
+            open: true,
+            message: 'Failed to generate image',
+            severity: 'error',
+          });
+          setCapturing(false);
+          return;
+        }
+
+        const file = new File([blob], 'schedule.png', { type: 'image/png' });
+
+        if (navigator.share && navigator.canShare?.({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: 'My Schedule',
+              text: 'Check out my course schedule!',
+            });
+            setShareAlert({
+              open: true,
+              message: 'Schedule shared successfully',
+              severity: 'success',
+            });
+          } catch (shareError) {
+            if ((shareError as Error).name !== 'AbortError') {
+              setShareAlert({
+                open: true,
+                message: 'Failed to share schedule',
+                severity: 'error',
+              });
+            }
+          }
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'schedule.png';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          setShareAlert({
+            open: true,
+            message: 'Schedule downloaded',
+            severity: 'success',
+          });
+        }
+        setCapturing(false);
+      }, 'image/png');
+    } catch {
+      setShareAlert({
+        open: true,
+        message: 'Failed to capture schedule',
+        severity: 'error',
+      });
+      setCapturing(false);
+    }
+  }, [theme.palette.mode]);
+
   const eventStyleGetter = useCallback(
     (_event: CalendarEvent) => {
       const isConflicted = conflicts.some((c) =>
@@ -256,7 +339,7 @@ export default function CalendarView({
           background: backgroundStyle,
           color: '#fff',
           border: 'none',
-          borderRadius: '8px',
+          borderRadius: '4px',
           fontSize: '0.75rem',
           fontWeight: 600,
           opacity: isConflicted ? 0.9 : 1,
@@ -275,6 +358,102 @@ export default function CalendarView({
     }),
     [],
   );
+
+  const commonCalendarStyles = useMemo(
+    () => ({
+      '& .rbc-calendar': {
+        fontFamily: theme.typography.fontFamily,
+      },
+      '& .rbc-header': {
+        py: 1.5,
+        fontWeight: 600,
+        fontSize: '0.85rem',
+        borderBottom: `1px solid ${theme.palette.divider}`,
+        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+      },
+      '& .rbc-time-slot': {
+        borderTop: `1px solid ${theme.palette.divider}`,
+      },
+      '& .rbc-timeslot-group': {
+        minHeight: 56,
+        borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+      },
+      '& .rbc-time-content': {
+        borderTop: `1px solid ${theme.palette.divider}`,
+      },
+      '& .rbc-time-header-content': {
+        borderLeft: `1px solid ${theme.palette.divider}`,
+      },
+      '& .rbc-time-gutter': {
+        bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
+      },
+      '& .rbc-label': {
+        fontSize: '0.75rem',
+        color: theme.palette.text.secondary,
+        fontWeight: 500,
+      },
+      '& .rbc-today': {
+        bgcolor: alpha(theme.palette.secondary.main, 0.08),
+      },
+      '& .rbc-toolbar': {
+        display: 'none',
+      },
+      '& .rbc-event': {
+        padding: '2px 4px',
+        border: 'none',
+      },
+      '& .rbc-event-content': {
+        color: 'inherit',
+      },
+      '& .rbc-current-time-indicator': {
+        bgcolor: theme.palette.error.main,
+        height: 2,
+        boxShadow: `0 0 6px ${alpha(theme.palette.error.main, 0.5)}`,
+      },
+      '& .rbc-current-time-indicator::before': {
+        content: '""',
+        position: 'absolute',
+        left: -4,
+        top: -4,
+        width: 10,
+        height: 10,
+        borderRadius: '50%',
+        bgcolor: theme.palette.error.main,
+        boxShadow: `0 0 8px ${alpha(theme.palette.error.main, 0.6)}`,
+      },
+      '& .rbc-allday-cell': {
+        display: 'none',
+      },
+      '& .rbc-time-header.rbc-overflowing': {
+        borderRight: `1px solid ${theme.palette.divider}`,
+      },
+      '& .rbc-day-bg + .rbc-day-bg': {
+        borderLeft: `1px solid ${theme.palette.divider}`,
+      },
+      '& .rbc-time-slot + .rbc-time-slot': {
+        borderTop:
+          theme.palette.mode === 'dark'
+            ? '1px solid rgba(255,255,255,0.05)'
+            : '1px solid rgba(0,0,0,0.05)',
+      },
+      '& .rbc-time-slot.rbc-now': {
+        fontWeight: 600,
+        color: theme.palette.secondary.main,
+      },
+    }),
+    [theme],
+  );
+
+  const dialogStyles = useMemo(
+    () => ({
+      '& .MuiDialog-paper': {
+        bgcolor: theme.palette.background.default,
+      },
+    }),
+    [theme.palette.background.default],
+  );
+
+  const watermarkText = 'Make your own at https://aurais.netlify.app/';
 
   if (sections.length === 0) {
     return (
@@ -382,86 +561,7 @@ export default function CalendarView({
 
         <Box
           sx={{
-            '& .rbc-calendar': {
-              fontFamily: theme.typography.fontFamily,
-            },
-            '& .rbc-header': {
-              py: 1.5,
-              fontWeight: 600,
-              fontSize: '0.8rem',
-              borderBottom: `1px solid ${theme.palette.divider}`,
-              bgcolor:
-                theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-            },
-            '& .rbc-time-slot': {
-              borderTop: `1px solid ${theme.palette.divider}`,
-            },
-            '& .rbc-timeslot-group': {
-              minHeight: 48,
-              borderColor:
-                theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-            },
-            '& .rbc-time-content': {
-              borderTop: `1px solid ${theme.palette.divider}`,
-            },
-            '& .rbc-time-header-content': {
-              borderLeft: `1px solid ${theme.palette.divider}`,
-            },
-            '& .rbc-time-gutter': {
-              bgcolor:
-                theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
-            },
-            '& .rbc-label': {
-              fontSize: '0.7rem',
-              color: theme.palette.text.secondary,
-              fontWeight: 500,
-            },
-            '& .rbc-today': {
-              bgcolor: alpha(theme.palette.secondary.main, 0.08),
-            },
-            '& .rbc-toolbar': {
-              display: 'none',
-            },
-            '& .rbc-event': {
-              padding: '2px 4px',
-              border: 'none',
-            },
-            '& .rbc-event-content': {
-              color: 'inherit',
-            },
-            '& .rbc-current-time-indicator': {
-              bgcolor: theme.palette.error.main,
-              height: 2,
-            },
-            '& .rbc-current-time-indicator::before': {
-              content: '""',
-              position: 'absolute',
-              left: -4,
-              top: -4,
-              width: 10,
-              height: 10,
-              borderRadius: '50%',
-              bgcolor: theme.palette.error.main,
-            },
-            '& .rbc-allday-cell': {
-              display: 'none',
-            },
-            '& .rbc-time-header.rbc-overflowing': {
-              borderRight: `1px solid ${theme.palette.divider}`,
-            },
-            '& .rbc-day-bg + .rbc-day-bg': {
-              borderLeft: `1px solid ${theme.palette.divider}`,
-            },
-            '& .rbc-time-slot + .rbc-time-slot': {
-              borderTop:
-                theme.palette.mode === 'dark'
-                  ? '1px solid rgba(255,255,255,0.05)'
-                  : '1px solid rgba(0,0,0,0.05)',
-            },
-            '& .rbc-time-slot.rbc-now': {
-              fontWeight: 600,
-              color: theme.palette.secondary.main,
-            },
+            ...commonCalendarStyles,
             height: { xs: 400, sm: 500, md: 600, lg: 650 },
             minHeight: 400,
           }}
@@ -524,19 +624,13 @@ export default function CalendarView({
           </Stack>
         </Box>
       )}
-      <Dialog
-        fullScreen
-        open={fullscreen}
-        onClose={() => setFullscreen(false)}
-        sx={{
-          '& .MuiDialog-paper': {
-            bgcolor: theme.palette.mode === 'dark' ? '#1a1a2e' : '#ffffff',
-          },
-        }}
-      >
+      <Dialog fullScreen open={fullscreen} onClose={() => setFullscreen(false)} sx={dialogStyles}>
         <AppBar
           position="sticky"
-          sx={{ bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}
+          sx={{
+            bgcolor: 'background.paper',
+            borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+          }}
         >
           <Toolbar>
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flex: 1 }}>
@@ -549,11 +643,31 @@ export default function CalendarView({
               <IconButton onClick={goToNext} size="small">
                 <ChevronRight />
               </IconButton>
-              <Typography variant="h6" sx={{ fontWeight: 600, ml: 2 }}>
-                {format(date, view === Views.WEEK ? 'MMMM yyyy' : 'MMMM d, yyyy')}
-              </Typography>
+              <Box
+                sx={{
+                  ml: 2,
+                  px: 2,
+                  py: 0.5,
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                  borderRadius: 1,
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    letterSpacing: '0.5px',
+                    color: theme.palette.primary.main,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  My Schedule
+                </Typography>
+              </Box>
             </Stack>
-            <ButtonGroup variant="outlined" size="small" sx={{ mr: 2 }}>
+            <ButtonGroup variant="outlined" size="small" sx={{ mr: 1 }}>
               <Button
                 startIcon={<ViewWeek />}
                 onClick={() => handleViewChange(Views.WEEK)}
@@ -569,6 +683,36 @@ export default function CalendarView({
                 Day
               </Button>
             </ButtonGroup>
+            <Tooltip title="Export & Share">
+              <span>
+                <IconButton
+                  color="inherit"
+                  onClick={handleShare}
+                  disabled={capturing}
+                  sx={{ mr: 1 }}
+                >
+                  {capturing ? (
+                    <Box
+                      sx={{
+                        width: 20,
+                        height: 20,
+                        border: '2px solid',
+                        borderColor: 'currentColor',
+                        borderTopColor: 'transparent',
+                        borderRadius: '50%',
+                        animation: 'spin 0.8s linear infinite',
+                        '@keyframes spin': {
+                          '0%': { transform: 'rotate(0deg)' },
+                          '100%': { transform: 'rotate(360deg)' },
+                        },
+                      }}
+                    />
+                  ) : (
+                    <Share />
+                  )}
+                </IconButton>
+              </span>
+            </Tooltip>
             <IconButton
               edge="end"
               color="inherit"
@@ -579,90 +723,17 @@ export default function CalendarView({
             </IconButton>
           </Toolbar>
         </AppBar>
-        <DialogContent sx={{ p: 0, height: 'calc(100vh - 64px)' }}>
+        <DialogContent sx={{ p: 3, height: 'calc(100vh - 64px)' }}>
           <Box
+            ref={calendarRef}
             sx={{
               height: '100%',
-              '& .rbc-calendar': {
-                fontFamily: theme.typography.fontFamily,
-              },
-              '& .rbc-header': {
-                py: 1.5,
-                fontWeight: 600,
-                fontSize: '0.8rem',
-                borderBottom: `1px solid ${theme.palette.divider}`,
-                bgcolor:
-                  theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
-              },
-              '& .rbc-time-slot': {
-                borderTop: `1px solid ${theme.palette.divider}`,
-              },
-              '& .rbc-timeslot-group': {
-                minHeight: 48,
-                borderColor:
-                  theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
-              },
-              '& .rbc-time-content': {
-                borderTop: `1px solid ${theme.palette.divider}`,
-              },
-              '& .rbc-time-header-content': {
-                borderLeft: `1px solid ${theme.palette.divider}`,
-              },
-              '& .rbc-time-gutter': {
-                bgcolor:
-                  theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
-              },
-              '& .rbc-label': {
-                fontSize: '0.7rem',
-                color: theme.palette.text.secondary,
-                fontWeight: 500,
-              },
-              '& .rbc-today': {
-                bgcolor: alpha(theme.palette.secondary.main, 0.08),
-              },
-              '& .rbc-toolbar': {
-                display: 'none',
-              },
-              '& .rbc-event': {
-                padding: '2px 4px',
-                border: 'none',
-              },
-              '& .rbc-event-content': {
-                color: 'inherit',
-              },
-              '& .rbc-current-time-indicator': {
-                bgcolor: theme.palette.error.main,
-                height: 2,
-              },
-              '& .rbc-current-time-indicator::before': {
-                content: '""',
-                position: 'absolute',
-                left: -4,
-                top: -4,
-                width: 10,
-                height: 10,
-                borderRadius: '50%',
-                bgcolor: theme.palette.error.main,
-              },
-              '& .rbc-allday-cell': {
-                display: 'none',
-              },
-              '& .rbc-time-header.rbc-overflowing': {
-                borderRight: `1px solid ${theme.palette.divider}`,
-              },
-              '& .rbc-day-bg + .rbc-day-bg': {
-                borderLeft: `1px solid ${theme.palette.divider}`,
-              },
-              '& .rbc-time-slot + .rbc-time-slot': {
-                borderTop:
-                  theme.palette.mode === 'dark'
-                    ? '1px solid rgba(255,255,255,0.05)'
-                    : '1px solid rgba(0,0,0,0.05)',
-              },
-              '& .rbc-time-slot.rbc-now': {
-                fontWeight: 600,
-                color: theme.palette.secondary.main,
-              },
+              position: 'relative',
+              overflow: 'hidden',
+              borderRadius: 3,
+              border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
+              bgcolor: theme.palette.background.default,
+              ...commonCalendarStyles,
             }}
           >
             <Calendar
@@ -688,9 +759,86 @@ export default function CalendarView({
               selectable={false}
               showMultiDayTimes={false}
             />
+            <Typography
+              sx={{
+                position: 'absolute',
+                bottom: { xs: 60, md: 80 },
+                right: { xs: 20, md: 40 },
+                fontSize: { xs: '0.65rem', sm: '0.75rem', md: '0.85rem' },
+                fontWeight: 600,
+                color: '#ffffff',
+                mixBlendMode: 'difference',
+                opacity: 0.5,
+                transform: 'rotate(-10deg)',
+                transformOrigin: 'bottom right',
+                pointerEvents: 'none',
+                userSelect: 'none',
+                whiteSpace: 'nowrap',
+                letterSpacing: '0.5px',
+                zIndex: 1000,
+              }}
+            >
+              {watermarkText}
+            </Typography>
+            <Typography
+              sx={{
+                position: 'absolute',
+                top: { xs: 100, md: 140 },
+                left: { xs: 16, md: 32 },
+                fontSize: { xs: '0.6rem', sm: '0.7rem', md: '0.8rem' },
+                fontWeight: 600,
+                color: '#ffffff',
+                mixBlendMode: 'difference',
+                opacity: 0.4,
+                transform: 'rotate(-20deg)',
+                transformOrigin: 'top left',
+                pointerEvents: 'none',
+                userSelect: 'none',
+                whiteSpace: 'nowrap',
+                letterSpacing: '0.5px',
+                zIndex: 1000,
+              }}
+            >
+              {watermarkText}
+            </Typography>
+            <Typography
+              sx={{
+                position: 'absolute',
+                top: '45%',
+                left: '50%',
+                transform: 'translate(-50%, -50%) rotate(-20deg)',
+                fontSize: { xs: '0.7rem', sm: '0.85rem', md: '1rem' },
+                fontWeight: 700,
+                color: '#ffffff',
+                mixBlendMode: 'difference',
+                opacity: 0.3,
+                pointerEvents: 'none',
+                userSelect: 'none',
+                whiteSpace: 'nowrap',
+                letterSpacing: '1px',
+                zIndex: 1000,
+              }}
+            >
+              {watermarkText}
+            </Typography>
           </Box>
         </DialogContent>
       </Dialog>
+      <Snackbar
+        open={shareAlert.open}
+        autoHideDuration={4000}
+        onClose={() => setShareAlert((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={shareAlert.severity}
+          onClose={() => setShareAlert((prev) => ({ ...prev, open: false }))}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {shareAlert.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

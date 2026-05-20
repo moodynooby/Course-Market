@@ -34,6 +34,7 @@
     "ai": "^6.0.184",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.2",
+    "html2canvas": "^1.4.1",
     "idb": "^8.0.3",
     "jose": "^6.2.3",
     "minisearch": "^7.2.0",
