@@ -2,7 +2,8 @@ import type { Course, DayOfWeek, Preferences, Schedule, Section } from '../types
 import { cosineSimilarity, getScheduleFeatureVector } from './embeddings';
 import {
   checkConflicts,
-  computeScheduleFeatures,
+  computeScheduleFeaturesWithContext,
+  createScoringContext,
   DAY_ORDER,
   hasSectionConflict,
   type ScheduleFeatures,
@@ -11,68 +12,91 @@ import {
 } from './schedule';
 import type { GeneratedSchedule, GeneratorOptions } from './schedule-types';
 
-function* generateValidCombinations(
+interface GenerationContext {
+  courseCreditsMap: Map<string, number>;
+  minCredits: number;
+  maxCredits: number;
+  maxSchedules: number;
+  onProgress?: (progress: number) => void;
+  signal?: AbortSignal;
+  suffixMax: number[];
+  scoringContext: ReturnType<typeof createScoringContext>;
+}
+
+function backtrackSchedules(
   arrays: Section[][],
-  courseCreditsMap: Map<string, number>,
-  minCredits: number,
-  maxCredits: number,
-  depthIndex: number = 0,
-  current: Section[] = [],
-  currentCredits: number = 0,
-  suffixMax: number[] = [],
-): Generator<Section[]> {
-  if (arrays.length === 0) {
-    if (currentCredits >= minCredits && currentCredits <= maxCredits) {
-      yield current;
+  depth: number,
+  current: Section[],
+  currentCredits: number,
+  genContext: GenerationContext,
+  results: PendingSchedule[],
+) {
+  if (results.length >= genContext.maxSchedules || genContext.signal?.aborted) {
+    return;
+  }
+
+  if (depth === arrays.length) {
+    if (currentCredits >= genContext.minCredits && currentCredits <= genContext.maxCredits) {
+      const combination = [...current];
+      const schedule: Schedule = {
+        id: `gen-${results.length}`,
+        name: `Generated Schedule ${results.length + 1}`,
+        sections: combination,
+        totalCredits: currentCredits,
+        score: 0,
+        conflicts: [],
+      };
+
+      results.push({
+        id: schedule.id,
+        sections: combination,
+        totalCredits: currentCredits,
+        conflicts: checkConflicts(combination),
+        features: computeScheduleFeaturesWithContext(schedule, genContext.scoringContext),
+      });
+
+      if (genContext.onProgress && results.length % 100 === 0) {
+        genContext.onProgress(results.length);
+      }
     }
     return;
   }
 
-  if (suffixMax.length === 0) {
-    suffixMax = arrays.map((_arr, i) => {
-      let max = 0;
-      for (let j = i; j < arrays.length; j++) {
-        let maxInArr = 0;
-        for (const s of arrays[j]) {
-          maxInArr = Math.max(maxInArr, courseCreditsMap.get(s.courseId) ?? 3);
-        }
-        max += maxInArr;
-      }
-      return max;
-    });
-  }
+  const sections = arrays[depth];
+  const remainingSuffix =
+    depth + 1 < genContext.suffixMax.length ? genContext.suffixMax[depth + 1] : 0;
 
-  const [first, ...rest] = arrays;
-  for (const sec of first) {
-    const secCredits = courseCreditsMap.get(sec.courseId) ?? 3;
+  for (let i = 0; i < sections.length; i++) {
+    const sec = sections[i];
+    const secCredits = genContext.courseCreditsMap.get(sec.courseId) ?? 3;
     const newCredits = currentCredits + secCredits;
 
-    if (newCredits > maxCredits) continue;
-
-    const remainingSuffix = depthIndex + 1 < suffixMax.length ? suffixMax[depthIndex + 1] : 0;
-    if (newCredits + remainingSuffix < minCredits) continue;
+    if (newCredits > genContext.maxCredits) continue;
+    if (newCredits + remainingSuffix < genContext.minCredits) continue;
 
     let hasConflict = false;
-    for (const selected of current) {
-      if (hasSectionConflict(sec, selected)) {
+    for (let j = 0; j < current.length; j++) {
+      if (hasSectionConflict(sec, current[j])) {
         hasConflict = true;
         break;
       }
     }
 
     if (!hasConflict) {
-      yield* generateValidCombinations(
-        rest,
-        courseCreditsMap,
-        minCredits,
-        maxCredits,
-        depthIndex + 1,
-        [...current, sec],
-        newCredits,
-        suffixMax,
-      );
+      current.push(sec);
+      backtrackSchedules(arrays, depth + 1, current, newCredits, genContext, results);
+      current.pop();
+      if (results.length >= genContext.maxSchedules || genContext.signal?.aborted) return;
     }
   }
+}
+
+interface PendingSchedule {
+  id: string;
+  sections: Section[];
+  totalCredits: number;
+  conflicts: string[];
+  features: ScheduleFeatures;
 }
 
 export function scheduleFootprint(sections: Section[]): string {
@@ -269,64 +293,35 @@ export function generateSchedules(
   const { maxSchedules = 1000, onProgress, signal } = options;
 
   const courseCreditsMap = new Map(courses.map((c) => [c.id, c.credits]));
-
   const minCredits = preferences.minCredits ?? 12;
   const maxCredits = preferences.maxCredits ?? 18;
-
   const sectionArrays = Array.from(sectionsByCourse.values());
 
-  interface Pending {
-    id: string;
-    sections: Section[];
-    totalCredits: number;
-    conflicts: string[];
-    features: ScheduleFeatures;
+  // Pre-calculate suffixMax for credit limit pruning
+  const suffixMax = new Array(sectionArrays.length).fill(0);
+  let currentMaxSum = 0;
+  for (let i = sectionArrays.length - 1; i >= 0; i--) {
+    let maxInArr = 0;
+    for (const s of sectionArrays[i]) {
+      maxInArr = Math.max(maxInArr, courseCreditsMap.get(s.courseId) ?? 3);
+    }
+    currentMaxSum += maxInArr;
+    suffixMax[i] = currentMaxSum;
   }
-  const pending: Pending[] = [];
-  let count = 0;
-  let iterations = 0;
 
-  for (const combination of generateValidCombinations(
-    sectionArrays,
+  const genContext: GenerationContext = {
     courseCreditsMap,
     minCredits,
     maxCredits,
-  )) {
-    iterations++;
-    if (signal?.aborted) break;
-    if (onProgress && iterations % 100 === 0) {
-      onProgress(iterations);
-    }
+    maxSchedules,
+    onProgress,
+    signal,
+    suffixMax,
+    scoringContext: createScoringContext(preferences),
+  };
 
-    if (pending.length >= maxSchedules) break;
-
-    const totalCredits = combination.reduce(
-      (sum, s) => sum + (courseCreditsMap.get(s.courseId) ?? 3),
-      0,
-    );
-
-    const schedule: Schedule = {
-      id: `gen-${count}`,
-      name: `Generated Schedule ${count + 1}`,
-      sections: combination,
-      totalCredits,
-      score: 0,
-      conflicts: [],
-    };
-
-    const features = computeScheduleFeatures(schedule, preferences);
-    const conflicts = checkConflicts(combination);
-
-    pending.push({
-      id: schedule.id,
-      sections: combination,
-      totalCredits,
-      conflicts,
-      features,
-    });
-
-    count++;
-  }
+  const pending: PendingSchedule[] = [];
+  backtrackSchedules(sectionArrays, 0, [], 0, genContext, pending);
 
   const scores = scoreSchedulesRelative(
     pending.map((p) => p.features),
