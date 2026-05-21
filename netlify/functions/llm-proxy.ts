@@ -124,7 +124,7 @@ export const handler = async (event: any) => {
     return jsonResponse(500, {
       error: 'LLM request failed',
       code: 'LLM_ERROR',
-      message: result.error || 'Failed to generate response',
+      message: 'Failed to generate response',
     });
   } catch (error: any) {
     console.error('LLM Proxy Error:', error);
@@ -133,7 +133,10 @@ export const handler = async (event: any) => {
       return jsonResponse(401, { error: 'Unauthorized', code: 'AUTH_ERROR' });
     }
 
-    return jsonResponse(error.status || 500, { error: error.message || 'Internal Server Error' });
+    return jsonResponse(error.status || 500, {
+      error: 'Internal Server Error',
+      message: 'An unexpected error occurred',
+    });
   }
 };
 

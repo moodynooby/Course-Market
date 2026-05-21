@@ -162,7 +162,7 @@ export const handler = async (event: any) => {
 
     return jsonResponse(500, {
       error: 'Internal server error',
-      message: (error as Error).message,
+      message: 'An unexpected error occurred',
     });
   }
 };

@@ -82,6 +82,17 @@ describe('tradeSchema', () => {
       }),
     ).toThrow();
   });
+
+  it('rejects trade with too long description', () => {
+    expect(() =>
+      tradeSchema.parse({
+        courseCode: 'CS101',
+        sectionOffered: '001',
+        sectionWanted: '002',
+        description: 'A'.repeat(2001),
+      }),
+    ).toThrow();
+  });
 });
 
 describe('tradeUpdateSchema', () => {
