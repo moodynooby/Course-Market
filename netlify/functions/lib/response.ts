@@ -26,3 +26,18 @@ export function jsonResponse(
 export function corsResponse() {
   return { statusCode: 200, headers: corsHeaders, body: '' };
 }
+
+export function secureErrorResponse(statusCode: number, message: string, error?: unknown) {
+  // Always log the actual error for internal tracking
+  if (error) {
+    console.error(`[Status ${statusCode}] Internal error:`, error);
+  }
+
+  // If it's a 500 error, mask the message to prevent information disclosure
+  const safeMessage = statusCode >= 500 ? 'Internal Server Error' : message;
+
+  return jsonResponse(statusCode, {
+    error: statusCode >= 500 ? 'Internal Server Error' : 'Request failed',
+    message: safeMessage,
+  });
+}

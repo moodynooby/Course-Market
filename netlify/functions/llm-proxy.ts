@@ -3,7 +3,7 @@ import { generateText } from 'ai';
 import { ZodError } from 'zod';
 import { formatZodError, llmRequestSchema } from '../../db/validation';
 import { validateToken } from './lib/auth';
-import { corsResponse, jsonResponse } from './lib/response';
+import { corsResponse, jsonResponse, secureErrorResponse } from './lib/response';
 import { getUserKey, saveUserKey } from './lib/userKeys';
 
 export const handler = async (event: any) => {
@@ -127,13 +127,11 @@ export const handler = async (event: any) => {
       message: result.error || 'Failed to generate response',
     });
   } catch (error: any) {
-    console.error('LLM Proxy Error:', error);
-
     if (error instanceof Error && error.message.includes('authorization')) {
       return jsonResponse(401, { error: 'Unauthorized', code: 'AUTH_ERROR' });
     }
 
-    return jsonResponse(error.status || 500, { error: error.message || 'Internal Server Error' });
+    return secureErrorResponse(error.status || 500, error.message || 'Internal Server Error', error);
   }
 };
 

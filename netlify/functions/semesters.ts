@@ -1,7 +1,7 @@
 import { desc } from 'drizzle-orm';
 import { db } from '../../db';
 import * as schema from '../../db/schema';
-import { cacheHeaders, corsResponse, jsonResponse } from './lib/response';
+import { cacheHeaders, corsResponse, jsonResponse, secureErrorResponse } from './lib/response';
 
 export const handler = async (event: any) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -22,11 +22,6 @@ export const handler = async (event: any) => {
 
     return jsonResponse(404, { error: 'Endpoint not found' });
   } catch (error) {
-    console.error('Handler error:', error);
-
-    return jsonResponse(500, {
-      error: 'Internal server error',
-      message: (error as Error).message,
-    });
+    return secureErrorResponse(500, (error as Error).message, error);
   }
 };
