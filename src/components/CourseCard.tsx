@@ -114,6 +114,7 @@ export const CourseCard = memo(
                   <Card
                     key={section.id}
                     variant="outlined"
+                    onClick={() => onSelectSection(section.id)}
                     sx={{
                       cursor: 'pointer',
                       transition:
@@ -145,6 +146,7 @@ export const CourseCard = memo(
                         <Box sx={{ flex: 1 }}>
                           <FormControlLabel
                             value={section.id}
+                            onClick={(e) => e.stopPropagation()}
                             control={
                               <Radio
                                 checked={isSelected}
