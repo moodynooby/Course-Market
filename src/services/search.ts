@@ -138,12 +138,16 @@ export const searchTradeIndex = (query: string): TradePost[] => {
 };
 
 /**
- * Search courses by query
+ * Search courses by query, returning Course objects in relevance order.
+ * Optimization: Returns Course objects directly using O(1) map lookup to avoid
+ * O(N) filtering in the component and preserve MiniSearch relevance ranking.
  */
-export const searchCourses = (query: string): string[] => {
+export const searchCourses = (query: string): Course[] => {
   if (!courseIndex || !query.trim()) return [];
   const results = courseIndex.search(query) as unknown as MiniSearchResult[];
-  return results.map((r) => r.id as string);
+  return results
+    .map((r) => courseMap.get(r.id.toString()))
+    .filter((c): c is Course => !!c);
 };
 
 /**

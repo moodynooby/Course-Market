@@ -261,20 +261,20 @@ export function computeScheduleFeaturesWithContext(
 
   let dayGapCount = 0;
   if (preferences.preferConsecutiveDays && daysUsed.size > 1) {
-    const sortedDays = Array.from(daysUsed).sort(
-      (a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b),
-    );
+    // Optimization: O(1) day-to-index lookup instead of O(7) array search
+    const sortedDays = Array.from(daysUsed).sort((a, b) => DAY_TO_NUMBER[a] - DAY_TO_NUMBER[b]);
     for (let i = 0; i < sortedDays.length - 1; i++) {
-      const curIdx = DAY_ORDER.indexOf(sortedDays[i]);
-      const nextIdx = DAY_ORDER.indexOf(sortedDays[i + 1]);
+      const curIdx = DAY_TO_NUMBER[sortedDays[i]];
+      const nextIdx = DAY_TO_NUMBER[sortedDays[i + 1]];
       if (nextIdx - curIdx > 1) dayGapCount++;
     }
   }
 
   let gapMinutesTotal = 0;
   if (allSlots.length > 1) {
+    // Optimization: O(1) day-to-index lookup during sort comparison
     allSlots.sort((a, b) => {
-      if (a.day !== b.day) return DAY_ORDER.indexOf(a.day) - DAY_ORDER.indexOf(b.day);
+      if (a.day !== b.day) return DAY_TO_NUMBER[a.day] - DAY_TO_NUMBER[b.day];
       return a.start - b.start;
     });
     const gapLimit = preferences.maxGapMinutes > 0 ? preferences.maxGapMinutes : 0;
