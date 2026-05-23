@@ -26,3 +26,11 @@ export function jsonResponse(
 export function corsResponse() {
   return { statusCode: 200, headers: corsHeaders, body: '' };
 }
+
+export function secureErrorResponse(error: unknown) {
+  console.error('Unhandled error:', error);
+  return jsonResponse(500, {
+    error: 'Internal Server Error',
+    message: 'An unexpected error occurred. Please try again later.',
+  });
+}

@@ -4,7 +4,7 @@ import { db } from '../../db';
 import * as schema from '../../db/schema';
 import { formatZodError, tradeSchema, tradeUpdateSchema } from '../../db/validation';
 import { validateToken } from './lib/auth';
-import { corsResponse, jsonResponse } from './lib/response';
+import { corsResponse, jsonResponse, secureErrorResponse } from './lib/response';
 
 export const handler = async (event: any) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -152,8 +152,6 @@ export const handler = async (event: any) => {
 
     return jsonResponse(404, { error: 'Endpoint not found' });
   } catch (error) {
-    console.error('Handler error:', error);
-
     if (error instanceof Error && error.message.includes('authorization')) {
       return jsonResponse(401, {
         error: 'Unauthorized',
@@ -161,9 +159,6 @@ export const handler = async (event: any) => {
       });
     }
 
-    return jsonResponse(500, {
-      error: 'Internal server error',
-      message: (error as Error).message,
-    });
+    return secureErrorResponse(error);
   }
 };

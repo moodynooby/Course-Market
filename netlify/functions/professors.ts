@@ -5,7 +5,7 @@ import * as schema from '../../db/schema';
 import { formatZodError, professorRatingSchema } from '../../db/validation';
 import { splitInstructorNames } from '../../src/utils/instructor-name';
 import { validateToken } from './lib/auth';
-import { corsResponse, jsonResponse } from './lib/response';
+import { corsResponse, jsonResponse, secureErrorResponse } from './lib/response';
 
 const professorWithStats = {
   id: schema.professors.id,
@@ -151,8 +151,6 @@ export const handler = async (event: any) => {
 
     return jsonResponse(404, { error: 'Endpoint not found' });
   } catch (error) {
-    console.error('Handler error:', error);
-
     if (error instanceof Error && error.message.includes('authorization')) {
       return jsonResponse(401, {
         error: 'Unauthorized',
@@ -160,9 +158,6 @@ export const handler = async (event: any) => {
       });
     }
 
-    return jsonResponse(500, {
-      error: 'Internal server error',
-      message: (error as Error).message,
-    });
+    return secureErrorResponse(error);
   }
 };

@@ -30,6 +30,7 @@ export async function validateToken(authHeader: string | undefined): Promise<Aut
     const { payload } = await jwtVerify(token, JWKS!, {
       issuer,
       audience,
+      algorithms: ['RS256'],
     });
 
     return {
