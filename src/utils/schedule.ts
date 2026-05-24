@@ -226,8 +226,9 @@ export function computeScheduleFeaturesWithContext(
 ): ScheduleFeatures {
   const { sections, totalCredits } = schedule;
   const { avoidDaysSet, preferredStart, preferredEnd, creditTarget, preferences } = context;
-  const daysUsed = new Set<DayOfWeek>();
 
+  let daysUsedMask = 0;
+  let daysUsedCount = 0;
   let hasMorning = false;
   let hasAfternoon = false;
   let hasEvening = false;
@@ -238,7 +239,12 @@ export function computeScheduleFeaturesWithContext(
 
   for (const section of sections) {
     for (const slot of section.timeSlots) {
-      daysUsed.add(slot.day);
+      const dayNum = DAY_TO_NUMBER[slot.day];
+      if (!(daysUsedMask & (1 << dayNum))) {
+        daysUsedMask |= 1 << dayNum;
+        daysUsedCount++;
+      }
+
       if (avoidDaysSet.has(slot.day)) avoidDayHits++;
 
       const start = timeToMinutesCached(slot.startTime);
@@ -261,7 +267,6 @@ export function computeScheduleFeaturesWithContext(
 
   let dayGapCount = 0;
   if (preferences.preferConsecutiveDays && daysUsed.size > 1) {
-    // Optimization: O(1) day-to-index lookup instead of O(7) array search
     const sortedDays = Array.from(daysUsed).sort((a, b) => DAY_TO_NUMBER[a] - DAY_TO_NUMBER[b]);
     for (let i = 0; i < sortedDays.length - 1; i++) {
       const curIdx = DAY_TO_NUMBER[sortedDays[i]];
@@ -271,33 +276,45 @@ export function computeScheduleFeaturesWithContext(
   }
 
   let gapMinutesTotal = 0;
+  let hasLunchBreak: 0 | 1 = 0;
+
   if (allSlots.length > 1) {
-    // Optimization: O(1) day-to-index lookup during sort comparison
     allSlots.sort((a, b) => {
       if (a.day !== b.day) return DAY_TO_NUMBER[a.day] - DAY_TO_NUMBER[b.day];
       return a.start - b.start;
     });
-    const gapLimit = preferences.maxGapMinutes > 0 ? preferences.maxGapMinutes : 0;
-    for (let i = 0; i < allSlots.length - 1; i++) {
-      if (allSlots[i].day !== allSlots[i + 1].day) continue;
-      const gap = allSlots[i + 1].start - allSlots[i].end;
-      if (gap > gapLimit) gapMinutesTotal += gap - gapLimit;
-    }
-  }
 
-  let hasLunchBreak: 0 | 1 = 0;
-  const slotsByDay = new Map<DayOfWeek, { start: number; end: number }[]>();
-  for (const s of allSlots) {
-    const arr = slotsByDay.get(s.day);
-    if (arr) arr.push(s);
-    else slotsByDay.set(s.day, [s]);
-  }
-  for (const arr of slotsByDay.values()) {
-    const endsBeforeLunch = arr.some((s) => s.end <= MORNING_END);
-    const startsAfterLunch = arr.some((s) => s.start >= LUNCH_AFTER);
-    if (endsBeforeLunch && startsAfterLunch) {
+    const gapLimit = preferences.maxGapMinutes > 0 ? preferences.maxGapMinutes : 0;
+    let currentDayEndsBeforeLunch = false;
+    let currentDayStartsAfterLunch = false;
+    let currentDay = allSlots[0].day;
+
+    for (let i = 0; i < allSlots.length; i++) {
+      const s = allSlots[i];
+
+      // Day transition: check for lunch break in the previous day
+      if (s.day !== currentDay) {
+        if (hasLunchBreak === 0 && currentDayEndsBeforeLunch && currentDayStartsAfterLunch) {
+          hasLunchBreak = 1;
+        }
+        currentDay = s.day;
+        currentDayEndsBeforeLunch = false;
+        currentDayStartsAfterLunch = false;
+      }
+
+      if (s.end <= MORNING_END) currentDayEndsBeforeLunch = true;
+      if (s.start >= LUNCH_AFTER) currentDayStartsAfterLunch = true;
+
+      // Gap calculation
+      if (i < allSlots.length - 1 && allSlots[i + 1].day === s.day) {
+        const gap = allSlots[i + 1].start - s.end;
+        if (gap > gapLimit) gapMinutesTotal += gap - gapLimit;
+      }
+    }
+
+    // Final check for the last day
+    if (hasLunchBreak === 0 && currentDayEndsBeforeLunch && currentDayStartsAfterLunch) {
       hasLunchBreak = 1;
-      break;
     }
   }
 
@@ -308,7 +325,7 @@ export function computeScheduleFeaturesWithContext(
     outsideWindowMinutes,
     avoidDayHits,
     prefMismatch,
-    daysUsed: daysUsed.size,
+    daysUsed: daysUsedCount,
     gapMinutesTotal,
     dayGapCount,
     hasLunchBreak,

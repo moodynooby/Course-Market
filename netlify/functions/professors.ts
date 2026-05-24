@@ -56,7 +56,18 @@ export const handler = async (event: any) => {
         }
 
         const ratings = await db
-          .select()
+          .select({
+            // Explicitly select fields to prevent PII leakage (e.g. auth0UserId)
+            id: schema.professorRatings.id,
+            professorId: schema.professorRatings.professorId,
+            rating: schema.professorRatings.rating,
+            difficulty: schema.professorRatings.difficulty,
+            comment: schema.professorRatings.comment,
+            courseCode: schema.professorRatings.courseCode,
+            semesterId: schema.professorRatings.semesterId,
+            takeAgain: schema.professorRatings.takeAgain,
+            createdAt: schema.professorRatings.createdAt,
+          })
           .from(schema.professorRatings)
           .where(eq(schema.professorRatings.professorId, id))
           .orderBy(desc(schema.professorRatings.createdAt));
