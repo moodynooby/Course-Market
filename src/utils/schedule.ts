@@ -266,15 +266,12 @@ export function computeScheduleFeaturesWithContext(
   if (preferences.preferEvening && !hasEvening) prefMismatch++;
 
   let dayGapCount = 0;
-  if (preferences.preferConsecutiveDays && daysUsedCount > 1) {
-    let lastDayIdx = -1;
-    for (let i = 0; i < 7; i++) {
-      if (daysUsedMask & (1 << i)) {
-        if (lastDayIdx !== -1 && i - lastDayIdx > 1) {
-          dayGapCount++;
-        }
-        lastDayIdx = i;
-      }
+  if (preferences.preferConsecutiveDays && daysUsed.size > 1) {
+    const sortedDays = Array.from(daysUsed).sort((a, b) => DAY_TO_NUMBER[a] - DAY_TO_NUMBER[b]);
+    for (let i = 0; i < sortedDays.length - 1; i++) {
+      const curIdx = DAY_TO_NUMBER[sortedDays[i]];
+      const nextIdx = DAY_TO_NUMBER[sortedDays[i + 1]];
+      if (nextIdx - curIdx > 1) dayGapCount++;
     }
   }
 
@@ -282,10 +279,9 @@ export function computeScheduleFeaturesWithContext(
   let hasLunchBreak: 0 | 1 = 0;
 
   if (allSlots.length > 1) {
-    // Sort by day order then start time
     allSlots.sort((a, b) => {
-      const dayDiff = DAY_TO_NUMBER[a.day] - DAY_TO_NUMBER[b.day];
-      return dayDiff !== 0 ? dayDiff : a.start - b.start;
+      if (a.day !== b.day) return DAY_TO_NUMBER[a.day] - DAY_TO_NUMBER[b.day];
+      return a.start - b.start;
     });
 
     const gapLimit = preferences.maxGapMinutes > 0 ? preferences.maxGapMinutes : 0;

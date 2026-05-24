@@ -270,13 +270,16 @@ export default function CoursesPage() {
     return Array.from(subs).sort();
   }, [courses]);
 
+  // Optimization: O(1) lookup maps to avoid nested O(N) searches in loops
+  const coursesMap = useMemo(() => new Map(courses.map((c) => [c.id, c])), [courses]);
+  const sectionsMap = useMemo(() => new Map(sections.map((s) => [s.id, s])), [sections]);
+
   const filteredCourses = useMemo(() => {
     let result = courses;
 
     if (debouncedSearch.trim()) {
-      const courseIds = searchCourses(debouncedSearch);
-      const courseSet = new Set(courseIds.map((id) => String(id)));
-      result = courses.filter((course) => courseSet.has(course.id));
+      // Optimization: Uses relevance-ordered results from search index
+      result = searchCourses(debouncedSearch);
     }
 
     if (subject !== 'all') {
@@ -286,8 +289,13 @@ export default function CoursesPage() {
     if (showSelectedOnly) {
       result = result.filter((course) => selectedSections.has(course.id));
     } else if (debouncedSearch.trim() || subject !== 'all') {
-      const selected = result.filter((course) => selectedSections.has(course.id));
-      const unselected = result.filter((course) => !selectedSections.has(course.id));
+      // Optimization: Partition selected vs unselected in a single pass O(N)
+      const selected: Course[] = [];
+      const unselected: Course[] = [];
+      for (const course of result) {
+        if (selectedSections.has(course.id)) selected.push(course);
+        else unselected.push(course);
+      }
       result = [...selected, ...unselected];
     }
 
@@ -296,11 +304,14 @@ export default function CoursesPage() {
 
   const courseSectionsMap = useMemo(() => {
     const map = new Map<string, Section[]>();
-    sections.forEach((section) => {
-      const existing = map.get(section.courseId) || [];
+    for (const section of sections) {
+      let existing = map.get(section.courseId);
+      if (!existing) {
+        existing = [];
+        map.set(section.courseId, existing);
+      }
       existing.push(section);
-      map.set(section.courseId, existing);
-    });
+    }
     return map;
   }, [sections]);
 
@@ -308,17 +319,19 @@ export default function CoursesPage() {
     let totalCredits = 0;
     const items: Array<{ course: Course; section: Section }> = [];
     selectedSections.forEach((sectionId, courseId) => {
-      const course = courses.find((c) => c.id === courseId);
-      const section = sections.find((s) => s.id === sectionId);
+      // Optimization: O(1) lookup instead of O(N) .find()
+      const course = coursesMap.get(courseId);
+      const section = sectionsMap.get(sectionId);
       if (course && section) {
         items.push({ course, section });
         totalCredits += course.credits;
       }
     });
     return { items, totalCredits };
-  }, [selectedSections, courses, sections]);
+  }, [selectedSections, coursesMap, sectionsMap]);
 
   const selectedSectionList = useMemo(() => {
+    // Optimization: Filter in a single pass O(N) while maintaining section array order
     const ids = new Set(selectedSections.values());
     return sections.filter((section) => ids.has(section.id));
   }, [selectedSections, sections]);
@@ -326,14 +339,14 @@ export default function CoursesPage() {
   const conflictIds = useMemo(() => {
     const set = new Set<string>();
     const selected = selectedSectionList;
-    sections.forEach((section) => {
+    for (const section of sections) {
       for (const sel of selected) {
         if (sel.id !== section.id && hasSectionConflict(section, sel)) {
           set.add(section.id);
           break;
         }
       }
-    });
+    }
     return set;
   }, [sections, selectedSectionList]);
 
