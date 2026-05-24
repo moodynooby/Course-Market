@@ -1,7 +1,6 @@
 import type { Course, DayOfWeek, Preferences, Schedule, Section } from '../types';
 import { cosineSimilarity, getScheduleFeatureVector } from './embeddings';
 import {
-  checkConflicts,
   computeScheduleFeaturesWithContext,
   createScoringContext,
   DAY_ORDER,
@@ -51,7 +50,7 @@ function backtrackSchedules(
         id: schedule.id,
         sections: combination,
         totalCredits: currentCredits,
-        conflicts: checkConflicts(combination),
+        conflicts: [],
         features: computeScheduleFeaturesWithContext(schedule, genContext.scoringContext),
       });
 
