@@ -1,5 +1,5 @@
 import type { Course, DayOfWeek, Preferences, Schedule, Section } from '../types';
-import { cosineSimilarity, getScheduleFeatureVector } from './embeddings';
+import { dotProduct, getNormalizedFeatureVector } from './embeddings';
 import {
   computeScheduleFeaturesWithContext,
   createScoringContext,
@@ -251,11 +251,11 @@ export function clusterSchedulesBySimilarity(schedules: GeneratedSchedule[]): Sc
   }[] = [];
 
   for (const s of sorted) {
-    const vec = getScheduleFeatureVector(s);
+    const vec = getNormalizedFeatureVector(s);
     let bestIdx = -1;
     let bestSim = SIMILARITY_THRESHOLD;
     for (let i = 0; i < clusters.length; i++) {
-      const sim = cosineSimilarity(vec, clusters[i].seedVec);
+      const sim = dotProduct(vec, clusters[i].seedVec);
       if (sim > bestSim) {
         bestSim = sim;
         bestIdx = i;

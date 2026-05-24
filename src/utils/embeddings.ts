@@ -22,6 +22,11 @@ const AFTERNOON_END_MIN = 1020;
 const FEATURE_VECTOR_DIMS = 12;
 const DAY_INDEX: Record<string, number> = { M: 0, T: 1, W: 2, Th: 3, F: 4 };
 
+/** Cache for schedule feature vectors to avoid redundant calculations during search/filtering. */
+const vectorCache = new WeakMap<GeneratedSchedule, number[]>();
+/** Cache for normalized unit vectors to accelerate cosine similarity checks. */
+const unitVectorCache = new WeakMap<GeneratedSchedule, number[]>();
+
 type SlotPos = { start: number; end: number };
 
 interface IntrinsicAccumulator {
@@ -103,7 +108,7 @@ function qualityFromCosts(acc: IntrinsicAccumulator): number {
  * Returns a number in [0, 1].
  */
 export function getScheduleIntrinsicQuality(schedule: GeneratedSchedule): number {
-  return qualityFromCosts(accumulateIntrinsic(schedule.sections));
+  return getScheduleFeatureVector(schedule)[1];
 }
 
 /**
@@ -122,6 +127,9 @@ export function getScheduleIntrinsicQuality(schedule: GeneratedSchedule): number
  * comparable across generation runs.
  */
 export function getScheduleFeatureVector(schedule: GeneratedSchedule): number[] {
+  const cached = vectorCache.get(schedule);
+  if (cached) return cached;
+
   const acc = accumulateIntrinsic(schedule.sections);
   const vector = new Array(FEATURE_VECTOR_DIMS).fill(0);
 
@@ -139,7 +147,45 @@ export function getScheduleFeatureVector(schedule: GeneratedSchedule): number[] 
   vector[10] = acc.afternoon / denom;
   vector[11] = acc.evening / denom;
 
+  vectorCache.set(schedule, vector);
   return vector;
+}
+
+/**
+ * Returns a L2-normalized version of the feature vector, cached for performance.
+ * Used for fast cosine similarity via dot product.
+ */
+export function getNormalizedFeatureVector(schedule: GeneratedSchedule): number[] {
+  const cached = unitVectorCache.get(schedule);
+  if (cached) return cached;
+
+  const vec = getScheduleFeatureVector(schedule);
+  const len = vec.length;
+  let norm = 0;
+  for (let i = 0; i < len; i++) norm += vec[i] * vec[i];
+  const mag = Math.sqrt(norm);
+
+  const unit = new Array(len);
+  if (mag === 0) {
+    unit.fill(0);
+  } else {
+    for (let i = 0; i < len; i++) unit[i] = vec[i] / mag;
+  }
+
+  unitVectorCache.set(schedule, unit);
+  return unit;
+}
+
+/**
+ * Tight dot product for pre-normalized vectors.
+ */
+export function dotProduct(a: number[], b: number[]): number {
+  let dot = 0;
+  const len = a.length;
+  for (let i = 0; i < len; i++) {
+    dot += a[i] * b[i];
+  }
+  return dot;
 }
 
 /**
