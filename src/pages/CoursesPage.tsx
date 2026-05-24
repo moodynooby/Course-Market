@@ -510,28 +510,16 @@ export default function CoursesPage() {
             </Alert>
           </Stack>
         ) : (
-          <Card variant="outlined">
-            <CardContent>
-              <Stack
-                direction="row"
-                spacing={2}
-                sx={{
-                  alignItems: 'center',
-                }}
-              >
-                <CalendarToday sx={{ fontSize: 40, color: 'text.secondary' }} />
-                <Box>
-                  <Typography variant="h6">No Courses Loaded</Typography>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    Try switching semesters or check back later.
-                  </Typography>
-                </Box>
-              </Stack>
-              <Button variant="contained" sx={{ mt: 3 }} onClick={autoLoadCourses}>
+          <EmptyState
+            icon={<CalendarToday sx={{ fontSize: 60 }} />}
+            title="No Courses Loaded"
+            description="Try switching semesters or check back later."
+            action={
+              <Button variant="contained" onClick={autoLoadCourses}>
                 Load Courses
               </Button>
-            </CardContent>
-          </Card>
+            }
+          />
         )}
       </Box>
     );
