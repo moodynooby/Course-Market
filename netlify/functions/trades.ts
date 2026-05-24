@@ -20,7 +20,22 @@ export const handler = async (event: any) => {
 
     if (httpMethod === 'GET' && path.endsWith('/trades')) {
       const allTrades = await db
-        .select()
+        .select({
+          // Explicitly select fields to prevent PII leakage (e.g. userEmail)
+          id: schema.trades.id,
+          auth0UserId: schema.trades.auth0UserId,
+          userDisplayName: schema.trades.userDisplayName,
+          userAvatarUrl: schema.trades.userAvatarUrl,
+          courseCode: schema.trades.courseCode,
+          courseName: schema.trades.courseName,
+          sectionOffered: schema.trades.sectionOffered,
+          sectionWanted: schema.trades.sectionWanted,
+          status: schema.trades.status,
+          description: schema.trades.description,
+          contactPhone: schema.trades.contactPhone,
+          createdAt: schema.trades.createdAt,
+          updatedAt: schema.trades.updatedAt,
+        })
         .from(schema.trades)
         .orderBy(desc(schema.trades.createdAt));
 
