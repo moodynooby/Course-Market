@@ -36,8 +36,13 @@ const scheduleSearchOptions = {
   },
 };
 
+/**
+ * Optimized professor search options.
+ * Fields: 'name' is the only searchable field in the Professor type.
+ * Performance: Reducing indexed fields speeds up both indexing and search time.
+ */
 const professorSearchOptions = {
-  fields: ['name', 'department', 'email'],
+  fields: ['name'],
   storeFields: ['id'],
   searchOptions: {
     prefix: true,

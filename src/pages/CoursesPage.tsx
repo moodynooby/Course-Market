@@ -1,4 +1,4 @@
-import { CalendarToday, Clear, KeyboardArrowDown } from '@mui/icons-material';
+import { CalendarToday, Clear, KeyboardArrowDown, Search } from '@mui/icons-material';
 import {
   Alert,
   alpha,
@@ -17,11 +17,13 @@ import {
   Snackbar,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Virtuoso } from 'react-virtuoso';
 import { CourseCard } from '../components/CourseCard';
+import { EmptyState } from '../components/EmptyState';
 import { useAuthContext } from '../context/AuthContext';
 import { useSemesterParser } from '../hooks/useSemesterParser';
 import { getSemesters } from '../services/coursesApi';
@@ -670,9 +672,16 @@ export default function CoursesPage() {
               endAdornment: (
                 <InputAdornment position="end">
                   {search && (
-                    <IconButton size="small" onClick={() => setSearch('')} sx={{ mr: 0.5 }}>
-                      <Clear fontSize="small" />
-                    </IconButton>
+                    <Tooltip title="Clear search">
+                      <IconButton
+                        size="small"
+                        onClick={() => setSearch('')}
+                        sx={{ mr: 0.5 }}
+                        aria-label="Clear search"
+                      >
+                        <Clear fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   )}
                 </InputAdornment>
               ),
@@ -692,7 +701,11 @@ export default function CoursesPage() {
         </FormControl>
       </Stack>
       {filteredCourses.length === 0 && (
-        <Alert severity="info">No courses found matching your criteria.</Alert>
+        <EmptyState
+          icon={<Search />}
+          title="No courses found"
+          description="No courses found matching your criteria. Try adjusting your search or filters."
+        />
       )}
       <Virtuoso
         data={filteredCourses}
