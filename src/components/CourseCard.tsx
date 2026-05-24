@@ -96,9 +96,11 @@ export const CourseCard = memo(
                   color="success"
                 />
               )}
-              <IconButton onClick={onExpand}>
-                {isExpanded ? <ExpandLess /> : <ExpandMore />}
-              </IconButton>
+              <Tooltip title={isExpanded ? 'Collapse' : 'Expand'}>
+                <IconButton onClick={onExpand} aria-label={isExpanded ? 'Collapse' : 'Expand'}>
+                  {isExpanded ? <ExpandLess /> : <ExpandMore />}
+                </IconButton>
+              </Tooltip>
             </Stack>
           </Stack>
         </CardContent>

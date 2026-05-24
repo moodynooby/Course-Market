@@ -228,6 +228,8 @@ export function computeScheduleFeaturesWithContext(
   const { avoidDaysSet, preferredStart, preferredEnd, creditTarget, preferences } = context;
   let daysMask = 0;
 
+  let daysUsedMask = 0;
+  let daysUsedCount = 0;
   let hasMorning = false;
   let hasAfternoon = false;
   let hasEvening = false;

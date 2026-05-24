@@ -15,7 +15,7 @@ export const tradeSchema = z.object({
   courseName: z.string().max(255).optional(),
   sectionOffered: z.string().min(1, 'Section offered is required').max(20),
   sectionWanted: z.string().min(1, 'Section wanted is required').max(20),
-  description: z.string().optional(),
+  description: z.string().max(2000).optional(),
 });
 
 export const tradeUpdateSchema = tradeSchema
@@ -56,7 +56,7 @@ export const llmRequestSchema = z.object({
   temperature: z.number().min(0).max(2).optional(),
   maxOutputTokens: z.number().min(1).max(32000).optional(),
   saveKey: z.boolean().optional(),
-  userApiKey: z.string().optional(),
+  userApiKey: z.string().max(500).optional(),
 });
 
 export type LlmRequest = z.infer<typeof llmRequestSchema>;

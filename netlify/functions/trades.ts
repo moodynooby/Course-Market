@@ -4,7 +4,7 @@ import { db } from '../../db';
 import * as schema from '../../db/schema';
 import { formatZodError, tradeSchema, tradeUpdateSchema } from '../../db/validation';
 import { validateToken } from './lib/auth';
-import { corsResponse, jsonResponse } from './lib/response';
+import { corsResponse, jsonResponse, secureErrorResponse } from './lib/response';
 
 export const handler = async (event: any) => {
   if (event.httpMethod === 'OPTIONS') {
@@ -20,7 +20,22 @@ export const handler = async (event: any) => {
 
     if (httpMethod === 'GET' && path.endsWith('/trades')) {
       const allTrades = await db
-        .select()
+        .select({
+          // Explicitly select fields to prevent PII leakage (e.g. userEmail)
+          id: schema.trades.id,
+          auth0UserId: schema.trades.auth0UserId,
+          userDisplayName: schema.trades.userDisplayName,
+          userAvatarUrl: schema.trades.userAvatarUrl,
+          courseCode: schema.trades.courseCode,
+          courseName: schema.trades.courseName,
+          sectionOffered: schema.trades.sectionOffered,
+          sectionWanted: schema.trades.sectionWanted,
+          status: schema.trades.status,
+          description: schema.trades.description,
+          contactPhone: schema.trades.contactPhone,
+          createdAt: schema.trades.createdAt,
+          updatedAt: schema.trades.updatedAt,
+        })
         .from(schema.trades)
         .orderBy(desc(schema.trades.createdAt));
 
@@ -152,8 +167,6 @@ export const handler = async (event: any) => {
 
     return jsonResponse(404, { error: 'Endpoint not found' });
   } catch (error) {
-    console.error('Handler error:', error);
-
     if (error instanceof Error && error.message.includes('authorization')) {
       return jsonResponse(401, {
         error: 'Unauthorized',
@@ -161,9 +174,6 @@ export const handler = async (event: any) => {
       });
     }
 
-    return jsonResponse(500, {
-      error: 'Internal server error',
-      message: (error as Error).message,
-    });
+    return secureErrorResponse(error);
   }
 };
