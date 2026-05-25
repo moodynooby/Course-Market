@@ -80,7 +80,21 @@ export const handler = async (event: any) => {
           description: requestBody.description || null,
           contactPhone: userProfile.phone,
         })
-        .returning();
+        .returning({
+          id: schema.trades.id,
+          auth0UserId: schema.trades.auth0UserId,
+          userDisplayName: schema.trades.userDisplayName,
+          userAvatarUrl: schema.trades.userAvatarUrl,
+          courseCode: schema.trades.courseCode,
+          courseName: schema.trades.courseName,
+          sectionOffered: schema.trades.sectionOffered,
+          sectionWanted: schema.trades.sectionWanted,
+          status: schema.trades.status,
+          description: schema.trades.description,
+          contactPhone: schema.trades.contactPhone,
+          createdAt: schema.trades.createdAt,
+          updatedAt: schema.trades.updatedAt,
+        });
 
       return jsonResponse(201, { trade: newTrade });
     }
@@ -134,7 +148,21 @@ export const handler = async (event: any) => {
           updatedAt: new Date(),
         })
         .where(eq(schema.trades.id, idNum))
-        .returning();
+        .returning({
+          id: schema.trades.id,
+          auth0UserId: schema.trades.auth0UserId,
+          userDisplayName: schema.trades.userDisplayName,
+          userAvatarUrl: schema.trades.userAvatarUrl,
+          courseCode: schema.trades.courseCode,
+          courseName: schema.trades.courseName,
+          sectionOffered: schema.trades.sectionOffered,
+          sectionWanted: schema.trades.sectionWanted,
+          status: schema.trades.status,
+          description: schema.trades.description,
+          contactPhone: schema.trades.contactPhone,
+          createdAt: schema.trades.createdAt,
+          updatedAt: schema.trades.updatedAt,
+        });
 
       return jsonResponse(200, { trade: updatedTrade });
     }
