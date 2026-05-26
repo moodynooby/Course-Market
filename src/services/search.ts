@@ -150,9 +150,7 @@ export const searchTradeIndex = (query: string): TradePost[] => {
 export const searchCourses = (query: string): Course[] => {
   if (!courseIndex || !query.trim()) return [];
   const results = courseIndex.search(query) as unknown as MiniSearchResult[];
-  return results
-    .map((r) => courseMap.get(r.id.toString()))
-    .filter((c): c is Course => !!c);
+  return results.map((r) => courseMap.get(r.id.toString())).filter((c): c is Course => !!c);
 };
 
 /**

@@ -31,6 +31,22 @@ interface RateProfessorModalProps {
   onSuccess: () => void;
 }
 
+const RATING_LABELS: Record<number, string> = {
+  1: 'Awful',
+  2: 'Poor',
+  3: 'Average',
+  4: 'Good',
+  5: 'Excellent',
+};
+
+const DIFFICULTY_LABELS: Record<number, string> = {
+  1: 'Very Easy',
+  2: 'Easy',
+  3: 'Average',
+  4: 'Hard',
+  5: 'Very Hard',
+};
+
 export default function RateProfessorModal({
   open,
   onClose,
@@ -113,9 +129,14 @@ export default function RateProfessorModal({
           {error && <Alert severity="error">{error}</Alert>}
 
           <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              Overall Quality
-            </Typography>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
+              <Typography variant="subtitle2">Overall Quality</Typography>
+              {rating && (
+                <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600 }}>
+                  — {RATING_LABELS[rating]}
+                </Typography>
+              )}
+            </Stack>
             <Rating
               name="rating"
               value={rating}
@@ -125,9 +146,14 @@ export default function RateProfessorModal({
           </Box>
 
           <Box>
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>
-              Level of Difficulty
-            </Typography>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
+              <Typography variant="subtitle2">Level of Difficulty</Typography>
+              {difficulty && (
+                <Typography variant="caption" sx={{ color: 'secondary.main', fontWeight: 600 }}>
+                  — {DIFFICULTY_LABELS[difficulty]}
+                </Typography>
+              )}
+            </Stack>
             <Rating
               name="difficulty"
               value={difficulty}
@@ -157,6 +183,11 @@ export default function RateProfessorModal({
             value={courseCode}
             onChange={(e) => setCourseCode(e.target.value)}
             placeholder="E.g. COMP 248"
+            helperText={`${courseCode.length}/50`}
+            slotProps={{
+              htmlInput: { maxLength: 50 },
+              formHelperText: { sx: { textAlign: 'right' } },
+            }}
           />
 
           <TextField
@@ -166,7 +197,21 @@ export default function RateProfessorModal({
             rows={4}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            helperText="At least 10 characters. Describe your experience with this professor."
+            error={comment.length > 0 && comment.length < 10}
+            slotProps={{
+              htmlInput: { maxLength: 1000 },
+              formHelperText: { component: 'div' },
+            }}
+            helperText={
+              <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+                <span>
+                  {comment.length > 0 && comment.length < 10
+                    ? 'At least 10 characters required'
+                    : 'Describe your experience with this professor'}
+                </span>
+                <span>{comment.length}/1000</span>
+              </Stack>
+            }
           />
 
           <FormControlLabel
@@ -181,12 +226,24 @@ export default function RateProfessorModal({
           />
         </Stack>
       </DialogContent>
-      <DialogActions>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} disabled={submitting}>
           Cancel
         </Button>
-        <Button onClick={handleSubmit} variant="contained" disabled={submitting}>
-          {submitting ? 'Submitting...' : 'Submit Rating'}
+        <Button
+          onClick={handleSubmit}
+          variant="contained"
+          disabled={
+            submitting ||
+            !rating ||
+            !difficulty ||
+            comment.length < 10 ||
+            !courseCode ||
+            !semesterId
+          }
+          loading={submitting}
+        >
+          Submit Rating
         </Button>
       </DialogActions>
     </Dialog>
