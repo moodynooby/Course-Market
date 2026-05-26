@@ -25,6 +25,7 @@ import { Virtuoso } from 'react-virtuoso';
 import { CourseCard } from '../components/CourseCard';
 import { EmptyState } from '../components/EmptyState';
 import { useAuthContext } from '../context/AuthContext';
+import { useProfessorsMap } from '../hooks/useProfessorsMap';
 import { useSemesterParser } from '../hooks/useSemesterParser';
 import { getSemesters } from '../services/coursesApi';
 import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
@@ -54,6 +55,7 @@ export default function CoursesPage() {
   const [loadingSemesters, setLoadingSemesters] = useState(false);
 
   const [showSelectedOnly, setShowSelectedOnly] = useState(false);
+  const professorRatings = useProfessorsMap();
 
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -737,6 +739,7 @@ export default function CoursesPage() {
                 onExpand={() => handleExpand(course.id)}
                 onSelectSection={(sectionId) => handleSelectSection(course.id, sectionId)}
                 onTogglePin={(sectionId) => handleTogglePin(course.id, sectionId)}
+                professorRatings={professorRatings}
               />
             </Box>
           );
