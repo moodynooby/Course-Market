@@ -1,4 +1,4 @@
-import { ArrowBack, School, ThumbDown, ThumbUp } from '@mui/icons-material';
+import { ArrowBack, School, Star, ThumbDown, ThumbUp } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { EmptyState } from '../components/EmptyState';
 import RateProfessorModal from '../components/RateProfessorModal';
 import { useAuthContext } from '../context/AuthContext';
 import { getSemesters } from '../services/coursesApi';
@@ -83,6 +84,14 @@ export default function ProfessorDetailsPage() {
   useEffect(() => {
     fetchDetails();
   }, [fetchDetails]);
+
+  const handleRateClick = () => {
+    if (isAuthenticated) {
+      setModalOpen(true);
+    } else {
+      navigate('/login', { state: { from: `/professors/${id}` } });
+    }
+  };
 
   if (loading) {
     return (
@@ -195,13 +204,7 @@ export default function ProfessorDetailsPage() {
                 variant="contained"
                 size="large"
                 sx={{ mt: 4 }}
-                onClick={() => {
-                  if (isAuthenticated) {
-                    setModalOpen(true);
-                  } else {
-                    navigate('/login', { state: { from: `/professors/${id}` } });
-                  }
-                }}
+                onClick={handleRateClick}
               >
                 Rate Professor
               </Button>
@@ -276,11 +279,16 @@ export default function ProfessorDetailsPage() {
               </Card>
             ))}
             {professor.ratings.length === 0 && (
-              <Box sx={{ textAlign: 'center', py: 8, bgcolor: 'action.hover', borderRadius: 2 }}>
-                <Typography variant="h6" sx={{ color: 'text.secondary' }}>
-                  No ratings yet. Be the first to rate!
-                </Typography>
-              </Box>
+              <EmptyState
+                icon={<Star sx={{ fontSize: 40 }} />}
+                title="No ratings yet"
+                description="Be the first to share your experience with this professor."
+                action={
+                  <Button variant="contained" onClick={handleRateClick}>
+                    Rate Professor
+                  </Button>
+                }
+              />
             )}
           </Stack>
         </Grid>
