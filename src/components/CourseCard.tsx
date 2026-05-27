@@ -15,7 +15,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { forwardRef, memo } from 'react';
-import { useProfessorsMap } from '../hooks/useProfessorsMap';
+import type { ProfessorRatingInfo } from '../hooks/useProfessorsMap';
 import type { Course, Section } from '../types';
 import { formatSlotDates, formatTimeSlots } from '../utils/schedule';
 import { InstructorChip } from './InstructorChip';
@@ -30,11 +30,20 @@ interface CourseCardProps {
   onExpand: () => void;
   onSelectSection: (sectionId: string) => void;
   onTogglePin?: (sectionId: string) => void;
+  /**
+   * Optimization: Passed from parent to avoid O(N) hook initializations
+   * in virtualized lists.
+   */
+  professorRatings?: Map<string, ProfessorRatingInfo>;
 }
 
 /**
- * Memoized CourseCard component for optimized rendering
- * Prevents unnecessary re-renders when parent state changes
+ * Memoized CourseCard component for optimized rendering.
+ *
+ * Optimization: Now receives professorRatings as a prop from the parent
+ * (CoursesPage) to avoid each card instance calling useProfessorsMap(),
+ * which significantly reduces hook initialization overhead and re-renders
+ * when scrolling through large course lists.
  */
 export const CourseCard = memo(
   forwardRef<HTMLDivElement, CourseCardProps>(function CourseCard(
@@ -48,11 +57,11 @@ export const CourseCard = memo(
       onExpand,
       onSelectSection,
       onTogglePin,
+      professorRatings,
     },
     ref,
   ) {
     const theme = useTheme();
-    const professorRatings = useProfessorsMap();
 
     return (
       <Card ref={ref} variant="outlined" sx={{ mb: 2 }}>
