@@ -13,7 +13,13 @@ export const handler = async (event: any) => {
 
     if (httpMethod === 'GET') {
       const semesters = await db
-        .select()
+        .select({
+          id: schema.semesters.id,
+          name: schema.semesters.name,
+          jsonUrl: schema.semesters.jsonUrl,
+          isActive: schema.semesters.isActive,
+          createdAt: schema.semesters.createdAt,
+        })
         .from(schema.semesters)
         .orderBy(desc(schema.semesters.createdAt));
 

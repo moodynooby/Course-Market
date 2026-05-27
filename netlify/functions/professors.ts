@@ -96,7 +96,17 @@ export const handler = async (event: any) => {
             ...requestBody,
             auth0UserId: user.sub,
           })
-          .returning();
+          .returning({
+            id: schema.professorRatings.id,
+            professorId: schema.professorRatings.professorId,
+            rating: schema.professorRatings.rating,
+            difficulty: schema.professorRatings.difficulty,
+            comment: schema.professorRatings.comment,
+            courseCode: schema.professorRatings.courseCode,
+            semesterId: schema.professorRatings.semesterId,
+            takeAgain: schema.professorRatings.takeAgain,
+            createdAt: schema.professorRatings.createdAt,
+          });
 
         return jsonResponse(201, { rating: newRating });
       }
