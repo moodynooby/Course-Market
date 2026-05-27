@@ -17,9 +17,21 @@ export const handler = async (event: any) => {
 
     const { httpMethod, body } = event;
 
+    const profileSelection = {
+      auth0UserId: schema.userProfiles.auth0UserId,
+      phone: schema.userProfiles.phone,
+      semesterId: schema.userProfiles.semesterId,
+      preferences: schema.userProfiles.preferences,
+      courseSelections: schema.userProfiles.courseSelections,
+      pinnedSelections: schema.userProfiles.pinnedSelections,
+      llmConfig: schema.userProfiles.llmConfig,
+      createdAt: schema.userProfiles.createdAt,
+      updatedAt: schema.userProfiles.updatedAt,
+    };
+
     if (httpMethod === 'GET') {
       const [profile] = await db
-        .select()
+        .select(profileSelection)
         .from(schema.userProfiles)
         .where(eq(schema.userProfiles.auth0UserId, user.sub));
 
@@ -32,7 +44,7 @@ export const handler = async (event: any) => {
 
     if (httpMethod === 'POST') {
       const [existingProfile] = await db
-        .select()
+        .select(profileSelection)
         .from(schema.userProfiles)
         .where(eq(schema.userProfiles.auth0UserId, user.sub));
 
@@ -63,7 +75,7 @@ export const handler = async (event: any) => {
             updatedAt: new Date(),
           })
           .where(eq(schema.userProfiles.auth0UserId, user.sub))
-          .returning();
+          .returning(profileSelection);
       } else {
         const input = requestBody as UserProfileInput;
         [profile] = await db
@@ -77,7 +89,7 @@ export const handler = async (event: any) => {
             pinnedSelections: input.pinnedSelections || null,
             llmConfig: input.llmConfig || null,
           })
-          .returning();
+          .returning(profileSelection);
       }
 
       return jsonResponse(200, { profile });
