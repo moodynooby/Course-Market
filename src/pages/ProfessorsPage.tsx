@@ -194,7 +194,7 @@ export default function ProfessorsPage() {
       ) : sortedProfessors.length === 0 ? (
         professors.length === 0 ? (
           <EmptyState
-            icon={<Sync />}
+            icon={<Sync sx={{ fontSize: 40 }} />}
             title="No professors found"
             description="Sync semester data to get started."
             action={
@@ -207,7 +207,7 @@ export default function ProfessorsPage() {
           />
         ) : (
           <EmptyState
-            icon={<Search />}
+            icon={<Search sx={{ fontSize: 40 }} />}
             title="No professors found"
             description="No professors found matching your search. Try adjusting your query."
           />
