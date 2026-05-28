@@ -512,28 +512,16 @@ export default function CoursesPage() {
             </Alert>
           </Stack>
         ) : (
-          <Card variant="outlined">
-            <CardContent>
-              <Stack
-                direction="row"
-                spacing={2}
-                sx={{
-                  alignItems: 'center',
-                }}
-              >
-                <CalendarToday sx={{ fontSize: 40, color: 'text.secondary' }} />
-                <Box>
-                  <Typography variant="h6">No Courses Loaded</Typography>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    Try switching semesters or check back later.
-                  </Typography>
-                </Box>
-              </Stack>
-              <Button variant="contained" sx={{ mt: 3 }} onClick={autoLoadCourses}>
+          <EmptyState
+            icon={<CalendarToday sx={{ fontSize: 40 }} />}
+            title="No Courses Loaded"
+            description="Try switching semesters or check back later."
+            action={
+              <Button variant="contained" onClick={autoLoadCourses}>
                 Load Courses
               </Button>
-            </CardContent>
-          </Card>
+            }
+          />
         )}
       </Box>
     );
@@ -684,6 +672,11 @@ export default function CoursesPage() {
           size="small"
           slotProps={{
             input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search sx={{ color: 'text.secondary' }} />
+                </InputAdornment>
+              ),
               endAdornment: (
                 <InputAdornment position="end">
                   {search && (
@@ -717,7 +710,7 @@ export default function CoursesPage() {
       </Stack>
       {filteredCourses.length === 0 && (
         <EmptyState
-          icon={<Search />}
+          icon={<Search sx={{ fontSize: 40 }} />}
           title="No courses found"
           description="No courses found matching your criteria. Try adjusting your search or filters."
         />

@@ -254,6 +254,11 @@ export const CourseCard = memo(
                                       onTogglePin(section.id);
                                     }}
                                     sx={{ borderRadius: 2 }}
+                                    aria-label={
+                                      pinnedSectionId === section.id
+                                        ? 'Unpin section — allow alternatives'
+                                        : 'Pin section — only use this section'
+                                    }
                                   >
                                     <PushPin
                                       fontSize="small"
