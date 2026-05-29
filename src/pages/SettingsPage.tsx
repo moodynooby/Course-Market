@@ -7,6 +7,8 @@ import {
   Person,
   Psychology,
   Schedule,
+  Visibility,
+  VisibilityOff,
 } from '@mui/icons-material';
 import {
   Alert,
@@ -24,6 +26,8 @@ import {
   FormControl,
   FormHelperText,
   Grid,
+  IconButton,
+  InputAdornment,
   InputLabel,
   Link,
   MenuItem,
@@ -64,6 +68,7 @@ export default function SettingsPage() {
   const [currentSemester, setCurrentSemester] = useState<string>('');
   const [loadingSemesters, setLoadingSemesters] = useState(false);
   const [showAdvancedAi, setShowAdvancedAi] = useState(false);
+  const [showApiKey, setShowApiKey] = useState(false);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -280,11 +285,27 @@ export default function SettingsPage() {
                 <TextField
                   fullWidth
                   label="API Key (Optional)"
-                  type="password"
+                  type={showApiKey ? 'text' : 'password'}
                   value={llmConfig.apiKey}
                   onChange={(e) => updateLlmConfig({ ...llmConfig, apiKey: e.target.value })}
                   placeholder="gsk_..."
                   helperText="Optional. A shared key is used by default for Groq."
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <IconButton
+                            aria-label={showApiKey ? 'hide api key' : 'show api key'}
+                            onClick={() => setShowApiKey(!showApiKey)}
+                            edge="end"
+                            size="small"
+                          >
+                            {showApiKey ? <VisibilityOff /> : <Visibility />}
+                          </IconButton>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
                 />
               )}
 
