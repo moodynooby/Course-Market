@@ -22,6 +22,12 @@ const AFTERNOON_END_MIN = 1020;
 const FEATURE_VECTOR_DIMS = 12;
 const DAY_INDEX: Record<string, number> = { M: 0, T: 1, W: 2, Th: 3, F: 4 };
 
+/**
+ * Cache for feature vectors to avoid redundant calculations during clustering.
+ * WeakMap ensures that memory is reclaimed when the schedule object is no longer used.
+ */
+const vectorCache = new WeakMap<GeneratedSchedule, number[]>();
+
 type SlotPos = { start: number; end: number };
 
 interface IntrinsicAccumulator {
@@ -122,6 +128,9 @@ export function getScheduleIntrinsicQuality(schedule: GeneratedSchedule): number
  * comparable across generation runs.
  */
 export function getScheduleFeatureVector(schedule: GeneratedSchedule): number[] {
+  const cached = vectorCache.get(schedule);
+  if (cached) return cached;
+
   const acc = accumulateIntrinsic(schedule.sections);
   const vector = new Array(FEATURE_VECTOR_DIMS).fill(0);
 
@@ -139,6 +148,7 @@ export function getScheduleFeatureVector(schedule: GeneratedSchedule): number[] 
   vector[10] = acc.afternoon / denom;
   vector[11] = acc.evening / denom;
 
+  vectorCache.set(schedule, vector);
   return vector;
 }
 

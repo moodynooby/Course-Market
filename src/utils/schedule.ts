@@ -121,21 +121,23 @@ export function checkConflicts(sections: Section[]): string[] {
 }
 
 const timeCache = new Map<string, number>();
-const MAX_CACHE_SIZE = 100;
-const cacheKeys: string[] = [];
 
+/**
+ * Optimized time-to-minutes converter.
+ * - Uses a Map for O(1) lookups.
+ * - Removed LRU eviction because the domain is small (1440 mins).
+ * - Fast string parsing avoiding .split() and .map(Number).
+ */
 export function timeToMinutesCached(time: string): number {
-  let minutes = timeCache.get(time);
-  if (minutes === undefined) {
-    const [hours, mins] = time.split(':').map(Number);
-    minutes = hours * 60 + mins;
-    if (timeCache.size >= MAX_CACHE_SIZE) {
-      const oldest = cacheKeys.shift();
-      if (oldest) timeCache.delete(oldest);
-    }
-    timeCache.set(time, minutes);
-    cacheKeys.push(time);
-  }
+  const cached = timeCache.get(time);
+  if (cached !== undefined) return cached;
+
+  const colonIdx = time.indexOf(':');
+  const hours = Number.parseInt(time.slice(0, colonIdx), 10);
+  const mins = Number.parseInt(time.slice(colonIdx + 1), 10);
+  const minutes = hours * 60 + mins;
+
+  timeCache.set(time, minutes);
   return minutes;
 }
 
@@ -228,8 +230,6 @@ export function computeScheduleFeaturesWithContext(
   const { avoidDaysSet, preferredStart, preferredEnd, creditTarget, preferences } = context;
   let daysMask = 0;
 
-  const daysUsedMask = 0;
-  const daysUsedCount = 0;
   let hasMorning = false;
   let hasAfternoon = false;
   let hasEvening = false;
