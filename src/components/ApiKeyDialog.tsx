@@ -5,8 +5,11 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
+  InputAdornment,
   TextField,
 } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useState } from 'react';
 
 interface ApiKeyDialogProps {
@@ -17,6 +20,7 @@ interface ApiKeyDialogProps {
 
 export default function ApiKeyDialog({ open, onClose, onSave }: ApiKeyDialogProps) {
   const [apiKey, setApiKey] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
 
   const handleSave = () => {
     onSave(apiKey);
@@ -39,10 +43,26 @@ export default function ApiKeyDialog({ open, onClose, onSave }: ApiKeyDialogProp
           autoFocus
           fullWidth
           label="Groq API Key"
-          type="password"
+          type={showApiKey ? 'text' : 'password'}
           value={apiKey}
           onChange={(e) => setApiKey(e.target.value)}
           placeholder="gsk_..."
+          slotProps={{
+            input: {
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="toggle API key visibility"
+                    onClick={() => setShowApiKey(!showApiKey)}
+                    onMouseDown={(e) => e.preventDefault()}
+                    edge="end"
+                  >
+                    {showApiKey ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            },
+          }}
         />
       </DialogContent>
       <DialogActions>
