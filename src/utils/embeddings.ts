@@ -1,5 +1,5 @@
 import type { Section } from '../types';
-import { timeToMinutesCached } from './schedule';
+import { getSlotMinutes, timeToMinutesCached } from './schedule';
 import type { GeneratedSchedule } from './schedule-types';
 
 export const CREDITS_NORMALIZATION_MAX = 21;
@@ -52,8 +52,7 @@ function accumulateIntrinsic(sections: Section[]): IntrinsicAccumulator {
 
   for (const section of sections) {
     for (const slot of section.timeSlots) {
-      const startMin = timeToMinutesCached(slot.startTime);
-      const endMin = timeToMinutesCached(slot.endTime);
+      const { start: startMin, end: endMin } = getSlotMinutes(slot);
       totalSlots++;
 
       if (startMin < INTRINSIC_WINDOW_START_MIN) {
@@ -106,6 +105,8 @@ export function getScheduleIntrinsicQuality(schedule: GeneratedSchedule): number
   return qualityFromCosts(accumulateIntrinsic(schedule.sections));
 }
 
+const vectorCache = new WeakMap<GeneratedSchedule, number[]>();
+
 /**
  * Fixed-length numeric vector representing intrinsic schedule features.
  * 12 dimensions:
@@ -122,6 +123,9 @@ export function getScheduleIntrinsicQuality(schedule: GeneratedSchedule): number
  * comparable across generation runs.
  */
 export function getScheduleFeatureVector(schedule: GeneratedSchedule): number[] {
+  const cached = vectorCache.get(schedule);
+  if (cached) return cached;
+
   const acc = accumulateIntrinsic(schedule.sections);
   const vector = new Array(FEATURE_VECTOR_DIMS).fill(0);
 
@@ -139,6 +143,7 @@ export function getScheduleFeatureVector(schedule: GeneratedSchedule): number[] 
   vector[10] = acc.afternoon / denom;
   vector[11] = acc.evening / denom;
 
+  vectorCache.set(schedule, vector);
   return vector;
 }
 
