@@ -4,10 +4,10 @@ import {
   computeScheduleFeaturesWithContext,
   createScoringContext,
   DAY_ORDER,
+  getSlotMinutes,
   hasSectionConflict,
   type ScheduleFeatures,
   scoreSchedulesRelative,
-  timeToMinutesCached,
 } from './schedule';
 import type { GeneratedSchedule, GeneratorOptions } from './schedule-types';
 
@@ -135,10 +135,8 @@ function totalGapMinutes(schedule: GeneratedSchedule): number {
   for (const section of schedule.sections) {
     for (const slot of section.timeSlots) {
       const list = byDay.get(slot.day) ?? [];
-      list.push({
-        start: timeToMinutesCached(slot.startTime),
-        end: timeToMinutesCached(slot.endTime),
-      });
+      const { start, end } = getSlotMinutes(slot);
+      list.push({ start, end });
       byDay.set(slot.day, list);
     }
   }
