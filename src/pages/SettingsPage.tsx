@@ -7,6 +7,8 @@ import {
   Person,
   Psychology,
   Schedule,
+  Visibility,
+  VisibilityOff,
 } from '@mui/icons-material';
 import {
   Alert,
@@ -24,6 +26,8 @@ import {
   FormControl,
   FormHelperText,
   Grid,
+  IconButton,
+  InputAdornment,
   InputLabel,
   Link,
   MenuItem,
@@ -32,6 +36,7 @@ import {
   Tab,
   Tabs,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -64,6 +69,7 @@ export default function SettingsPage() {
   const [currentSemester, setCurrentSemester] = useState<string>('');
   const [loadingSemesters, setLoadingSemesters] = useState(false);
   const [showAdvancedAi, setShowAdvancedAi] = useState(false);
+  const [showKey, setShowKey] = useState(false);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -280,11 +286,28 @@ export default function SettingsPage() {
                 <TextField
                   fullWidth
                   label="API Key (Optional)"
-                  type="password"
+                  type={showKey ? 'text' : 'password'}
                   value={llmConfig.apiKey}
                   onChange={(e) => updateLlmConfig({ ...llmConfig, apiKey: e.target.value })}
                   placeholder="gsk_..."
                   helperText="Optional. A shared key is used by default for Groq."
+                  slotProps={{
+                    input: {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Tooltip title={showKey ? 'Hide API Key' : 'Show API Key'}>
+                            <IconButton
+                              aria-label={showKey ? 'Hide API Key' : 'Show API Key'}
+                              onClick={() => setShowKey(!showKey)}
+                              edge="end"
+                            >
+                              {showKey ? <VisibilityOff /> : <Visibility />}
+                            </IconButton>
+                          </Tooltip>
+                        </InputAdornment>
+                      ),
+                    },
+                  }}
                 />
               )}
 
