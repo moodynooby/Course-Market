@@ -18,7 +18,14 @@ export function jsonResponse(
 ) {
   return {
     statusCode,
-    headers: { ...corsHeaders, ...extraHeaders, 'Content-Type': 'application/json' },
+    headers: {
+      ...corsHeaders,
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      ...extraHeaders,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify(body),
   };
 }
