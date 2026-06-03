@@ -684,6 +684,11 @@ export default function CoursesPage() {
           size="small"
           slotProps={{
             input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search fontSize="small" sx={{ color: 'text.secondary' }} />
+                </InputAdornment>
+              ),
               endAdornment: (
                 <InputAdornment position="end">
                   {search && (
@@ -691,8 +696,8 @@ export default function CoursesPage() {
                       <IconButton
                         size="small"
                         onClick={() => setSearch('')}
-                        sx={{ mr: 0.5 }}
                         aria-label="Clear search"
+                        edge="end"
                       >
                         <Clear fontSize="small" />
                       </IconButton>
