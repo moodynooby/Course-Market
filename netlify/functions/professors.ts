@@ -112,7 +112,13 @@ export const handler = async (event: any) => {
       }
 
       if (path.endsWith('/sync')) {
-        const semesters = await db.select().from(schema.semesters);
+        // Use explicit selection to follow the principle of data minimization
+        const semesters = await db
+          .select({
+            id: schema.semesters.id,
+            jsonUrl: schema.semesters.jsonUrl,
+          })
+          .from(schema.semesters);
         const allInstructors = new Set<string>();
 
         const host = event.headers.host || 'localhost:8888';
