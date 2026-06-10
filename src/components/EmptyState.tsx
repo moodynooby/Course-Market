@@ -44,7 +44,14 @@ export function EmptyState({
     fullscreen: 80,
   };
 
+  const innerIconSizes = {
+    default: 32,
+    compact: 24,
+    fullscreen: 40,
+  };
+
   const iconSize = iconSizes[variant];
+  const innerIconSize = innerIconSizes[variant];
 
   return (
     <Paper
@@ -84,7 +91,19 @@ export function EmptyState({
             position: 'absolute',
           }}
         />
-        <Box sx={{ position: 'relative', zIndex: 1, color: 'primary.main' }}>{icon}</Box>
+        <Box
+          sx={{
+            position: 'relative',
+            zIndex: 1,
+            color: 'primary.main',
+            display: 'flex',
+            '& .MuiSvgIcon-root': {
+              fontSize: innerIconSize,
+            },
+          }}
+        >
+          {icon}
+        </Box>
       </Box>
       <Typography
         variant="h6"
