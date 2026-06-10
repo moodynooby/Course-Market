@@ -120,21 +120,39 @@ export function checkConflicts(sections: Section[]): string[] {
   return conflicts;
 }
 
-const timeCache = new Map<string, number>();
-const MAX_CACHE_SIZE = 100;
-const cacheKeys: string[] = [];
+const slotMinutesCache = new WeakMap<TimeSlot, { start: number; end: number }>();
 
+/**
+ * Fast path to get start/end minutes from a TimeSlot object using WeakMap caching.
+ * Avoids repeated string parsing and Map lookups in tight scheduling loops.
+ */
+export function getSlotMinutes(slot: TimeSlot): { start: number; end: number } {
+  let cached = slotMinutesCache.get(slot);
+  if (!cached) {
+    cached = {
+      start: timeToMinutesCached(slot.startTime),
+      end: timeToMinutesCached(slot.endTime),
+    };
+    slotMinutesCache.set(slot, cached);
+  }
+  return cached;
+}
+
+const timeCache = new Map<string, number>();
+
+/**
+ * Converts "HH:MM" string to minutes from midnight.
+ * Optimized with manual parsing and Map caching.
+ */
 export function timeToMinutesCached(time: string): number {
   let minutes = timeCache.get(time);
   if (minutes === undefined) {
-    const [hours, mins] = time.split(':').map(Number);
+    // Manual parsing is faster than .split(':').map(Number)
+    const colonIdx = time.indexOf(':');
+    const hours = Number.parseInt(time.slice(0, colonIdx), 10);
+    const mins = Number.parseInt(time.slice(colonIdx + 1), 10);
     minutes = hours * 60 + mins;
-    if (timeCache.size >= MAX_CACHE_SIZE) {
-      const oldest = cacheKeys.shift();
-      if (oldest) timeCache.delete(oldest);
-    }
     timeCache.set(time, minutes);
-    cacheKeys.push(time);
   }
   return minutes;
 }
@@ -151,10 +169,8 @@ function dateRangesOverlap(slot1: TimeSlot, slot2: TimeSlot): boolean {
 export function hasTimeConflict(slot1: TimeSlot, slot2: TimeSlot): boolean {
   if (slot1.day !== slot2.day) return false;
   if (!dateRangesOverlap(slot1, slot2)) return false;
-  const start1 = timeToMinutesCached(slot1.startTime);
-  const end1 = timeToMinutesCached(slot1.endTime);
-  const start2 = timeToMinutesCached(slot2.startTime);
-  const end2 = timeToMinutesCached(slot2.endTime);
+  const { start: start1, end: end1 } = getSlotMinutes(slot1);
+  const { start: start2, end: end2 } = getSlotMinutes(slot2);
   return start1 < end2 && start2 < end1;
 }
 
@@ -228,8 +244,8 @@ export function computeScheduleFeaturesWithContext(
   const { avoidDaysSet, preferredStart, preferredEnd, creditTarget, preferences } = context;
   let daysMask = 0;
 
-  const daysUsedMask = 0;
-  const daysUsedCount = 0;
+  const _daysUsedMask = 0;
+  const _daysUsedCount = 0;
   let hasMorning = false;
   let hasAfternoon = false;
   let hasEvening = false;
@@ -243,8 +259,7 @@ export function computeScheduleFeaturesWithContext(
       daysMask |= 1 << DAY_TO_NUMBER[slot.day];
       if (avoidDaysSet.has(slot.day)) avoidDayHits++;
 
-      const start = timeToMinutesCached(slot.startTime);
-      const end = timeToMinutesCached(slot.endTime);
+      const { start, end } = getSlotMinutes(slot);
       allSlots.push({ day: slot.day, start, end });
 
       if (start < MORNING_END) hasMorning = true;
