@@ -19,7 +19,7 @@ export function ScheduleOverview({ sections, courses, aiAnalysis }: ScheduleOver
   if (sections.length === 0) {
     return (
       <EmptyState
-        icon={<CalendarToday sx={{ fontSize: 40 }} />}
+        icon={<CalendarToday />}
         title="Your schedule is empty"
         description="Select courses from the course browser to build your personalized timetable"
         action={
