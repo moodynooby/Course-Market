@@ -684,6 +684,7 @@ export default function CoursesPage() {
           size="small"
           slotProps={{
             input: {
+              startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
               endAdornment: (
                 <InputAdornment position="end">
                   {search && (
