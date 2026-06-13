@@ -1,5 +1,5 @@
 import type { Section } from '../types';
-import { timeToMinutesCached } from './schedule';
+import { getSlotMinutes } from './schedule';
 import type { GeneratedSchedule } from './schedule-types';
 
 export const CREDITS_NORMALIZATION_MAX = 21;
@@ -52,8 +52,7 @@ function accumulateIntrinsic(sections: Section[]): IntrinsicAccumulator {
 
   for (const section of sections) {
     for (const slot of section.timeSlots) {
-      const startMin = timeToMinutesCached(slot.startTime);
-      const endMin = timeToMinutesCached(slot.endTime);
+      const { start: startMin, end: endMin } = getSlotMinutes(slot);
       totalSlots++;
 
       if (startMin < INTRINSIC_WINDOW_START_MIN) {
