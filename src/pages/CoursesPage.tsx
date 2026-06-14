@@ -1,4 +1,4 @@
-import { CalendarToday, Clear, KeyboardArrowDown, Search } from '@mui/icons-material';
+import { CalendarToday, Clear, FilterList, KeyboardArrowDown, Search } from '@mui/icons-material';
 import {
   Alert,
   alpha,
@@ -6,13 +6,10 @@ import {
   Button,
   Card,
   CardContent,
-  FormControl,
   IconButton,
   InputAdornment,
-  InputLabel,
   Menu,
   MenuItem,
-  Select,
   Skeleton,
   Snackbar,
   Stack,
@@ -512,28 +509,16 @@ export default function CoursesPage() {
             </Alert>
           </Stack>
         ) : (
-          <Card variant="outlined">
-            <CardContent>
-              <Stack
-                direction="row"
-                spacing={2}
-                sx={{
-                  alignItems: 'center',
-                }}
-              >
-                <CalendarToday sx={{ fontSize: 40, color: 'text.secondary' }} />
-                <Box>
-                  <Typography variant="h6">No Courses Loaded</Typography>
-                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    Try switching semesters or check back later.
-                  </Typography>
-                </Box>
-              </Stack>
-              <Button variant="contained" sx={{ mt: 3 }} onClick={autoLoadCourses}>
+          <EmptyState
+            icon={<CalendarToday />}
+            title="No Courses Loaded"
+            description="Try switching semesters or check back later."
+            action={
+              <Button variant="contained" onClick={autoLoadCourses}>
                 Load Courses
               </Button>
-            </CardContent>
-          </Card>
+            }
+          />
         )}
       </Box>
     );
@@ -684,6 +669,11 @@ export default function CoursesPage() {
           size="small"
           slotProps={{
             input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              ),
               endAdornment: (
                 <InputAdornment position="end">
                   {search && (
@@ -691,8 +681,8 @@ export default function CoursesPage() {
                       <IconButton
                         size="small"
                         onClick={() => setSearch('')}
-                        sx={{ mr: 0.5 }}
                         aria-label="Clear search"
+                        edge="end"
                       >
                         <Clear fontSize="small" />
                       </IconButton>
@@ -703,17 +693,30 @@ export default function CoursesPage() {
             },
           }}
         />
-        <FormControl sx={{ minWidth: 200 }} size="small">
-          <InputLabel>Subject</InputLabel>
-          <Select value={subject} label="Subject" onChange={(e) => setSubject(e.target.value)}>
-            <MenuItem value="all">All Subjects</MenuItem>
-            {subjects.map((s) => (
-              <MenuItem key={s} value={s}>
-                {s}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <TextField
+          select
+          size="small"
+          value={subject}
+          label="Subject"
+          onChange={(e) => setSubject(e.target.value)}
+          sx={{ minWidth: 200 }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <FilterList />
+                </InputAdornment>
+              ),
+            },
+          }}
+        >
+          <MenuItem value="all">All Subjects</MenuItem>
+          {subjects.map((s) => (
+            <MenuItem key={s} value={s}>
+              {s}
+            </MenuItem>
+          ))}
+        </TextField>
       </Stack>
       {filteredCourses.length === 0 && (
         <EmptyState
