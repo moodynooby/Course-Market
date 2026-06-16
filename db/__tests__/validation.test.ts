@@ -82,6 +82,15 @@ describe('tradeSchema', () => {
       }),
     ).toThrow();
   });
+
+  it('rejects message content that is too long', () => {
+    expect(() =>
+      llmRequestSchema.parse({
+        provider: 'groq',
+        messages: [{ role: 'user', content: 'a'.repeat(100001) }],
+      }),
+    ).toThrow();
+  });
 });
 
 describe('tradeUpdateSchema', () => {
