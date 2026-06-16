@@ -1,5 +1,5 @@
 import { alpha, Box, Paper, Stack, Typography, useTheme } from '@mui/material';
-import type { ReactNode } from 'react';
+import { cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 
 export type EmptyStateVariant = 'default' | 'compact' | 'fullscreen';
 
@@ -44,7 +44,23 @@ export function EmptyState({
     fullscreen: 80,
   };
 
+  const innerIconSizes = {
+    default: 32,
+    compact: 24,
+    fullscreen: 40,
+  };
+
   const iconSize = iconSizes[variant];
+  const innerIconSize = innerIconSizes[variant];
+
+  const sizedIcon = isValidElement(icon)
+    ? cloneElement(icon as ReactElement, {
+        sx: {
+          fontSize: innerIconSize,
+          ...(icon.props as any)?.sx,
+        },
+      })
+    : icon;
 
   return (
     <Paper
@@ -84,7 +100,7 @@ export function EmptyState({
             position: 'absolute',
           }}
         />
-        <Box sx={{ position: 'relative', zIndex: 1, color: 'primary.main' }}>{icon}</Box>
+        <Box sx={{ position: 'relative', zIndex: 1, color: 'primary.main' }}>{sizedIcon}</Box>
       </Box>
       <Typography
         variant="h6"
