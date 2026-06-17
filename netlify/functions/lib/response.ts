@@ -5,6 +5,12 @@ export const corsHeaders: Record<string, string> = {
   'Access-Control-Max-Age': '86400',
 };
 
+export const securityHeaders: Record<string, string> = {
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+};
+
 export const cacheHeaders: Record<string, string> = {
   'Cache-Control': 'public, max-age=3600',
   'CDN-Cache-Control': 'public, max-age=3600',
@@ -18,7 +24,12 @@ export function jsonResponse(
 ) {
   return {
     statusCode,
-    headers: { ...corsHeaders, ...extraHeaders, 'Content-Type': 'application/json' },
+    headers: {
+      ...corsHeaders,
+      ...securityHeaders,
+      ...extraHeaders,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify(body),
   };
 }
