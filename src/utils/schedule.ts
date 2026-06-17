@@ -121,7 +121,7 @@ export function checkConflicts(sections: Section[]): string[] {
 }
 
 const timeCache = new Map<string, number>();
-const MAX_CACHE_SIZE = 100;
+const MAX_CACHE_SIZE = 1440; // Full day coverage
 const cacheKeys: string[] = [];
 
 export function timeToMinutesCached(time: string): number {
@@ -139,6 +139,24 @@ export function timeToMinutesCached(time: string): number {
   return minutes;
 }
 
+const slotMinutesCache = new WeakMap<TimeSlot, { start: number; end: number }>();
+
+/**
+ * Direct numeric cache for TimeSlot objects. Avoids redundant string lookups
+ * and parsing in hot conflict detection and scoring paths.
+ */
+export function getSlotMinutes(slot: TimeSlot): { start: number; end: number } {
+  let cached = slotMinutesCache.get(slot);
+  if (!cached) {
+    cached = {
+      start: timeToMinutesCached(slot.startTime),
+      end: timeToMinutesCached(slot.endTime),
+    };
+    slotMinutesCache.set(slot, cached);
+  }
+  return cached;
+}
+
 function dateRangesOverlap(slot1: TimeSlot, slot2: TimeSlot): boolean {
   if (!slot1.startDate || !slot1.endDate || !slot2.startDate || !slot2.endDate) {
     return true;
@@ -151,11 +169,9 @@ function dateRangesOverlap(slot1: TimeSlot, slot2: TimeSlot): boolean {
 export function hasTimeConflict(slot1: TimeSlot, slot2: TimeSlot): boolean {
   if (slot1.day !== slot2.day) return false;
   if (!dateRangesOverlap(slot1, slot2)) return false;
-  const start1 = timeToMinutesCached(slot1.startTime);
-  const end1 = timeToMinutesCached(slot1.endTime);
-  const start2 = timeToMinutesCached(slot2.startTime);
-  const end2 = timeToMinutesCached(slot2.endTime);
-  return start1 < end2 && start2 < end1;
+  const m1 = getSlotMinutes(slot1);
+  const m2 = getSlotMinutes(slot2);
+  return m1.start < m2.end && m2.start < m1.end;
 }
 
 export function isSlotActiveDuring(slot: TimeSlot, referenceDate: Date): boolean {
@@ -196,7 +212,7 @@ export interface ScheduleFeatures {
 }
 
 export interface ScoringContext {
-  avoidDaysSet: Set<DayOfWeek>;
+  avoidDaysMask: number;
   preferredStart: number;
   preferredEnd: number;
   creditTarget: number;
@@ -204,8 +220,15 @@ export interface ScoringContext {
 }
 
 export function createScoringContext(preferences: Preferences): ScoringContext {
+  let avoidDaysMask = 0;
+  if (preferences.avoidDays) {
+    for (const d of preferences.avoidDays) {
+      avoidDaysMask |= 1 << DAY_TO_NUMBER[d];
+    }
+  }
+
   return {
-    avoidDaysSet: new Set(preferences.avoidDays),
+    avoidDaysMask,
     preferredStart: timeToMinutesCached(preferences.preferredStartTime),
     preferredEnd: timeToMinutesCached(preferences.preferredEndTime),
     creditTarget: (preferences.minCredits + preferences.maxCredits) / 2,
@@ -225,11 +248,9 @@ export function computeScheduleFeaturesWithContext(
   context: ScoringContext,
 ): ScheduleFeatures {
   const { sections, totalCredits } = schedule;
-  const { avoidDaysSet, preferredStart, preferredEnd, creditTarget, preferences } = context;
+  const { avoidDaysMask, preferredStart, preferredEnd, creditTarget, preferences } = context;
   let daysMask = 0;
 
-  const daysUsedMask = 0;
-  const daysUsedCount = 0;
   let hasMorning = false;
   let hasAfternoon = false;
   let hasEvening = false;
@@ -240,11 +261,11 @@ export function computeScheduleFeaturesWithContext(
 
   for (const section of sections) {
     for (const slot of section.timeSlots) {
-      daysMask |= 1 << DAY_TO_NUMBER[slot.day];
-      if (avoidDaysSet.has(slot.day)) avoidDayHits++;
+      const dayNum = DAY_TO_NUMBER[slot.day];
+      daysMask |= 1 << dayNum;
+      if ((avoidDaysMask >> dayNum) & 1) avoidDayHits++;
 
-      const start = timeToMinutesCached(slot.startTime);
-      const end = timeToMinutesCached(slot.endTime);
+      const { start, end } = getSlotMinutes(slot);
       allSlots.push({ day: slot.day, start, end });
 
       if (start < MORNING_END) hasMorning = true;
