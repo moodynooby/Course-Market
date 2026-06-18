@@ -198,6 +198,16 @@ describe('llmRequestSchema', () => {
       }),
     ).toThrow();
   });
+
+  it('rejects message content that is too long', () => {
+    const longContent = 'a'.repeat(100001);
+    expect(() =>
+      llmRequestSchema.parse({
+        provider: 'groq',
+        messages: [{ role: 'user', content: longContent }],
+      }),
+    ).toThrow();
+  });
 });
 
 describe('professorRatingSchema', () => {
