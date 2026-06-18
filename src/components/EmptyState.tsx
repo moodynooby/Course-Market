@@ -84,7 +84,16 @@ export function EmptyState({
             position: 'absolute',
           }}
         />
-        <Box sx={{ position: 'relative', zIndex: 1, color: 'primary.main' }}>{icon}</Box>
+        <Box
+          sx={{
+            position: 'relative',
+            zIndex: 1,
+            color: 'primary.main',
+            '& svg': { fontSize: iconSize * 0.6 },
+          }}
+        >
+          {icon}
+        </Box>
       </Box>
       <Typography
         variant="h6"
