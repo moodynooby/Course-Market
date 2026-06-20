@@ -189,6 +189,15 @@ describe('llmRequestSchema', () => {
     ).toThrow();
   });
 
+  it('rejects content exceeding length limit', () => {
+    expect(() =>
+      llmRequestSchema.parse({
+        provider: 'groq',
+        messages: [{ role: 'user', content: 'A'.repeat(100001) }],
+      }),
+    ).toThrow();
+  });
+
   it('rejects temperature out of range', () => {
     expect(() =>
       llmRequestSchema.parse({

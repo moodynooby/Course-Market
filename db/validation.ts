@@ -46,7 +46,7 @@ export type UserProfileUpdateInput = z.infer<typeof userProfileUpdateSchema>;
 
 export const llmMessageSchema = z.object({
   role: z.enum(['system', 'user', 'assistant', 'tool']),
-  content: z.string(),
+  content: z.string().max(100000),
 });
 
 export const llmRequestSchema = z.object({
