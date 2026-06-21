@@ -121,22 +121,38 @@ export function checkConflicts(sections: Section[]): string[] {
 }
 
 const timeCache = new Map<string, number>();
-const MAX_CACHE_SIZE = 100;
-const cacheKeys: string[] = [];
+/** 1440 minutes in a day, covering all possible HH:mm values */
+const MAX_CACHE_SIZE = 1440;
 
 export function timeToMinutesCached(time: string): number {
   let minutes = timeCache.get(time);
   if (minutes === undefined) {
     const [hours, mins] = time.split(':').map(Number);
     minutes = hours * 60 + mins;
-    if (timeCache.size >= MAX_CACHE_SIZE) {
-      const oldest = cacheKeys.shift();
-      if (oldest) timeCache.delete(oldest);
+    if (timeCache.size < MAX_CACHE_SIZE) {
+      timeCache.set(time, minutes);
     }
-    timeCache.set(time, minutes);
-    cacheKeys.push(time);
   }
   return minutes;
+}
+
+const slotMinutesCache = new WeakMap<TimeSlot, { start: number; end: number }>();
+
+/**
+ * Returns numeric start/end minutes for a TimeSlot, using a WeakMap to cache
+ * the results at the object level. This avoids redundant string parsing
+ * during tight schedule generation/scoring loops.
+ */
+export function getSlotMinutes(slot: TimeSlot): { start: number; end: number } {
+  let cached = slotMinutesCache.get(slot);
+  if (!cached) {
+    cached = {
+      start: timeToMinutesCached(slot.startTime),
+      end: timeToMinutesCached(slot.endTime),
+    };
+    slotMinutesCache.set(slot, cached);
+  }
+  return cached;
 }
 
 function dateRangesOverlap(slot1: TimeSlot, slot2: TimeSlot): boolean {
@@ -196,7 +212,7 @@ export interface ScheduleFeatures {
 }
 
 export interface ScoringContext {
-  avoidDaysSet: Set<DayOfWeek>;
+  avoidDaysMask: number;
   preferredStart: number;
   preferredEnd: number;
   creditTarget: number;
@@ -204,8 +220,13 @@ export interface ScoringContext {
 }
 
 export function createScoringContext(preferences: Preferences): ScoringContext {
+  let avoidDaysMask = 0;
+  for (const day of preferences.avoidDays) {
+    avoidDaysMask |= 1 << DAY_TO_NUMBER[day];
+  }
+
   return {
-    avoidDaysSet: new Set(preferences.avoidDays),
+    avoidDaysMask,
     preferredStart: timeToMinutesCached(preferences.preferredStartTime),
     preferredEnd: timeToMinutesCached(preferences.preferredEndTime),
     creditTarget: (preferences.minCredits + preferences.maxCredits) / 2,
@@ -225,27 +246,25 @@ export function computeScheduleFeaturesWithContext(
   context: ScoringContext,
 ): ScheduleFeatures {
   const { sections, totalCredits } = schedule;
-  const { avoidDaysSet, preferredStart, preferredEnd, creditTarget, preferences } = context;
+  const { avoidDaysMask, preferredStart, preferredEnd, creditTarget, preferences } = context;
   let daysMask = 0;
 
-  const daysUsedMask = 0;
-  const daysUsedCount = 0;
   let hasMorning = false;
   let hasAfternoon = false;
   let hasEvening = false;
   let outsideWindowMinutes = 0;
   let avoidDayHits = 0;
 
-  const allSlots: { day: DayOfWeek; start: number; end: number }[] = [];
+  const allSlots: { dayNum: number; start: number; end: number }[] = [];
 
   for (const section of sections) {
     for (const slot of section.timeSlots) {
-      daysMask |= 1 << DAY_TO_NUMBER[slot.day];
-      if (avoidDaysSet.has(slot.day)) avoidDayHits++;
+      const dayNum = DAY_TO_NUMBER[slot.day];
+      daysMask |= 1 << dayNum;
+      if ((avoidDaysMask >> dayNum) & 1) avoidDayHits++;
 
-      const start = timeToMinutesCached(slot.startTime);
-      const end = timeToMinutesCached(slot.endTime);
-      allSlots.push({ day: slot.day, start, end });
+      const { start, end } = getSlotMinutes(slot);
+      allSlots.push({ dayNum, start, end });
 
       if (start < MORNING_END) hasMorning = true;
       if (start >= MORNING_END && start < AFTERNOON_END) hasAfternoon = true;
@@ -285,14 +304,12 @@ export function computeScheduleFeaturesWithContext(
   let hasLunchBreak: 0 | 1 = 0;
   if (allSlots.length > 1) {
     allSlots.sort((a, b) => {
-      const da = DAY_TO_NUMBER[a.day];
-      const db = DAY_TO_NUMBER[b.day];
-      if (da !== db) return da - db;
+      if (a.dayNum !== b.dayNum) return a.dayNum - b.dayNum;
       return a.start - b.start;
     });
 
     const gapLimit = preferences.maxGapMinutes > 0 ? preferences.maxGapMinutes : 0;
-    let currentDay = allSlots[0].day;
+    let currentDayNum = allSlots[0].dayNum;
     let dayEndsBeforeLunch = false;
     let dayStartsAfterLunch = false;
 
@@ -304,15 +321,15 @@ export function computeScheduleFeaturesWithContext(
       const s = allSlots[i];
 
       // Gap calculation
-      if (i < allSlots.length - 1 && s.day === allSlots[i + 1].day) {
+      if (i < allSlots.length - 1 && s.dayNum === allSlots[i + 1].dayNum) {
         const gap = allSlots[i + 1].start - s.end;
         if (gap > gapLimit) gapMinutesTotal += gap - gapLimit;
       }
 
       // Lunch break detection
-      if (s.day !== currentDay) {
+      if (s.dayNum !== currentDayNum) {
         if (dayEndsBeforeLunch && dayStartsAfterLunch) hasLunchBreak = 1;
-        currentDay = s.day;
+        currentDayNum = s.dayNum;
         dayEndsBeforeLunch = false;
         dayStartsAfterLunch = false;
       }
