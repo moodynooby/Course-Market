@@ -354,11 +354,7 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
         ) : activeSchedules.length === 0 ? (
           <EmptyState
             icon={
-              generatedSchedules.length > 0 ? (
-                <FilterList sx={{ fontSize: 40 }} />
-              ) : (
-                <CalendarToday sx={{ fontSize: 40 }} />
-              )
+              generatedSchedules.length > 0 ? <FilterList /> : <CalendarToday />
             }
             title={
               generatedSchedules.length > 0
@@ -433,7 +429,7 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
                 />
               ) : (
                 <EmptyState
-                  icon={<GridView sx={{ fontSize: 32 }} />}
+                  icon={<GridView />}
                   title="Select a schedule"
                   description="Select a schedule from the list to view details"
                   variant="compact"
