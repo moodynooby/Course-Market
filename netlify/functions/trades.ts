@@ -54,7 +54,7 @@ export const handler = async (event: any) => {
       }
 
       const [userProfile] = await db
-        .select()
+        .select({ phone: schema.userProfiles.phone })
         .from(schema.userProfiles)
         .where(eq(schema.userProfiles.auth0UserId, user.sub));
 
@@ -116,7 +116,16 @@ export const handler = async (event: any) => {
       }
 
       const [existingTrade] = await db
-        .select()
+        .select({
+          auth0UserId: schema.trades.auth0UserId,
+          courseCode: schema.trades.courseCode,
+          courseName: schema.trades.courseName,
+          sectionOffered: schema.trades.sectionOffered,
+          sectionWanted: schema.trades.sectionWanted,
+          status: schema.trades.status,
+          description: schema.trades.description,
+          contactPhone: schema.trades.contactPhone,
+        })
         .from(schema.trades)
         .where(eq(schema.trades.id, idNum));
 
@@ -131,7 +140,7 @@ export const handler = async (event: any) => {
       }
 
       const [userProfile] = await db
-        .select()
+        .select({ phone: schema.userProfiles.phone })
         .from(schema.userProfiles)
         .where(eq(schema.userProfiles.auth0UserId, user.sub));
 
@@ -174,7 +183,7 @@ export const handler = async (event: any) => {
       }
 
       const [existingTrade] = await db
-        .select()
+        .select({ auth0UserId: schema.trades.auth0UserId })
         .from(schema.trades)
         .where(eq(schema.trades.id, idNum));
 
