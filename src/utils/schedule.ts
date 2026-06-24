@@ -121,22 +121,36 @@ export function checkConflicts(sections: Section[]): string[] {
 }
 
 const timeCache = new Map<string, number>();
-const MAX_CACHE_SIZE = 100;
-const cacheKeys: string[] = [];
 
 export function timeToMinutesCached(time: string): number {
   let minutes = timeCache.get(time);
   if (minutes === undefined) {
     const [hours, mins] = time.split(':').map(Number);
     minutes = hours * 60 + mins;
-    if (timeCache.size >= MAX_CACHE_SIZE) {
-      const oldest = cacheKeys.shift();
-      if (oldest) timeCache.delete(oldest);
+    // Cache all 1440 possible minutes in a day to eliminate eviction overhead
+    if (timeCache.size < 1440) {
+      timeCache.set(time, minutes);
     }
-    timeCache.set(time, minutes);
-    cacheKeys.push(time);
   }
   return minutes;
+}
+
+const slotCache = new WeakMap<TimeSlot, { start: number; end: number }>();
+
+/**
+ * Highly optimized slot-to-minutes resolver using WeakMap for O(1) retrieval
+ * of pre-parsed times for recurring TimeSlot objects.
+ */
+export function getSlotMinutes(slot: TimeSlot): { start: number; end: number } {
+  let cached = slotCache.get(slot);
+  if (!cached) {
+    cached = {
+      start: timeToMinutesCached(slot.startTime),
+      end: timeToMinutesCached(slot.endTime),
+    };
+    slotCache.set(slot, cached);
+  }
+  return cached;
 }
 
 function dateRangesOverlap(slot1: TimeSlot, slot2: TimeSlot): boolean {
@@ -151,11 +165,9 @@ function dateRangesOverlap(slot1: TimeSlot, slot2: TimeSlot): boolean {
 export function hasTimeConflict(slot1: TimeSlot, slot2: TimeSlot): boolean {
   if (slot1.day !== slot2.day) return false;
   if (!dateRangesOverlap(slot1, slot2)) return false;
-  const start1 = timeToMinutesCached(slot1.startTime);
-  const end1 = timeToMinutesCached(slot1.endTime);
-  const start2 = timeToMinutesCached(slot2.startTime);
-  const end2 = timeToMinutesCached(slot2.endTime);
-  return start1 < end2 && start2 < end1;
+  const t1 = getSlotMinutes(slot1);
+  const t2 = getSlotMinutes(slot2);
+  return t1.start < t2.end && t2.start < t1.end;
 }
 
 export function isSlotActiveDuring(slot: TimeSlot, referenceDate: Date): boolean {
@@ -228,24 +240,22 @@ export function computeScheduleFeaturesWithContext(
   const { avoidDaysSet, preferredStart, preferredEnd, creditTarget, preferences } = context;
   let daysMask = 0;
 
-  const daysUsedMask = 0;
-  const daysUsedCount = 0;
   let hasMorning = false;
   let hasAfternoon = false;
   let hasEvening = false;
   let outsideWindowMinutes = 0;
   let avoidDayHits = 0;
 
-  const allSlots: { day: DayOfWeek; start: number; end: number }[] = [];
+  const allSlots: { day: DayOfWeek; dayNum: number; start: number; end: number }[] = [];
 
   for (const section of sections) {
     for (const slot of section.timeSlots) {
-      daysMask |= 1 << DAY_TO_NUMBER[slot.day];
+      const dayNum = DAY_TO_NUMBER[slot.day];
+      daysMask |= 1 << dayNum;
       if (avoidDaysSet.has(slot.day)) avoidDayHits++;
 
-      const start = timeToMinutesCached(slot.startTime);
-      const end = timeToMinutesCached(slot.endTime);
-      allSlots.push({ day: slot.day, start, end });
+      const { start, end } = getSlotMinutes(slot);
+      allSlots.push({ day: slot.day, dayNum, start, end });
 
       if (start < MORNING_END) hasMorning = true;
       if (start >= MORNING_END && start < AFTERNOON_END) hasAfternoon = true;
@@ -285,9 +295,7 @@ export function computeScheduleFeaturesWithContext(
   let hasLunchBreak: 0 | 1 = 0;
   if (allSlots.length > 1) {
     allSlots.sort((a, b) => {
-      const da = DAY_TO_NUMBER[a.day];
-      const db = DAY_TO_NUMBER[b.day];
-      if (da !== db) return da - db;
+      if (a.dayNum !== b.dayNum) return a.dayNum - b.dayNum;
       return a.start - b.start;
     });
 
