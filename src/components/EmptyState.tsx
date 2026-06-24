@@ -72,6 +72,9 @@ export function EmptyState({
           justifyContent: 'center',
           mb: 2,
           position: 'relative',
+          '& svg': {
+            fontSize: iconSize * 0.6,
+          },
         }}
       >
         <Box
@@ -82,6 +85,17 @@ export function EmptyState({
             bgcolor: alpha(theme.palette.primary.main, 0.3),
             filter: 'blur(8px)',
             position: 'absolute',
+            animation: 'pulse 3s ease-in-out infinite',
+            '@keyframes pulse': {
+              '0%, 100%': {
+                transform: 'scale(1)',
+                opacity: 0.3,
+              },
+              '50%': {
+                transform: 'scale(1.2)',
+                opacity: 0.5,
+              },
+            },
           }}
         />
         <Box sx={{ position: 'relative', zIndex: 1, color: 'primary.main' }}>{icon}</Box>
