@@ -54,7 +54,9 @@ export const handler = async (event: any) => {
       }
 
       const [userProfile] = await db
-        .select()
+        .select({
+          phone: schema.userProfiles.phone,
+        })
         .from(schema.userProfiles)
         .where(eq(schema.userProfiles.auth0UserId, user.sub));
 
@@ -131,7 +133,9 @@ export const handler = async (event: any) => {
       }
 
       const [userProfile] = await db
-        .select()
+        .select({
+          phone: schema.userProfiles.phone,
+        })
         .from(schema.userProfiles)
         .where(eq(schema.userProfiles.auth0UserId, user.sub));
 
