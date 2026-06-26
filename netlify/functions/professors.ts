@@ -112,12 +112,22 @@ export const handler = async (event: any) => {
       }
 
       if (path.endsWith('/sync')) {
-        const semesters = await db.select().from(schema.semesters);
+        const semesters = await db
+          .select({
+            id: schema.semesters.id,
+            jsonUrl: schema.semesters.jsonUrl,
+          })
+          .from(schema.semesters);
         const allInstructors = new Set<string>();
 
-        const host = event.headers.host || 'localhost:8888';
-        const protocol = host.includes('localhost') ? 'http' : 'https';
-        const siteUrl = `${protocol}://${host}`;
+        // Use environment URL if available to mitigate Host header spoofing
+        const siteUrl =
+          process.env.URL ||
+          (() => {
+            const host = event.headers.host || 'localhost:8888';
+            const protocol = host.includes('localhost') ? 'http' : 'https';
+            return `${protocol}://${host}`;
+          })();
 
         for (const semester of semesters) {
           if (!semester.jsonUrl) continue;

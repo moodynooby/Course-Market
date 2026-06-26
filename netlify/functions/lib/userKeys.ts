@@ -1,15 +1,17 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { db } from '../../../db';
 import { userLlmKeys } from '../../../db/schema';
 
 export async function getUserKey(auth0UserId: string, provider: string): Promise<string | null> {
   const result = await db
-    .select()
+    .select({
+      apiKey: userLlmKeys.apiKey,
+    })
     .from(userLlmKeys)
-    .where(eq(userLlmKeys.auth0UserId, auth0UserId))
+    .where(and(eq(userLlmKeys.auth0UserId, auth0UserId), eq(userLlmKeys.provider, provider)))
     .limit(1);
 
-  if (result.length === 0 || result[0].provider !== provider) {
+  if (result.length === 0) {
     return null;
   }
 
