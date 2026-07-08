@@ -47,6 +47,7 @@ import {
   getTrades as fetchTrades,
   updateTrade,
 } from '../services/tradesApi';
+import { getSemesterData, getSemesters } from '../services/coursesApi';
 import type { Course, Section, TradePost } from '../types';
 import { timeAgo } from '../utils';
 import { hasSectionConflict } from '../utils/schedule';
@@ -355,7 +356,6 @@ export default function TradingPage() {
 
   const loadSemesterData = useCallback(async () => {
     try {
-      const { getSemesters, getSemesterData } = await import('../services/coursesApi');
       const { semesters } = await getSemesters();
       if (!semesters || semesters.length === 0) return;
 

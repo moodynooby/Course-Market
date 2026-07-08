@@ -29,6 +29,7 @@ import { useProfessorsMap } from '../hooks/useProfessorsMap';
 import { getSemesterData, getSemesters } from '../services/coursesApi';
 import { buildCourseIndex, searchCourses } from '../services/search';
 import type { Course, Section } from '../types';
+import { deduplicateSections } from '../utils/schedule-prefilter';
 import { hasSectionConflict } from '../utils/schedule';
 
 const SEARCH_DEBOUNCE_MS = 150;
@@ -288,7 +289,10 @@ export default function CoursesPage() {
   const conflictIds = useMemo(() => {
     const set = new Set<string>();
     const selected = selectedSectionList;
-    for (const section of sections) {
+    if (selected.length === 0) return set;
+    // Use deduplicated sections for conflict detection to match schedule generation view
+    const deduped = deduplicateSections(sections);
+    for (const section of deduped) {
       for (const sel of selected) {
         if (sel.id !== section.id && hasSectionConflict(section, sel)) {
           set.add(section.id);

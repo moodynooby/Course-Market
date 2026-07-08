@@ -29,6 +29,8 @@ import type { Course, Schedule, Section } from '../types';
 import { checkConflicts } from '../utils/schedule';
 import type { ScheduleDiagnostics } from '../utils/schedule-diagnostics';
 import { diagnoseEmptyGeneration } from '../utils/schedule-diagnostics';
+import { buildSectionsByCourse, prefilterSections } from '../utils/schedule-prefilter';
+import type { PrefilterSummary } from '../utils/schedule-prefilter';
 import type { GeneratedSchedule, SearchResult } from '../utils/schedule-types';
 import { DEFAULT_MAX_SCHEDULES } from '../utils/schedule-types';
 
@@ -72,6 +74,7 @@ export default function LandingPage() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showConflicting, setShowConflicting] = useState(false);
   const [scheduleDiagnostics, setScheduleDiagnostics] = useState<ScheduleDiagnostics | null>(null);
+  const [prefilterSummary, setPrefilterSummary] = useState<PrefilterSummary | null>(null);
   const dataLoadedRef = useRef(false);
   const coursesRef = useRef<Course[]>([]);
   const sectionsRef = useRef<Section[]>([]);
@@ -203,29 +206,27 @@ export default function LandingPage() {
     setOptimizing(true);
     setError('');
     setInitProgress({ text: '', percent: 0 });
+    setPrefilterSummary(null);
 
     try {
       const { optimizeWithLLM } = await import('../services/llm');
       const { generateSchedules } = await import('../utils/schedule-generator');
       const token = await getToken();
 
-      const selectedCourseIds = new Set(schedule.sections.map((s) => s.courseId));
-      const relevantSections = allSections.filter((s) => selectedCourseIds.has(s.courseId));
-      const sectionsByCourse = new Map<string, Section[]>();
-      relevantSections.forEach((section) => {
-        const existing = sectionsByCourse.get(section.courseId) || [];
-        existing.push(section);
-        sectionsByCourse.set(section.courseId, existing);
-      });
-      const pinnedSelections = profile?.pinnedSelections || {};
-      Object.entries(pinnedSelections).forEach(([courseId, sectionId]) => {
-        if (sectionsByCourse.has(courseId)) {
-          const pinnedSection = allSections.find((s) => s.id === sectionId);
-          if (pinnedSection) sectionsByCourse.set(courseId, [pinnedSection]);
-        }
-      });
+      const sectionsByCourse = buildSectionsByCourse(
+        schedule.sections,
+        allSections,
+        profile?.pinnedSelections ?? {},
+      );
+      const courseCodeMap = new Map(allCourses.map((c) => [c.id, c.code]));
+      const { sectionsByCourse: filteredByCourse, summary } = prefilterSections(
+        sectionsByCourse,
+        preferences,
+        courseCodeMap,
+      );
+      setPrefilterSummary(summary);
 
-      let candidates = generateSchedules(allCourses, sectionsByCourse, preferences, {
+      let candidates = generateSchedules(allCourses, filteredByCourse, preferences, {
         maxSchedules: 200,
       }).map<Schedule>((g) => ({
         id: g.id,
@@ -289,20 +290,17 @@ export default function LandingPage() {
     setGeneratedSchedules([]);
     setSelectedSchedule(null);
     setScheduleDiagnostics(null);
+    setPrefilterSummary(null);
 
     try {
       const { generateSchedules } = await import('../utils/schedule-generator');
       const prefs = preferences;
 
-      const selectedCourseIds = new Set(schedule.sections.map((s) => s.courseId));
-      const relevantSections = allSections.filter((s) => selectedCourseIds.has(s.courseId));
-
-      const sectionsByCourse = new Map<string, Section[]>();
-      relevantSections.forEach((section) => {
-        const existing = sectionsByCourse.get(section.courseId) || [];
-        existing.push(section);
-        sectionsByCourse.set(section.courseId, existing);
-      });
+      const sectionsByCourse = buildSectionsByCourse(
+        schedule.sections,
+        allSections,
+        profile?.pinnedSelections ?? {},
+      );
 
       if (sectionsByCourse.size === 0) {
         setGeneratedSchedules([]);
@@ -310,24 +308,26 @@ export default function LandingPage() {
         return;
       }
 
-      const pinnedSelections = profile?.pinnedSelections || {};
-      const pinnedMap = new Map(Object.entries(pinnedSelections));
-      pinnedMap.forEach((sectionId, courseId) => {
-        if (sectionsByCourse.has(courseId)) {
-          const pinnedSection = allSections.find((s) => s.id === sectionId);
-          if (pinnedSection) {
-            sectionsByCourse.set(courseId, [pinnedSection]);
-          }
-        }
-      });
+      const courseCodeMap = new Map(allCourses.map((c) => [c.id, c.code]));
+      const { sectionsByCourse: filteredByCourse, summary } = prefilterSections(
+        sectionsByCourse,
+        prefs,
+        courseCodeMap,
+      );
+      setPrefilterSummary(summary);
 
-      const schedules = generateSchedules(allCourses, sectionsByCourse, prefs, {
+      const schedules = generateSchedules(allCourses, filteredByCourse, prefs, {
         maxSchedules: DEFAULT_MAX_SCHEDULES,
         onProgress: setGenerationProgress,
       });
 
       if (schedules.length === 0) {
-        const diagnostics = diagnoseEmptyGeneration(allCourses, sectionsByCourse, prefs, pinnedMap);
+        const diagnostics = diagnoseEmptyGeneration(
+          allCourses,
+          sectionsByCourse,
+          prefs,
+          new Map(Object.entries(profile?.pinnedSelections ?? {})),
+        );
         setScheduleDiagnostics(diagnostics);
       }
 
@@ -696,6 +696,7 @@ export default function LandingPage() {
             showConflicting={showConflicting}
             onToggleConflicting={() => setShowConflicting(!showConflicting)}
             diagnostics={scheduleDiagnostics}
+            prefilterSummary={prefilterSummary}
             onDiagnosticAction={(action) => {
               if (action.includes('Browse') || action.includes('Select')) {
                 navigate('/courses');
