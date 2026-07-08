@@ -48,7 +48,7 @@ export default function CoursesPage() {
   const [currentSemesterName, setCurrentSemesterName] = useState<string>('');
   const [semesterMenuAnchor, setSemesterMenuAnchor] = useState<null | HTMLElement>(null);
   const [availableSemesters, setAvailableSemesters] = useState<
-    Array<{ id: string; name: string; jsonUrl: string; isActive: boolean }>
+    Array<{ id: string; name: string; isActive: boolean }>
   >([]);
   const [loadingSemesters, setLoadingSemesters] = useState(false);
 

@@ -58,7 +58,6 @@ export const handler = async (event: any) => {
         .select({
           id: schema.semesters.id,
           name: schema.semesters.name,
-          jsonUrl: schema.semesters.jsonUrl,
           isActive: schema.semesters.isActive,
           createdAt: schema.semesters.createdAt,
         })

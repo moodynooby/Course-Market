@@ -160,45 +160,17 @@ export const handler = async (event: any) => {
       }
 
       if (path.endsWith('/sync')) {
-        const semesters = await db.select().from(schema.semesters);
+        const sections = await db
+          .select({ instructor: schema.semesterSections.instructor })
+          .from(schema.semesterSections);
+
         const allInstructors = new Set<string>();
 
-        const host = event.headers.host || 'localhost:8888';
-        const protocol = host.includes('localhost') ? 'http' : 'https';
-        const siteUrl = `${protocol}://${host}`;
-
-        for (const semester of semesters) {
-          if (!semester.jsonUrl) continue;
-
-          try {
-            let url = semester.jsonUrl;
-            if (!url.startsWith('http')) {
-              url = `${siteUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+        for (const section of sections) {
+          if (section.instructor) {
+            for (const name of splitInstructorNames(section.instructor)) {
+              allInstructors.add(name);
             }
-
-            console.log(`Syncing from ${url}`);
-            const response = await fetch(url);
-            if (!response.ok) {
-              const errorText = await response.text();
-              console.error(
-                `Failed to fetch ${url}: ${response.status} ${response.statusText} - ${errorText}`,
-              );
-              continue;
-            }
-
-            const data = (await response.json()) as { sections?: Array<{ instructor?: string }> };
-            console.log(`Fetched ${data.sections?.length} sections from ${semester.id}`);
-            if (data.sections && Array.isArray(data.sections)) {
-              for (const section of data.sections) {
-                if (section.instructor) {
-                  for (const name of splitInstructorNames(section.instructor)) {
-                    allInstructors.add(name);
-                  }
-                }
-              }
-            }
-          } catch (e) {
-            console.error(`Error processing semester ${semester.id}:`, e);
           }
         }
 

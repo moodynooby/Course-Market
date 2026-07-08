@@ -70,7 +70,6 @@ export type NewUserProfile = typeof userProfiles.$inferInsert;
 export const semesters = pgTable('semesters', {
   id: varchar('id', { length: 50 }).primaryKey(),
   name: varchar('name', { length: 100 }).notNull(),
-  jsonUrl: varchar('json_url', { length: 255 }),
   isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

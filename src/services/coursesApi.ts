@@ -2,7 +2,7 @@ import type { Course, Section } from '../types';
 import { api } from './apiClient';
 
 let semestersPromise: Promise<{
-  semesters: Array<{ id: string; name: string; jsonUrl: string; isActive: boolean }>;
+  semesters: Array<{ id: string; name: string; isActive: boolean }>;
 }> | null = null;
 
 /**
@@ -11,7 +11,7 @@ let semestersPromise: Promise<{
  * for the lifetime of the module).
  */
 export async function getSemesters(): Promise<{
-  semesters: Array<{ id: string; name: string; jsonUrl: string; isActive: boolean }>;
+  semesters: Array<{ id: string; name: string; isActive: boolean }>;
 }> {
   if (!semestersPromise) {
     semestersPromise = api.get('/semesters');

@@ -30,10 +30,8 @@ async function main() {
 
   const [semesterId, semesterName] = positional;
   const deactivateOthers = flags.includes('--deactivate-others');
-  const jsonUrl = `/semesters/${semesterId}.json`;
 
   console.log(`Seeding semester: ${semesterId} ("${semesterName}")`);
-  console.log(`JSON URL: ${jsonUrl}`);
 
   const existing = await db.select().from(semesters).where(eq(semesters.id, semesterId)).limit(1);
 
@@ -41,7 +39,7 @@ async function main() {
     console.log(`Semester "${semesterId}" already exists. Updating...`);
     const [updated] = await db
       .update(semesters)
-      .set({ name: semesterName, jsonUrl, isActive: true })
+      .set({ name: semesterName, isActive: true })
       .where(eq(semesters.id, semesterId))
       .returning();
     console.log('Updated:', updated);
@@ -49,7 +47,7 @@ async function main() {
     console.log(`Creating new semester "${semesterId}"...`);
     const [inserted] = await db
       .insert(semesters)
-      .values({ id: semesterId, name: semesterName, jsonUrl, isActive: true })
+      .values({ id: semesterId, name: semesterName, isActive: true })
       .returning();
     console.log('Inserted:', inserted);
   }
@@ -63,7 +61,7 @@ async function main() {
   const all = await db.select().from(semesters).orderBy(semesters.id);
   console.log('\nAll semesters:');
   for (const s of all) {
-    console.log(`  ${s.id} | ${s.name} | active: ${s.isActive} | ${s.jsonUrl}`);
+    console.log(`  ${s.id} | ${s.name} | active: ${s.isActive}`);
   }
 }
 
