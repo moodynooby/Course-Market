@@ -13,6 +13,12 @@ export const professorsApi = {
     return response.professor;
   },
 
+  getProfessorCourses: async (id: number) => {
+    return api.get<{ coursesTaught: { semester: string; courses: string[] }[] }>(
+      `/professors/${id}/courses`,
+    );
+  },
+
   submitRating: async (rating: ProfessorRatingInput, token: string) => {
     const response = await api.post<{ rating: ProfessorRating }>('/professors/rate', rating, token);
     return response.rating;

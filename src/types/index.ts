@@ -97,28 +97,7 @@ export interface UserProfile {
 export interface Semester {
   id: string;
   name: string;
-  jsonUrl?: string;
   isActive: boolean;
-}
-
-export interface SemesterJSON {
-  semesterId: string;
-  semesterName: string;
-  sections: SectionJSON[];
-}
-
-export interface SectionJSON {
-  id: string;
-  courseId?: string;
-  courseCode: string;
-  courseName: string;
-  sectionNumber: string;
-  instructor: string;
-  credits: number;
-  subject: string;
-  capacity: number;
-  enrolled: number;
-  timeSlots: TimeSlot[];
 }
 
 export interface Professor {

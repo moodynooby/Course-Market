@@ -1,5 +1,6 @@
 import {
   boolean,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -111,3 +112,36 @@ export const professorRatings = pgTable(
 
 export type ProfessorRating = typeof professorRatings.$inferSelect;
 export type NewProfessorRating = typeof professorRatings.$inferInsert;
+
+export const semesterCourses = pgTable('semester_courses', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  courseCode: varchar('course_code', { length: 50 }).notNull(),
+  name: varchar('name', { length: 255 }).notNull(),
+  subject: varchar('subject', { length: 50 }).notNull(),
+  credits: doublePrecision('credits').notNull().default(0),
+  description: text('description'),
+  semesterId: varchar('semester_id', { length: 50 })
+    .notNull()
+    .references(() => semesters.id),
+});
+
+export type SemesterCourse = typeof semesterCourses.$inferSelect;
+export type NewSemesterCourse = typeof semesterCourses.$inferInsert;
+
+export const semesterSections = pgTable('semester_sections', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  courseId: varchar('course_id', { length: 255 })
+    .notNull()
+    .references(() => semesterCourses.id),
+  sectionNumber: varchar('section_number', { length: 20 }).notNull(),
+  instructor: varchar('instructor', { length: 255 }).notNull().default(''),
+  capacity: integer('capacity').notNull().default(0),
+  enrolled: integer('enrolled').notNull().default(0),
+  timeSlots: jsonb('time_slots').notNull().default([]),
+  semesterId: varchar('semester_id', { length: 50 })
+    .notNull()
+    .references(() => semesters.id),
+});
+
+export type SemesterSection = typeof semesterSections.$inferSelect;
+export type NewSemesterSection = typeof semesterSections.$inferInsert;

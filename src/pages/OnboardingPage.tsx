@@ -17,9 +17,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useAuthContext } from '../context/AuthContext';
 import { getSemesters } from '../services/coursesApi';
-import { getCachedSemesterData } from '../services/dbCache';
 import type { Semester } from '../types';
-import { transformSections } from '../utils/semester-transform';
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
@@ -79,25 +77,8 @@ export default function OnboardingPage() {
     return true;
   };
 
-  const handleSelectSemester = async (semesterId: string) => {
-    try {
-      setSelectingSemester(semesterId);
-      const cachedData = await getCachedSemesterData(semesterId);
-      if (!cachedData) {
-        const { cacheSemesterData } = await import('../services/dbCache');
-        const { getSemesterData: fetchSemesterData } = await import('../services/coursesApi');
-        const semesterData = await fetchSemesterData(semesterId);
-        const { courses: allCourses, sections: allSections } = transformSections(
-          semesterData.sections,
-        );
-        await cacheSemesterData(semesterId, allCourses, allSections);
-      }
-      setSelectedSemester(semesterId);
-    } catch (err) {
-      console.error('[Onboarding] Error loading semester data:', err);
-    } finally {
-      setSelectingSemester(null);
-    }
+  const handleSelectSemester = (semesterId: string) => {
+    setSelectedSemester(semesterId);
   };
 
   const handleSave = async () => {

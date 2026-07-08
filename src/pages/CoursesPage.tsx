@@ -26,9 +26,7 @@ import { CourseCard } from '../components/CourseCard';
 import { EmptyState } from '../components/EmptyState';
 import { useAuthContext } from '../context/AuthContext';
 import { useProfessorsMap } from '../hooks/useProfessorsMap';
-import { useSemesterParser } from '../hooks/useSemesterParser';
-import { getSemesters } from '../services/coursesApi';
-import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
+import { getSemesterData, getSemesters } from '../services/coursesApi';
 import { buildCourseIndex, searchCourses } from '../services/search';
 import type { Course, Section } from '../types';
 import { hasSectionConflict } from '../utils/schedule';
@@ -66,8 +64,6 @@ export default function CoursesPage() {
     message: '',
     severity: 'success',
   });
-
-  const { progress, result: parsedResult, error: parseError, fetchAndParse } = useSemesterParser();
 
   const [selectedSections, setSelectedSections] = useState<Map<string, string>>(new Map());
   const [pinnedSections, setPinnedSections] = useState<Map<string, string>>(new Map());
@@ -155,51 +151,21 @@ export default function CoursesPage() {
     };
   }, [selectedSections, pinnedSections, saveSelections]);
 
-  const loadCoursesFromSemester = useCallback(
-    async (jsonUrl: string, semesterId: string, semesterName: string) => {
-      try {
-        setLoadingMessage(`Loading ${semesterName} courses...`);
-        fetchAndParse(jsonUrl, semesterId, semesterName);
-      } catch (err) {
-        console.error('Error loading courses:', err);
-        setError('Failed to load courses. Please try again.');
-        setLoading(false);
-      }
-    },
-    [fetchAndParse],
-  );
-
-  useEffect(() => {
-    if (parsedResult) {
-      const semesterId = parsedResult.semesterId;
-
-      cacheSemesterData(semesterId, parsedResult.courses, parsedResult.sections);
-      buildCourseIndex(parsedResult.courses, parsedResult.sections);
-
-      setCourses(parsedResult.courses);
-      setSections(parsedResult.sections);
+  const loadCoursesFromSemester = useCallback(async (semesterId: string, semesterName: string) => {
+    setLoadingMessage(`Loading ${semesterName} courses...`);
+    try {
+      const { courses, sections } = await getSemesterData(semesterId);
+      buildCourseIndex(courses, sections);
+      setCourses(courses);
+      setSections(sections);
       setError(null);
-      setLoading(false);
-
-      console.log(
-        `[Performance] Parsed ${parsedResult.courses.length} courses, ${parsedResult.sections.length} sections in ${parsedResult.parseTime.toFixed(2)}ms`,
-      );
-    }
-  }, [parsedResult]);
-
-  useEffect(() => {
-    if (parseError) {
-      console.error('Parse error:', parseError);
-      setError(`Failed to parse course data: ${parseError.message}`);
+    } catch (err) {
+      console.error('Error loading courses:', err);
+      setError('Failed to load courses. Please try again.');
+    } finally {
       setLoading(false);
     }
-  }, [parseError]);
-
-  useEffect(() => {
-    if (progress) {
-      setLoadingMessage(`${progress.message} (${progress.progress}%)`);
-    }
-  }, [progress]);
+  }, []);
 
   const autoLoadCourses = useCallback(async () => {
     if (!isAuthenticated) {
@@ -210,41 +176,22 @@ export default function CoursesPage() {
     try {
       setLoadingMessage('Checking your profile...');
 
-      let selectedSemester: { id: string; name: string; jsonUrl: string } | null = null;
+      const { semesters } = await getSemesters();
+
+      let selectedSemester: { id: string; name: string } | null = null;
 
       if (profile?.semesterId) {
-        const { semesters } = await getSemesters();
         selectedSemester = semesters.find((s) => s.id === profile.semesterId) || null;
       }
 
-      if (!selectedSemester) {
-        const { semesters } = await getSemesters();
-        if (semesters.length > 0) {
-          selectedSemester = semesters[0];
-        }
+      if (!selectedSemester && semesters.length > 0) {
+        selectedSemester = semesters[0];
       }
 
       if (selectedSemester?.id) {
         setCurrentSemesterId(selectedSemester.id);
         setCurrentSemesterName(selectedSemester.name);
-
-        const cachedData = await getCachedSemesterData(selectedSemester.id);
-        if (cachedData && cachedData.courses.length > 0) {
-          setCourses(cachedData.courses);
-          setSections(cachedData.sections);
-          buildCourseIndex(cachedData.courses, cachedData.sections);
-          setLoading(false);
-          console.log('[CoursesPage] Loaded from IndexedDB cache for', selectedSemester.id);
-          return;
-        }
-      }
-
-      if (selectedSemester?.jsonUrl) {
-        await loadCoursesFromSemester(
-          selectedSemester.jsonUrl,
-          selectedSemester.id,
-          selectedSemester.name,
-        );
+        await loadCoursesFromSemester(selectedSemester.id, selectedSemester.name);
       } else {
         setError('No semester data available. Please complete onboarding first.');
         setLoading(false);
@@ -426,36 +373,17 @@ export default function CoursesPage() {
   }, []);
 
   const handleSemesterChange = useCallback(
-    async (semesterId: string, jsonUrl: string, semesterName: string) => {
+    async (semesterId: string, semesterName: string) => {
       setSemesterMenuAnchor(null);
       if (semesterId === currentSemesterId) return;
 
       setSelectedSections(new Map());
       setPinnedSections(new Map());
-      setLoading(true);
-      setLoadingMessage(`Loading ${semesterName} courses...`);
       setCurrentSemesterId(semesterId);
       setCurrentSemesterName(semesterName);
-
-      try {
-        const cachedData = await getCachedSemesterData(semesterId);
-        if (cachedData && cachedData.courses.length > 0) {
-          setCourses(cachedData.courses);
-          setSections(cachedData.sections);
-          buildCourseIndex(cachedData.courses, cachedData.sections);
-          setLoading(false);
-          console.log('[CoursesPage] Switched to semester from IndexedDB cache:', semesterId);
-          return;
-        }
-
-        fetchAndParse(jsonUrl, semesterId, semesterName);
-      } catch (err) {
-        console.error('Error switching semester:', err);
-        setError('Failed to load semester courses. Please try again.');
-        setLoading(false);
-      }
+      await loadCoursesFromSemester(semesterId, semesterName);
     },
-    [currentSemesterId, fetchAndParse],
+    [currentSemesterId, loadCoursesFromSemester],
   );
 
   if (loading) {
@@ -606,7 +534,7 @@ export default function CoursesPage() {
           availableSemesters.map((semester) => (
             <MenuItem
               key={semester.id}
-              onClick={() => handleSemesterChange(semester.id, semester.jsonUrl, semester.name)}
+              onClick={() => handleSemesterChange(semester.id, semester.name)}
               selected={currentSemesterId === semester.id}
             >
               <Stack

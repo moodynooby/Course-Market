@@ -355,27 +355,14 @@ export default function TradingPage() {
 
   const loadSemesterData = useCallback(async () => {
     try {
-      const { getSemesters } = await import('../services/coursesApi');
+      const { getSemesters, getSemesterData } = await import('../services/coursesApi');
       const { semesters } = await getSemesters();
       if (!semesters || semesters.length === 0) return;
 
       const activeSemester = semesters.find((s) => s.isActive) || semesters[0];
-      const { getCachedSemesterData, cacheSemesterData } = await import('../services/dbCache');
-      const { transformSections } = await import('../utils/semester-transform');
-
-      const cachedData = await getCachedSemesterData(activeSemester.id);
-      if (cachedData?.courses && cachedData.sections) {
-        setAllCourses(cachedData.courses);
-        setAllSections(cachedData.sections);
-      } else {
-        const response = await fetch(activeSemester.jsonUrl);
-        if (!response.ok) return;
-        const semesterData = await response.json();
-        const { courses, sections } = transformSections(semesterData.sections);
-        await cacheSemesterData(activeSemester.id, courses, sections);
-        setAllCourses(courses);
-        setAllSections(sections);
-      }
+      const { courses, sections } = await getSemesterData(activeSemester.id);
+      setAllCourses(courses);
+      setAllSections(sections);
     } catch (e) {
       console.error('Failed to load semester data:', e);
     }

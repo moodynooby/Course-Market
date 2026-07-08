@@ -20,11 +20,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
 import RateProfessorModal from '../components/RateProfessorModal';
 import { useAuthContext } from '../context/AuthContext';
-import { getSemesters } from '../services/coursesApi';
-import { getCachedSections } from '../services/dbCache';
 import { professorsApi } from '../services/professorsApi';
 import type { ProfessorDetails } from '../types';
-import { splitInstructorNames } from '../utils/instructor-name';
 
 export default function ProfessorDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -37,26 +34,12 @@ export default function ProfessorDetailsPage() {
   const [coursesTaught, setCoursesTaught] = useState<{ semester: string; courses: string[] }[]>([]);
 
   useEffect(() => {
-    if (!professor?.name) return;
+    if (!id) return;
     let cancelled = false;
     (async () => {
       try {
-        const { semesters } = await getSemesters();
-        const results: { semester: string; courses: string[] }[] = [];
-        for (const sem of semesters) {
-          const cached = await getCachedSections(sem.id);
-          if (!cached) continue;
-          const courseCodes = new Set<string>();
-          for (const section of cached.sections) {
-            if (splitInstructorNames(section.instructor).includes(professor.name)) {
-              courseCodes.add(section.courseId);
-            }
-          }
-          if (courseCodes.size > 0) {
-            results.push({ semester: sem.name, courses: Array.from(courseCodes).sort() });
-          }
-        }
-        if (!cancelled) setCoursesTaught(results);
+        const { coursesTaught } = await professorsApi.getProfessorCourses(Number(id));
+        if (!cancelled) setCoursesTaught(coursesTaught);
       } catch {
         // Non-critical — degrades gracefully
       }
@@ -64,7 +47,7 @@ export default function ProfessorDetailsPage() {
     return () => {
       cancelled = true;
     };
-  }, [professor?.name]);
+  }, [id]);
 
   const fetchDetails = useCallback(async () => {
     if (!id) return;

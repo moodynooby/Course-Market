@@ -39,6 +39,54 @@ export const handler = async (event: any) => {
         return jsonResponse(200, { professors });
       }
 
+      if (path.endsWith('/courses')) {
+        const professorId = parseInt(pathParts[pathParts.length - 2], 10);
+        if (Number.isNaN(professorId)) {
+          return jsonResponse(400, { error: 'Invalid professor ID' });
+        }
+
+        const [professor] = await db
+          .select()
+          .from(schema.professors)
+          .where(eq(schema.professors.id, professorId));
+
+        if (!professor) {
+          return jsonResponse(404, { error: 'Professor not found' });
+        }
+
+        const semesters = await db
+          .select({ id: schema.semesters.id, name: schema.semesters.name })
+          .from(schema.semesters);
+
+        const results: { semester: string; courses: string[] }[] = [];
+
+        for (const sem of semesters) {
+          const sections = await db
+            .select({
+              courseCode: schema.semesterCourses.courseCode,
+              instructor: schema.semesterSections.instructor,
+            })
+            .from(schema.semesterSections)
+            .innerJoin(
+              schema.semesterCourses,
+              eq(schema.semesterSections.courseId, schema.semesterCourses.id),
+            )
+            .where(eq(schema.semesterSections.semesterId, sem.id));
+
+          const courseCodes = new Set<string>();
+          for (const section of sections) {
+            if (splitInstructorNames(section.instructor).includes(professor.name)) {
+              courseCodes.add(section.courseCode);
+            }
+          }
+          if (courseCodes.size > 0) {
+            results.push({ semester: sem.name, courses: Array.from(courseCodes).sort() });
+          }
+        }
+
+        return jsonResponse(200, { coursesTaught: results });
+      }
+
       const id = parseInt(pathParts[pathParts.length - 1], 10);
       if (!Number.isNaN(id)) {
         const [professor] = await db

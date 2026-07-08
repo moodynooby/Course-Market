@@ -24,15 +24,13 @@ import { PreferencesSummaryCard } from '../components/PreferencesSummaryCard';
 import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
 import { useThemeMode } from '../context/ThemeContext';
-import { cacheSemesterData, getCachedSemesterData } from '../services/dbCache';
-import { buildCourseIndex, searchSchedules } from '../services/search';
-import type { Course, Schedule, Section, SemesterJSON } from '../types';
+import { searchSchedules } from '../services/search';
+import type { Course, Schedule, Section } from '../types';
 import { checkConflicts } from '../utils/schedule';
 import type { ScheduleDiagnostics } from '../utils/schedule-diagnostics';
 import { diagnoseEmptyGeneration } from '../utils/schedule-diagnostics';
 import type { GeneratedSchedule, SearchResult } from '../utils/schedule-types';
 import { DEFAULT_MAX_SCHEDULES } from '../utils/schedule-types';
-import { transformSections } from '../utils/semester-transform';
 
 const ScheduleExplorerDialog = lazy(() =>
   import('../components/schedule-explorer/ScheduleExplorerDialog').then((module) => ({
@@ -139,7 +137,7 @@ export default function LandingPage() {
         return;
       }
 
-      const { getSemesters } = await import('../services/coursesApi');
+      const { getSemesters, getSemesterData } = await import('../services/coursesApi');
       const { semesters } = await getSemesters();
 
       if (!semesters || semesters.length === 0) {
@@ -154,31 +152,11 @@ export default function LandingPage() {
       const activeSemester = semesters.find((s) => s.isActive) || semesters[0];
       const semesterId = activeSemester.id;
 
-      const cachedData = await getCachedSemesterData(semesterId);
+      const { courses, sections } = await getSemesterData(semesterId);
 
-      if (cachedData?.courses && cachedData.sections) {
-        const courses = cachedData.courses;
-        const sections = cachedData.sections;
-        setAllCourses(courses);
-        setAllSections(sections);
-        buildCourseIndex(courses, sections);
-        loadScheduleFromSelections(courses, sections);
-      } else {
-        const response = await fetch(activeSemester.jsonUrl);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch semester JSON: ${response.status}`);
-        }
-        const semesterData: SemesterJSON = await response.json();
-
-        const { courses, sections } = transformSections(semesterData.sections);
-
-        await cacheSemesterData(semesterId, courses, sections);
-
-        setAllCourses(courses);
-        setAllSections(sections);
-        buildCourseIndex(courses, sections);
-        loadScheduleFromSelections(courses, sections);
-      }
+      setAllCourses(courses);
+      setAllSections(sections);
+      loadScheduleFromSelections(courses, sections);
 
       dataLoadedRef.current = true;
     } catch (error) {

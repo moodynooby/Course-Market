@@ -1,35 +1,29 @@
-import type { SemesterJSON } from '../types';
+import type { Course, Section } from '../types';
 import { api } from './apiClient';
 
+let semestersPromise: Promise<{
+  semesters: Array<{ id: string; name: string; jsonUrl: string; isActive: boolean }>;
+}> | null = null;
+
 /**
- * Fetch available semesters with JSON URLs
+ * Fetch available semesters. Uses a shared promise so all callers
+ * across the app share one in-flight request (and one cached result
+ * for the lifetime of the module).
  */
 export async function getSemesters(): Promise<{
   semesters: Array<{ id: string; name: string; jsonUrl: string; isActive: boolean }>;
 }> {
-  return api.get('/semesters');
+  if (!semestersPromise) {
+    semestersPromise = api.get('/semesters');
+  }
+  return semestersPromise;
 }
 
 /**
- * Fetch complete semester data including all sections with time slots
- * This is the primary data loading method - fetches JSON directly from CDN
+ * Fetch course and section data for a semester from the server-side DB.
  */
-export async function getSemesterData(semesterId: string): Promise<SemesterJSON> {
-  const { semesters } = await getSemesters();
-
-  if (!semesters || semesters.length === 0) {
-    throw new Error('No semesters available');
-  }
-
-  const semester = semesters.find((s) => s.id === semesterId);
-
-  if (!semester) {
-    throw new Error(`Semester '${semesterId}' not found`);
-  }
-
-  const response = await fetch(semester.jsonUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch semester JSON: ${response.status}`);
-  }
-  return response.json();
+export async function getSemesterData(
+  semesterId: string,
+): Promise<{ courses: Course[]; sections: Section[] }> {
+  return api.get(`/semesters/${semesterId}/data`);
 }

@@ -41,7 +41,6 @@ import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
 import { useThemeMode } from '../context/ThemeContext';
 import { getSemesters } from '../services/coursesApi';
-import { clearCache } from '../services/dbCache';
 import type { LLMProvider, Preferences, Semester } from '../types';
 import { PROVIDER_OPTIONS, STORAGE_KEYS } from '../utils/constants';
 
@@ -110,11 +109,10 @@ export default function SettingsPage() {
     }
   };
 
-  const handleClearData = async () => {
+  const handleClearData = () => {
     Object.values(STORAGE_KEYS).forEach((key) => {
       localStorage.removeItem(key);
     });
-    await clearCache();
     window.location.reload();
   };
 

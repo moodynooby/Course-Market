@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
-"""CLI tool to merge multiple CSV course files into a minified semester JSON file.
+"""CLI tool to merge multiple CSV course files into a minified JSON file,
+then seed into the database.
 
 Usage:
+    # Generate JSON (for inspection/backup)
     python scripts/csv_to_semester_json.py \
         --semester-id Monsoon2026 \
         --semester-name "Monsoon Semester 2026"
 
+    # Generate JSON and seed into DB
     python scripts/csv_to_semester_json.py \
-        --input "scripts/Course Directory (4).csv" \
         --semester-id Monsoon2026 \
-        --semester-name "Monsoon Semester 2026"
+        --semester-name "Monsoon Semester 2026" --seed
+
+    # Seed existing JSON into DB (after pnpm db:seed has been set up)
+    # pnpm run db:seed
+    # pnpm run db:seed -- path/to/semester.json
 """
 
 import argparse
@@ -187,7 +193,7 @@ def resolve_inputs(input_paths: list[str] | None) -> list[str]:
 
 def process_csv_to_json(
     file_paths: list[str],
-    output_path: str,
+    output_path: str | None,
     version: str = "1.0.0",
     semester_id: str = "Monsoon2026",
     semester_name: str = "Monsoon Semester 2026",
@@ -201,10 +207,13 @@ def process_csv_to_json(
         "sections": sections,
     }
 
-    output = Path(output_path)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    with open(output, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
+    if output_path:
+        output = Path(output_path)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        with open(output, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, separators=(",", ":"))
+    else:
+        json.dump(data, ensure_ascii=False, separators=(",", ":"))
 
     return data
 
@@ -240,9 +249,9 @@ def main():
         help="Deprecated: no longer used",
     )
     parser.add_argument(
-        "--force-refresh",
+        "--seed",
         action="store_true",
-        help="Bump dataVersion to invalidate all client caches",
+        help="Pipe output to pnpm db:seed to insert directly into DB",
     )
 
     args = parser.parse_args()
@@ -260,8 +269,7 @@ def main():
         PROJECT_ROOT / "public" / "semesters" / f"{args.semester_id}.json"
     )
 
-    print(f"\nOutput: {output_path}")
-    print(f"Semester: {args.semester_id} ({args.semester_name})")
+    print(f"\nSemester: {args.semester_id} ({args.semester_name})")
     print(f"Version: {args.version}\n")
 
     result = process_csv_to_json(
@@ -280,23 +288,22 @@ def main():
     multi_instructor = [s for s in sections if ',' in s["instructor"]]
     print(f"  Multi-instructor sections: {len(multi_instructor)} (names split & joined with commas)")
 
-    if args.force_refresh:
-        dv_path = PROJECT_ROOT / "public" / "data-version.json"
-        if dv_path.exists():
-            with open(dv_path) as f:
-                dv = json.load(f)
-            dv["dataVersion"] = dv.get("dataVersion", 0) + 1
-        else:
-            dv = {"dataVersion": 1}
-        with open(dv_path, "w") as f:
-            json.dump(dv, f, separators=(",", ":"))
-        print(f"  dataVersion bumped to {dv['dataVersion']}")
-
     print(f"Done!")
     print(f"  Total sections: {len(sections)}")
     print(f"  Total courses:  {unique_courses}")
     print(f"  Subjects:       {', '.join(subjects)}")
+
     print(f"  Output written to: {output_path}")
+
+    if args.seed:
+        print(f"\nNow seeding into database...")
+        import subprocess
+        subprocess.run(
+            ["pnpm", "run", "db:seed", "--", output_path],
+            cwd=PROJECT_ROOT,
+            check=True,
+        )
+        print(f"  Database seeded for {args.semester_id}")
 
 
 if __name__ == "__main__":
