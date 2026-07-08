@@ -27,7 +27,7 @@ export const handler = async (event: any) => {
           .where(eq(schema.semesterSections.semesterId, semesterId));
 
         const courseList = courses.map((c) => ({
-          id: c.courseCode,
+          id: c.id,
           code: c.courseCode,
           name: c.name,
           subject: c.subject,
