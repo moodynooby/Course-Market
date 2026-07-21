@@ -125,11 +125,12 @@ export default function ProfessorsPage() {
           placeholder="Search by name..."
           value={rawSearch}
           onChange={(e) => setRawSearch(e.target.value)}
+          size="small"
           slotProps={{
             input: {
               startAdornment: (
                 <InputAdornment position="start">
-                  <Search />
+                  <Search color="action" />
                 </InputAdornment>
               ),
               endAdornment: (
@@ -157,11 +158,12 @@ export default function ProfessorsPage() {
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortKey)}
           sx={{ width: 200 }}
+          size="small"
           slotProps={{
             input: {
               startAdornment: (
                 <InputAdornment position="start">
-                  <Sort />
+                  <Sort color="action" />
                 </InputAdornment>
               ),
             },
