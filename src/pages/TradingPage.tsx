@@ -623,7 +623,7 @@ export default function TradingPage() {
       )}
       {trades.length === 0 && !loading ? (
         <EmptyState
-          icon={<SwapHoriz sx={{ fontSize: 60 }} />}
+          icon={<SwapHoriz />}
           title="No Trades Yet"
           description="Find the perfect section swap — post your first trade."
           action={
@@ -646,7 +646,11 @@ export default function TradingPage() {
             size="small"
             slotProps={{
               input: {
-                startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
                 endAdornment: (
                   <InputAdornment position="end">
                     {search && (
@@ -673,7 +677,7 @@ export default function TradingPage() {
 
           {filteredTrades.length === 0 ? (
             <EmptyState
-              icon={<Search sx={{ fontSize: 60 }} />}
+              icon={<Search />}
               title="No Trades Found"
               description="Try adjusting your search or post a new trade."
             />
