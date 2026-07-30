@@ -198,6 +198,35 @@ describe('llmRequestSchema', () => {
       }),
     ).toThrow();
   });
+
+  it('rejects message content over 100,000 characters', () => {
+    expect(() =>
+      llmRequestSchema.parse({
+        provider: 'groq',
+        messages: [{ role: 'user', content: 'A'.repeat(100001) }],
+      }),
+    ).toThrow();
+  });
+
+  it('rejects more than 100 messages', () => {
+    const messages = Array(101).fill({ role: 'user', content: 'Hi' });
+    expect(() =>
+      llmRequestSchema.parse({
+        provider: 'groq',
+        messages,
+      }),
+    ).toThrow();
+  });
+
+  it('rejects model name longer than 100 characters', () => {
+    expect(() =>
+      llmRequestSchema.parse({
+        provider: 'groq',
+        model: 'A'.repeat(101),
+        messages: [{ role: 'user', content: 'Hi' }],
+      }),
+    ).toThrow();
+  });
 });
 
 describe('professorRatingSchema', () => {

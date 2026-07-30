@@ -46,13 +46,13 @@ export type UserProfileUpdateInput = z.infer<typeof userProfileUpdateSchema>;
 
 export const llmMessageSchema = z.object({
   role: z.enum(['system', 'user', 'assistant', 'tool']),
-  content: z.string(),
+  content: z.string().max(100000),
 });
 
 export const llmRequestSchema = z.object({
   provider: z.enum(['groq'], { message: 'Only Groq is supported' }),
-  model: z.string().optional(),
-  messages: z.array(llmMessageSchema).min(1, 'At least one message is required'),
+  model: z.string().max(100).optional(),
+  messages: z.array(llmMessageSchema).min(1, 'At least one message is required').max(100),
   temperature: z.number().min(0).max(2).optional(),
   maxOutputTokens: z.number().min(1).max(32000).optional(),
   saveKey: z.boolean().optional(),
