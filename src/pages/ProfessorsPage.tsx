@@ -129,7 +129,7 @@ export default function ProfessorsPage() {
             input: {
               startAdornment: (
                 <InputAdornment position="start">
-                  <Search />
+                  <Search color="action" />
                 </InputAdornment>
               ),
               endAdornment: (
@@ -161,7 +161,7 @@ export default function ProfessorsPage() {
             input: {
               startAdornment: (
                 <InputAdornment position="start">
-                  <Sort />
+                  <Sort color="action" />
                 </InputAdornment>
               ),
             },

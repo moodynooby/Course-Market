@@ -1,7 +1,13 @@
-import { alpha, Box, Paper, Stack, Typography, useTheme } from '@mui/material';
+import { alpha, Box, Paper, Stack, Typography, useTheme, keyframes } from '@mui/material';
 import type { ReactNode } from 'react';
 
 export type EmptyStateVariant = 'default' | 'compact' | 'fullscreen';
+
+const pulse = keyframes`
+  0% { transform: scale(0.95); opacity: 0.3; }
+  50% { transform: scale(1.05); opacity: 0.5; }
+  100% { transform: scale(0.95); opacity: 0.3; }
+`;
 
 interface EmptyStateProps {
   icon: ReactNode;
@@ -82,9 +88,22 @@ export function EmptyState({
             bgcolor: alpha(theme.palette.primary.main, 0.3),
             filter: 'blur(8px)',
             position: 'absolute',
+            animation: `${pulse} 4s ease-in-out infinite`,
           }}
         />
-        <Box sx={{ position: 'relative', zIndex: 1, color: 'primary.main' }}>{icon}</Box>
+        <Box
+          sx={{
+            position: 'relative',
+            zIndex: 1,
+            color: 'primary.main',
+            display: 'flex',
+            '& svg': {
+              fontSize: iconSize * 0.6,
+            },
+          }}
+        >
+          {icon}
+        </Box>
       </Box>
       <Typography
         variant="h6"
