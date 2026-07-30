@@ -263,7 +263,7 @@ export default function ProfessorDetailsPage() {
             ))}
             {professor.ratings.length === 0 && (
               <EmptyState
-                icon={<Star sx={{ fontSize: 40 }} />}
+                icon={<Star />}
                 title="No ratings yet"
                 description="Be the first to share your experience with this professor."
                 action={
