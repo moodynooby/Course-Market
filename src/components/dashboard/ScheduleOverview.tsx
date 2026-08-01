@@ -9,10 +9,9 @@ import { EmptyState } from '../EmptyState';
 interface ScheduleOverviewProps {
   sections: Section[];
   courses: Course[];
-  aiAnalysis?: string;
 }
 
-export function ScheduleOverview({ sections, courses, aiAnalysis }: ScheduleOverviewProps) {
+export function ScheduleOverview({ sections, courses }: ScheduleOverviewProps) {
   const navigate = useNavigate();
   const conflicts = checkConflicts(sections);
 
@@ -74,43 +73,6 @@ export function ScheduleOverview({ sections, courses, aiAnalysis }: ScheduleOver
           </Box>
         </Box>
       </Card>
-      {aiAnalysis && (
-        <Card variant="outlined" sx={{ borderRadius: 4, bgcolor: 'background.paper' }}>
-          <Box sx={{ p: 3 }}>
-            <Typography
-              variant="subtitle2"
-              gutterBottom
-              sx={{
-                color: 'secondary.main',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1,
-              }}
-            >
-              AI Optimization Report
-            </Typography>
-            <Box
-              sx={{
-                '& table': { width: '100%', borderCollapse: 'collapse', mb: 2 },
-                '& th, & td': {
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  px: 1,
-                  py: 0.5,
-                  textAlign: 'left',
-                },
-                '& th': { bgcolor: 'action.hover', fontWeight: 600 },
-                '& ul, & ol': { pl: 2, mb: 1 },
-                '& li': { mb: 0.5 },
-                '& p': { mb: 1, fontSize: '0.875rem' },
-                '& strong': { fontWeight: 600 },
-              }}
-            >
-              {aiAnalysis}
-            </Box>
-          </Box>
-        </Card>
-      )}
     </Stack>
   );
 }

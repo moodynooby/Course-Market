@@ -2,7 +2,7 @@
 
 **Course scheduler + section trading platform. Built because registration is a mess.**
 
-Pick your courses, generate every conflict-free timetable, have AI rank them by your preferences (runs in-browser, nothing leaves your machine), and trade sections with other students.
+Pick your courses, generate conflict-free timetables based on your preferences, and trade sections with other students.
 
 Website [aurais.netlify.app](https://aurais.netlify.app/)
 
@@ -10,11 +10,11 @@ Github [GitHub](https://github.com/moodynooby/Course-Market)
 
 ## Features
 
-### Course Browser, Preferences & AI Optimization
+### Course Browser & Preferences
 - Search and filter by subject; pick sections visually with a card layout
 - Set time windows, gaps, morning vs afternoon, credit range, and day preferences
 - Block specific instructors
-- AI runs via WebLLM — fully in-browser, fully private — scores and ranks schedules against your preferences, with a regular algorithm as fallback
+- Deterministic schedule scoring ranks alternatives against your preferences
 
 ### Schedule View
 - Calendar grid + list view
@@ -42,7 +42,6 @@ src/
 │   ├── useSelections.ts
 │   └── useTrading.ts
 ├── services/
-│   ├── llm.ts
 │   └── tradesApi.ts
 ├── types/
 ├── utils/

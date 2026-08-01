@@ -29,7 +29,6 @@ export default defineConfig({
         manualChunks(id) {
           if (id.includes('react-big-calendar') || id.includes('date-fns'))
             return 'vendor-calendar';
-          if (id.includes('@ai-sdk') || id.includes('@browser-ai')) return 'vendor-ai';
           if (id.includes('@mui') || id.includes('@emotion')) return 'vendor-mui';
           if (id.includes('node_modules/react') || id.includes('react-router-dom'))
             return 'vendor-react';

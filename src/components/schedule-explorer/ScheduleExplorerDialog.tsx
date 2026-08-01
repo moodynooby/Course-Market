@@ -34,8 +34,8 @@ import type { Course, DayOfWeek, Section } from '../../types';
 import { DAY_ORDER } from '../../utils/schedule';
 import type { ScheduleDiagnostics } from '../../utils/schedule-diagnostics';
 import { clusterSchedulesBySimilarity } from '../../utils/schedule-generator';
-import type { GeneratedSchedule, SearchResult } from '../../utils/schedule-types';
 import type { PrefilterSummary } from '../../utils/schedule-prefilter';
+import type { GeneratedSchedule, SearchResult } from '../../utils/schedule-types';
 import CalendarView from '../CalendarView';
 import { EmptyState } from '../EmptyState';
 import { ScheduleDiagnosticsPanel } from './ScheduleDiagnosticsPanel';
@@ -304,37 +304,45 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
             </Typography>
           )}
 
-          {!showDiagnostics && prefilterSummary && (prefilterSummary.avoidDayRemoved > 0 || prefilterSummary.dedupRemoved > 0) && (
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{
-                flexWrap: 'wrap',
-                bgcolor: alpha(theme.palette.info.main, 0.08),
-                borderRadius: 2,
-                px: 1.5,
-                py: 0.75,
-              }}
-            >
-              {prefilterSummary.avoidDayRemoved > 0 && (
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  {prefilterSummary.avoidDayRemoved} section{prefilterSummary.avoidDayRemoved > 1 ? 's' : ''} hidden
-                  (avoided {prefilterSummary.avoidDayCourses.length > 3
-                    ? `days — ${prefilterSummary.avoidDayCourses.slice(0, 3).join(', ')}…`
-                    : `days — ${prefilterSummary.avoidDayCourses.join(', ')}`
-                  })
-                </Typography>
-              )}
-              {prefilterSummary.dedupRemoved > 0 && (
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  {prefilterSummary.dedupRemoved} duplicate{prefilterSummary.dedupRemoved > 1 ? 's' : ''} consolidated
-                  {prefilterSummary.dedupCourses.length > 0 && (
-                    <> ({prefilterSummary.dedupCourses.slice(0, 3).join(', ')}{prefilterSummary.dedupCourses.length > 3 ? '…' : ''})</>
-                  )}
-                </Typography>
-              )}
-            </Stack>
-          )}
+          {!showDiagnostics &&
+            prefilterSummary &&
+            (prefilterSummary.avoidDayRemoved > 0 || prefilterSummary.dedupRemoved > 0) && (
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{
+                  flexWrap: 'wrap',
+                  bgcolor: alpha(theme.palette.info.main, 0.08),
+                  borderRadius: 2,
+                  px: 1.5,
+                  py: 0.75,
+                }}
+              >
+                {prefilterSummary.avoidDayRemoved > 0 && (
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    {prefilterSummary.avoidDayRemoved} section
+                    {prefilterSummary.avoidDayRemoved > 1 ? 's' : ''} hidden (avoided{' '}
+                    {prefilterSummary.avoidDayCourses.length > 3
+                      ? `days — ${prefilterSummary.avoidDayCourses.slice(0, 3).join(', ')}…`
+                      : `days — ${prefilterSummary.avoidDayCourses.join(', ')}`}
+                    )
+                  </Typography>
+                )}
+                {prefilterSummary.dedupRemoved > 0 && (
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    {prefilterSummary.dedupRemoved} duplicate
+                    {prefilterSummary.dedupRemoved > 1 ? 's' : ''} consolidated
+                    {prefilterSummary.dedupCourses.length > 0 && (
+                      <>
+                        {' '}
+                        ({prefilterSummary.dedupCourses.slice(0, 3).join(', ')}
+                        {prefilterSummary.dedupCourses.length > 3 ? '…' : ''})
+                      </>
+                    )}
+                  </Typography>
+                )}
+              </Stack>
+            )}
 
           {!showDiagnostics && (
             <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>

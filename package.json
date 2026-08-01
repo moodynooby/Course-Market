@@ -23,16 +23,13 @@
     "db:seed": " netlify dev:exec tsx db/seed.ts"
   },
   "dependencies": {
-    "@ai-sdk/groq": "^3.0.55",
     "@auth0/auth0-react": "^2.22.1",
-    "@browser-ai/web-llm": "^2.1.8",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^9.2.0",
     "@mui/material": "^9.2.0",
     "@netlify/neon": "^0.1.2",
     "@netlify/vite-plugin": "^2.12.9",
-    "ai": "^6.0.238",
     "date-fns": "^4.4.0",
     "drizzle-orm": "^0.45.2",
     "html2canvas": "^1.4.1",

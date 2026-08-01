@@ -67,8 +67,6 @@ export interface TradePost {
   updatedAt: string;
 }
 
-export type LLMProvider = 'webllm' | 'groq';
-
 export interface CalendarEvent {
   id: string;
   title: string;
@@ -89,7 +87,6 @@ export interface UserProfile {
   preferences?: Preferences;
   courseSelections?: Record<string, string>;
   pinnedSelections?: Record<string, string>;
-  llmConfig?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 }

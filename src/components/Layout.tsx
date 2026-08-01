@@ -1,9 +1,16 @@
-import { DarkMode, LightMode, Logout, Settings, SettingsBrightness } from '@mui/icons-material';
+import {
+  CalendarMonth,
+  Check,
+  DarkMode,
+  KeyboardArrowDown,
+  LightMode,
+  Logout,
+  SettingsBrightness,
+} from '@mui/icons-material';
 import {
   Avatar,
   Box,
   Button,
-  Divider,
   IconButton,
   ListItemIcon,
   ListItemText,
@@ -17,6 +24,8 @@ import { useCallback, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
 import { useThemeMode } from '../context/ThemeContext';
+import { getSemesters } from '../services/coursesApi';
+import type { Semester } from '../types';
 
 interface NavLinkProps {
   to: string;
@@ -86,11 +95,14 @@ import logoIcon from '../assets/logo.png';
 
 export default function Layout() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [semesterAnchorEl, setSemesterAnchorEl] = useState<null | HTMLElement>(null);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [loadingSemesters, setLoadingSemesters] = useState(false);
   const _theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const { mode, setMode } = useThemeMode();
-  const { user, signOut, signIn } = useAuthContext();
+  const { user, profile, updateProfile, signOut, signIn } = useAuthContext();
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -98,6 +110,36 @@ export default function Layout() {
 
   const handleClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleSemesterMenuOpen = async (event: React.MouseEvent<HTMLElement>) => {
+    setSemesterAnchorEl(event.currentTarget);
+    if (semesters.length > 0 || loadingSemesters) return;
+
+    try {
+      setLoadingSemesters(true);
+      const { semesters: availableSemesters } = await getSemesters();
+      setSemesters(availableSemesters);
+    } catch (error) {
+      console.error('Failed to load semesters:', error);
+    } finally {
+      setLoadingSemesters(false);
+    }
+  };
+
+  const handleSemesterChange = async (semesterId: string) => {
+    if (semesterId === profile?.semesterId) {
+      setSemesterAnchorEl(null);
+      return;
+    }
+
+    try {
+      await updateProfile({ semesterId, courseSelections: {} });
+      setSemesterAnchorEl(null);
+      navigate('/');
+    } catch (error) {
+      console.error('Failed to change semester:', error);
+    }
   };
 
   const toggleMode = useCallback(() => {
@@ -248,6 +290,53 @@ export default function Layout() {
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {user && (
+              <>
+                <Button
+                  size="small"
+                  color="inherit"
+                  onClick={handleSemesterMenuOpen}
+                  startIcon={<CalendarMonth fontSize="small" />}
+                  endIcon={<KeyboardArrowDown fontSize="small" />}
+                  sx={{
+                    display: { xs: 'none', sm: 'inline-flex' },
+                    color: 'text.secondary',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    maxWidth: 200,
+                  }}
+                >
+                  {semesters.find((semester) => semester.id === profile?.semesterId)?.name ||
+                    profile?.semesterId ||
+                    'Semester'}
+                </Button>
+                <Menu
+                  anchorEl={semesterAnchorEl}
+                  open={Boolean(semesterAnchorEl)}
+                  onClose={() => setSemesterAnchorEl(null)}
+                  slotProps={{ paper: { sx: { mt: 1, minWidth: 220, borderRadius: 3 } } }}
+                >
+                  {loadingSemesters ? (
+                    <MenuItem disabled>Loading semesters…</MenuItem>
+                  ) : (
+                    semesters.map((semester) => (
+                      <MenuItem
+                        key={semester.id}
+                        selected={semester.id === profile?.semesterId}
+                        onClick={() => handleSemesterChange(semester.id)}
+                      >
+                        <ListItemText>{semester.name}</ListItemText>
+                        {semester.id === profile?.semesterId && (
+                          <ListItemIcon sx={{ minWidth: 28 }}>
+                            <Check fontSize="small" color="secondary" />
+                          </ListItemIcon>
+                        )}
+                      </MenuItem>
+                    ))
+                  )}
+                </Menu>
+              </>
+            )}
             <Tooltip
               title={
                 mode === 'light'
@@ -270,17 +359,6 @@ export default function Layout() {
                 }
               >
                 {ModeIcon}
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="Settings">
-              <IconButton
-                onClick={() => navigate('/settings')}
-                size="small"
-                sx={{ color: 'text.secondary' }}
-                aria-label="Settings"
-              >
-                <Settings fontSize="small" />
               </IconButton>
             </Tooltip>
 
@@ -344,18 +422,6 @@ export default function Layout() {
                   transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                   anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
                 >
-                  <MenuItem
-                    onClick={() => {
-                      handleClose();
-                      navigate('/settings');
-                    }}
-                  >
-                    <ListItemIcon>
-                      <Settings fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Settings</ListItemText>
-                  </MenuItem>
-                  <Divider sx={{ my: 0.5, borderColor: 'divider' }} />
                   <MenuItem
                     onClick={() => {
                       handleClose();

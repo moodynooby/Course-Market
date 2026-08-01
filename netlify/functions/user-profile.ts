@@ -14,7 +14,6 @@ const profileSelection = {
   preferences: schema.userProfiles.preferences,
   courseSelections: schema.userProfiles.courseSelections,
   pinnedSelections: schema.userProfiles.pinnedSelections,
-  llmConfig: schema.userProfiles.llmConfig,
   createdAt: schema.userProfiles.createdAt,
   updatedAt: schema.userProfiles.updatedAt,
 } as const;
@@ -64,7 +63,6 @@ export const handler = withAuth(async (event, user) => {
           preferences: input.preferences ?? existingProfile.preferences,
           courseSelections: input.courseSelections ?? existingProfile.courseSelections,
           pinnedSelections: input.pinnedSelections ?? existingProfile.pinnedSelections,
-          llmConfig: input.llmConfig ?? existingProfile.llmConfig,
           updatedAt: new Date(),
         })
         .where(eq(schema.userProfiles.auth0UserId, user.sub))
@@ -80,7 +78,6 @@ export const handler = withAuth(async (event, user) => {
           preferences: input.preferences || null,
           courseSelections: input.courseSelections || null,
           pinnedSelections: input.pinnedSelections || null,
-          llmConfig: input.llmConfig || null,
         })
         .returning(profileSelection);
     }

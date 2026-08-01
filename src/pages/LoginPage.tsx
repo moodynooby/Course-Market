@@ -47,7 +47,7 @@ export default function LoginPage() {
                 mb: 1,
               }}
             >
-              Optimize your semester with AI
+              Plan your semester with confidence
             </Typography>
           </Box>
 
@@ -104,17 +104,6 @@ export default function LoginPage() {
                     }}
                   >
                     Save your optimization preferences
-                  </Typography>
-                </li>
-                <li>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: 'text.secondary',
-                    }}
-                  >
-                    Get free AI advice, totally private if your device supports it, or a free cloud
-                    AI service
                   </Typography>
                 </li>
               </ul>

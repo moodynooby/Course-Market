@@ -1,5 +1,5 @@
-import { GridView, Psychology } from '@mui/icons-material';
-import { Box, Button, Card, LinearProgress, Stack, Typography } from '@mui/material';
+import { AutoAwesome, GridView } from '@mui/icons-material';
+import { Button, Card, Stack, Typography } from '@mui/material';
 import type { Schedule } from '../../types';
 
 interface OptimizationPanelProps {
@@ -7,12 +7,9 @@ interface OptimizationPanelProps {
   optimizing: boolean;
   generating: boolean;
   generationProgress: number;
-  initProgress: { text: string; percent: number };
   error: string;
-  webllmAvailable: boolean;
   onOptimize: () => void;
   onGenerateAll: () => void;
-  onWebgpuWarning: () => void;
 }
 
 export function OptimizationPanel({
@@ -20,12 +17,9 @@ export function OptimizationPanel({
   optimizing,
   generating,
   generationProgress,
-  initProgress,
   error,
-  webllmAvailable,
   onOptimize,
   onGenerateAll,
-  onWebgpuWarning,
 }: OptimizationPanelProps) {
   return (
     <Card
@@ -40,7 +34,7 @@ export function OptimizationPanel({
           mb: 2,
         }}
       >
-        <Psychology sx={{ color: 'secondary.main', fontSize: 20 }} />
+        <AutoAwesome sx={{ color: 'secondary.main', fontSize: 20 }} />
         <Typography
           variant="h6"
           sx={{
@@ -57,21 +51,15 @@ export function OptimizationPanel({
           mb: 3,
         }}
       >
-        Use AI to create your perfect, conflict-free timetable
+        Find the best conflict-free timetable from your selected courses
       </Typography>
       <Stack spacing={2}>
         <Button
           variant="contained"
           color="secondary"
-          onClick={() => {
-            if (!webllmAvailable) {
-              onWebgpuWarning();
-            } else {
-              onOptimize();
-            }
-          }}
+          onClick={onOptimize}
           disabled={optimizing || !schedule || schedule.sections.length === 0}
-          startIcon={<Psychology />}
+          startIcon={<AutoAwesome />}
           fullWidth
           sx={{
             borderRadius: 3,
@@ -79,7 +67,7 @@ export function OptimizationPanel({
             fontWeight: 600,
           }}
         >
-          {optimizing ? 'Optimizing...' : 'Optimize with AI'}
+          {optimizing ? 'Finding best schedule...' : 'Find Best Schedule'}
         </Button>
 
         <Button
@@ -92,26 +80,6 @@ export function OptimizationPanel({
         >
           {generating ? `Generating... (${generationProgress}%)` : 'View All Alternatives'}
         </Button>
-
-        {initProgress.text && (
-          <Box>
-            <LinearProgress
-              variant="determinate"
-              value={Math.max(0, Math.min(100, initProgress.percent))}
-              sx={{ height: 6, borderRadius: 3, mb: 1 }}
-            />
-            <Typography
-              variant="caption"
-              align="center"
-              sx={{
-                color: 'text.secondary',
-                display: 'block',
-              }}
-            >
-              {initProgress.text} ({Math.round(initProgress.percent)}%)
-            </Typography>
-          </Box>
-        )}
 
         {error && (
           <Typography

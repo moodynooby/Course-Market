@@ -1,69 +1,9 @@
 export const STORAGE_KEYS = {
   PREFERENCES: 'auraishub_preferences',
   THEME_MODE: 'theme-mode',
-  LLM_CONFIG: 'llm-byok-config',
 } as const;
 
-import type { LLMProvider, Preferences } from '../types';
-
-export type LLMTask = 'OPTIMIZE' | 'DRAFT' | 'DEFAULT';
-
-export interface BYOKConfig {
-  provider: LLMProvider;
-  apiKey: string;
-  model?: string;
-  temperature?: number;
-  maxTokens?: number;
-  initProgressCallback?: (progress: { progress: number; text: string }) => void;
-}
-
-export const LLM_TASK_MODELS = {
-  OPTIMIZE: {
-    webllm: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
-    groq: 'llama-3.3-70b-versatile',
-  },
-  DRAFT: {
-    webllm: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
-    groq: 'llama-3.1-8b-instant',
-  },
-  DEFAULT: {
-    webllm: 'Llama-3.2-1B-Instruct-q4f32_1-MLC',
-    groq: 'llama-3.1-8b-instant',
-  },
-} as const;
-
-export function getDefaultModel(provider: LLMProvider, task: LLMTask = 'DEFAULT'): string {
-  const taskKey = (task in LLM_TASK_MODELS ? task : 'DEFAULT') as keyof typeof LLM_TASK_MODELS;
-
-  if (provider === 'groq') return LLM_TASK_MODELS[taskKey].groq;
-  return LLM_TASK_MODELS[taskKey].webllm;
-}
-
-export const PROVIDER_OPTIONS = [
-  {
-    value: 'webllm',
-    label: 'Local AI (GPU Accelerated)',
-    description:
-      'Fastest option. Runs completely on your device. Requires Chrome/Edge with WebGPU.',
-    learnMoreUrl: 'https://mlc.ai/web-llm/',
-    defaultModel: LLM_TASK_MODELS.DEFAULT.webllm,
-  },
-  {
-    value: 'groq',
-    label: 'Groq Cloud (Fast)',
-    description: 'High-speed cloud inference. Uses a shared key by default, or enter your own.',
-    learnMoreUrl: 'https://groq.com/',
-    defaultModel: LLM_TASK_MODELS.DEFAULT.groq,
-  },
-] as const;
-
-export const DEFAULT_LLM_CONFIG = {
-  provider: 'webllm' as const,
-  apiKey: '',
-  model: LLM_TASK_MODELS.DEFAULT.webllm,
-  temperature: 0.7,
-  maxTokens: 1024,
-};
+import type { Preferences } from '../types';
 
 export const DEFAULT_PREFERENCES: Preferences = {
   preferredStartTime: '08:00',

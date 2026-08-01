@@ -52,33 +52,12 @@ export const userProfileSchema = z.object({
   preferences: z.record(z.string(), z.unknown()).optional(),
   courseSelections: z.record(z.string(), z.string()).optional(),
   pinnedSelections: z.record(z.string(), z.string()).optional(),
-  llmConfig: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const userProfileUpdateSchema = userProfileSchema.partial();
 
 export type UserProfileInput = z.infer<typeof userProfileSchema>;
 export type UserProfileUpdateInput = z.infer<typeof userProfileUpdateSchema>;
-
-export const llmMessageSchema = z.object({
-  role: z.enum(['system', 'user', 'assistant', 'tool']),
-  content: z.string().max(32000, 'Message content too long'),
-});
-
-export const llmRequestSchema = z.object({
-  provider: z.enum(['groq'], { message: 'Only Groq is supported' }),
-  model: z.string().optional(),
-  messages: z
-    .array(llmMessageSchema)
-    .min(1, 'At least one message is required')
-    .max(50, 'Too many messages'),
-  temperature: z.number().min(0).max(2).optional(),
-  maxOutputTokens: z.number().min(1).max(32000).optional(),
-  saveKey: z.boolean().optional(),
-  userApiKey: z.string().trim().min(1, 'API key cannot be empty').max(500).optional(),
-});
-
-export type LlmRequest = z.infer<typeof llmRequestSchema>;
 
 export const professorRatingSchema = z.object({
   professorId: z.number().int().positive(),

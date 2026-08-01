@@ -5,7 +5,6 @@ import {
   integer,
   jsonb,
   pgTable,
-  primaryKey,
   serial,
   text,
   timestamp,
@@ -36,23 +35,6 @@ export const trades = pgTable('trades', {
 export type Trade = typeof trades.$inferSelect;
 export type NewTrade = typeof trades.$inferInsert;
 
-export const userLlmKeys = pgTable(
-  'user_llm_keys',
-  {
-    auth0UserId: varchar('auth0_user_id', { length: 255 }).notNull(),
-    provider: varchar('provider', { length: 50 }).notNull(),
-    apiKey: text('api_key').notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-    updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  },
-  (t) => ({
-    pk: primaryKey({ columns: [t.auth0UserId, t.provider] }),
-  }),
-);
-
-export type UserLlmKey = typeof userLlmKeys.$inferSelect;
-export type NewUserLlmKey = typeof userLlmKeys.$inferInsert;
-
 export const userProfiles = pgTable('user_profiles', {
   auth0UserId: varchar('auth0_user_id', { length: 255 }).primaryKey(),
   phone: varchar('contact_phone', { length: 20 }).notNull(),
@@ -60,7 +42,6 @@ export const userProfiles = pgTable('user_profiles', {
   preferences: jsonb('preferences'),
   courseSelections: jsonb('course_selections'),
   pinnedSelections: jsonb('pinned_selections'),
-  llmConfig: jsonb('llm_config'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

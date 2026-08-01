@@ -5,10 +5,6 @@ import {
   Button,
   Card,
   CardContent,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Grid,
   Skeleton,
   Stack,
@@ -17,12 +13,11 @@ import {
 } from '@mui/material';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ApiKeyDialog from '../components/ApiKeyDialog';
 import { OptimizationPanel } from '../components/dashboard/OptimizationPanel';
 import { ScheduleOverview } from '../components/dashboard/ScheduleOverview';
 import { SelectedCoursesList } from '../components/dashboard/SelectedCoursesList';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { PreferencesSummaryCard } from '../components/PreferencesSummaryCard';
+import { SchedulePreferences } from '../components/SchedulePreferences';
 import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
 import { useThemeMode } from '../context/ThemeContext';
@@ -45,11 +40,11 @@ const ScheduleExplorerDialog = lazy(() =>
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const { getToken, profile, updateProfile } = useAuthContext();
+  const { profile, updateProfile } = useAuthContext();
   const { toast } = useToast();
   // Always holds the latest profile so async callbacks don't capture a stale snapshot
   const profileRef = useRef(profile);
-  const { preferences, llmConfig, updateLlmConfig } = useConfigContext();
+  const { preferences, updatePreferences } = useConfigContext();
   const { mode, setMode } = useThemeMode();
   const theme = useTheme();
 
@@ -60,15 +55,7 @@ export default function LandingPage() {
   const [allSections, setAllSections] = useState<Section[]>([]);
 
   const [optimizing, setOptimizing] = useState(false);
-  const [aiAnalysis, setAiAnalysis] = useState<string>('');
-  const [webllmAvailable, setWebllmAvailable] = useState(false);
-  const [initProgress, setInitProgress] = useState<{ text: string; percent: number }>({
-    text: '',
-    percent: 0,
-  });
   const [error, setError] = useState<string>('');
-  const [webgpuWarningOpen, setWebgpuWarningOpen] = useState(false);
-  const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false);
 
   const [scheduleExplorerOpen, setScheduleExplorerOpen] = useState(false);
   const [generatedSchedules, setGeneratedSchedules] = useState<GeneratedSchedule[]>([]);
@@ -162,8 +149,11 @@ export default function LandingPage() {
         return;
       }
 
-      const activeSemester = semesters.find((s) => s.isActive) || semesters[0];
-      const semesterId = activeSemester.id;
+      const selectedSemester =
+        semesters.find((semester) => semester.id === profile?.semesterId) ||
+        semesters.find((semester) => semester.isActive) ||
+        semesters[0];
+      const semesterId = selectedSemester.id;
 
       const { courses, sections } = await getSemesterData(semesterId);
 
@@ -180,11 +170,15 @@ export default function LandingPage() {
     } finally {
       setLoading(false);
     }
-  }, [loadScheduleFromSelections]);
+  }, [loadScheduleFromSelections, profile?.semesterId]);
 
   useEffect(() => {
     loadData();
-    setWebllmAvailable('gpu' in navigator);
+  }, [loadData]);
+
+  useEffect(() => {
+    dataLoadedRef.current = false;
+    loadData();
   }, [loadData]);
 
   useEffect(() => {
@@ -215,13 +209,10 @@ export default function LandingPage() {
 
     setOptimizing(true);
     setError('');
-    setInitProgress({ text: '', percent: 0 });
     setPrefilterSummary(null);
 
     try {
-      const { optimizeWithLLM } = await import('../services/llm');
       const { generateSchedules } = await import('../utils/schedule-generator');
-      const token = await getToken();
 
       const sectionsByCourse = buildSectionsByCourse(
         schedule.sections,
@@ -251,25 +242,10 @@ export default function LandingPage() {
         candidates = [schedule];
       }
 
-      const result = await optimizeWithLLM(
-        candidates,
-        preferences,
-        token || '',
-        {
-          provider: llmConfig.provider as 'webllm' | 'groq',
-          model: llmConfig.model,
-          temperature: llmConfig.temperature,
-          maxTokens: llmConfig.maxTokens,
-          initProgressCallback: (report: { progress: number; text: string }) => {
-            setInitProgress({ text: report.text, percent: report.progress * 100 });
-          },
-        },
-        allSections,
-      );
-
-      if (result.bestSchedule) {
-        setSchedule(result.bestSchedule);
-        const selections = result.bestSchedule.sections.reduce(
+      const bestSchedule = [...candidates].sort((a, b) => b.score - a.score)[0];
+      if (bestSchedule) {
+        setSchedule(bestSchedule);
+        const selections = bestSchedule.sections.reduce(
           (acc, section) => {
             acc[section.courseId] = section.id;
             return acc;
@@ -282,15 +258,9 @@ export default function LandingPage() {
           toast.error('Failed to save optimized schedule. Please try again.');
         }
       }
-
-      setAiAnalysis(result.aiAnalysis || 'Schedule optimized successfully.');
     } catch (err) {
-      const error = err as Error & { code?: string };
-      if (error.code === 'KEY_REQUIRED') {
-        setApiKeyDialogOpen(true);
-      } else {
-        setError(`Optimization failed: ${error.message}`);
-      }
+      const error = err as Error;
+      setError(`Optimization failed: ${error.message}`);
     } finally {
       setOptimizing(false);
     }
@@ -485,8 +455,8 @@ export default function LandingPage() {
               mx: 'auto',
             }}
           >
-            Browse available courses, select your preferred sections, and let our AI optimize your
-            timetable for the perfect balance
+            Browse available courses, select your preferred sections, and find the timetable that
+            best matches your preferences.
           </Typography>
           <Stack
             direction="row"
@@ -604,16 +574,9 @@ export default function LandingPage() {
         <Grid container spacing={4}>
           <Grid size={{ xs: 12, lg: 8 }}>
             <Stack spacing={3}>
-              <ScheduleOverview
-                sections={schedule?.sections || []}
-                courses={allCourses}
-                aiAnalysis={aiAnalysis}
-              />
+              <ScheduleOverview sections={schedule?.sections || []} courses={allCourses} />
 
               <Grid container spacing={3}>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <PreferencesSummaryCard />
-                </Grid>
                 {hasCourses && (
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <OptimizationPanel
@@ -621,16 +584,21 @@ export default function LandingPage() {
                       optimizing={optimizing}
                       generating={generating}
                       generationProgress={generationProgress}
-                      initProgress={initProgress}
                       error={error}
-                      webllmAvailable={webllmAvailable}
                       onOptimize={handleOptimize}
                       onGenerateAll={handleGenerateAll}
-                      onWebgpuWarning={() => setWebgpuWarningOpen(true)}
                     />
                   </Grid>
                 )}
               </Grid>
+              <SchedulePreferences
+                initialPreferences={profile?.preferences || preferences}
+                onSave={updatePreferences}
+                autoSave={true}
+                collapsible={true}
+                defaultExpanded={false}
+                description="Choose the timetable criteria used to rank your alternatives."
+              />
             </Stack>
           </Grid>
 
@@ -680,36 +648,6 @@ export default function LandingPage() {
           </Grid>
         </Grid>
       )}
-      <Dialog open={webgpuWarningOpen} onClose={() => setWebgpuWarningOpen(false)}>
-        <DialogTitle>AI Performance Notice</DialogTitle>
-        <DialogContent>
-          <Typography>
-            For the best AI experience, we recommend using Chrome, Edge, or Firefox on a desktop
-            computer. You can still proceed, but it may be slower.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setWebgpuWarningOpen(false)}>Cancel</Button>
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={() => {
-              setWebgpuWarningOpen(false);
-              handleOptimize();
-            }}
-          >
-            Continue Anyway
-          </Button>
-        </DialogActions>
-      </Dialog>
-      <ApiKeyDialog
-        open={apiKeyDialogOpen}
-        onClose={() => setApiKeyDialogOpen(false)}
-        onSave={(key) => {
-          updateLlmConfig({ ...llmConfig, apiKey: key });
-          handleOptimize();
-        }}
-      />
       <Suspense fallback={null}>
         <ErrorBoundary>
           <ScheduleExplorerDialog

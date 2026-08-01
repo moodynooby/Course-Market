@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import {
   formatZodError,
-  llmRequestSchema,
   phoneSchema,
   professorRatingSchema,
   tradeSchema,
@@ -120,7 +119,6 @@ describe('userProfileSchema', () => {
       semesterId: 'winter2025',
       preferences: { maxCredits: 18 },
       courseSelections: { CS101: '001' },
-      llmConfig: { provider: 'groq' },
     });
     expect(result.semesterId).toBe('winter2025');
   });
@@ -139,64 +137,6 @@ describe('userProfileUpdateSchema', () => {
   it('accepts empty object', () => {
     const result = userProfileUpdateSchema.parse({});
     expect(Object.keys(result)).toHaveLength(0);
-  });
-});
-
-describe('llmRequestSchema', () => {
-  it('accepts valid request', () => {
-    const result = llmRequestSchema.parse({
-      provider: 'groq',
-      messages: [{ role: 'user', content: 'Hello' }],
-    });
-    expect(result.provider).toBe('groq');
-  });
-
-  it('accepts request with all options', () => {
-    const result = llmRequestSchema.parse({
-      provider: 'groq',
-      model: 'llama-3.3-70b',
-      messages: [{ role: 'system', content: 'You are helpful' }],
-      temperature: 0.5,
-      maxOutputTokens: 1000,
-    });
-    expect(result.temperature).toBe(0.5);
-  });
-
-  it('rejects invalid provider', () => {
-    expect(() =>
-      llmRequestSchema.parse({
-        provider: 'openai',
-        messages: [{ role: 'user', content: 'Hi' }],
-      }),
-    ).toThrow();
-  });
-
-  it('rejects empty messages', () => {
-    expect(() =>
-      llmRequestSchema.parse({
-        provider: 'groq',
-        messages: [],
-      }),
-    ).toThrow();
-  });
-
-  it('rejects invalid message role', () => {
-    expect(() =>
-      llmRequestSchema.parse({
-        provider: 'groq',
-        messages: [{ role: 'admin', content: 'Hi' }],
-      }),
-    ).toThrow();
-  });
-
-  it('rejects temperature out of range', () => {
-    expect(() =>
-      llmRequestSchema.parse({
-        provider: 'groq',
-        messages: [{ role: 'user', content: 'Hi' }],
-        temperature: 3,
-      }),
-    ).toThrow();
   });
 });
 
