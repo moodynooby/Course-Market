@@ -17,9 +17,19 @@ export interface AuthUser {
   picture?: string;
 }
 
+// Typed marker so downstream handlers can branch on 401 vs 500 without
+// string-matching an error message. Both "missing header" and "invalid token"
+// use this so an expired JWT no longer falls through to 500.
+export class AuthError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthError';
+  }
+}
+
 export async function validateToken(authHeader: string | undefined): Promise<AuthUser> {
   if (!authHeader?.startsWith('Bearer ')) {
-    throw new Error('Missing or invalid authorization header');
+    throw new AuthError('Missing or invalid authorization header');
   }
 
   const token = authHeader.substring(7);
@@ -41,6 +51,6 @@ export async function validateToken(authHeader: string | undefined): Promise<Aut
     };
   } catch (error) {
     console.error('Token validation failed:', error);
-    throw new Error('Invalid or expired token');
+    throw new AuthError('Invalid or expired token');
   }
 }

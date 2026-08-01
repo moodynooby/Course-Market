@@ -27,101 +27,33 @@ function LoadingFallback() {
   );
 }
 
+const suspended = (El: React.LazyExoticComponent<React.ComponentType>) => (
+  <Suspense fallback={<LoadingFallback />}>
+    <El />
+  </Suspense>
+);
+
+const protectedRoute = (El: React.LazyExoticComponent<React.ComponentType>) => (
+  <ProtectedRoute>{suspended(El)}</ProtectedRoute>
+);
+
 const router = createBrowserRouter([
-  {
-    path: '/login',
-    element: (
-      <Suspense fallback={<LoadingFallback />}>
-        <LoginPage />
-      </Suspense>
-    ),
-  },
-  {
-    path: '/callback',
-    element: (
-      <Suspense fallback={<LoadingFallback />}>
-        <CallbackPage />
-      </Suspense>
-    ),
-  },
-  {
-    path: '/onboarding',
-    element: (
-      <Suspense fallback={<LoadingFallback />}>
-        <OnboardingPage />
-      </Suspense>
-    ),
-  },
+  { path: '/login', element: suspended(LoginPage) },
+  { path: '/callback', element: suspended(CallbackPage) },
+  { path: '/onboarding', element: suspended(OnboardingPage) },
   {
     path: '/',
     element: <Layout />,
     children: [
-      {
-        index: true,
-        element: (
-          <ProtectedRoute>
-            <Suspense fallback={<LoadingFallback />}>
-              <LandingPage />
-            </Suspense>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'courses',
-        element: (
-          <ProtectedRoute>
-            <Suspense fallback={<LoadingFallback />}>
-              <CoursesPage />
-            </Suspense>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'trading',
-        element: (
-          <ProtectedRoute>
-            <Suspense fallback={<LoadingFallback />}>
-              <TradingPage />
-            </Suspense>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'settings',
-        element: (
-          <ProtectedRoute>
-            <Suspense fallback={<LoadingFallback />}>
-              <SettingsPage />
-            </Suspense>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'professors',
-        element: (
-          <ProtectedRoute>
-            <Suspense fallback={<LoadingFallback />}>
-              <ProfessorsPage />
-            </Suspense>
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'professors/:id',
-        element: (
-          <ProtectedRoute>
-            <Suspense fallback={<LoadingFallback />}>
-              <ProfessorDetailsPage />
-            </Suspense>
-          </ProtectedRoute>
-        ),
-      },
+      { index: true, element: protectedRoute(LandingPage) },
+      { path: 'courses', element: protectedRoute(CoursesPage) },
+      { path: 'trading', element: protectedRoute(TradingPage) },
+      { path: 'settings', element: protectedRoute(SettingsPage) },
+      { path: 'professors', element: protectedRoute(ProfessorsPage) },
+      { path: 'professors/:id', element: protectedRoute(ProfessorDetailsPage) },
     ],
   },
-  {
-    path: '*',
-    element: <Navigate to="/" replace />,
-  },
+  { path: '*', element: <Navigate to="/" replace /> },
 ]);
 
 function App() {

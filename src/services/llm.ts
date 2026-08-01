@@ -9,6 +9,7 @@ import {
 } from '../utils/constants';
 import { env } from '../utils/env';
 import { timeToMinutesCached } from '../utils/schedule';
+import { api } from './apiClient';
 
 export function buildScheduleAnalysisPrompt(
   schedule: Schedule,
@@ -234,8 +235,10 @@ class UnifiedLLMService {
       if (env.IS_DEV) {
         console.error('LLM completion failed:', error);
       }
-      const errorMessage = error instanceof Error ? error.message : 'Unknown cloud error';
-      throw new Error(errorMessage);
+      // Preserve the original error (including any `code` field like KEY_REQUIRED
+      // that ApiError carries) so callers can branch on it.
+      if (error instanceof Error) throw error;
+      throw new Error('Unknown cloud error');
     }
   }
 
@@ -252,33 +255,17 @@ class UnifiedLLMService {
     }
     messages.push({ role: 'user', content: prompt });
 
-    const response = await fetch('/.netlify/functions/llm-proxy', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.token}`,
-      },
-      body: JSON.stringify({
+    const data = await api.post<{ text?: string }>(
+      '/llm-proxy',
+      {
         provider: 'groq',
         model,
         messages,
         temperature,
         maxOutputTokens: maxTokens,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const error = new Error(
-        errorData.message || errorData.error || `Cloud AI error (${response.status})`,
-      ) as Error & { code?: string };
-      if (errorData.code) {
-        error.code = errorData.code;
-      }
-      throw error;
-    }
-
-    const data = await response.json();
+      },
+      this.token,
+    );
     return data.text || 'No response generated';
   }
 

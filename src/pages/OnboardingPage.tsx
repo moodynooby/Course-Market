@@ -12,7 +12,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useAuthContext } from '../context/AuthContext';
@@ -49,11 +49,18 @@ export default function OnboardingPage() {
     loadSemesters();
   }, [loadSemesters]);
 
+  // Fire only on the first render that observes an already-completed profile,
+  // so that the post-save navigate in handleSave (which may target `state.from`)
+  // isn't clobbered by a profile update.
+  const initialRedirectChecked = useRef(false);
   useEffect(() => {
+    if (initialRedirectChecked.current) return;
+    if (loading) return;
+    initialRedirectChecked.current = true;
     if (profile?.semesterId) {
       navigate('/', { replace: true });
     }
-  }, [profile, navigate]);
+  }, [profile, loading, navigate]);
 
   useEffect(() => {
     if (profile?.phone) setPhone(profile.phone);

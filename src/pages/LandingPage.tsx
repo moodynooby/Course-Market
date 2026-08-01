@@ -29,8 +29,8 @@ import type { Course, Schedule, Section } from '../types';
 import { checkConflicts } from '../utils/schedule';
 import type { ScheduleDiagnostics } from '../utils/schedule-diagnostics';
 import { diagnoseEmptyGeneration } from '../utils/schedule-diagnostics';
-import { buildSectionsByCourse, prefilterSections } from '../utils/schedule-prefilter';
 import type { PrefilterSummary } from '../utils/schedule-prefilter';
+import { buildSectionsByCourse, prefilterSections } from '../utils/schedule-prefilter';
 import type { GeneratedSchedule, SearchResult } from '../utils/schedule-types';
 import { DEFAULT_MAX_SCHEDULES } from '../utils/schedule-types';
 
@@ -369,7 +369,6 @@ export default function LandingPage() {
   );
 
   const hasCourses = schedule && schedule.sections.length > 0;
-  const showOptimization = hasCourses;
 
   return (
     <Box>
@@ -591,7 +590,7 @@ export default function LandingPage() {
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <PreferencesSummaryCard />
                 </Grid>
-                {showOptimization && (
+                {hasCourses && (
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <OptimizationPanel
                       schedule={schedule}

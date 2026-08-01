@@ -37,7 +37,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   } = useAuth0();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   const appUser = useMemo(
     () =>
@@ -52,24 +52,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [auth0User],
   );
 
-  const getToken = useCallback(async () => {
-    try {
-      return await getAccessTokenSilently();
-    } catch (error) {
-      console.error('Failed to get access token:', error);
-      throw error;
-    }
-  }, [getAccessTokenSilently]);
+  const getToken = useCallback(() => getAccessTokenSilently(), [getAccessTokenSilently]);
 
-  const signIn = useCallback(async () => {
-    await loginWithRedirect();
-  }, [loginWithRedirect]);
+  const signIn = useCallback(() => loginWithRedirect(), [loginWithRedirect]);
 
   const signOut = useCallback(
-    () =>
-      logout({
-        logoutParams: { returnTo: window.location.origin },
-      }),
+    () => logout({ logoutParams: { returnTo: window.location.origin } }),
     [logout],
   );
 
@@ -79,20 +67,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return;
     }
 
-    setLoading(true);
+    setProfileLoading(true);
     try {
       const token = await getToken();
       const result = await api.get<{ profile: UserProfile }>('/user-profile', token);
       setProfile(result.profile);
     } catch (error) {
-      if (error instanceof ApiError && error.status === 404) {
-        setProfile(null);
-      } else {
+      // 404 is expected for a brand-new user with no profile row yet.
+      if (!(error instanceof ApiError && error.status === 404)) {
         console.error('[AuthContext] Failed to refresh profile:', error);
-        setProfile(null);
       }
+      setProfile(null);
     } finally {
-      setLoading(false);
+      setProfileLoading(false);
     }
   }, [isAuthenticated, getToken]);
 
@@ -110,24 +97,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   useEffect(() => {
-    if (!isAuthenticated || authLoading) {
-      return;
+    if (authLoading) return;
+    if (isAuthenticated) {
+      refreshProfile();
+    } else {
+      setProfile(null);
     }
-
-    refreshProfile();
   }, [isAuthenticated, authLoading, refreshProfile]);
-
-  useEffect(() => {
-    if (!isAuthenticated && !authLoading) {
-      setLoading(false);
-    }
-  }, [isAuthenticated, authLoading]);
 
   const value = useMemo(
     () => ({
       user: appUser,
       profile,
-      loading,
+      loading: authLoading || profileLoading,
       isAuthenticated,
       signIn,
       signOut,
@@ -138,7 +120,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [
       appUser,
       profile,
-      loading,
+      authLoading,
+      profileLoading,
       isAuthenticated,
       signIn,
       signOut,

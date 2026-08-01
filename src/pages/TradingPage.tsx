@@ -36,10 +36,12 @@ import {
 } from '@mui/material';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Virtuoso } from 'react-virtuoso';
+import { ZodError } from 'zod';
 import { formatZodError, tradeSchema } from '../../db/validation';
 import { EmptyState } from '../components/EmptyState';
 import { useAuthContext } from '../context/AuthContext';
-import { ApiError } from '../services/apiClient';
+import { formatApiErrorDetails } from '../services/apiClient';
+import { getSemesterData, getSemesters } from '../services/coursesApi';
 import { buildTradeIndex, searchTradeIndex } from '../services/search';
 import {
   createTrade,
@@ -47,10 +49,9 @@ import {
   getTrades as fetchTrades,
   updateTrade,
 } from '../services/tradesApi';
-import { getSemesterData, getSemesters } from '../services/coursesApi';
 import type { Course, Section, TradePost } from '../types';
-import { timeAgo } from '../utils';
 import { hasSectionConflict } from '../utils/schedule';
+import { timeAgo } from '../utils/timeAgo';
 
 interface TradeConflict {
   type: 'offered' | 'wanted';
@@ -346,13 +347,18 @@ export default function TradingPage() {
       const token = await getToken();
       const result = await fetchTrades(token);
       setTrades(result);
-      buildTradeIndex(result);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setLoading(false);
     }
   }, [getToken]);
+
+  // Keep the module-level search index in sync with local trades state so that
+  // in-place status updates and deletes are reflected in filtered results.
+  useEffect(() => {
+    buildTradeIndex(trades);
+  }, [trades]);
 
   const loadSemesterData = useCallback(async () => {
     try {
@@ -423,14 +429,11 @@ export default function TradingPage() {
       await loadTrades();
       setSnackbar({ open: true, message: 'Trade posted successfully!' });
     } catch (e) {
-      if (e instanceof Error && e.constructor.name === 'ZodError') {
-        const zodError = e as import('zod').ZodError;
-        const formatted = formatZodError(zodError);
+      if (e instanceof ZodError) {
+        const formatted = formatZodError(e);
         setError(formatted.details.map((d) => `${d.field}: ${d.message}`).join('. '));
-      } else if (e instanceof ApiError && e.details) {
-        setError(e.details.map((d) => `${d.field}: ${d.message}`).join('. '));
       } else {
-        setError((e as Error).message);
+        setError(formatApiErrorDetails(e) ?? (e as Error).message);
       }
     } finally {
       setSubmitting(false);
@@ -453,12 +456,8 @@ export default function TradingPage() {
         const updated = await updateTrade(token, id, updates);
         setTrades((prev) => prev.map((t) => (t.id === id ? updated : t)));
       } catch (e) {
-        if (e instanceof ApiError && e.details) {
-          const messages = e.details.map((d) => `${d.field}: ${d.message}`).join('\n');
-          setError(`Validation failed:\n${messages}`);
-        } else {
-          setError((e as Error).message);
-        }
+        const detail = formatApiErrorDetails(e, '\n');
+        setError(detail ? `Validation failed:\n${detail}` : (e as Error).message);
       }
     },
     [getToken],
@@ -471,11 +470,7 @@ export default function TradingPage() {
         await deleteTrade(token, id);
         setTrades((prev) => prev.filter((t) => t.id !== id));
       } catch (e) {
-        if (e instanceof ApiError && e.details) {
-          setError(e.details.map((d) => `${d.field}: ${d.message}`).join('. '));
-        } else {
-          setError((e as Error).message);
-        }
+        setError(formatApiErrorDetails(e) ?? (e as Error).message);
       }
     },
     [getToken],
@@ -493,16 +488,23 @@ export default function TradingPage() {
     const map = new Map<string, TradeConflict[]>();
     if (!selectedSections.length || !allSections.length) return map;
 
-    const courseSectionsMap = new Map<string, Section[]>();
+    // Resolve human course code -> internal courseId so we can index sections by code.
+    const codeToCourseId = new Map<string, string>();
+    for (const course of allCourses) {
+      codeToCourseId.set(course.code, course.id);
+    }
+
+    const sectionsByCourseId = new Map<string, Section[]>();
     for (const section of allSections) {
-      const existing = courseSectionsMap.get(section.courseId) || [];
+      const existing = sectionsByCourseId.get(section.courseId) || [];
       existing.push(section);
-      courseSectionsMap.set(section.courseId, existing);
+      sectionsByCourseId.set(section.courseId, existing);
     }
 
     for (const trade of trades) {
       const conflicts: TradeConflict[] = [];
-      const courseSections = courseSectionsMap.get(trade.courseCode) || [];
+      const courseId = codeToCourseId.get(trade.courseCode);
+      const courseSections = courseId ? sectionsByCourseId.get(courseId) || [] : [];
 
       const offeredSection = courseSections.find((s) => s.sectionNumber === trade.sectionOffered);
       const wantedSection = courseSections.find((s) => s.sectionNumber === trade.sectionWanted);

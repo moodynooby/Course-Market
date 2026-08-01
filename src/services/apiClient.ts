@@ -5,11 +5,22 @@ const getBaseUrl = (): string => {
   return '/.netlify/functions';
 };
 
+// Turns an ApiError's `details` array into "field: message" text.
+// Returns null if there are no field-level details, so callers can fall back
+// to `err.message`.
+export function formatApiErrorDetails(err: unknown, separator = '. '): string | null {
+  if (err instanceof ApiError && err.details?.length) {
+    return err.details.map((d) => `${d.field}: ${d.message}`).join(separator);
+  }
+  return null;
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
     public details?: { field: string; message: string }[],
+    public code?: string,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -19,10 +30,11 @@ export class ApiError extends Error {
     const data = body as {
       error?: string;
       message?: string;
+      code?: string;
       details?: { field: string; message: string }[];
     };
     const message = data.error || data.message || `API error ${status}`;
-    return new ApiError(status, message, data.details);
+    return new ApiError(status, message, data.details, data.code);
   }
 }
 

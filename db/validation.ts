@@ -10,22 +10,38 @@ export const phoneSchema = z
       .max(15, 'Phone number must be at most 15 digits'),
   );
 
-export const tradeSchema = z.object({
-  courseCode: z.string().min(1, 'Course code is required').max(50),
-  courseName: z.string().max(255).optional(),
-  sectionOffered: z.string().min(1, 'Section offered is required').max(20),
-  sectionWanted: z.string().min(1, 'Section wanted is required').max(20),
-  description: z.string().max(2000).optional(),
-});
+export const tradeSchema = z
+  .object({
+    courseCode: z.string().min(1, 'Course code is required').max(50),
+    courseName: z.string().max(255).optional(),
+    sectionOffered: z.string().min(1, 'Section offered is required').max(20),
+    sectionWanted: z.string().min(1, 'Section wanted is required').max(20),
+    description: z.string().max(2000).optional(),
+  })
+  .refine((d) => d.sectionOffered !== d.sectionWanted, {
+    message: 'Offered and wanted sections must differ',
+    path: ['sectionWanted'],
+  });
 
-export const tradeUpdateSchema = tradeSchema
-  .partial()
-  .extend({
+export const tradeUpdateSchema = z
+  .object({
+    courseCode: z.string().min(1).max(50).optional(),
+    courseName: z.string().max(255).optional(),
+    sectionOffered: z.string().min(1).max(20).optional(),
+    sectionWanted: z.string().min(1).max(20).optional(),
+    description: z.string().max(2000).optional(),
     status: z.enum(['open', 'filled', 'cancelled']).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field must be provided',
-  });
+  })
+  .refine(
+    (d) =>
+      d.sectionOffered === undefined ||
+      d.sectionWanted === undefined ||
+      d.sectionOffered !== d.sectionWanted,
+    { message: 'Offered and wanted sections must differ', path: ['sectionWanted'] },
+  );
 
 export type TradeInput = z.infer<typeof tradeSchema>;
 export type TradeUpdateInput = z.infer<typeof tradeUpdateSchema>;

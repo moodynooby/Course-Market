@@ -9,6 +9,7 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex,
   varchar,
 } from 'drizzle-orm/pg-core';
 
@@ -106,6 +107,11 @@ export const professorRatings = pgTable(
   (t) => ({
     professorIdIdx: index('idx_professor_ratings_professor_id').on(t.professorId),
     createdAtIdx: index('idx_professor_ratings_created_at').on(t.createdAt),
+    // One rating per (user, professor); subsequent submissions overwrite the prior row.
+    userProfessorUnique: uniqueIndex('uniq_professor_ratings_user_professor').on(
+      t.auth0UserId,
+      t.professorId,
+    ),
   }),
 );
 

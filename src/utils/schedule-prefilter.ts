@@ -34,7 +34,7 @@ export function buildSectionsByCourse(
   return byCourse;
 }
 
-export function deduplicateSections(sections: Section[]): Section[] {
+function deduplicateSections(sections: Section[]): Section[] {
   const byPattern = new Map<string, Section>();
   for (const s of sections) {
     const key = s.timeSlots
@@ -98,13 +98,9 @@ export function prefilterSections(
     sectionsByCourse: result,
     summary: {
       avoidDayRemoved,
-      avoidDayCourses: Array.from(avoidDayCourseIds).map(
-        (id) => courseCodeMap.get(id) ?? id,
-      ),
+      avoidDayCourses: Array.from(avoidDayCourseIds).map((id) => courseCodeMap.get(id) ?? id),
       dedupRemoved,
-      dedupCourses: Array.from(dedupCourseIds).map(
-        (id) => courseCodeMap.get(id) ?? id,
-      ),
+      dedupCourses: Array.from(dedupCourseIds).map((id) => courseCodeMap.get(id) ?? id),
     },
   };
 }

@@ -52,7 +52,7 @@ const TABS = [
 ];
 
 export default function SettingsPage() {
-  const { user, profile, updateProfile } = useAuthContext();
+  const { user, profile, updateProfile, signOut } = useAuthContext();
   const { mode, setMode } = useThemeMode();
   const { llmConfig, updateLlmConfig, updatePreferences } = useConfigContext();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -113,7 +113,7 @@ export default function SettingsPage() {
     Object.values(STORAGE_KEYS).forEach((key) => {
       localStorage.removeItem(key);
     });
-    window.location.reload();
+    signOut();
   };
 
   const handleProviderChange = (provider: LLMProvider) => {
