@@ -4,11 +4,13 @@ import {
   Box,
   Button,
   Card,
+  CardContent,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Grid,
+  Skeleton,
   Stack,
   Typography,
   useTheme,
@@ -24,6 +26,7 @@ import { PreferencesSummaryCard } from '../components/PreferencesSummaryCard';
 import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
 import { useThemeMode } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 import { searchSchedules } from '../services/search';
 import type { Course, Schedule, Section } from '../types';
 import { checkConflicts } from '../utils/schedule';
@@ -43,6 +46,9 @@ const ScheduleExplorerDialog = lazy(() =>
 export default function LandingPage() {
   const navigate = useNavigate();
   const { getToken, profile, updateProfile } = useAuthContext();
+  const { toast } = useToast();
+  // Always holds the latest profile so async callbacks don't capture a stale snapshot
+  const profileRef = useRef(profile);
   const { preferences, llmConfig, updateLlmConfig } = useConfigContext();
   const { mode, setMode } = useThemeMode();
   const theme = useTheme();
@@ -78,6 +84,10 @@ export default function LandingPage() {
   const dataLoadedRef = useRef(false);
   const coursesRef = useRef<Course[]>([]);
   const sectionsRef = useRef<Section[]>([]);
+
+  useEffect(() => {
+    profileRef.current = profile;
+  }, [profile]);
 
   useEffect(() => {
     coursesRef.current = allCourses;
@@ -266,7 +276,11 @@ export default function LandingPage() {
           },
           {} as Record<string, string>,
         );
-        updateProfile({ courseSelections: selections });
+        try {
+          await updateProfile({ courseSelections: selections });
+        } catch {
+          toast.error('Failed to save optimized schedule. Please try again.');
+        }
       }
 
       setAiAnalysis(result.aiAnalysis || 'Schedule optimized successfully.');
@@ -344,7 +358,7 @@ export default function LandingPage() {
   }, [schedule, allCourses, allSections, preferences, profile]);
 
   const handleApplySchedule = useCallback(
-    (genSchedule: GeneratedSchedule) => {
+    async (genSchedule: GeneratedSchedule) => {
       const selections = genSchedule.sections.reduce(
         (acc: Record<string, string>, section: Section) => {
           acc[section.courseId] = section.id;
@@ -352,7 +366,11 @@ export default function LandingPage() {
         },
         {} as Record<string, string>,
       );
-      updateProfile({ courseSelections: selections });
+      try {
+        await updateProfile({ courseSelections: selections });
+      } catch {
+        toast.error('Failed to save schedule. Please try again.');
+      }
       setScheduleExplorerOpen(false);
 
       const newSchedule: Schedule = {
@@ -365,7 +383,7 @@ export default function LandingPage() {
       };
       setSchedule(newSchedule);
     },
-    [updateProfile],
+    [updateProfile, toast.error],
   );
 
   const hasCourses = schedule && schedule.sections.length > 0;
@@ -381,25 +399,31 @@ export default function LandingPage() {
         </Typography>
       </Box>
       {loading ? (
-        <Card
-          variant="outlined"
-          sx={{
-            p: 4,
-            textAlign: 'center',
-            mb: 4,
-            borderRadius: 4,
-            bgcolor: 'background.paper',
-          }}
-        >
-          <Typography
-            variant="body1"
-            sx={{
-              color: 'text.secondary',
-            }}
-          >
-            Loading your courses...
-          </Typography>
-        </Card>
+        <Grid container spacing={4}>
+          <Grid size={{ xs: 12, lg: 8 }}>
+            <Stack spacing={3}>
+              <Card variant="outlined" sx={{ borderRadius: 4, p: 3 }}>
+                <Skeleton variant="text" width="40%" height={32} />
+                <Skeleton variant="rectangular" height={180} sx={{ mt: 2, borderRadius: 2 }} />
+              </Card>
+              <Card variant="outlined" sx={{ borderRadius: 4, p: 3 }}>
+                <Skeleton variant="text" width="30%" height={28} />
+                <Skeleton variant="rectangular" height={120} sx={{ mt: 2, borderRadius: 2 }} />
+              </Card>
+            </Stack>
+          </Grid>
+          <Grid size={{ xs: 12, lg: 4 }}>
+            <Card variant="outlined" sx={{ borderRadius: 4, p: 3 }}>
+              <Skeleton variant="text" width="50%" height={28} />
+              {[1, 2, 3].map((i) => (
+                <CardContent key={i} sx={{ px: 0 }}>
+                  <Skeleton variant="text" width="80%" />
+                  <Skeleton variant="text" width="60%" />
+                </CardContent>
+              ))}
+            </Card>
+          </Grid>
+        </Grid>
       ) : !coursesImported ? (
         <Card
           variant="outlined"
@@ -615,21 +639,24 @@ export default function LandingPage() {
               sections={schedule?.sections || []}
               courses={allCourses}
               pinnedSectionIds={new Set(Object.values(profile?.pinnedSelections || {}))}
-              onDeselect={(courseId) => {
-                const prev = profile?.courseSelections || {};
+              onDeselect={async (courseId) => {
+                const prev = profileRef.current?.courseSelections || {};
                 const updated = { ...prev };
                 delete updated[courseId];
-                updateProfile({ courseSelections: updated });
                 const newSections = (schedule?.sections || []).filter(
                   (s) => s.courseId !== courseId,
                 );
                 setSchedule(
                   newSections.length > 0 ? { ...schedule!, sections: newSections } : null,
                 );
+                try {
+                  await updateProfile({ courseSelections: updated });
+                } catch {
+                  toast.error('Failed to remove course. Please try again.');
+                }
               }}
-              onUndoDeselect={(courseId, sectionId) => {
-                const prev = profile?.courseSelections || {};
-                updateProfile({ courseSelections: { ...prev, [courseId]: sectionId } });
+              onUndoDeselect={async (courseId, sectionId) => {
+                const prev = profileRef.current?.courseSelections || {};
                 const section = allSections.find((s) => s.id === sectionId);
                 if (section && schedule) {
                   setSchedule({ ...schedule, sections: [...schedule.sections, section] });
@@ -642,6 +669,11 @@ export default function LandingPage() {
                     score: 0,
                     conflicts: [],
                   });
+                }
+                try {
+                  await updateProfile({ courseSelections: { ...prev, [courseId]: sectionId } });
+                } catch {
+                  toast.error('Failed to restore course. Please try again.');
                 }
               }}
             />

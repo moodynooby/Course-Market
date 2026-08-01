@@ -6,6 +6,10 @@ import {
   Button,
   Card,
   CardContent,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   IconButton,
   InputAdornment,
@@ -14,7 +18,6 @@ import {
   MenuItem,
   Select,
   Skeleton,
-  Snackbar,
   Stack,
   TextField,
   Tooltip,
@@ -25,6 +28,7 @@ import { Virtuoso } from 'react-virtuoso';
 import { CourseCard } from '../components/CourseCard';
 import { EmptyState } from '../components/EmptyState';
 import { useAuthContext } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { useProfessorsMap } from '../hooks/useProfessorsMap';
 import { getSemesterData, getSemesters } from '../services/coursesApi';
 import { buildCourseIndex, searchCourses } from '../services/search';
@@ -35,6 +39,7 @@ const SEARCH_DEBOUNCE_MS = 150;
 const SAVE_DEBOUNCE_MS = 2000;
 export default function CoursesPage() {
   const { isAuthenticated, profile, updateProfile } = useAuthContext();
+  const { toast } = useToast();
   const [courses, setCourses] = useState<Course[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [search, setSearch] = useState('');
@@ -54,16 +59,7 @@ export default function CoursesPage() {
 
   const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   const professorRatings = useProfessorsMap();
-
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity?: 'success' | 'info' | 'warning' | 'error';
-  }>({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
   const [selectedSections, setSelectedSections] = useState<Map<string, string>>(new Map());
   const [pinnedSections, setPinnedSections] = useState<Map<string, string>>(new Map());
@@ -93,12 +89,12 @@ export default function CoursesPage() {
       saveTimeoutRef.current = setTimeout(() => {
         const saved = Object.fromEntries(selections);
         const savedPins = Object.fromEntries(pins);
-        updateProfile({ courseSelections: saved, pinnedSelections: savedPins }).catch(
-          console.error,
-        );
+        updateProfile({ courseSelections: saved, pinnedSelections: savedPins }).catch(() => {
+          toast.error('Failed to save course selections. Please try again.');
+        });
       }, SAVE_DEBOUNCE_MS);
     },
-    [updateProfile],
+    [updateProfile, toast.error],
   );
 
   useEffect(() => {
@@ -123,21 +119,13 @@ export default function CoursesPage() {
     });
 
     if (added.length > 0) {
-      setSnackbar({
-        open: true,
-        message: `Selected ${added.length} course${added.length > 1 ? 's' : ''}`,
-        severity: 'success',
-      });
+      toast.success(`Selected ${added.length} course${added.length > 1 ? 's' : ''}`);
     } else if (removed.length > 0) {
-      setSnackbar({
-        open: true,
-        message: `Deselected ${removed.length} course${removed.length > 1 ? 's' : ''}`,
-        severity: 'info',
-      });
+      toast.info(`Deselected ${removed.length} course${removed.length > 1 ? 's' : ''}`);
     }
 
     previousSelectionsRef.current = new Map(curr);
-  }, [selectedSections]);
+  }, [selectedSections, toast.success, toast.info]);
 
   useEffect(() => {
     if (!initialSyncDoneRef.current) return;
@@ -152,6 +140,7 @@ export default function CoursesPage() {
   }, [selectedSections, pinnedSections, saveSelections]);
 
   const loadCoursesFromSemester = useCallback(async (semesterId: string, semesterName: string) => {
+    setLoading(true);
     setLoadingMessage(`Loading ${semesterName} courses...`);
     try {
       const { courses, sections } = await getSemesterData(semesterId);
@@ -334,18 +323,15 @@ export default function CoursesPage() {
   }, []);
 
   const handleClearAll = useCallback(() => {
-    setSelectedSections(new Map());
-    setPinnedSections(new Map());
-    setSnackbar({
-      open: true,
-      message: 'Cleared all course selections',
-      severity: 'info',
-    });
+    setClearConfirmOpen(true);
   }, []);
 
-  const handleSnackbarClose = () => {
-    setSnackbar((prev) => ({ ...prev, open: false }));
-  };
+  const handleClearConfirmed = useCallback(() => {
+    setSelectedSections(new Map());
+    setPinnedSections(new Map());
+    setClearConfirmOpen(false);
+    toast.info('Cleared all course selections');
+  }, [toast]);
 
   const handleExpand = useCallback((courseId: string) => {
     setExpanded((prev) => (prev === courseId ? null : courseId));
@@ -675,16 +661,21 @@ export default function CoursesPage() {
         }}
         style={{ height: 'calc(100vh - 280px)', minHeight: '400px' }}
       />
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleSnackbarClose} severity={snackbar.severity} sx={{ width: '100%' }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      <Dialog open={clearConfirmOpen} onClose={() => setClearConfirmOpen(false)}>
+        <DialogTitle>Clear all selections?</DialogTitle>
+        <DialogContent>
+          <Typography>
+            This will remove all {selectedCourseInfo.items.length} selected course
+            {selectedCourseInfo.items.length !== 1 ? 's' : ''}. This cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setClearConfirmOpen(false)}>Cancel</Button>
+          <Button color="error" onClick={handleClearConfirmed}>
+            Clear All
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

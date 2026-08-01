@@ -8,6 +8,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { ConfigProvider } from './context/ConfigContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ToastProvider } from './context/ToastContext';
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const CallbackPage = lazy(() => import('./pages/CallbackPage'));
@@ -62,7 +63,9 @@ function App() {
       <AuthProvider>
         <ConfigProvider>
           <ThemeProvider>
-            <RouterProvider router={router} />
+            <ToastProvider>
+              <RouterProvider router={router} />
+            </ToastProvider>
           </ThemeProvider>
         </ConfigProvider>
       </AuthProvider>

@@ -30,12 +30,18 @@ export const handler = withAuth(async (event, user) => {
   const tradeId = pathParts[pathParts.length - 1];
 
   if (httpMethod === 'GET' && path.endsWith('/trades')) {
+    const params = event.queryStringParameters ?? {};
+    const limit = Math.min(Math.max(parseInt(params.limit ?? '100', 10) || 100, 1), 200);
+    const page = Math.max(parseInt(params.page ?? '0', 10) || 0, 0);
+
     const allTrades = await db
       .select(tradeColumns)
       .from(schema.trades)
-      .orderBy(desc(schema.trades.createdAt));
+      .orderBy(desc(schema.trades.createdAt))
+      .limit(limit)
+      .offset(page * limit);
 
-    return jsonResponse(200, { trades: allTrades });
+    return jsonResponse(200, { trades: allTrades, page, limit });
   }
 
   if (httpMethod === 'POST' && path.endsWith('/trades')) {

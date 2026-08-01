@@ -27,7 +27,6 @@ import {
   IconButton,
   InputAdornment,
   Skeleton,
-  Snackbar,
   Stack,
   TextField,
   Tooltip,
@@ -40,6 +39,7 @@ import { ZodError } from 'zod';
 import { formatZodError, tradeSchema } from '../../db/validation';
 import { EmptyState } from '../components/EmptyState';
 import { useAuthContext } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { formatApiErrorDetails } from '../services/apiClient';
 import { getSemesterData, getSemesters } from '../services/coursesApi';
 import { buildTradeIndex, searchTradeIndex } from '../services/search';
@@ -323,11 +323,9 @@ export default function TradingPage() {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [editingTrade, setEditingTrade] = useState<TradePost | null>(null);
+  const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
-  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string }>({
-    open: false,
-    message: '',
-  });
+  const [formError, setFormError] = useState<string | null>(null);
 
   const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [allSections, setAllSections] = useState<Section[]>([]);
@@ -402,6 +400,7 @@ export default function TradingPage() {
     if (!user) return;
 
     setSubmitting(true);
+    setFormError(null);
     try {
       const validatedData = tradeSchema.parse({
         ...tradeForm,
@@ -417,6 +416,7 @@ export default function TradingPage() {
         await createTrade(token, validatedData);
       }
 
+      const successMsg = editingTrade ? 'Trade updated!' : 'Trade posted successfully!';
       setDialogOpen(false);
       setEditingTrade(null);
       setTradeForm({
@@ -427,27 +427,30 @@ export default function TradingPage() {
         description: '',
       });
       await loadTrades();
-      setSnackbar({ open: true, message: 'Trade posted successfully!' });
+      toast.success(successMsg);
     } catch (e) {
       if (e instanceof ZodError) {
         const formatted = formatZodError(e);
-        setError(formatted.details.map((d) => `${d.field}: ${d.message}`).join('. '));
+        setFormError(formatted.details.map((d) => `${d.field}: ${d.message}`).join('. '));
       } else {
-        setError(formatApiErrorDetails(e) ?? (e as Error).message);
+        setFormError(formatApiErrorDetails(e) ?? (e as Error).message);
       }
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleContact = useCallback(async (phone: string) => {
-    try {
-      await navigator.clipboard.writeText(phone);
-      setSnackbar({ open: true, message: 'Phone number copied to clipboard!' });
-    } catch {
-      setSnackbar({ open: true, message: `Phone: ${phone}` });
-    }
-  }, []);
+  const handleContact = useCallback(
+    async (phone: string) => {
+      try {
+        await navigator.clipboard.writeText(phone);
+        toast.success('Phone number copied to clipboard!');
+      } catch {
+        toast.info(`Phone: ${phone}`);
+      }
+    },
+    [toast],
+  );
 
   const handleUpdate = useCallback(
     async (id: string, updates: Partial<TradePost>) => {
@@ -455,12 +458,13 @@ export default function TradingPage() {
         const token = await getToken();
         const updated = await updateTrade(token, id, updates);
         setTrades((prev) => prev.map((t) => (t.id === id ? updated : t)));
+        toast.success('Trade updated.');
       } catch (e) {
         const detail = formatApiErrorDetails(e, '\n');
         setError(detail ? `Validation failed:\n${detail}` : (e as Error).message);
       }
     },
-    [getToken],
+    [getToken, toast],
   );
 
   const handleDelete = useCallback(
@@ -469,11 +473,12 @@ export default function TradingPage() {
         const token = await getToken();
         await deleteTrade(token, id);
         setTrades((prev) => prev.filter((t) => t.id !== id));
+        toast.success('Trade deleted.');
       } catch (e) {
         setError(formatApiErrorDetails(e) ?? (e as Error).message);
       }
     },
-    [getToken],
+    [getToken, toast],
   );
 
   const selectedSections = useMemo(() => {
@@ -612,7 +617,18 @@ export default function TradingPage() {
             variant="contained"
             color="secondary"
             startIcon={<SwapHoriz />}
-            onClick={() => setDialogOpen(true)}
+            onClick={() => {
+              setEditingTrade(null);
+              setTradeForm({
+                courseCode: '',
+                courseName: '',
+                sectionOffered: '',
+                sectionWanted: '',
+                description: '',
+              });
+              setFormError(null);
+              setDialogOpen(true);
+            }}
           >
             Post Trade
           </Button>
@@ -623,6 +639,7 @@ export default function TradingPage() {
           {error}
         </Alert>
       )}
+
       {trades.length === 0 && !loading ? (
         <EmptyState
           icon={<SwapHoriz sx={{ fontSize: 60 }} />}
@@ -633,7 +650,18 @@ export default function TradingPage() {
               variant="contained"
               color="secondary"
               startIcon={<SwapHoriz />}
-              onClick={() => setDialogOpen(true)}
+              onClick={() => {
+                setEditingTrade(null);
+                setTradeForm({
+                  courseCode: '',
+                  courseName: '',
+                  sectionOffered: '',
+                  sectionWanted: '',
+                  description: '',
+                });
+                setFormError(null);
+                setDialogOpen(true);
+              }}
             >
               Post Trade
             </Button>
@@ -705,6 +733,7 @@ export default function TradingPage() {
         onClose={() => {
           setDialogOpen(false);
           setEditingTrade(null);
+          setFormError(null);
         }}
         maxWidth="sm"
         fullWidth
@@ -712,6 +741,11 @@ export default function TradingPage() {
         <DialogTitle>{editingTrade ? 'Edit Trade' : 'Post a Trade'}</DialogTitle>
         <DialogContent>
           <Stack spacing={2.5} sx={{ mt: 1 }}>
+            {formError && (
+              <Alert severity="error" onClose={() => setFormError(null)}>
+                {formError}
+              </Alert>
+            )}
             <Box>
               <Typography
                 variant="subtitle2"
@@ -836,6 +870,7 @@ export default function TradingPage() {
             onClick={() => {
               setDialogOpen(false);
               setEditingTrade(null);
+              setFormError(null);
             }}
           >
             Cancel
@@ -855,13 +890,6 @@ export default function TradingPage() {
           </Button>
         </DialogActions>
       </Dialog>
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        message={snackbar.message}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      />
     </Box>
   );
 }

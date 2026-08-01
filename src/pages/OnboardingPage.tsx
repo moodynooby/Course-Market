@@ -29,7 +29,6 @@ export default function OnboardingPage() {
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [loadingSemesters, setLoadingSemesters] = useState(true);
   const [selectedSemester, setSelectedSemester] = useState<string>(profile?.semesterId || '');
-  const [selectingSemester, setSelectingSemester] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -168,9 +167,6 @@ export default function OnboardingPage() {
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
                       Contact & Semester
                     </Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                      We need your phone number for trade contacts and your semester to load courses
-                    </Typography>
                   </Box>
 
                   <TextField
@@ -212,8 +208,7 @@ export default function OnboardingPage() {
                               variant="outlined"
                               sx={{
                                 height: '100%',
-                                cursor:
-                                  selectingSemester === semester.id ? 'not-allowed' : 'pointer',
+                                cursor: 'pointer',
                                 border: selectedSemester === semester.id ? 2 : 1,
                                 borderColor:
                                   selectedSemester === semester.id ? 'secondary.main' : 'divider',
@@ -221,9 +216,6 @@ export default function OnboardingPage() {
                                 '&:hover': {
                                   borderColor: 'secondary.main',
                                 },
-                                ...(selectingSemester === semester.id && {
-                                  opacity: 0.6,
-                                }),
                               }}
                             >
                               <Box sx={{ p: 2 }}>

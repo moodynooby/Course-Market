@@ -1,4 +1,4 @@
-import { CalendarToday, ExpandMore, Save, Timer } from '@mui/icons-material';
+import { CalendarToday, ExpandMore, Save, Timer, Warning } from '@mui/icons-material';
 import {
   alpha,
   Box,
@@ -18,6 +18,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useToast } from '../context/ToastContext';
 import type { DayOfWeek, Preferences } from '../types';
 import { DEFAULT_PREFERENCES, SCHEDULE_PRESETS } from '../utils/constants';
 
@@ -81,6 +82,7 @@ export function SchedulePreferences({
   defaultExpanded = true,
 }: SchedulePreferencesProps) {
   const theme = useTheme();
+  const { toast } = useToast();
 
   const matchingPreset = SCHEDULE_PRESETS.find(
     (p) => p.id !== 'custom' && objectMatchesPreset(initialPreferences || DEFAULT_PREFERENCES, p),
@@ -91,6 +93,7 @@ export function SchedulePreferences({
   );
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [pendingSave, setPendingSave] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isValid, setIsValid] = useState(true);
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -127,6 +130,7 @@ export function SchedulePreferences({
     }
 
     setSaving(true);
+    setPendingSave(false);
     try {
       await currentOnSave(currentPreferences);
       setSaved(true);
@@ -136,10 +140,11 @@ export function SchedulePreferences({
       }
     } catch (error) {
       console.error('Error saving preferences:', error);
+      toast.error('Failed to save preferences. Please try again.');
     } finally {
       setSaving(false);
     }
-  }, []);
+  }, [toast.error]);
 
   useEffect(() => {
     return () => {
@@ -154,6 +159,7 @@ export function SchedulePreferences({
     setActivePreset('custom');
 
     if (autoSave && onSave) {
+      setPendingSave(true);
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = setTimeout(() => {
         if (isValidRef.current) performSave();
@@ -528,14 +534,34 @@ export function SchedulePreferences({
           </CardActions>
         )}
 
-        {autoSave && saved && (
+        {autoSave && (pendingSave || saved) && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-            <Typography
-              variant="body2"
-              sx={{ color: 'success.main', display: 'flex', alignItems: 'center', fontWeight: 600 }}
-            >
-              ✓ Saved
-            </Typography>
+            {pendingSave && !saving ? (
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'warning.main',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  fontWeight: 500,
+                }}
+              >
+                <Warning fontSize="small" /> Unsaved changes…
+              </Typography>
+            ) : saved ? (
+              <Typography
+                variant="body2"
+                sx={{
+                  color: 'success.main',
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontWeight: 600,
+                }}
+              >
+                ✓ Saved
+              </Typography>
+            ) : null}
           </Box>
         )}
       </Box>

@@ -85,8 +85,8 @@ export const handler = withAuth(async (event, user) => {
         .returning(profileSelection);
     }
 
-    return jsonResponse(200, { profile });
+    return jsonResponse(existingProfile ? 200 : 201, { profile });
   }
 
-  return jsonResponse(404, { error: 'Method not allowed' });
+  return jsonResponse(405, { error: 'Method not allowed' }, { Allow: 'GET, POST' });
 });

@@ -88,7 +88,11 @@ export default function ProfessorDetailsPage() {
     return (
       <Container maxWidth="md" sx={{ py: 4 }}>
         <Alert severity="error">{error || 'Professor not found'}</Alert>
-        <Button startIcon={<ArrowBack />} onClick={() => navigate('/professors')} sx={{ mt: 2 }}>
+        <Button
+          startIcon={<ArrowBack />}
+          onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/professors'))}
+          sx={{ mt: 2 }}
+        >
           Back to Professors
         </Button>
       </Container>
@@ -103,7 +107,11 @@ export default function ProfessorDetailsPage() {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Button startIcon={<ArrowBack />} onClick={() => navigate('/professors')} sx={{ mb: 3 }}>
+      <Button
+        startIcon={<ArrowBack />}
+        onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/professors'))}
+        sx={{ mb: 3 }}
+      >
         Back to Professors
       </Button>
 

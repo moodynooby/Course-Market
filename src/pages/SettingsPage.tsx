@@ -40,6 +40,7 @@ import { SchedulePreferences } from '../components/SchedulePreferences';
 import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
 import { useThemeMode } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 import { getSemesters } from '../services/coursesApi';
 import type { LLMProvider, Preferences, Semester } from '../types';
 import { PROVIDER_OPTIONS, STORAGE_KEYS } from '../utils/constants';
@@ -52,7 +53,8 @@ const TABS = [
 ];
 
 export default function SettingsPage() {
-  const { user, profile, updateProfile, signOut } = useAuthContext();
+  const { user, profile, updateProfile, refreshProfile, signOut } = useAuthContext();
+  const { toast } = useToast();
   const { mode, setMode } = useThemeMode();
   const { llmConfig, updateLlmConfig, updatePreferences } = useConfigContext();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -103,9 +105,10 @@ export default function SettingsPage() {
       await updateProfile({ semesterId, courseSelections: {} });
       setCurrentSemester(semesterId);
       setSemesterDialogOpen(false);
-      window.location.reload();
+      await refreshProfile();
     } catch (error) {
       console.error('Error changing semester:', error);
+      toast.error('Failed to change semester. Please try again.');
     }
   };
 
@@ -210,7 +213,9 @@ export default function SettingsPage() {
                   onClick={() => setSemesterDialogOpen(true)}
                   sx={{ height: 56 }}
                 >
-                  {currentSemester ? `Current: ${currentSemester}` : 'Change Semester'}
+                  {currentSemester
+                    ? `Current: ${semesters.find((s) => s.id === currentSemester)?.name ?? currentSemester}`
+                    : 'Change Semester'}
                 </Button>
               </Grid>
             </Grid>

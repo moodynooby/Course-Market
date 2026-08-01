@@ -67,6 +67,14 @@ export default function RateProfessorModal({
 
   useEffect(() => {
     if (open) {
+      // Reset all fields every time the modal opens to prevent stale values
+      setRating(5);
+      setDifficulty(3);
+      setComment('');
+      setCourseCode('');
+      setSemesterId('');
+      setTakeAgain(true);
+      setError(null);
       getSemesters()
         .then((data) => setSemesters(data.semesters))
         .catch(console.error);
@@ -106,13 +114,15 @@ export default function RateProfessorModal({
         token,
       );
       onSuccess();
-      onClose();
+      // Reset before closing so state setters don't fire on an unmounted component
       setRating(5);
       setDifficulty(3);
       setComment('');
       setCourseCode('');
       setSemesterId('');
       setTakeAgain(true);
+      setError(null);
+      onClose();
     } catch (err: any) {
       console.error('Error submitting rating:', err);
       setError(err.message || 'Failed to submit rating. Please try again.');

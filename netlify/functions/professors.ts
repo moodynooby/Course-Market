@@ -63,35 +63,34 @@ export const handler = withCors(async (event) => {
         return jsonResponse(404, { error: 'Professor not found' });
       }
 
-      const semesters = await db
-        .select({ id: schema.semesters.id, name: schema.semesters.name })
-        .from(schema.semesters);
+      // Single query instead of N+1: fetch all sections with their semester names at once
+      const sections = await db
+        .select({
+          semesterName: schema.semesters.name,
+          courseCode: schema.semesterCourses.courseCode,
+          instructor: schema.semesterSections.instructor,
+        })
+        .from(schema.semesterSections)
+        .innerJoin(
+          schema.semesterCourses,
+          eq(schema.semesterSections.courseId, schema.semesterCourses.id),
+        )
+        .innerJoin(schema.semesters, eq(schema.semesterSections.semesterId, schema.semesters.id));
 
-      const results: { semester: string; courses: string[] }[] = [];
-
-      for (const sem of semesters) {
-        const sections = await db
-          .select({
-            courseCode: schema.semesterCourses.courseCode,
-            instructor: schema.semesterSections.instructor,
-          })
-          .from(schema.semesterSections)
-          .innerJoin(
-            schema.semesterCourses,
-            eq(schema.semesterSections.courseId, schema.semesterCourses.id),
-          )
-          .where(eq(schema.semesterSections.semesterId, sem.id));
-
-        const courseCodes = new Set<string>();
-        for (const section of sections) {
-          if (splitInstructorNames(section.instructor).includes(professor.name)) {
-            courseCodes.add(section.courseCode);
-          }
-        }
-        if (courseCodes.size > 0) {
-          results.push({ semester: sem.name, courses: Array.from(courseCodes).sort() });
+      // Group by semester in JS — no further DB round-trips
+      const semesterMap = new Map<string, Set<string>>();
+      for (const section of sections) {
+        if (splitInstructorNames(section.instructor).includes(professor.name)) {
+          const existing = semesterMap.get(section.semesterName) ?? new Set<string>();
+          existing.add(section.courseCode);
+          semesterMap.set(section.semesterName, existing);
         }
       }
+
+      const results = Array.from(semesterMap.entries()).map(([semester, codes]) => ({
+        semester,
+        courses: Array.from(codes).sort(),
+      }));
 
       return jsonResponse(200, { coursesTaught: results });
     }

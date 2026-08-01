@@ -1,5 +1,13 @@
 import { useAuth0 } from '@auth0/auth0-react';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { ApiError, api } from '../services/apiClient';
 import type { UserProfile } from '../types';
 
@@ -38,6 +46,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const fetchInFlight = useRef<symbol | null>(null);
 
   const appUser = useMemo(
     () =>
@@ -67,19 +76,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return;
     }
 
+    // Guard against overlapping calls: the last caller wins
+    const ticket = Symbol();
+    fetchInFlight.current = ticket;
+
     setProfileLoading(true);
     try {
       const token = await getToken();
       const result = await api.get<{ profile: UserProfile }>('/user-profile', token);
-      setProfile(result.profile);
+      // Only apply if this is still the latest call
+      if (fetchInFlight.current === ticket) {
+        setProfile(result.profile);
+      }
     } catch (error) {
+      if (fetchInFlight.current !== ticket) return;
       // 404 is expected for a brand-new user with no profile row yet.
       if (!(error instanceof ApiError && error.status === 404)) {
         console.error('[AuthContext] Failed to refresh profile:', error);
       }
       setProfile(null);
     } finally {
-      setProfileLoading(false);
+      if (fetchInFlight.current === ticket) {
+        setProfileLoading(false);
+        fetchInFlight.current = null;
+      }
     }
   }, [isAuthenticated, getToken]);
 
