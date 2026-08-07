@@ -6,3 +6,7 @@
 ## 2026-05-20 - Schedule Feature Calculation Optimization
 **Learning:** Bitmasks are significantly faster than Sets for small, fixed domains like DaysOfWeek (0-6). Mapping DayOfWeek to a bitmask and using bitwise operations avoids object allocations and collection overhead in tight loops. Single-pass logic over sorted arrays for complex conditions (like lunch breaks) is more efficient than allocating intermediate Maps or sub-arrays.
 **Action:** Use bitmasks for day-of-week tracking and single-pass iteration for multi-slot schedule features to minimize GC pressure during combinatorial generation.
+
+## 2026-05-21 - Hot Path Object-to-Primitive Caching
+**Learning:** In high-frequency O(N²) operations like conflict detection, even string-keyed Map lookups for pre-parsed values incur overhead. Using a `WeakMap` to cache numeric primitives directly against the object instance (`TimeSlot`) eliminates string hashing and key matching, providing a measurable boost in combinatorial search paths.
+**Action:** Use `WeakMap` to cache derived numeric features of data objects when those objects are reused across multiple hot-path calculations.
