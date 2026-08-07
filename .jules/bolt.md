@@ -6,3 +6,7 @@
 ## 2026-05-20 - Schedule Feature Calculation Optimization
 **Learning:** Bitmasks are significantly faster than Sets for small, fixed domains like DaysOfWeek (0-6). Mapping DayOfWeek to a bitmask and using bitwise operations avoids object allocations and collection overhead in tight loops. Single-pass logic over sorted arrays for complex conditions (like lunch breaks) is more efficient than allocating intermediate Maps or sub-arrays.
 **Action:** Use bitmasks for day-of-week tracking and single-pass iteration for multi-slot schedule features to minimize GC pressure during combinatorial generation.
+
+## 2026-05-21 - Multi-layered Time Parsing Optimization
+**Learning:** Schedule generation hot paths (conflicts and feature scoring) benefit from tiered caching: a WeakMap for parsed TimeSlot objects (eliminating string parsing for reused objects) and a static-sized Map (1440 entries) for individual time strings to remove LRU eviction overhead. Pre-calculating numeric day indices before sorting in computeScheduleFeatures further reduces lookup overhead in O(N log N) paths.
+**Action:** Use WeakMap to associate expensive calculated properties with shared data objects, and pre-calculate all comparator-dependent numeric values before sorting in performance-critical loops.
