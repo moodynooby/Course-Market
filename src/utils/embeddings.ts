@@ -121,7 +121,12 @@ export function getScheduleIntrinsicQuality(schedule: GeneratedSchedule): number
  * Note: do NOT feed relative scores into this vector — embeddings must be
  * comparable across generation runs.
  */
+const vectorCache = new WeakMap<GeneratedSchedule, number[]>();
+
 export function getScheduleFeatureVector(schedule: GeneratedSchedule): number[] {
+  const cached = vectorCache.get(schedule);
+  if (cached) return cached;
+
   const acc = accumulateIntrinsic(schedule.sections);
   const vector = new Array(FEATURE_VECTOR_DIMS).fill(0);
 
@@ -139,6 +144,7 @@ export function getScheduleFeatureVector(schedule: GeneratedSchedule): number[] 
   vector[10] = acc.afternoon / denom;
   vector[11] = acc.evening / denom;
 
+  vectorCache.set(schedule, vector);
   return vector;
 }
 
