@@ -22,6 +22,8 @@ const AFTERNOON_END_MIN = 1020;
 const FEATURE_VECTOR_DIMS = 12;
 const DAY_INDEX: Record<string, number> = { M: 0, T: 1, W: 2, Th: 3, F: 4 };
 
+const vectorCache = new WeakMap<GeneratedSchedule, number[]>();
+
 type SlotPos = { start: number; end: number };
 
 interface IntrinsicAccumulator {
@@ -122,8 +124,11 @@ export function getScheduleIntrinsicQuality(schedule: GeneratedSchedule): number
  * comparable across generation runs.
  */
 export function getScheduleFeatureVector(schedule: GeneratedSchedule): number[] {
+  let vector = vectorCache.get(schedule);
+  if (vector) return vector;
+
   const acc = accumulateIntrinsic(schedule.sections);
-  const vector = new Array(FEATURE_VECTOR_DIMS).fill(0);
+  vector = new Array(FEATURE_VECTOR_DIMS).fill(0);
 
   vector[0] = Math.min(schedule.totalCredits / CREDITS_NORMALIZATION_MAX, 1);
   vector[1] = qualityFromCosts(acc);
@@ -139,6 +144,7 @@ export function getScheduleFeatureVector(schedule: GeneratedSchedule): number[] 
   vector[10] = acc.afternoon / denom;
   vector[11] = acc.evening / denom;
 
+  vectorCache.set(schedule, vector);
   return vector;
 }
 
