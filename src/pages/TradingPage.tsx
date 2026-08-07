@@ -642,7 +642,7 @@ export default function TradingPage() {
 
       {trades.length === 0 && !loading ? (
         <EmptyState
-          icon={<SwapHoriz sx={{ fontSize: 60 }} />}
+          icon={<SwapHoriz sx={{ fontSize: 40 }} />}
           title="No Trades Yet"
           description="Find the perfect section swap — post your first trade."
           action={
@@ -703,7 +703,7 @@ export default function TradingPage() {
 
           {filteredTrades.length === 0 ? (
             <EmptyState
-              icon={<Search sx={{ fontSize: 60 }} />}
+              icon={<Search sx={{ fontSize: 40 }} />}
               title="No Trades Found"
               description="Try adjusting your search or post a new trade."
             />
