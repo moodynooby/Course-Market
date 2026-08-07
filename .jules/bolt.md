@@ -6,3 +6,7 @@
 ## 2026-05-20 - Schedule Feature Calculation Optimization
 **Learning:** Bitmasks are significantly faster than Sets for small, fixed domains like DaysOfWeek (0-6). Mapping DayOfWeek to a bitmask and using bitwise operations avoids object allocations and collection overhead in tight loops. Single-pass logic over sorted arrays for complex conditions (like lunch breaks) is more efficient than allocating intermediate Maps or sub-arrays.
 **Action:** Use bitmasks for day-of-week tracking and single-pass iteration for multi-slot schedule features to minimize GC pressure during combinatorial generation.
+
+## 2026-05-21 - Hot Path Optimization with WeakMap and Bitmasks
+**Learning:** In combinatorial loops where objects (like TimeSlots) are reused millions of times, caching computed numeric values (like minutes) in a `WeakMap` at the object level eliminates redundant parsing. Replacing `Set.has` with bitmasks for small fixed domains (like days of the week) and removing $O(N)$ eviction logic from small caches (like time strings) significantly reduces per-iteration latency.
+**Action:** Always use `WeakMap` for per-object metadata in hot loops and favor bitmasks over `Set` for small, fixed-index memberships.
