@@ -375,7 +375,7 @@ export default function CoursesPage() {
 
   if (loading) {
     return (
-      <Box>
+      <Box role="status" aria-live="polite" aria-busy="true">
         <Box component="header" sx={{ mb: 5 }}>
           <Typography variant="h4" gutterBottom>
             Course Browser
@@ -480,6 +480,7 @@ export default function CoursesPage() {
           </Box>
           <Button
             variant="outlined"
+            aria-haspopup="menu"
             onClick={handleSemesterMenuOpen}
             disabled={loadingSemesters}
             startIcon={<CalendarToday />}
@@ -566,7 +567,12 @@ export default function CoursesPage() {
         </Alert>
       )}
       {selectedCourseInfo.items.length > 0 && (
-        <Card variant="outlined" sx={{ mb: 2, bgcolor: alpha('#22c55e', 0.05) }}>
+        <Card
+          variant="outlined"
+          role="status"
+          aria-live="polite"
+          sx={{ mb: 2, bgcolor: alpha('#22c55e', 0.05) }}
+        >
           <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
             <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -592,7 +598,8 @@ export default function CoursesPage() {
       )}
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
         <TextField
-          placeholder="Search courses..."
+          label="Search courses"
+          placeholder="Search by course, title, or instructor"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           sx={{ flex: 1 }}

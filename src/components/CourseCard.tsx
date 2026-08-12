@@ -126,6 +126,17 @@ export const CourseCard = memo(
                     key={section.id}
                     variant="outlined"
                     onClick={() => onSelectSection(section.id)}
+                    onKeyDown={(event) => {
+                      if (event.target !== event.currentTarget) return;
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        onSelectSection(section.id);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={isSelected}
+                    aria-label={`Select section ${section.sectionNumber}`}
                     sx={{
                       cursor: 'pointer',
                       transition:
@@ -249,6 +260,11 @@ export const CourseCard = memo(
                                 >
                                   <IconButton
                                     size="small"
+                                    aria-label={
+                                      pinnedSectionId === section.id
+                                        ? 'Unpin section'
+                                        : 'Pin section'
+                                    }
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       onTogglePin(section.id);

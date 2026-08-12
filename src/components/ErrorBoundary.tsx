@@ -1,4 +1,4 @@
-import { Box, Button, Typography } from '@mui/material';
+import { Alert, Box, Button, Stack, Typography } from '@mui/material';
 import type { ErrorInfo, ReactNode } from 'react';
 import { Component } from 'react';
 
@@ -29,20 +29,35 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     this.setState({ hasError: false, error: null });
   };
 
+  handleRefresh = () => {
+    window.location.reload();
+  };
+
   override render() {
     if (this.state.hasError) {
       return (
-        <Box sx={{ p: 4, textAlign: 'center' }}>
-          <Typography variant="h6" sx={{ mb: 1 }}>
-            Something went wrong
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-            {this.state.error?.message ||
-              'An unexpected error occurred. Please try again or refresh the page.'}
-          </Typography>
-          <Button variant="outlined" onClick={this.handleRetry}>
-            Try Again
-          </Button>
+        <Box sx={{ display: 'grid', minHeight: '60vh', placeItems: 'center', p: 3 }}>
+          <Stack spacing={2} sx={{ maxWidth: 520, textAlign: 'center' }}>
+            <Typography variant="h5" component="h1">
+              Something went wrong
+            </Typography>
+            <Alert severity="error" role="alert" sx={{ textAlign: 'left' }}>
+              The page could not be displayed. Try again, or refresh the app if the problem
+              continues.
+            </Alert>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1}
+              sx={{ justifyContent: 'center' }}
+            >
+              <Button variant="contained" onClick={this.handleRetry}>
+                Try again
+              </Button>
+              <Button variant="outlined" onClick={this.handleRefresh}>
+                Refresh app
+              </Button>
+            </Stack>
+          </Stack>
         </Box>
       );
     }

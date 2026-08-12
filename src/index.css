@@ -13,6 +13,12 @@
   font-display: swap;
 }
 
+:root {
+  color-scheme: light dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -26,11 +32,26 @@ body,
   width: 100%;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   font-family:
     "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
 }
 
 ::-webkit-scrollbar {
@@ -71,4 +92,15 @@ body {
   border-radius: 50%;
   opacity: 0.3;
   z-index: -1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

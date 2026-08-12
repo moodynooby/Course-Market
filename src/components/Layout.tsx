@@ -45,9 +45,11 @@ function NavLink({ to, label, primary = false, currentPath }: NavLinkProps) {
         sx={{
           textDecoration: 'none',
           fontWeight: 700,
+          minHeight: 48,
           height: 64,
           display: 'flex',
           alignItems: 'center',
+          flexShrink: 0,
           px: 1,
           color: isActive ? 'secondary.main' : 'text.secondary',
           borderBottom: isActive ? '2px solid' : '2px solid transparent',
@@ -72,6 +74,8 @@ function NavLink({ to, label, primary = false, currentPath }: NavLinkProps) {
       to={to}
       sx={{
         textDecoration: 'none',
+        minHeight: 48,
+        flexShrink: 0,
         fontSize: '0.75rem',
         fontWeight: 700,
         textTransform: 'uppercase',
@@ -168,6 +172,7 @@ export default function Layout() {
     >
       <Box
         component="nav"
+        aria-label="Primary navigation"
         sx={{
           position: 'sticky',
           top: 0,
@@ -226,6 +231,10 @@ export default function Layout() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: { xs: 2, sm: 4 },
+                minWidth: 0,
+                overflowX: 'auto',
+                scrollbarWidth: 'none',
+                '&::-webkit-scrollbar': { display: 'none' },
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -277,7 +286,7 @@ export default function Layout() {
 
             <Box
               sx={{
-                display: { xs: 'none', md: 'flex' },
+                display: 'flex',
                 alignItems: 'center',
                 gap: 3,
                 ml: 2,
@@ -295,6 +304,7 @@ export default function Layout() {
                 <Button
                   size="small"
                   color="inherit"
+                  aria-haspopup="menu"
                   onClick={handleSemesterMenuOpen}
                   startIcon={<CalendarMonth fontSize="small" />}
                   endIcon={<KeyboardArrowDown fontSize="small" />}
@@ -349,7 +359,7 @@ export default function Layout() {
               <IconButton
                 onClick={toggleMode}
                 size="small"
-                sx={{ color: 'text.secondary' }}
+                sx={{ color: 'text.secondary', minWidth: 44, minHeight: 44 }}
                 aria-label={
                   mode === 'light'
                     ? 'Switch to dark mode'
@@ -366,6 +376,8 @@ export default function Layout() {
               <Box sx={{ ml: 1 }}>
                 <Button
                   onClick={handleMenu}
+                  aria-haspopup="menu"
+                  aria-expanded={Boolean(anchorEl)}
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
