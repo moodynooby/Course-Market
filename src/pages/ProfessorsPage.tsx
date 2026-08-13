@@ -93,11 +93,12 @@ export default function ProfessorsPage() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Stack
-        direction="row"
-        sx={{ justifyContent: 'space-between', alignItems: 'flex-start', mb: 4 }}
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={1}
+        sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'flex-start' }, mb: 4 }}
       >
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography variant="h4" component="h1" gutterBottom sx={{ fontSize: { xs: '1.6rem', sm: '2rem' } }}>
             Rate My Prof
           </Typography>
           <Typography variant="body1" sx={{ color: 'text.secondary' }}>
@@ -118,7 +119,7 @@ export default function ProfessorsPage() {
         )}
       </Stack>
 
-      <Stack direction="row" spacing={2} sx={{ mb: 4 }}>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 4 }}>
         <TextField
           fullWidth
           variant="outlined"
@@ -156,7 +157,7 @@ export default function ProfessorsPage() {
           variant="outlined"
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortKey)}
-          sx={{ width: 200 }}
+          sx={{ width: { xs: '100%', sm: 200 } }}
           slotProps={{
             input: {
               startAdornment: (

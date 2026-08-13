@@ -2,14 +2,19 @@ import {
   CalendarMonth,
   Check,
   DarkMode,
+  Dashboard,
   KeyboardArrowDown,
   LightMode,
   Logout,
+  School,
   SettingsBrightness,
+  SwapHoriz,
 } from '@mui/icons-material';
 import {
   Avatar,
   Box,
+  BottomNavigation,
+  BottomNavigationAction,
   Button,
   IconButton,
   ListItemIcon,
@@ -18,6 +23,7 @@ import {
   MenuItem,
   Tooltip,
   Typography,
+  useMediaQuery,
   useTheme,
 } from '@mui/material';
 import { useCallback, useState } from 'react';
@@ -105,6 +111,7 @@ export default function Layout() {
   const _theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useMediaQuery((theme) => theme.breakpoints.down('md'));
   const { mode, setMode } = useThemeMode();
   const { user, profile, updateProfile, signOut, signIn } = useAuthContext();
 
@@ -228,7 +235,7 @@ export default function Layout() {
 
             <Box
               sx={{
-                display: 'flex',
+                display: { xs: 'none', md: 'flex' },
                 alignItems: 'center',
                 gap: { xs: 2, sm: 4 },
                 minWidth: 0,
@@ -286,7 +293,7 @@ export default function Layout() {
 
             <Box
               sx={{
-                display: 'flex',
+                display: { xs: 'none', md: 'flex' },
                 alignItems: 'center',
                 gap: 3,
                 ml: 2,
@@ -296,6 +303,28 @@ export default function Layout() {
             >
               <NavLink to="/courses" label="Courses" currentPath={location.pathname} />
             </Box>
+          </Box>
+
+          <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 0.5 }}>
+            <Tooltip title="Courses">
+              <IconButton
+                component={Link}
+                to="/courses"
+                aria-label="Courses"
+                size="small"
+                sx={{
+                  color:
+                    location.pathname === '/courses' ||
+                    location.pathname.startsWith('/courses')
+                      ? 'secondary.main'
+                      : 'text.secondary',
+                  minWidth: 44,
+                  minHeight: 44,
+                }}
+              >
+                <School />
+              </IconButton>
+            </Tooltip>
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -462,6 +491,63 @@ export default function Layout() {
           </Box>
         </Box>
       </Box>
+      {user && (
+        <Box
+          component="nav"
+          aria-label="Mobile navigation"
+          sx={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 100,
+            display: { xs: 'block', md: 'none' },
+            bgcolor: 'background.paper',
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            pb: 'env(safe-area-inset-bottom)',
+          }}
+        >
+          <BottomNavigation
+            value={location.pathname}
+            showLabels
+            sx={{ bgcolor: 'background.paper' }}
+          >
+            <BottomNavigationAction
+              label="Dashboard"
+              value="/"
+              icon={<Dashboard />}
+              component={Link}
+              to="/"
+              sx={{ '&.Mui-selected': { color: 'secondary.main' } }}
+            />
+            <BottomNavigationAction
+              label="Trading"
+              value="/trading"
+              icon={<SwapHoriz />}
+              component={Link}
+              to="/trading"
+              sx={{ '&.Mui-selected': { color: 'secondary.main' } }}
+            />
+            <BottomNavigationAction
+              label="Rate My Prof"
+              value="/professors"
+              icon={<School />}
+              component={Link}
+              to="/professors"
+              sx={{ '&.Mui-selected': { color: 'secondary.main' } }}
+            />
+            <BottomNavigationAction
+              label="Courses"
+              value="/courses"
+              icon={<School fontSize="small" />}
+              component={Link}
+              to="/courses"
+              sx={{ '&.Mui-selected': { color: 'secondary.main' } }}
+            />
+          </BottomNavigation>
+        </Box>
+      )}
       <Box
         component="main"
         sx={{
@@ -471,6 +557,7 @@ export default function Layout() {
           width: '100%',
           px: { xs: 2, sm: 3 },
           py: 4,
+          pb: { xs: 8, md: 4 },
         }}
       >
         <Outlet />
@@ -484,6 +571,7 @@ export default function Layout() {
           fontSize: '0.8rem',
           borderTop: '1px solid',
           borderColor: 'divider',
+          display: { xs: 'none', md: 'block' },
         }}
       >
         Made with ❤️ by Manas Doshi (AU25040285). Contact me for any help ^_^.

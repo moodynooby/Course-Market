@@ -549,14 +549,17 @@ export default function TradingPage() {
     return (
       <Box>
         <Stack
-          direction="row"
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={1}
           sx={{
-            alignItems: 'center',
+            alignItems: { xs: 'flex-start', sm: 'center' },
             justifyContent: 'space-between',
             mb: 3,
           }}
         >
-          <Typography variant="h4">Course Trading</Typography>
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.6rem', sm: '2rem' } }}>
+            Course Trading
+          </Typography>
         </Stack>
         <Stack spacing={2}>
           {[1, 2, 3].map((i) => (
@@ -601,16 +604,24 @@ export default function TradingPage() {
   return (
     <Box>
       <Stack
-        direction="row"
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={2}
         sx={{
-          alignItems: 'center',
+          alignItems: { xs: 'flex-start', sm: 'center' },
           justifyContent: 'space-between',
           mb: 3,
         }}
       >
-        <Typography variant="h4">Course Trading</Typography>
-        <Stack direction="row" spacing={1}>
-          <Button variant="outlined" onClick={loadTrades} disabled={loading}>
+        <Typography variant="h4" sx={{ fontSize: { xs: '1.6rem', sm: '2rem' } }}>
+          Course Trading
+        </Typography>
+        <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+          <Button
+            variant="outlined"
+            onClick={loadTrades}
+            disabled={loading}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
+          >
             Refresh
           </Button>
           <Button
@@ -629,6 +640,7 @@ export default function TradingPage() {
               setFormError(null);
               setDialogOpen(true);
             }}
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             Post Trade
           </Button>

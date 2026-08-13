@@ -458,15 +458,15 @@ export default function CoursesPage() {
     <Box>
       <Box component="header" sx={{ mb: 3 }}>
         <Stack
-          direction="row"
+          direction={{ xs: 'column', sm: 'row' }}
           spacing={2}
           sx={{
             justifyContent: 'space-between',
-            alignItems: 'center',
+            alignItems: { xs: 'flex-start', sm: 'center' },
           }}
         >
-          <Box>
-            <Typography variant="h4" gutterBottom>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.6rem', sm: '2rem' } }}>
               Course Browser
             </Typography>
             <Typography
@@ -485,9 +485,13 @@ export default function CoursesPage() {
             disabled={loadingSemesters}
             startIcon={<CalendarToday />}
             endIcon={<KeyboardArrowDown />}
-            sx={{ minWidth: 200 }}
+            sx={{ minWidth: { xs: '100%', sm: 200 }, maxWidth: { sm: 280 } }}
           >
-            {loadingSemesters ? 'Loading...' : currentSemesterName || 'Select Semester'}
+            {loadingSemesters
+              ? 'Loading...'
+              : (currentSemesterName || 'Select Semester').length > 30
+                ? `${(currentSemesterName || 'Select Semester').slice(0, 27)}…`
+                : currentSemesterName || 'Select Semester'}
           </Button>
         </Stack>
       </Box>
@@ -574,7 +578,7 @@ export default function CoursesPage() {
           sx={{ mb: 2, bgcolor: alpha('#22c55e', 0.05) }}
         >
           <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-            <Stack direction="row" sx={{ alignItems: 'center', justifyContent: 'space-between' }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between' }}>
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
                 {selectedCourseInfo.items.length} course
                 {selectedCourseInfo.items.length > 1 ? 's' : ''} selected (
@@ -585,10 +589,11 @@ export default function CoursesPage() {
                   size="small"
                   variant={showSelectedOnly ? 'contained' : 'outlined'}
                   onClick={() => setShowSelectedOnly((v) => !v)}
+                  sx={{ width: { xs: '100%', sm: 'auto' } }}
                 >
                   View Selected
                 </Button>
-                <Button size="small" color="error" variant="outlined" onClick={handleClearAll}>
+                <Button size="small" color="error" variant="outlined" onClick={handleClearAll} sx={{ width: { xs: '100%', sm: 'auto' } }}>
                   Clear All
                 </Button>
               </Stack>
@@ -625,7 +630,7 @@ export default function CoursesPage() {
             },
           }}
         />
-        <FormControl sx={{ minWidth: 200 }} size="small">
+        <FormControl sx={{ minWidth: { xs: '100%', sm: 200 } }} size="small">
           <InputLabel>Subject</InputLabel>
           <Select value={subject} label="Subject" onChange={(e) => setSubject(e.target.value)}>
             <MenuItem value="all">All Subjects</MenuItem>
@@ -666,7 +671,7 @@ export default function CoursesPage() {
             </Box>
           );
         }}
-        style={{ height: 'calc(100vh - 280px)', minHeight: '400px' }}
+        style={{ height: 'calc(100vh - 340px)', minHeight: '400px' }}
       />
       <Dialog open={clearConfirmOpen} onClose={() => setClearConfirmOpen(false)}>
         <DialogTitle>Clear all selections?</DialogTitle>
