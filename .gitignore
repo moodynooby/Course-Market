@@ -136,3 +136,7 @@ dist
 
 # Husky
 .husky/_
+
+# Local dev harness (dev-only preview)
+preview.html
+src/dev-harness/
