@@ -13,25 +13,23 @@ const config: CapacitorConfig = {
   ...(serverUrl ? { server: { url: serverUrl, cleartext: true } } : {}),
   android: {
     allowMixedContent: true,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#111111',
   },
   ios: {
     contentInset: 'automatic',
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 1500,
+      launchShowDuration: 1200,
       launchAutoHide: true,
-      backgroundColor: '#0061a4',
+      launchFadeOutDuration: 300,
+      backgroundColor: '#111111',
       androidSplashResourceName: 'splash',
-      showSpinner: true,
-      androidSpinnerStyle: 'large',
-      iosSpinnerStyle: 'small',
-      spinnerColor: '#ffffff',
+      showSpinner: false,
     },
     StatusBar: {
       style: 'light',
-      backgroundColor: '#0061a4',
+      backgroundColor: '#111111',
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],

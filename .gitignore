@@ -141,3 +141,4 @@ android/local.properties
 # Local dev harness (dev-only preview)
 preview.html
 src/dev-harness/
+android/app/google-services.json

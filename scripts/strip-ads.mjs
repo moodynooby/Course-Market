@@ -8,8 +8,8 @@
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
@@ -24,14 +24,20 @@ const before = html;
 let previous;
 do {
   previous = html;
-  html = html.replace(/<script\s+async\s+src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js[\s\S]*?<\/script>\s*/gi, '');
+  html = html.replace(
+    /<script\s+async\s+src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js[\s\S]*?<\/script>\s*/gi,
+    '',
+  );
 } while (html !== previous);
 
 // Remove the dns-prefetch for the AdSense domain (unnecessary without ads).
 // Repeat until stable for the same reason.
 do {
   previous = html;
-  html = html.replace(/<link\s+rel="dns-prefetch"\s+href="https:\/\/pagead2\.googlesyndication\.com"\s*\/?>\s*/gi, '');
+  html = html.replace(
+    /<link\s+rel="dns-prefetch"\s+href="https:\/\/pagead2\.googlesyndication\.com"\s*\/?>\s*/gi,
+    '',
+  );
 } while (html !== previous);
 
 if (html === before) {

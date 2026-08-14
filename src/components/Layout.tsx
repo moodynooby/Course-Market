@@ -12,9 +12,9 @@ import {
 } from '@mui/icons-material';
 import {
   Avatar,
-  Box,
   BottomNavigation,
   BottomNavigationAction,
+  Box,
   Button,
   IconButton,
   ListItemIcon,
@@ -314,8 +314,7 @@ export default function Layout() {
                 size="small"
                 sx={{
                   color:
-                    location.pathname === '/courses' ||
-                    location.pathname.startsWith('/courses')
+                    location.pathname === '/courses' || location.pathname.startsWith('/courses')
                       ? 'secondary.main'
                       : 'text.secondary',
                   minWidth: 44,

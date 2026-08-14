@@ -95,10 +95,19 @@ export default function ProfessorsPage() {
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         spacing={1}
-        sx={{ justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'flex-start' }, mb: 4 }}
+        sx={{
+          justifyContent: 'space-between',
+          alignItems: { xs: 'flex-start', sm: 'flex-start' },
+          mb: 4,
+        }}
       >
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography variant="h4" component="h1" gutterBottom sx={{ fontSize: { xs: '1.6rem', sm: '2rem' } }}>
+          <Typography
+            variant="h4"
+            component="h1"
+            gutterBottom
+            sx={{ fontSize: { xs: '1.6rem', sm: '2rem' } }}
+          >
             Rate My Prof
           </Typography>
           <Typography variant="body1" sx={{ color: 'text.secondary' }}>
