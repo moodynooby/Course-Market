@@ -42,6 +42,9 @@ export const userProfiles = pgTable('user_profiles', {
   preferences: jsonb('preferences'),
   courseSelections: jsonb('course_selections'),
   pinnedSelections: jsonb('pinned_selections'),
+  // FCM (Android) / APNs (iOS) device token registered by the native app so
+  // the trades backend can push trade-update notifications.
+  pushNotificationToken: text('push_notification_token'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });

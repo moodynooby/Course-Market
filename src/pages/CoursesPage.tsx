@@ -24,7 +24,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Virtuoso } from 'react-virtuoso';
 import { CourseCard } from '../components/CourseCard';
 import { EmptyState } from '../components/EmptyState';
@@ -61,6 +61,17 @@ export default function CoursesPage() {
   const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   const professorRatings = useProfessorsMap();
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+
+  // Deep-link support: auraishub://courses?courseCode=CSE201 (or
+  // /courses?code=CSE201 on the web) pre-fills the search so the linked
+  // course is shown immediately.
+  const [searchParams] = useSearchParams();
+  const deepLinkCode = searchParams.get('courseCode') ?? searchParams.get('code');
+  useEffect(() => {
+    if (deepLinkCode) {
+      setSearch(deepLinkCode);
+    }
+  }, [deepLinkCode]);
 
   const [selectedSections, setSelectedSections] = useState<Map<string, string>>(new Map());
   const [pinnedSections, setPinnedSections] = useState<Map<string, string>>(new Map());
@@ -426,7 +437,8 @@ export default function CoursesPage() {
             </Typography>
           </Box>
           <Button
-            component={RouterLink}
+            component={
+            }
             to="/login"
             variant="contained"
             color="secondary"

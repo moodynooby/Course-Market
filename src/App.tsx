@@ -9,6 +9,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ConfigProvider } from './context/ConfigContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
+import { useNativeApp } from './native/useNativeApp';
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const CallbackPage = lazy(() => import('./pages/CallbackPage'));
@@ -56,6 +57,10 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
+  // Boots the native shell (status bar, splash, deep links, push
+  // notifications, icon badge) on mobile builds; a no-op on the web.
+  useNativeApp();
+
   return (
     <ErrorBoundary>
       <AuthProvider>

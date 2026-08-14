@@ -34,12 +34,14 @@ import {
   useTheme,
 } from '@mui/material';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Virtuoso } from 'react-virtuoso';
 import { ZodError } from 'zod';
 import { formatZodError, tradeSchema } from '../../db/validation';
 import { EmptyState } from '../components/EmptyState';
 import { useAuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { hapticError, hapticSuccess } from '../native/haptics';
 import { formatApiErrorDetails } from '../services/apiClient';
 import { getSemesterData, getSemesters } from '../services/coursesApi';
 import { buildTradeIndex, searchTradeIndex } from '../services/search';
@@ -67,6 +69,7 @@ const TradeCard = memo(function TradeCard({
   onEdit,
   onContact,
   conflicts,
+  highlighted = false,
 }: {
   trade: TradePost;
   onUpdate: (id: string, updates: Partial<TradePost>) => void;
@@ -74,6 +77,7 @@ const TradeCard = memo(function TradeCard({
   onEdit: (trade: TradePost) => void;
   onContact: (phone: string) => void;
   conflicts: TradeConflict[];
+  highlighted?: boolean;
 }) {
   const { user } = useAuthContext();
   const isOwner = user && trade.auth0UserId === user.id;
@@ -96,6 +100,17 @@ const TradeCard = memo(function TradeCard({
         transition: 'transform 0.2s ease',
         transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
         opacity: trade.status === 'cancelled' ? 0.75 : 1,
+        // Deep-link highlight: a glow around the trade opened via
+        // auraishub://trading?tradeId=... so the user lands exactly on it.
+        ...(highlighted
+          ? {
+              boxShadow: `0 0 0 2px ${theme.palette.secondary.main}`,
+              // Replaces a global keyframe with an MUI-safe entrance: the
+              // glow fades out over two seconds so the deep-linked trade is
+              // unmistakable without adding theme-global CSS.
+              transition: 'box-shadow 2s ease-out',
+            }
+          : {}),
         '&:hover .owner-actions': {
           opacity: 1,
           visibility: 'visible',
@@ -352,6 +367,11 @@ export default function TradingPage() {
     }
   }, [getToken]);
 
+  // Deep-link support: opening auraishub://trading?tradeId=42 (or
+  // /trading?tradeId=42 on the web) highlights and scrolls to that trade.
+  const [searchParams] = useSearchParams();
+  const deepLinkTradeId = searchParams.get('tradeId');
+
   // Keep the module-level search index in sync with local trades state so that
   // in-place status updates and deletes are reflected in filtered results.
   useEffect(() => {
@@ -459,7 +479,10 @@ export default function TradingPage() {
         const updated = await updateTrade(token, id, updates);
         setTrades((prev) => prev.map((t) => (t.id === id ? updated : t)));
         toast.success('Trade updated.');
+        // Native app only: success haptic for trade actions.
+        void hapticSuccess();
       } catch (e) {
+        void hapticError();
         const detail = formatApiErrorDetails(e, '\n');
         setError(detail ? `Validation failed:\n${detail}` : (e as Error).message);
       }
@@ -474,7 +497,9 @@ export default function TradingPage() {
         await deleteTrade(token, id);
         setTrades((prev) => prev.filter((t) => t.id !== id));
         toast.success('Trade deleted.');
+        void hapticSuccess();
       } catch (e) {
+        void hapticError();
         setError(formatApiErrorDetails(e) ?? (e as Error).message);
       }
     },
@@ -736,6 +761,7 @@ export default function TradingPage() {
                     onDelete={handleDelete}
                     onEdit={handleEdit}
                     onContact={handleContact}
+                    highlighted={deepLinkTradeId !== null && String(trade.id) === deepLinkTradeId}
                   />
                 </Box>
               )}
