@@ -1,9 +1,12 @@
 import { School } from '@mui/icons-material';
 import { Avatar, Box, Button, Card, CardContent, Stack, Typography } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
+import { consumeAuthReturnContext } from '../hooks/useAuthGuard';
 
 export default function LoginPage() {
   const { signIn } = useAuthContext();
+  const { returnUrl, actionLabel } = consumeAuthReturnContext();
 
   return (
     <Box
@@ -49,6 +52,19 @@ export default function LoginPage() {
             >
               Plan your semester with confidence
             </Typography>
+
+            {actionLabel && (
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  mt: 2,
+                  color: 'primary.main',
+                  fontWeight: 600,
+                }}
+              >
+                Sign in to {actionLabel}
+              </Typography>
+            )}
           </Box>
 
           <Stack spacing={2} sx={{ mb: 4 }}>
@@ -57,11 +73,17 @@ export default function LoginPage() {
               variant="contained"
               color="secondary"
               size="large"
-              onClick={signIn}
+              onClick={() => signIn(returnUrl ?? undefined)}
               sx={{ py: 1.5 }}
             >
               Sign in
             </Button>
+
+            <Typography variant="body2" align="center" sx={{ color: 'text.secondary' }}>
+              <RouterLink to="/" style={{ color: 'inherit', textDecoration: 'underline' }}>
+                Continue browsing without signing in
+              </RouterLink>
+            </Typography>
 
             <Box sx={{ px: 1 }}>
               <Typography
@@ -73,37 +95,22 @@ export default function LoginPage() {
                   fontWeight: 600,
                 }}
               >
-                Why Sign In?
+                What signing in unlocks
               </Typography>
-              <ul style={{ margin: 0, paddingLeft: 18, color: 'text.secondary' }}>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
                 <li>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: 'text.secondary',
-                    }}
-                  >
-                    Swap course sections with other students
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    Save schedules and sync them across devices
                   </Typography>
                 </li>
                 <li>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: 'text.secondary',
-                    }}
-                  >
-                    Sync your schedule across all devices
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    Trade course sections with other students
                   </Typography>
                 </li>
                 <li>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: 'text.secondary',
-                    }}
-                  >
-                    Save your optimization preferences
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    Rate professors and share your reviews
                   </Typography>
                 </li>
               </ul>

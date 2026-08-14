@@ -12,9 +12,9 @@ import {
 } from '@mui/icons-material';
 import {
   Avatar,
-  Box,
   BottomNavigation,
   BottomNavigationAction,
+  Box,
   Button,
   IconButton,
   ListItemIcon,
@@ -314,8 +314,7 @@ export default function Layout() {
                 size="small"
                 sx={{
                   color:
-                    location.pathname === '/courses' ||
-                    location.pathname.startsWith('/courses')
+                    location.pathname === '/courses' || location.pathname.startsWith('/courses')
                       ? 'secondary.main'
                       : 'text.secondary',
                   minWidth: 44,
@@ -482,7 +481,7 @@ export default function Layout() {
                 variant="contained"
                 color="secondary"
                 size="small"
-                onClick={signIn}
+                onClick={() => signIn(location.pathname + location.search)}
                 sx={{ borderRadius: 9999, ml: 1 }}
               >
                 Sign In

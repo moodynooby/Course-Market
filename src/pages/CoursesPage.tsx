@@ -24,6 +24,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { Virtuoso } from 'react-virtuoso';
 import { CourseCard } from '../components/CourseCard';
 import { EmptyState } from '../components/EmptyState';
@@ -407,7 +408,34 @@ export default function CoursesPage() {
             Course Browser
           </Typography>
         </Box>
-        <Alert severity="info">Please sign in to view and select courses.</Alert>
+        <Alert
+          severity="info"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+          }}
+        >
+          <Box>
+            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+              Browsing as a guest — sign in to save schedules and trade sections
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Course listings are fully browsable. Saving selections, trading, and posting reviews
+              require an account.
+            </Typography>
+          </Box>
+          <Button
+            component={RouterLink}
+            to="/login"
+            variant="contained"
+            color="secondary"
+            size="small"
+            sx={{ whiteSpace: 'nowrap' }}
+          >
+            Sign in
+          </Button>
+        </Alert>
       </Box>
     );
   }
@@ -578,7 +606,14 @@ export default function CoursesPage() {
           sx={{ mb: 2, bgcolor: alpha('#22c55e', 0.05) }}
         >
           <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between' }}>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={1}
+              sx={{
+                alignItems: { xs: 'flex-start', sm: 'center' },
+                justifyContent: 'space-between',
+              }}
+            >
               <Typography variant="body2" sx={{ fontWeight: 600 }}>
                 {selectedCourseInfo.items.length} course
                 {selectedCourseInfo.items.length > 1 ? 's' : ''} selected (
@@ -593,7 +628,13 @@ export default function CoursesPage() {
                 >
                   View Selected
                 </Button>
-                <Button size="small" color="error" variant="outlined" onClick={handleClearAll} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+                <Button
+                  size="small"
+                  color="error"
+                  variant="outlined"
+                  onClick={handleClearAll}
+                  sx={{ width: { xs: '100%', sm: 'auto' } }}
+                >
                   Clear All
                 </Button>
               </Stack>

@@ -1,5 +1,6 @@
 export const STORAGE_KEYS = {
   PREFERENCES: 'auraishub_preferences',
+  PREFS_DIRTY: 'auraishub_prefs_dirty',
   THEME_MODE: 'theme-mode',
 } as const;
 

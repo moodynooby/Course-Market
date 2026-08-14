@@ -9,7 +9,6 @@ import {
   Container,
   Grid,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -19,13 +18,22 @@ import { useAuthContext } from '../context/AuthContext';
 import { getSemesters } from '../services/coursesApi';
 import type { Semester } from '../types';
 
+/**
+ * Progressive, skippable onboarding.
+ *
+ * The semester is the only required step (everything else needs it to load
+ * courses), and it defaults to the most recent active semester. The phone
+ * number is optional and asked inline here only for convenience — it can also
+ * be supplied later directly inside the trade form. Skipping always lands the
+ * user on the page they were trying to reach, so the first meaningful action
+ * (building a schedule) is never blocked.
+ */
 export default function OnboardingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, updateProfile, loading, signOut } = useAuthContext();
 
   const [phone, setPhone] = useState(profile?.phone || '');
-  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [loadingSemesters, setLoadingSemesters] = useState(true);
   const [selectedSemester, setSelectedSemester] = useState<string>(profile?.semesterId || '');
@@ -37,20 +45,21 @@ export default function OnboardingPage() {
       setLoadingSemesters(true);
       const response = await getSemesters();
       setSemesters(response.semesters);
+      // Smart default: preselect the newest active semester.
+      if (!selectedSemester && response.semesters.length > 0) {
+        setSelectedSemester(response.semesters[0].id);
+      }
     } catch (err) {
       console.error('[Onboarding] Error loading semesters:', err);
     } finally {
       setLoadingSemesters(false);
     }
-  }, []);
+  }, [selectedSemester]);
 
   useEffect(() => {
     loadSemesters();
   }, [loadSemesters]);
 
-  // Fire only on the first render that observes an already-completed profile,
-  // so that the post-save navigate in handleSave (which may target `state.from`)
-  // isn't clobbered by a profile update.
   const initialRedirectChecked = useRef(false);
   useEffect(() => {
     if (initialRedirectChecked.current) return;
@@ -66,29 +75,11 @@ export default function OnboardingPage() {
     if (profile?.semesterId) setSelectedSemester(profile.semesterId);
   }, [profile?.phone, profile?.semesterId]);
 
-  const validatePhone = (value: string): boolean => {
-    if (!value.trim()) {
-      setPhoneError('Phone number is required');
-      return false;
-    }
-    if (!/^[\d\s\-+()]+$/.test(value)) {
-      setPhoneError('Invalid phone number format');
-      return false;
-    }
-    if (value.replace(/\D/g, '').length < 10) {
-      setPhoneError('Phone number must be at least 10 digits');
-      return false;
-    }
-    setPhoneError(null);
-    return true;
-  };
-
   const handleSelectSemester = (semesterId: string) => {
     setSelectedSemester(semesterId);
   };
 
   const handleSave = async () => {
-    if (!validatePhone(phone)) return;
     if (!selectedSemester) {
       setError('Please select a semester');
       return;
@@ -97,7 +88,7 @@ export default function OnboardingPage() {
     setSaving(true);
     setError(null);
     try {
-      await updateProfile({ phone, semesterId: selectedSemester });
+      await updateProfile({ semesterId: selectedSemester, ...(phone.trim() ? { phone } : {}) });
       const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
       navigate(from, { replace: true });
     } catch (err) {
@@ -107,6 +98,12 @@ export default function OnboardingPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  /** Skip onboarding entirely; the user can set the semester later. */
+  const handleSkip = () => {
+    const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
+    navigate(from, { replace: true });
   };
 
   if (loading) return <LoadingSpinner fullScreen />;
@@ -143,7 +140,7 @@ export default function OnboardingPage() {
             </Avatar>
             <Typography variant="h4">Welcome to AuraIsHub!</Typography>
             <Typography variant="body1" sx={{ color: 'text.secondary', mb: 1 }}>
-              We need your phone number for trade contacts and your semester to load courses
+              Pick your semester to load this term's courses — you can change it anytime.
             </Typography>
           </Stack>
 
@@ -165,32 +162,11 @@ export default function OnboardingPage() {
                 <Stack spacing={3}>
                   <Box>
                     <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
-                      Contact & Semester
+                      Which semester are you planning for?
                     </Typography>
                   </Box>
 
-                  <TextField
-                    fullWidth
-                    label="Phone Number"
-                    type="tel"
-                    placeholder="+(555) 123-4567"
-                    value={phone}
-                    onChange={(e) => {
-                      setPhone(e.target.value);
-                      if (phoneError) validatePhone(e.target.value);
-                    }}
-                    error={!!phoneError}
-                    helperText={
-                      phoneError || 'Used only for trade contacts — never shared publicly.'
-                    }
-                    required
-                  />
-
                   <Box>
-                    <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
-                      Semester
-                    </Typography>
-
                     {loadingSemesters ? (
                       <Typography variant="body2" sx={{ color: 'text.secondary', py: 2 }}>
                         Loading semesters...
@@ -235,17 +211,34 @@ export default function OnboardingPage() {
                     )}
                   </Box>
 
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+                    <Button
+                      variant="text"
+                      color="inherit"
+                      onClick={handleSkip}
+                      disabled={saving}
+                      sx={{ textTransform: 'none', color: 'text.secondary' }}
+                    >
+                      Skip for now
+                    </Button>
                     <Button
                       variant="contained"
                       color="secondary"
                       size="large"
                       onClick={handleSave}
-                      disabled={saving || !phone.trim() || !selectedSemester}
+                      disabled={saving || !selectedSemester}
                     >
-                      {saving ? 'Saving...' : 'Save & Continue'}
+                      {saving ? 'Saving...' : 'Continue'}
                     </Button>
                   </Box>
+
+                  <Typography
+                    variant="caption"
+                    sx={{ color: 'text.secondary', textAlign: 'center' }}
+                  >
+                    Your phone number is optional — add it later in the trade form when you want
+                    other students to reach you.
+                  </Typography>
                 </Stack>
               </CardContent>
             </Card>

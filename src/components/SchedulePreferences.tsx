@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useToast } from '../context/ToastContext';
+import { markPreferencesDirty } from '../hooks/usePreferenceSync';
 import type { DayOfWeek, Preferences } from '../types';
 import { DEFAULT_PREFERENCES, SCHEDULE_PRESETS } from '../utils/constants';
 
@@ -157,6 +158,9 @@ export function SchedulePreferences({
     setPreferences((prev) => ({ ...prev, [key]: value }));
     setSaved(false);
     setActivePreset('custom');
+    // Flag locally tuned preferences so the post-login sync pushes them to
+    // the cloud account instead of overwriting them with defaults.
+    markPreferencesDirty();
 
     if (autoSave && onSave) {
       setPendingSave(true);

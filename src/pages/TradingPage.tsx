@@ -615,7 +615,11 @@ export default function TradingPage() {
         <Typography variant="h4" sx={{ fontSize: { xs: '1.6rem', sm: '2rem' } }}>
           Course Trading
         </Typography>
-        <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+        <Stack
+          direction={{ xs: 'column-reverse', sm: 'row' }}
+          spacing={1}
+          sx={{ width: { xs: '100%', sm: 'auto' } }}
+        >
           <Button
             variant="outlined"
             onClick={loadTrades}
