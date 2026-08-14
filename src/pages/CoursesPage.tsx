@@ -24,7 +24,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Virtuoso } from 'react-virtuoso';
 import { CourseCard } from '../components/CourseCard';
 import { EmptyState } from '../components/EmptyState';
@@ -437,8 +437,7 @@ export default function CoursesPage() {
             </Typography>
           </Box>
           <Button
-            component={
-            }
+            component={Link}
             to="/login"
             variant="contained"
             color="secondary"

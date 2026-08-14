@@ -163,7 +163,7 @@ export function sectionsToIcs(
     }
   }
 
-  return [header, ...bodies, 'END:VCALENDAR'].join('\r\n') + '\r\n';
+  return `${[header, ...bodies, 'END:VCALENDAR'].join('\r\n')}\r\n`;
 }
 
 /**

@@ -58,7 +58,7 @@ export function decidePreferenceSync(payload: {
  */
 export function usePreferenceSync() {
   const { profile, isAuthenticated, updateProfile } = useAuthContext();
-  const { preferences, updatePreferences } = useConfigContext();
+  const { updatePreferences } = useConfigContext();
   const synced = useRef(false);
 
   useEffect(() => {

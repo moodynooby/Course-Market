@@ -23,7 +23,6 @@ import {
   MenuItem,
   Tooltip,
   Typography,
-  useMediaQuery,
   useTheme,
 } from '@mui/material';
 import { useCallback, useState } from 'react';
@@ -111,7 +110,6 @@ export default function Layout() {
   const _theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-  const isMobile = useMediaQuery((theme) => theme.breakpoints.down('md'));
   const { mode, setMode } = useThemeMode();
   const { user, profile, updateProfile, signOut, signIn } = useAuthContext();
 

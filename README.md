@@ -89,12 +89,11 @@ AuraIsHub ships as a Capacitor 8 app for Android (and iOS, once built on a Mac),
 | Icon badges | `@capawesome/capacitor-badge` shows pending activity; clears on foreground |
 | Haptics | Success/error/light feedback on trade actions and calendar swipes |
 | Touch gestures | Swipe between weeks/days on the calendar |
-| Ad-free native build | `scripts/strip-ads.mjs` removes AdSense from the native bundle (required by AdSense policy) |
 
 ### Build & run
 
 ```bash
-pnpm run build:native   # Web build + AdSense stripping
+pnpm run build:native   # Production build for native
 pnpm run cap:sync       # Sync web build into the native projects
 pnpm run cap:build:android  # Open Android Studio (or build APK with Gradle)
 ```

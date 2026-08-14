@@ -11,7 +11,6 @@ import {
   Person,
   School,
   Share,
-  ViewAgenda,
   ViewDay,
   ViewWeek,
 } from '@mui/icons-material';
@@ -342,8 +341,6 @@ export default function CalendarView({
           return;
         }
 
-        const file = new File([blob], 'schedule.png', { type: 'image/png' });
-
         // Native app: the Capacitor Share plugin hands the image to the OS
         // share sheet (WhatsApp, Instagram DMs, ...). Web browsers fall back
         // through the Web Share API to a clipboard copy automatically.
@@ -427,20 +424,6 @@ export default function CalendarView({
       }
     }
   }, [sections, courses, date]);
-
-  /**
-   * Open Google Calendar with the selected event's details pre-filled so the
-   * user can save it to their calendar in a single tap.
-   */
-  const handleAddToGoogleCalendar = useCallback((event: CalendarEvent) => {
-    const section = event.resource?.section;
-    const course = event.resource?.course;
-    if (!section) return;
-
-    const slot = section.timeSlots[0];
-    const url = buildGoogleCalendarUrlForSlot(section, slot, course, event.start);
-    openGoogleCalendarUrl(url);
-  }, []);
 
   /** Open Google Calendar for the whole schedule (recurring template URL). */
   const handleAddAllToGoogleCalendar = useCallback(() => {

@@ -20,7 +20,8 @@ export interface PushPayload {
   path?: string;
 }
 
-const FCM_SEND_URL = 'https://fcm.googleapis.com/v1/projects/${projectId}/messages:send';
+const FCM_SEND_URL = (projectId: string) =>
+  `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`;
 
 export interface PushOptions {
   /** Service-account JSON for FCM (from a GCP service account key). */
@@ -55,7 +56,7 @@ async function sendViaFcm(token: string, payload: PushPayload, opts: PushOptions
 
   const account = JSON.parse(opts.fcmServiceAccount);
   const accessToken = await getFcmAccessToken(account);
-  const url = FCM_SEND_URL.replace('${projectId}', opts.fcmProjectId);
+  const url = FCM_SEND_URL(opts.fcmProjectId);
 
   await fetch(url, {
     method: 'POST',
