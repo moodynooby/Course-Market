@@ -52,6 +52,8 @@ export const userProfileSchema = z.object({
   preferences: z.record(z.string(), z.unknown()).optional(),
   courseSelections: z.record(z.string(), z.string()).optional(),
   pinnedSelections: z.record(z.string(), z.string()).optional(),
+  // Native app only: FCM/APNs device token for push notifications.
+  pushNotificationToken: z.string().max(2048).optional(),
 });
 
 export const userProfileUpdateSchema = userProfileSchema.partial();

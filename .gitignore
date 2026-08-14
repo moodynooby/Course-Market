@@ -136,6 +136,7 @@ dist
 
 # Husky
 .husky/_
+android/local.properties
 
 # Local dev harness (dev-only preview)
 preview.html

@@ -74,6 +74,41 @@ pnpm run db:migrate   # Apply it
 pnpm run db:studio    # Drizzle Studio GUI
 ```
 
+## Native App (Capacitor)
+
+AuraIsHub ships as a Capacitor 8 app for Android (and iOS, once built on a Mac), wrapping the existing React build in a thin native shell — no rewrite. The `android/` directory is committed; `ios/` is not (Capacitor requires macOS for iOS builds).
+
+### Native-only features
+
+| Feature | Implementation |
+|---|---|
+| Push notifications | `@capacitor/push-notifications` + `netlify/functions/lib/push.ts` (FCM v1 / APNs); trade status changes ping watching students |
+| Deep links | `auraishub://trading?tradeId=42`, `auraishub://courses?courseCode=...` land on the exact trade/course and highlight it |
+| Native share sheet | Timetable screenshots share straight to WhatsApp/Instagram via `@capacitor/share` (web falls back to clipboard) |
+| Offline schedule | `src/native/offline.ts` pins the current schedule to IndexedDB; works with zero connectivity |
+| Icon badges | `@capawesome/capacitor-badge` shows pending activity; clears on foreground |
+| Haptics | Success/error/light feedback on trade actions and calendar swipes |
+| Touch gestures | Swipe between weeks/days on the calendar |
+| Ad-free native build | `scripts/strip-ads.mjs` removes AdSense from the native bundle (required by AdSense policy) |
+
+### Build & run
+
+```bash
+pnpm run build:native   # Web build + AdSense stripping
+pnpm run cap:sync       # Sync web build into the native projects
+pnpm run cap:build:android  # Open Android Studio (or build APK with Gradle)
+```
+
+On a Mac, run `pnpm exec cap add ios && pnpm run cap:build:ios` to open Xcode.
+
+### Push notification setup (production)
+
+Push needs real credentials set on Netlify (Functions): `FCM_PROJECT_ID` and `FCM_SERVICE_ACCOUNT_JSON` (a GCP service account with Firebase Messaging scope) for Android, and `APNS_KEY_P8`, `APNS_KEY_ID`, `APNS_TEAM_ID` for direct iOS pushes. Without them, trade updates still work — pushes simply no-op. The `push_notification_token` column is added to `user_profiles`; run `pnpm run db:push` after merging to apply the schema change.
+
+### Store publishing
+
+Android: `./gradlew assembleRelease` in `android/` produces an AAB for the Play Console (one-time $25 developer fee). iOS requires Xcode + an Apple Developer account ($99/yr). Deep-link scheme `auraishub` is already declared in `AndroidManifest.xml` and `capacitor.config.ts` (`app.aurais`).
+
 ## Seeding
 
 ### Step 1 — CSVs to JSON
