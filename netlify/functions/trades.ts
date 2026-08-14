@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { db } from '../../db';
 import * as schema from '../../db/schema';
 import { formatZodError, tradeSchema, tradeUpdateSchema } from '../../db/validation';
+import { sendPushNotification } from './lib/push';
 import { jsonResponse } from './lib/response';
 import { withAuth } from './lib/wrap';
 
@@ -150,6 +151,13 @@ export const handler = withAuth(async (event, user) => {
       .where(eq(schema.trades.id, idNum))
       .returning(tradeColumns);
 
+    // Notify interested students when a trade reaches a terminal state or is
+    // newly accepted by its owner. Failures here must never fail the trade
+    // update itself (best-effort pushes).
+    if (requestBody.status && requestBody.status !== existingTrade.status) {
+      void notifyTradeStatusChange(updatedTrade);
+    }
+
     return jsonResponse(200, { trade: updatedTrade });
   }
 
@@ -181,3 +189,55 @@ export const handler = withAuth(async (event, user) => {
 
   return jsonResponse(404, { error: 'Endpoint not found' });
 });
+
+/**
+ * Notify students who have posted trades wanting the section that this trade
+ * offered, whenever it becomes filled or cancelled. All sends are
+ * best-effort (fire-and-forget) and never fail the trade update itself.
+ */
+async function notifyTradeStatusChange(trade: {
+  id: number;
+  auth0UserId: string;
+  courseCode: string;
+  sectionOffered: string;
+  status: string;
+}): Promise<void> {
+  if (trade.status === 'open') return;
+
+  const payload = {
+    title: `Trade for ${trade.courseCode} ${trade.sectionOffered} ${trade.status}`,
+    body:
+      trade.status === 'filled'
+        ? `The section ${trade.courseCode} ${trade.sectionOffered} you were watching has been filled.`
+        : `A trade for ${trade.courseCode} ${trade.sectionOffered} was cancelled and may be open again.`,
+    tradeId: trade.id,
+    path: '/trading',
+  };
+
+  // Students who want exactly the section this trade offered (and are not
+  // the owner) get alerted. courseSelections is a JSONB map of
+  // courseCode -> sectionNumber pinned by the user.
+  const watcherRows = await db
+    .select({
+      auth0UserId: schema.userProfiles.auth0UserId,
+      pushNotificationToken: schema.userProfiles.pushNotificationToken,
+      courseSelections: schema.userProfiles.courseSelections,
+    })
+    .from(schema.userProfiles);
+
+  const watchers = watcherRows.filter((row) => {
+    if (row.auth0UserId === trade.auth0UserId || !row.pushNotificationToken) return false;
+    const selections = row.courseSelections as Record<string, string> | null;
+    if (!selections) return false;
+    return Object.entries(selections).some(
+      ([code, section]) => code === trade.courseCode && section === trade.sectionOffered,
+    );
+  });
+
+  for (const watcher of watchers) {
+    const token = watcher.pushNotificationToken;
+    if (token) {
+      void sendPushNotification(token, payload);
+    }
+  }
+}

@@ -33,6 +33,9 @@ import html2canvas from 'html2canvas';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { View } from 'react-big-calendar';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
+import { buildDeepLink } from '../native/deepLinks';
+import { hapticLight, hapticSuccess } from '../native/haptics';
+import { shareContent } from '../native/share';
 import type { CalendarEvent, Course, Section } from '../types';
 import { isSlotActiveDuring, sectionsToCalendarEvents } from '../utils/schedule';
 
@@ -179,6 +182,37 @@ export default function CalendarView({
   const autoNavigated = useRef(false);
   const calendarRef = useRef<HTMLDivElement>(null);
 
+  // Touch swipe navigation: horizontal swipes move between weeks/days.
+  // Works in the native app (touch-first) and on touch laptops/tablets in
+  // the browser; desktop users still use the chevron buttons.
+  const swipeStartX = useRef<number | null>(null);
+  const swipeStartY = useRef<number | null>(null);
+
+  const handleTouchStart = (event: React.TouchEvent) => {
+    if (event.touches.length !== 1) return;
+    swipeStartX.current = event.touches[0].clientX;
+    swipeStartY.current = event.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent) => {
+    if (swipeStartX.current === null || swipeStartY.current === null) return;
+    const deltaX = event.changedTouches[0].clientX - swipeStartX.current;
+    const deltaY = event.changedTouches[0].clientY - swipeStartY.current;
+    swipeStartX.current = null;
+    swipeStartY.current = null;
+
+    // Require a mostly-horizontal swipe of at least 60px to avoid
+    // conflicting with vertical scrolling.
+    if (Math.abs(deltaY) > Math.abs(deltaX) || Math.abs(deltaX) < 60) return;
+
+    if (deltaX > 0) {
+      goToPrev();
+    } else {
+      goToNext();
+    }
+    void hapticLight();
+  };
+
   useEffect(() => {
     if (autoNavigated.current || sections.length === 0) return;
 
@@ -271,28 +305,26 @@ export default function CalendarView({
 
         const file = new File([blob], 'schedule.png', { type: 'image/png' });
 
-        if (navigator.share && navigator.canShare?.({ files: [file] })) {
-          try {
-            await navigator.share({
-              files: [file],
-              title: 'My Schedule',
-              text: 'Check out my course schedule!',
-            });
-            setShareAlert({
-              open: true,
-              message: 'Schedule shared successfully',
-              severity: 'success',
-            });
-          } catch (shareError) {
-            if ((shareError as Error).name !== 'AbortError') {
-              setShareAlert({
-                open: true,
-                message: 'Failed to share schedule',
-                severity: 'error',
-              });
-            }
-          }
+        // Native app: the Capacitor Share plugin hands the image to the OS
+        // share sheet (WhatsApp, Instagram DMs, ...). Web browsers fall back
+        // through the Web Share API to a clipboard copy automatically.
+        const ok = await shareContent({
+          title: 'My Schedule',
+          text: `Check out my course schedule! Build yours at ${buildDeepLink({})}`,
+          url: buildDeepLink({}),
+          imageDataUrl: canvas.toDataURL('image/png'),
+        });
+
+        if (ok) {
+          void hapticSuccess();
+          setShareAlert({
+            open: true,
+            message: 'Schedule shared successfully',
+            severity: 'success',
+          });
         } else {
+          // Share cancelled or unsupported — still offer the download so
+          // the captured image is never wasted.
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
@@ -301,9 +333,10 @@ export default function CalendarView({
           a.click();
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
+          void hapticLight();
           setShareAlert({
             open: true,
-            message: 'Schedule downloaded',
+            message: 'Schedule downloaded as image',
             severity: 'success',
           });
         }
@@ -560,6 +593,8 @@ export default function CalendarView({
         </Box>
 
         <Box
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
           sx={{
             ...commonCalendarStyles,
             height: { xs: 400, sm: 500, md: 600, lg: 650 },
