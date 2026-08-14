@@ -20,10 +20,19 @@ let html = readFileSync(distIndex, 'utf8');
 const before = html;
 
 // Remove the adsbygoogle script tag (single-line and multi-line).
-html = html.replace(/<script\s+async\s+src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js[\s\S]*?<\/script>\s*/gi, '');
+// Repeat until stable to avoid incomplete multi-character sanitization.
+let previous;
+do {
+  previous = html;
+  html = html.replace(/<script\s+async\s+src="https:\/\/pagead2\.googlesyndication\.com\/pagead\/js\/adsbygoogle\.js[\s\S]*?<\/script>\s*/gi, '');
+} while (html !== previous);
 
 // Remove the dns-prefetch for the AdSense domain (unnecessary without ads).
-html = html.replace(/<link\s+rel="dns-prefetch"\s+href="https:\/\/pagead2\.googlesyndication\.com"\s*\/?>\s*/gi, '');
+// Repeat until stable for the same reason.
+do {
+  previous = html;
+  html = html.replace(/<link\s+rel="dns-prefetch"\s+href="https:\/\/pagead2\.googlesyndication\.com"\s*\/?>\s*/gi, '');
+} while (html !== previous);
 
 if (html === before) {
   console.warn('[strip-ads] No AdSense references found in dist/index.html — nothing to strip.');
