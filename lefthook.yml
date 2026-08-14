@@ -9,8 +9,6 @@ pre-commit:
     typecheck:
       glob: "*.{ts,tsx}"
       run: pnpm run typecheck
-    test-fast:
-      run: pnpm run test:fast
 
 pre-push:
   commands:

@@ -1,4 +1,4 @@
-import { CalendarToday, ExpandMore, Save, Timer, Warning } from '@mui/icons-material';
+import { CalendarToday, ExpandMore, Save, Timer, Tune, Warning } from '@mui/icons-material';
 import {
   alpha,
   Box,
@@ -10,6 +10,7 @@ import {
   Divider,
   FormControlLabel,
   Grid,
+  IconButton,
   Slider,
   Stack,
   Switch,
@@ -194,28 +195,16 @@ export function SchedulePreferences({
 
   return (
     <Card variant="outlined" sx={{ borderRadius: 4, bgcolor: 'background.paper', p: 3 }}>
-      {collapsible ? (
-        <Box sx={{ mb: 3, cursor: 'pointer' }} onClick={() => setExpanded(!expanded)}>
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
-            <Box sx={{ flexGrow: 1 }}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
-                {title}
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                {description}
-                {autoSave && ' • Auto-saves as you edit'}
-              </Typography>
-            </Box>
-            <Typography
-              variant="caption"
-              sx={{ color: 'text.secondary', fontWeight: 500, ml: 'auto' }}
-            >
-              {expanded ? '− Collapse' : '+ Expand'}
-            </Typography>
-          </Stack>
-        </Box>
-      ) : (
-        <Box sx={{ mb: 3 }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{ alignItems: 'center', cursor: collapsible ? 'pointer' : 'default' }}
+        onClick={collapsible ? () => setExpanded(!expanded) : undefined}
+        role={collapsible ? 'button' : undefined}
+        aria-expanded={collapsible ? expanded : undefined}
+        tabIndex={collapsible ? 0 : undefined}
+      >
+        <Box sx={{ flexGrow: 1 }}>
           <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
             {title}
           </Typography>
@@ -224,17 +213,29 @@ export function SchedulePreferences({
             {autoSave && ' • Auto-saves as you edit'}
           </Typography>
         </Box>
-      )}
-      <Box
-        sx={{
-          maxHeight: expanded ? '2000px' : '0',
-          overflow: 'hidden',
-          transition: 'max-height 0.3s ease',
-          opacity: expanded ? 1 : 0,
-        }}
-      >
-        <Stack spacing={3}>
+        {collapsible && (
+          <IconButton
+            size="small"
+            aria-label={expanded ? 'Collapse preferences' : 'Expand preferences'}
+          >
+            <ExpandMore
+              sx={{
+                transform: expanded ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.2s',
+              }}
+            />
+          </IconButton>
+        )}
+      </Stack>
+      <Collapse in={expanded}>
+        <Stack spacing={3} sx={{ mt: 3 }}>
           <Box>
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 1.5 }}>
+              <Tune fontSize="small" sx={{ color: 'text.secondary' }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                PRESETS
+              </Typography>
+            </Stack>
             <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mb: 2 }}>
               {SCHEDULE_PRESETS.map((preset) => {
                 const isActive = activePreset === preset.id;
@@ -341,7 +342,7 @@ export function SchedulePreferences({
             <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 1.5 }}>
               <CalendarToday fontSize="small" sx={{ color: 'text.secondary' }} />
               <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                SCHEDULE
+                CREDITS &amp; DAYS
               </Typography>
             </Stack>
 
@@ -568,7 +569,7 @@ export function SchedulePreferences({
             ) : null}
           </Box>
         )}
-      </Box>
+      </Collapse>
     </Card>
   );
 }

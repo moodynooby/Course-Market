@@ -11,6 +11,31 @@ import {
 import { ApiError, api } from '../services/apiClient';
 import type { UserProfile } from '../types';
 
+/**
+ * Auth0 caches tokens (including the refresh token, since `useRefreshTokens`
+ * is enabled) in localStorage under a known prefix. When a refresh token has
+ * been rotated, revoked, or expired server-side, the SDK keeps reusing the
+ * stale copy and every silent refresh fails with "Unknown or invalid refresh
+ * token". Clearing the cache forces the SDK to forget it.
+ */
+const AUTH0_CACHE_PREFIX = '@@auth0spajs@@';
+
+function clearAuth0Cache(): void {
+  const keys: string[] = [];
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i);
+    if (key?.startsWith(AUTH0_CACHE_PREFIX)) keys.push(key);
+  }
+  keys.forEach((key) => {
+    window.localStorage.removeItem(key);
+  });
+}
+
+function isInvalidRefreshTokenError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.toLowerCase().includes('unknown or invalid refresh token');
+}
+
 interface AuthContextValue {
   user: {
     id: string;
@@ -61,7 +86,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [auth0User],
   );
 
-  const getToken = useCallback(() => getAccessTokenSilently(), [getAccessTokenSilently]);
+  const getToken = useCallback(async () => {
+    try {
+      return await getAccessTokenSilently();
+    } catch (error) {
+      // A dead refresh token is unrecoverable client-side: clear the stale
+      // Auth0 cache and send the user through a fresh login instead of
+      // retrying silently forever.
+      if (isInvalidRefreshTokenError(error)) {
+        clearAuth0Cache();
+        await loginWithRedirect({
+          appState: { returnTo: window.location.pathname + window.location.search },
+        });
+      }
+      throw error;
+    }
+  }, [getAccessTokenSilently, loginWithRedirect]);
 
   const signIn = useCallback(
     (returnUrl?: string) =>

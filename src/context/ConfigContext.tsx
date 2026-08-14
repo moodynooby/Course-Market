@@ -19,10 +19,6 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     storage.get(STORAGE_KEYS.PREFERENCES, DEFAULT_PREFERENCES),
   );
 
-  // Once the cloud profile is available, merge it with any locally tuned
-  // preferences (post-login sync). See `usePreferenceSync` for the merge rules.
-  usePreferenceSync();
-
   useEffect(() => {
     if (!profile?.preferences) return;
     setPreferences((prev) => {
@@ -51,6 +47,10 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     },
     [isAuthenticated, updateProfile],
   );
+
+  // Once the cloud profile is available, merge it with any locally tuned
+  // preferences (post-login sync). See `usePreferenceSync` for the merge rules.
+  usePreferenceSync(updatePreferences);
 
   return (
     <ConfigContext.Provider value={{ preferences, updatePreferences }}>

@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import { LoadingSpinner } from './components/LoadingSpinner';
@@ -16,7 +16,7 @@ const CallbackPage = lazy(() => import('./pages/CallbackPage'));
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 const CoursesPage = lazy(() => import('./pages/CoursesPage'));
 const TradingPage = lazy(() => import('./pages/TradingPage'));
-const LandingPage = lazy(() => import('./pages/LandingPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const ProfessorsPage = lazy(() => import('./pages/ProfessorsPage'));
 const ProfessorDetailsPage = lazy(() => import('./pages/ProfessorDetailsPage'));
 
@@ -38,29 +38,37 @@ const protectedRoute = (El: React.LazyExoticComponent<React.ComponentType>) => (
   <ProtectedRoute>{suspended(El)}</ProtectedRoute>
 );
 
+// Rendered inside the router so native hooks (deep links, etc.) that rely on
+// useNavigate() have access to the router context.
+function AppShell() {
+  useNativeApp();
+  return <Outlet />;
+}
+
 const router = createBrowserRouter([
-  { path: '/login', element: suspended(LoginPage) },
-  { path: '/callback', element: suspended(CallbackPage) },
-  { path: '/onboarding', element: suspended(OnboardingPage) },
   {
     path: '/',
-    element: <Layout />,
+    element: <AppShell />,
     children: [
-      { index: true, element: protectedRoute(LandingPage) },
-      { path: 'courses', element: protectedRoute(CoursesPage) },
-      { path: 'trading', element: protectedRoute(TradingPage) },
-      { path: 'professors', element: protectedRoute(ProfessorsPage) },
-      { path: 'professors/:id', element: protectedRoute(ProfessorDetailsPage) },
+      { path: 'login', element: suspended(LoginPage) },
+      { path: 'callback', element: suspended(CallbackPage) },
+      { path: 'onboarding', element: suspended(OnboardingPage) },
+      {
+        element: <Layout />,
+        children: [
+          { index: true, element: protectedRoute(DashboardPage) },
+          { path: 'courses', element: protectedRoute(CoursesPage) },
+          { path: 'trading', element: protectedRoute(TradingPage) },
+          { path: 'professors', element: protectedRoute(ProfessorsPage) },
+          { path: 'professors/:id', element: protectedRoute(ProfessorDetailsPage) },
+        ],
+      },
+      { path: '*', element: <Navigate to="/" replace /> },
     ],
   },
-  { path: '*', element: <Navigate to="/" replace /> },
 ]);
 
 function App() {
-  // Boots the native shell (status bar, splash, deep links, push
-  // notifications, icon badge) on mobile builds; a no-op on the web.
-  useNativeApp();
-
   return (
     <ErrorBoundary>
       <AuthProvider>

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { useAuthContext } from '../context/AuthContext';
-import { useConfigContext } from '../context/ConfigContext';
 import type { Preferences } from '../types';
 import { DEFAULT_PREFERENCES, STORAGE_KEYS } from '../utils/constants';
 import { storage } from '../utils/storage';
@@ -56,9 +55,8 @@ export function decidePreferenceSync(payload: {
  * actively tuned locally (push local over cloud), and an untouched browser
  * with an existing cloud profile (pull cloud down).
  */
-export function usePreferenceSync() {
+export function usePreferenceSync(updatePreferences: (updates: Partial<Preferences>) => void) {
   const { profile, isAuthenticated, updateProfile } = useAuthContext();
-  const { updatePreferences } = useConfigContext();
   const synced = useRef(false);
 
   useEffect(() => {

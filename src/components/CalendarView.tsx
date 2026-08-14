@@ -1,26 +1,10 @@
-import {
-  ChevronLeft,
-  ChevronRight,
-  Close,
-  Download,
-  EventNote,
-  Fullscreen,
-  FullscreenExit,
-  Google,
-  ListAlt,
-  Person,
-  School,
-  Share,
-  ViewDay,
-  ViewWeek,
-} from '@mui/icons-material';
+import { Close, Download, EventNote, Google, Person, School } from '@mui/icons-material';
 import {
   Alert,
   AppBar,
   alpha,
   Box,
   Button,
-  ButtonGroup,
   Chip,
   Dialog,
   DialogContent,
@@ -47,6 +31,8 @@ import type { CalendarEvent, Course, Section } from '../types';
 import { buildGoogleCalendarUrlForSlot, openGoogleCalendarUrl } from '../utils/googleCalendar';
 import { icsToBlob, sectionsToIcs, timeToMinutes } from '../utils/icsExport';
 import { isSlotActiveDuring, sectionsToCalendarEvents } from '../utils/schedule';
+
+import CalendarToolbar from './CalendarToolbar';
 
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
@@ -631,6 +617,8 @@ export default function CalendarView({
     () => ({
       '& .MuiDialog-paper': {
         bgcolor: theme.palette.background.default,
+        display: 'flex',
+        flexDirection: 'column',
       },
     }),
     [theme.palette.background.default],
@@ -670,7 +658,7 @@ export default function CalendarView({
   }
 
   return (
-    <Box>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Paper
         elevation={0}
         sx={{
@@ -678,114 +666,37 @@ export default function CalendarView({
           bgcolor: 'background.default',
           overflow: 'hidden',
           border: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          minHeight: 0,
         }}
       >
-        <Box
-          sx={{
-            p: 2,
-            display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
-            alignItems: { xs: 'stretch', sm: 'center' },
-            justifyContent: 'space-between',
-            gap: 2,
-            borderBottom: `1px solid ${theme.palette.divider}`,
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
-          }}
-        >
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{
-              alignItems: 'center',
-            }}
-          >
-            <IconButton onClick={goToPrev} size="small">
-              <ChevronLeft />
-            </IconButton>
-            <Button variant="outlined" size="small" onClick={goToToday} sx={{ minWidth: 80 }}>
-              Today
-            </Button>
-            <IconButton onClick={goToNext} size="small">
-              <ChevronRight />
-            </IconButton>
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 600,
-                ml: 2,
-              }}
-            >
-              {format(date, view === Views.WEEK ? 'MMMM yyyy' : 'MMMM d, yyyy')}
-            </Typography>
-          </Stack>
-
-          <ButtonGroup variant="outlined" size="small">
-            <Button
-              startIcon={isMobile ? <ListAlt /> : <ViewWeek />}
-              onClick={() => handleViewChange(Views.AGENDA)}
-              variant={view === Views.AGENDA ? 'contained' : 'outlined'}
-            >
-              {isMobile ? 'List' : 'Week'}
-            </Button>
-            {!isMobile && (
-              <Button
-                startIcon={<ViewDay />}
-                onClick={() => handleViewChange(Views.DAY)}
-                variant={view === Views.DAY ? 'contained' : 'outlined'}
-              >
-                Day
-              </Button>
-            )}
-            <Button
-              startIcon={fullscreen ? <FullscreenExit /> : <Fullscreen />}
-              onClick={() => setFullscreen(!fullscreen)}
-              variant={fullscreen ? 'contained' : 'outlined'}
-              sx={{ ml: 1 }}
-            >
-              {!isMobile && (fullscreen ? 'Exit' : 'Full')}
-            </Button>
-          </ButtonGroup>
-
-          <ButtonGroup variant="outlined" size="small" sx={{ mt: { xs: 1, sm: 0 } }}>
-            <Button startIcon={<Google />} onClick={handleAddAllToGoogleCalendar} color="secondary">
-              Add to Google Calendar
-            </Button>
-            <Button startIcon={<Download />} onClick={handleExportIcs}>
-              Export .ics
-            </Button>
-            <Tooltip title="Share schedule as image">
-              <IconButton size="small" onClick={handleShare} disabled={capturing}>
-                {capturing ? (
-                  <Box
-                    sx={{
-                      width: 16,
-                      height: 16,
-                      border: '2px solid',
-                      borderColor: 'currentColor',
-                      borderTopColor: 'transparent',
-                      borderRadius: '50%',
-                      animation: 'spin 0.8s linear infinite',
-                      '@keyframes spin': {
-                        '0%': { transform: 'rotate(0deg)' },
-                        '100%': { transform: 'rotate(360deg)' },
-                      },
-                    }}
-                  />
-                ) : (
-                  <Share />
-                )}
-              </IconButton>
-            </Tooltip>
-          </ButtonGroup>
-        </Box>
+        <CalendarToolbar
+          variant="inline"
+          view={view}
+          onViewChange={handleViewChange}
+          date={date}
+          onPrev={goToPrev}
+          onNext={goToNext}
+          onToday={goToToday}
+          onAddToGoogle={handleAddAllToGoogleCalendar}
+          onExportIcs={handleExportIcs}
+          onShare={handleShare}
+          capturing={capturing}
+          isMobile={isMobile}
+          fullscreen={fullscreen}
+          onToggleFullscreen={() => setFullscreen((prev) => !prev)}
+        />
 
         <Box
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           sx={{
             ...commonCalendarStyles,
-            height: { xs: 420, sm: 500, md: 600, lg: 650 },
-            minHeight: 400,
+            flex: 1,
+            minHeight: 320,
+            overflow: 'hidden',
             '& .rbc-agenda-view': {
               overflow: 'auto',
             },
@@ -864,130 +775,28 @@ export default function CalendarView({
             borderBottom: `2px solid ${alpha(theme.palette.primary.main, 0.3)}`,
           }}
         >
-          <Toolbar>
-            <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flex: 1 }}>
-              <IconButton onClick={goToPrev} size="small" edge="start">
-                <ChevronLeft />
-              </IconButton>
-              <Button variant="outlined" size="small" onClick={goToToday} sx={{ minWidth: 80 }}>
-                Today
-              </Button>
-              <IconButton onClick={goToNext} size="small">
-                <ChevronRight />
-              </IconButton>
-              <Box
-                sx={{
-                  ml: 2,
-                  px: 2,
-                  py: 0.5,
-                  bgcolor: alpha(theme.palette.primary.main, 0.1),
-                  border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
-                  borderRadius: 1,
-                }}
-              >
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '1rem',
-                    letterSpacing: '0.5px',
-                    color: theme.palette.primary.main,
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  My Schedule
-                </Typography>
-              </Box>
-            </Stack>
-            {isMobile ? (
-              <Button
-                startIcon={<ListAlt />}
-                onClick={() => handleViewChange(Views.AGENDA)}
-                variant={view === Views.AGENDA ? 'contained' : 'outlined'}
-                size="small"
-                sx={{ mr: 1 }}
-              >
-                List
-              </Button>
-            ) : (
-              <ButtonGroup variant="outlined" size="small" sx={{ mr: 1 }}>
-                <Button
-                  startIcon={<ViewWeek />}
-                  onClick={() => handleViewChange(Views.WEEK)}
-                  variant={view === Views.WEEK ? 'contained' : 'outlined'}
-                >
-                  Week
-                </Button>
-                <Button
-                  startIcon={<ViewDay />}
-                  onClick={() => handleViewChange(Views.DAY)}
-                  variant={view === Views.DAY ? 'contained' : 'outlined'}
-                >
-                  Day
-                </Button>
-              </ButtonGroup>
-            )}
-            <Tooltip title="Add schedule to Google Calendar">
-              <span>
-                <IconButton color="inherit" onClick={handleAddAllToGoogleCalendar} sx={{ mr: 1 }}>
-                  <Google />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Export .ics file">
-              <span>
-                <IconButton color="inherit" onClick={handleExportIcs} sx={{ mr: 1 }}>
-                  <Download />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Export & Share">
-              <span>
-                <IconButton
-                  color="inherit"
-                  onClick={handleShare}
-                  disabled={capturing}
-                  sx={{ mr: 1 }}
-                >
-                  {capturing ? (
-                    <Box
-                      sx={{
-                        width: 20,
-                        height: 20,
-                        border: '2px solid',
-                        borderColor: 'currentColor',
-                        borderTopColor: 'transparent',
-                        borderRadius: '50%',
-                        animation: 'spin 0.8s linear infinite',
-                        '@keyframes spin': {
-                          '0%': { transform: 'rotate(0deg)' },
-                          '100%': { transform: 'rotate(360deg)' },
-                        },
-                      }}
-                    />
-                  ) : (
-                    <Share />
-                  )}
-                </IconButton>
-              </span>
-            </Tooltip>
-            <IconButton
-              edge="end"
-              color="inherit"
-              onClick={() => setFullscreen(false)}
-              aria-label="close"
-            >
-              <Close />
-            </IconButton>
-          </Toolbar>
+          <CalendarToolbar
+            variant="fullscreen"
+            view={view}
+            onViewChange={handleViewChange}
+            date={date}
+            onPrev={goToPrev}
+            onNext={goToNext}
+            onToday={goToToday}
+            onAddToGoogle={handleAddAllToGoogleCalendar}
+            onExportIcs={handleExportIcs}
+            onShare={handleShare}
+            capturing={capturing}
+            isMobile={isMobile}
+            onClose={() => setFullscreen(false)}
+          />
         </AppBar>
         <DialogContent
           sx={{
             p: 3,
-            height: {
-              xs: 'calc(100vh - 64px - env(safe-area-inset-bottom))',
-              sm: 'calc(100vh - 64px)',
-            },
+            flex: 1,
+            minHeight: 0,
+            overflow: 'hidden',
           }}
         >
           <Box

@@ -918,7 +918,7 @@ function ScheduleDetails({
           />
         </Stack>
 
-        <Box sx={{ height: { xs: 300, sm: 400 }, mb: 2 }}>
+        <Box sx={{ height: { xs: 360, sm: 480 }, mb: 2 }}>
           <CalendarView
             sections={selectedSchedule.sections}
             courses={courses}
