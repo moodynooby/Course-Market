@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "dev": "netlify dev",
     "build": "tsc -b && vite build && echo '/*  /index.html  200' > dist/_redirects",

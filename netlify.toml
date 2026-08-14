@@ -4,8 +4,8 @@
   functions = "netlify/functions"
 
 [build.environment]
-  NODE_VERSION = "20"
-  PNPM_VERSION = "9"
+  NODE_VERSION = "24"
+  PNPM_VERSION = "11.21.0"
 
 [[redirects]]
   from = "/*"
@@ -60,7 +60,7 @@
   external_node_modules = []
 
   [functions."*"]
-    node_version = "20"
+    node_version = "24"
     memory = 1024
     timeout = 10
 
