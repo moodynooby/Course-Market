@@ -2,9 +2,16 @@ import {
   ChevronLeft,
   ChevronRight,
   Close,
+  Download,
+  EventNote,
   Fullscreen,
   FullscreenExit,
+  Google,
+  ListAlt,
+  Person,
+  School,
   Share,
+  ViewAgenda,
   ViewDay,
   ViewWeek,
 } from '@mui/icons-material';
@@ -25,6 +32,7 @@ import {
   Toolbar,
   Tooltip,
   Typography,
+  useMediaQuery,
   useTheme,
 } from '@mui/material';
 import { addWeeks, format, getDay, parse, startOfWeek, subWeeks } from 'date-fns';
@@ -34,6 +42,8 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { View } from 'react-big-calendar';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import type { CalendarEvent, Course, Section } from '../types';
+import { buildGoogleCalendarUrlForSlot, openGoogleCalendarUrl } from '../utils/googleCalendar';
+import { icsToBlob, sectionsToIcs, timeToMinutes } from '../utils/icsExport';
 import { isSlotActiveDuring, sectionsToCalendarEvents } from '../utils/schedule';
 
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -57,6 +67,8 @@ interface CalendarViewProps {
 
 interface EventProps {
   event: CalendarEvent;
+  onSelect?: (event: CalendarEvent) => void;
+  touchFriendly?: boolean;
 }
 
 const COURSE_COLORS = [
@@ -70,7 +82,11 @@ const COURSE_COLORS = [
   '#be185d',
 ];
 
-const EventComponent = memo(function EventComponent({ event }: EventProps) {
+const EventComponent = memo(function EventComponent({
+  event,
+  onSelect,
+  touchFriendly,
+}: EventProps) {
   const courseCode = event.resource?.course?.code || '';
   const courseName = event.resource?.course?.name || '';
   const sectionNumber = event.resource?.section?.sectionNumber || '';
@@ -79,37 +95,58 @@ const EventComponent = memo(function EventComponent({ event }: EventProps) {
   const backgroundColor = COURSE_COLORS[colorIndex];
   const timeStr = `${format(event.start, 'h:mm a')} - ${format(event.end, 'h:mm a')}`;
 
+  const content = (
+    <Box sx={{ py: 0.5 }}>
+      <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>
+        {courseCode}
+        {sectionNumber ? ` - ${sectionNumber}` : ''}
+      </Typography>
+      {courseName && (
+        <Typography variant="body2" sx={{ fontSize: '0.75rem', opacity: 0.9, mt: 0.25 }}>
+          {courseName}
+        </Typography>
+      )}
+      <Typography variant="body2" sx={{ fontSize: '0.75rem', opacity: 0.8, mt: 0.25 }}>
+        {timeStr}
+      </Typography>
+      {similarPeers > 0 && (
+        <Typography
+          variant="body2"
+          sx={{ fontSize: '0.7rem', opacity: 0.75, mt: 0.5, fontStyle: 'italic' }}
+        >
+          {similarPeers} similar section{similarPeers === 1 ? '' : 's'} available
+        </Typography>
+      )}
+    </Box>
+  );
+
+  // On touch devices hover tooltips never fire, so a tap opens the detail
+  // sheet instead. On desktop the tooltip remains for instant previews.
+  if (touchFriendly && onSelect) {
+    return (
+      <Box
+        role="button"
+        tabIndex={0}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect(event);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onSelect(event);
+          }
+        }}
+        aria-label={`Open details for ${courseCode}${sectionNumber ? ` ${sectionNumber}` : ''}`}
+        sx={{ height: '100%', cursor: 'pointer' }}
+      >
+        {content}
+      </Box>
+    );
+  }
+
   return (
-    <Tooltip
-      title={
-        <Box sx={{ py: 0.5 }}>
-          <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>
-            {courseCode}
-            {sectionNumber ? ` - ${sectionNumber}` : ''}
-          </Typography>
-          {courseName && (
-            <Typography variant="body2" sx={{ fontSize: '0.75rem', opacity: 0.9, mt: 0.25 }}>
-              {courseName}
-            </Typography>
-          )}
-          <Typography variant="body2" sx={{ fontSize: '0.75rem', opacity: 0.8, mt: 0.25 }}>
-            {timeStr}
-          </Typography>
-          {similarPeers > 0 && (
-            <Typography
-              variant="body2"
-              sx={{ fontSize: '0.7rem', opacity: 0.75, mt: 0.5, fontStyle: 'italic' }}
-            >
-              {similarPeers} similar section{similarPeers === 1 ? '' : 's'} available
-            </Typography>
-          )}
-        </Box>
-      }
-      arrow
-      enterDelay={200}
-      enterNextDelay={200}
-      leaveDelay={0}
-    >
+    <Tooltip title={content} arrow enterDelay={200} enterNextDelay={200} leaveDelay={0}>
       <Box
         sx={{
           px: 0.5,
@@ -167,10 +204,12 @@ export default function CalendarView({
   similarSectionCounts,
 }: CalendarViewProps) {
   const theme = useTheme();
-  const [view, setView] = useState<View>(Views.WEEK as View);
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const [view, setView] = useState<View>((isMobile ? Views.AGENDA : Views.WEEK) as View);
   const [date, setDate] = useState(new Date());
-  const [fullscreen, setFullscreen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(isMobile);
   const [capturing, setCapturing] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [shareAlert, setShareAlert] = useState<{
     open: boolean;
     message: string;
@@ -319,6 +358,94 @@ export default function CalendarView({
     }
   }, [theme.palette.mode]);
 
+  /**
+   * Share or download the schedule as an iCalendar (.ics) file with one
+   * recurring event per weekly class slot. On Android the native share sheet
+   * opens directly into Google Calendar / other calendar apps; on iOS and
+   * desktop it falls back to a download.
+   */
+  const handleExportIcs = useCallback(async () => {
+    const ics = sectionsToIcs(sections, courses, date);
+    const blob = icsToBlob(ics);
+    const file = new File([blob], 'my-schedule.ics', { type: 'text/calendar' });
+
+    try {
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'My Schedule',
+          text: 'My course schedule (.ics) — import into any calendar app',
+        });
+        setShareAlert({ open: true, message: 'Schedule exported', severity: 'success' });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'my-schedule.ics';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setShareAlert({ open: true, message: 'Schedule downloaded (.ics)', severity: 'success' });
+      }
+    } catch (exportError) {
+      if ((exportError as Error).name !== 'AbortError') {
+        setShareAlert({ open: true, message: 'Failed to export schedule', severity: 'error' });
+      }
+    }
+  }, [sections, courses, date]);
+
+  /**
+   * Open Google Calendar with the selected event's details pre-filled so the
+   * user can save it to their calendar in a single tap.
+   */
+  const handleAddToGoogleCalendar = useCallback((event: CalendarEvent) => {
+    const section = event.resource?.section;
+    const course = event.resource?.course;
+    if (!section) return;
+
+    const slot = section.timeSlots[0];
+    const url = buildGoogleCalendarUrlForSlot(section, slot, course, event.start);
+    openGoogleCalendarUrl(url);
+  }, []);
+
+  /** Open Google Calendar for the whole schedule (recurring template URL). */
+  const handleAddAllToGoogleCalendar = useCallback(() => {
+    if (sections.length === 0) return;
+    // Open one Google Calendar tab per weekly slot so each class becomes its
+    // own recurring event in the user's calendar.
+    sections.forEach((section, sectionIdx) => {
+      section.timeSlots.forEach((slot, slotIdx) => {
+        const course = courses.find((c) => c.id === section.courseId);
+        const slotEvents = sectionsToCalendarEvents([section], courses).filter(
+          (ev) =>
+            ev.start.getDay() === { M: 1, T: 2, W: 3, Th: 4, F: 5, Sa: 6, Su: 0 }[slot.day] &&
+            ev.start.getHours() * 60 + ev.start.getMinutes() === timeToMinutes(slot.startTime),
+        );
+        if (slotEvents.length === 0) return;
+        slotEvents.sort((a, b) => a.start.getTime() - b.start.getTime());
+        const anchor = slotEvents[0].start;
+        // Delay each tab slightly so browsers do not silently block all of them.
+        window.setTimeout(
+          () => {
+            const url = buildGoogleCalendarUrlForSlot(section, slot, course, anchor);
+            openGoogleCalendarUrl(url);
+          },
+          (sectionIdx * 10 + slotIdx) * 400,
+        );
+      });
+    });
+    setShareAlert({
+      open: true,
+      message: 'Opening Google Calendar for each class — accept each prompt to save',
+      severity: 'success',
+    });
+  }, [sections, courses]);
+
+  const handleEventSelect = useCallback((event: CalendarEvent) => {
+    setSelectedEvent(event);
+  }, []);
+
   const eventStyleGetter = useCallback(
     (_event: CalendarEvent) => {
       const isConflicted = conflicts.some((c) =>
@@ -351,12 +478,16 @@ export default function CalendarView({
 
   const formats = useMemo(
     () => ({
-      eventTimeRangeFormat: () => '',
+      eventTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) =>
+        `${format(start, 'h:mm a')} – ${format(end, 'h:mm a')}`,
       dayHeaderFormat: (date: Date) => format(date, 'EEEE'),
       dayRangeHeaderFormat: ({ start, end }: { start: Date; end: Date }) =>
         `${format(start, 'MMMM d')} - ${format(end, 'MMMM d, yyyy')}`,
+      agendaDateFormat: (date: Date) => format(date, isMobile ? 'EEE M/d' : 'EEEE, MMMM d'),
+      agendaTimeFormat: (date: Date) => format(date, 'h:mm a'),
+      agendaEventFormat: () => '',
     }),
-    [],
+    [isMobile],
   );
 
   const commonCalendarStyles = useMemo(
@@ -439,6 +570,42 @@ export default function CalendarView({
       '& .rbc-time-slot.rbc-now': {
         fontWeight: 600,
         color: theme.palette.secondary.main,
+      },
+      // Agenda view: more breathable rows on mobile
+      '& .rbc-agenda-table': {
+        border: `1px solid ${theme.palette.divider}`,
+      },
+      '& .rbc-agenda-date-cell': {
+        fontWeight: 600,
+        fontSize: { xs: '0.8rem', sm: '0.85rem' },
+      },
+      '& .rbc-agenda-time-cell': {
+        fontSize: '0.8rem',
+        whiteSpace: 'nowrap',
+        px: 1,
+      },
+      '& .rbc-agenda-event-cell': {
+        fontSize: { xs: '0.8rem', sm: '0.875rem' },
+        fontWeight: 600,
+      },
+      '& .rbc-agenda-view .rbc-event': {
+        borderRadius: 1,
+        padding: '4px 8px',
+      },
+      '& .rbc-event.rbc-selected, & .rbc-event:focus': {
+        opacity: 0.85,
+      },
+      // Touch: bigger tap targets for week columns
+      [`@media (max-width: ${theme.breakpoints.values.sm - 1}px)`]: {
+        '& .rbc-timeslot-group': {
+          minHeight: 64,
+        },
+        '& .rbc-label': {
+          fontSize: '0.8rem',
+        },
+        '& .rbc-header': {
+          fontSize: '0.75rem',
+        },
       },
     }),
     [theme],
@@ -538,22 +705,59 @@ export default function CalendarView({
 
           <ButtonGroup variant="outlined" size="small">
             <Button
-              startIcon={<ViewWeek />}
-              onClick={() => handleViewChange(Views.WEEK)}
-              variant={view === Views.WEEK ? 'contained' : 'outlined'}
+              startIcon={isMobile ? <ListAlt /> : <ViewWeek />}
+              onClick={() => handleViewChange(Views.AGENDA)}
+              variant={view === Views.AGENDA ? 'contained' : 'outlined'}
             >
-              Week
+              {isMobile ? 'List' : 'Week'}
             </Button>
+            {!isMobile && (
+              <Button
+                startIcon={<ViewDay />}
+                onClick={() => handleViewChange(Views.DAY)}
+                variant={view === Views.DAY ? 'contained' : 'outlined'}
+              >
+                Day
+              </Button>
+            )}
             <Button
-              startIcon={<ViewDay />}
-              onClick={() => handleViewChange(Views.DAY)}
-              variant={view === Views.DAY ? 'contained' : 'outlined'}
+              startIcon={fullscreen ? <FullscreenExit /> : <Fullscreen />}
+              onClick={() => setFullscreen(!fullscreen)}
+              variant={fullscreen ? 'contained' : 'outlined'}
+              sx={{ ml: 1 }}
             >
-              Day
+              {!isMobile && (fullscreen ? 'Exit' : 'Full')}
             </Button>
-            <Tooltip title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}>
-              <IconButton size="small" onClick={() => setFullscreen(!fullscreen)} sx={{ ml: 1 }}>
-                {fullscreen ? <FullscreenExit /> : <Fullscreen />}
+          </ButtonGroup>
+
+          <ButtonGroup variant="outlined" size="small" sx={{ mt: { xs: 1, sm: 0 } }}>
+            <Button startIcon={<Google />} onClick={handleAddAllToGoogleCalendar} color="secondary">
+              Add to Google Calendar
+            </Button>
+            <Button startIcon={<Download />} onClick={handleExportIcs}>
+              Export .ics
+            </Button>
+            <Tooltip title="Share schedule as image">
+              <IconButton size="small" onClick={handleShare} disabled={capturing}>
+                {capturing ? (
+                  <Box
+                    sx={{
+                      width: 16,
+                      height: 16,
+                      border: '2px solid',
+                      borderColor: 'currentColor',
+                      borderTopColor: 'transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 0.8s linear infinite',
+                      '@keyframes spin': {
+                        '0%': { transform: 'rotate(0deg)' },
+                        '100%': { transform: 'rotate(360deg)' },
+                      },
+                    }}
+                  />
+                ) : (
+                  <Share />
+                )}
               </IconButton>
             </Tooltip>
           </ButtonGroup>
@@ -562,8 +766,11 @@ export default function CalendarView({
         <Box
           sx={{
             ...commonCalendarStyles,
-            height: { xs: 400, sm: 500, md: 600, lg: 650 },
+            height: { xs: 420, sm: 500, md: 600, lg: 650 },
             minHeight: 400,
+            '& .rbc-agenda-view': {
+              overflow: 'auto',
+            },
           }}
         >
           <Calendar
@@ -575,14 +782,21 @@ export default function CalendarView({
             onView={handleViewChange}
             date={date}
             onNavigate={handleNavigate}
-            views={[Views.WEEK, Views.DAY]}
+            views={[Views.WEEK, Views.DAY, Views.AGENDA]}
             step={30}
             timeslots={2}
             min={new Date(1970, 0, 1, 8, 0, 0)}
             max={new Date(1970, 0, 1, 21, 0, 0)}
             eventPropGetter={eventStyleGetter}
+            onSelectEvent={handleEventSelect}
             components={{
-              event: EventComponent,
+              event: (props) => (
+                <EventComponent
+                  event={props.event}
+                  onSelect={handleEventSelect}
+                  touchFriendly={isMobile}
+                />
+              ),
             }}
             formats={formats}
             popup
@@ -667,22 +881,48 @@ export default function CalendarView({
                 </Typography>
               </Box>
             </Stack>
-            <ButtonGroup variant="outlined" size="small" sx={{ mr: 1 }}>
+            {isMobile ? (
               <Button
-                startIcon={<ViewWeek />}
-                onClick={() => handleViewChange(Views.WEEK)}
-                variant={view === Views.WEEK ? 'contained' : 'outlined'}
+                startIcon={<ListAlt />}
+                onClick={() => handleViewChange(Views.AGENDA)}
+                variant={view === Views.AGENDA ? 'contained' : 'outlined'}
+                size="small"
+                sx={{ mr: 1 }}
               >
-                Week
+                List
               </Button>
-              <Button
-                startIcon={<ViewDay />}
-                onClick={() => handleViewChange(Views.DAY)}
-                variant={view === Views.DAY ? 'contained' : 'outlined'}
-              >
-                Day
-              </Button>
-            </ButtonGroup>
+            ) : (
+              <ButtonGroup variant="outlined" size="small" sx={{ mr: 1 }}>
+                <Button
+                  startIcon={<ViewWeek />}
+                  onClick={() => handleViewChange(Views.WEEK)}
+                  variant={view === Views.WEEK ? 'contained' : 'outlined'}
+                >
+                  Week
+                </Button>
+                <Button
+                  startIcon={<ViewDay />}
+                  onClick={() => handleViewChange(Views.DAY)}
+                  variant={view === Views.DAY ? 'contained' : 'outlined'}
+                >
+                  Day
+                </Button>
+              </ButtonGroup>
+            )}
+            <Tooltip title="Add schedule to Google Calendar">
+              <span>
+                <IconButton color="inherit" onClick={handleAddAllToGoogleCalendar} sx={{ mr: 1 }}>
+                  <Google />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Export .ics file">
+              <span>
+                <IconButton color="inherit" onClick={handleExportIcs} sx={{ mr: 1 }}>
+                  <Download />
+                </IconButton>
+              </span>
+            </Tooltip>
             <Tooltip title="Export & Share">
               <span>
                 <IconButton
@@ -723,7 +963,15 @@ export default function CalendarView({
             </IconButton>
           </Toolbar>
         </AppBar>
-        <DialogContent sx={{ p: 3, height: 'calc(100vh - 64px)' }}>
+        <DialogContent
+          sx={{
+            p: 3,
+            height: {
+              xs: 'calc(100vh - 64px - env(safe-area-inset-bottom))',
+              sm: 'calc(100vh - 64px)',
+            },
+          }}
+        >
           <Box
             ref={calendarRef}
             sx={{
@@ -745,14 +993,21 @@ export default function CalendarView({
               onView={handleViewChange}
               date={date}
               onNavigate={handleNavigate}
-              views={[Views.WEEK, Views.DAY]}
+              views={[Views.WEEK, Views.DAY, Views.AGENDA]}
               step={30}
               timeslots={2}
               min={new Date(1970, 0, 1, 8, 0, 0)}
               max={new Date(1970, 0, 1, 21, 0, 0)}
               eventPropGetter={eventStyleGetter}
+              onSelectEvent={handleEventSelect}
               components={{
-                event: EventComponent,
+                event: (props) => (
+                  <EventComponent
+                    event={props.event}
+                    onSelect={handleEventSelect}
+                    touchFriendly={isMobile}
+                  />
+                ),
               }}
               formats={formats}
               popup
@@ -823,6 +1078,125 @@ export default function CalendarView({
             </Typography>
           </Box>
         </DialogContent>
+      </Dialog>
+
+      {/* Event detail dialog: tap a class to see full info and export options.
+          Renders as a bottom sheet on mobile for thumb-friendly access. */}
+      <Dialog
+        open={selectedEvent !== null}
+        onClose={() => setSelectedEvent(null)}
+        fullScreen={isMobile}
+        sx={dialogStyles}
+      >
+        {selectedEvent &&
+          (() => {
+            const section = selectedEvent.resource?.section;
+            const course = selectedEvent.resource?.course;
+            if (!section || !course) return null;
+            const slot = section.timeSlots[0];
+            const remaining = section.capacity - section.enrolled;
+            const gcalUrl = section.timeSlots.length
+              ? buildGoogleCalendarUrlForSlot(
+                  section,
+                  section.timeSlots[0],
+                  course,
+                  selectedEvent.start,
+                )
+              : null;
+            return (
+              <>
+                {isMobile && (
+                  <AppBar position="sticky" sx={{ bgcolor: 'background.paper' }}>
+                    <Toolbar>
+                      <Typography variant="h6" sx={{ flex: 1 }}>
+                        Class Details
+                      </Typography>
+                      <IconButton
+                        edge="end"
+                        onClick={() => setSelectedEvent(null)}
+                        aria-label="close"
+                      >
+                        <Close />
+                      </IconButton>
+                    </Toolbar>
+                  </AppBar>
+                )}
+                <Box sx={{ p: { xs: 3, sm: 4 } }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                    {course.code} - {section.sectionNumber}
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary">
+                    {course.name}
+                  </Typography>
+                  <Box sx={{ mt: 2 }}>
+                    <Stack direction="row" spacing={1.5} sx={{ mb: 1, alignItems: 'center' }}>
+                      <EventNote color="primary" fontSize="small" />
+                      <Typography variant="body1">
+                        {section.timeSlots
+                          .map((s) => `${s.day} ${s.startTime} - ${s.endTime}`)
+                          .join(', ')}
+                      </Typography>
+                    </Stack>
+                    {section.instructor && (
+                      <Stack direction="row" spacing={1.5} sx={{ mb: 1, alignItems: 'center' }}>
+                        <Person color="primary" fontSize="small" />
+                        <Typography variant="body1">{section.instructor}</Typography>
+                      </Stack>
+                    )}
+                    <Stack direction="row" spacing={1.5} sx={{ mb: 1, alignItems: 'center' }}>
+                      <School color="primary" fontSize="small" />
+                      <Typography variant="body1">
+                        {section.enrolled}/{section.capacity} enrolled
+                        {Number.isFinite(remaining)
+                          ? ` (${remaining} seat${remaining === 1 ? '' : 's'} left)`
+                          : ''}
+                      </Typography>
+                    </Stack>
+                    {slot?.startDate &&
+                      (() => {
+                        const s = new Date(slot.startDate);
+                        return !Number.isNaN(s.getTime());
+                      })() && (
+                        <Typography variant="body2" color="text.secondary">
+                          Meets weekly from {format(new Date(slot.startDate!), 'MMMM d, yyyy')}
+                          {slot.endDate
+                            ? ` to ${format(new Date(slot.endDate), 'MMMM d, yyyy')}`
+                            : ''}
+                        </Typography>
+                      )}
+                  </Box>
+                  <Stack direction="row" spacing={1} sx={{ mt: 4, flexWrap: 'wrap', gap: 1 }}>
+                    <Button
+                      variant="contained"
+                      startIcon={<Google />}
+                      onClick={() => {
+                        if (gcalUrl) openGoogleCalendarUrl(gcalUrl);
+                        setSelectedEvent(null);
+                      }}
+                      color="secondary"
+                    >
+                      Add to Google Calendar
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={<Download />}
+                      onClick={() => {
+                        handleExportIcs();
+                        setSelectedEvent(null);
+                      }}
+                    >
+                      Export .ics
+                    </Button>
+                    {!isMobile && (
+                      <IconButton onClick={() => setSelectedEvent(null)} aria-label="close">
+                        <Close />
+                      </IconButton>
+                    )}
+                  </Stack>
+                </Box>
+              </>
+            );
+          })()}
       </Dialog>
       <Snackbar
         open={shareAlert.open}
