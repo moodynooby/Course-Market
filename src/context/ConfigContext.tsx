@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { usePreferenceSync } from '../hooks/usePreferenceSync';
 import type { Preferences } from '../types';
 import { DEFAULT_PREFERENCES, STORAGE_KEYS } from '../utils/constants';
 import { storage } from '../utils/storage';
@@ -18,13 +19,23 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     storage.get(STORAGE_KEYS.PREFERENCES, DEFAULT_PREFERENCES),
   );
 
+  // Once the cloud profile is available, merge it with any locally tuned
+  // preferences (post-login sync). See `usePreferenceSync` for the merge rules.
+  usePreferenceSync();
+
   useEffect(() => {
-    if (profile) {
-      if (profile.preferences) {
-        setPreferences(profile.preferences);
-        storage.set(STORAGE_KEYS.PREFERENCES, profile.preferences);
+    if (!profile?.preferences) return;
+    setPreferences((prev) => {
+      const local = storage.get(STORAGE_KEYS.PREFERENCES, DEFAULT_PREFERENCES);
+      const isDirty = storage.get(STORAGE_KEYS.PREFS_DIRTY, false);
+      // While sync runs (dirty flag set), keep locally tuned prefs; only
+      // overwrite with cloud prefs when local state has not been modified.
+      if (isDirty) return prev;
+      if (JSON.stringify(local) !== JSON.stringify(profile.preferences)) {
+        return profile.preferences as Preferences;
       }
-    }
+      return prev;
+    });
   }, [profile]);
 
   const updatePreferences = useCallback(

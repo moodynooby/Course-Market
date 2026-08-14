@@ -21,7 +21,7 @@ interface AuthContextValue {
   profile: UserProfile | null;
   loading: boolean;
   isAuthenticated: boolean;
-  signIn: () => Promise<void>;
+  signIn: (returnUrl?: string) => Promise<void>;
   signOut: () => void;
   getToken: () => Promise<string>;
   refreshProfile: () => Promise<void>;
@@ -63,7 +63,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const getToken = useCallback(() => getAccessTokenSilently(), [getAccessTokenSilently]);
 
-  const signIn = useCallback(() => loginWithRedirect(), [loginWithRedirect]);
+  const signIn = useCallback(
+    (returnUrl?: string) =>
+      loginWithRedirect({
+        ...(returnUrl ? { appState: { returnTo: returnUrl } } : {}),
+      }),
+    [loginWithRedirect],
+  );
 
   const signOut = useCallback(
     () => logout({ logoutParams: { returnTo: window.location.origin } }),

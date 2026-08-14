@@ -419,7 +419,35 @@ export default function CoursesPage() {
             Course Browser
           </Typography>
         </Box>
-        <Alert severity="info">Please sign in to view and select courses.</Alert>
+        <Alert
+          severity="info"
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
+          }}
+        >
+          <Box>
+            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+              Browsing as a guest — sign in to save schedules and trade sections
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Course listings are fully browsable. Saving selections, trading, and posting reviews
+              require an account.
+            </Typography>
+          </Box>
+          <Button
+            component={
+            }
+            to="/login"
+            variant="contained"
+            color="secondary"
+            size="small"
+            sx={{ whiteSpace: 'nowrap' }}
+          >
+            Sign in
+          </Button>
+        </Alert>
       </Box>
     );
   }
