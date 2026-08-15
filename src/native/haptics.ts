@@ -3,14 +3,14 @@
  *
  * - Haptics: success / error / selection feedback for trade actions and
  *   schedule generation (web path is silent).
- * - Icon badge: shows the count of open trade responses (Android/iOS via
+ * - Icon badge: shows the count of open trade responses (Android via
  *   @capawesome/capacitor-badge; cleared on app foregrounding).
  * - Status bar: keeps the app-coloured bar consistent after navigation.
  */
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { Badge } from '@capawesome/capacitor-badge';
-import { isIOS, isNativePlatform } from './capacitor';
+import { isNativePlatform } from './capacitor';
 
 export async function hapticSuccess(): Promise<void> {
   if (!isNativePlatform()) return;
@@ -55,10 +55,7 @@ export async function configureStatusBar(): Promise<void> {
   if (!isNativePlatform()) return;
   try {
     await StatusBar.setStyle({ style: Style.Light });
-    if (isIOS()) {
-      // iOS allows a tinted background; keep it consistent with the brand.
-      await StatusBar.setBackgroundColor({ color: '#0061a4' });
-    }
+    await StatusBar.setBackgroundColor({ color: '#0061a4' });
   } catch (error) {
     console.error('[StatusBar] Configuration failed:', error);
   }

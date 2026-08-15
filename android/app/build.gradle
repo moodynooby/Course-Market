@@ -16,10 +16,26 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (project.hasProperty('storeFile') && project.property('storeFile')) {
+                storeFile file(project.property('storeFile'))
+                storePassword project.property('storePassword')
+                keyAlias project.property('keyAlias')
+                keyPassword project.property('keyPassword')
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // CI signing: the release signing config is attached when keystore
+            // credentials are supplied via gradle.properties (ANDROID_KEYSTORE_*
+            // secrets in GitHub Actions).
+            if (project.hasProperty('storeFile') && project.property('storeFile')) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
@@ -43,6 +59,17 @@ dependencies {
 }
 
 apply from: 'capacitor.build.gradle'
+
+// Give the release APK a stable, user-friendly filename.
+android.applicationVariants.all { variant ->
+    if (variant.buildType.name == 'release') {
+        variant.outputs.each { output ->
+            if (output.outputFileName?.endsWith('.apk')) {
+                output.outputFileName = 'auraishub.apk'
+            }
+        }
+    }
+}
 
 try {
     def servicesJSON = file('google-services.json')

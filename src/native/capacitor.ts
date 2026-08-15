@@ -16,10 +16,6 @@ export function isAndroid(): boolean {
   return isNativePlatform() && Capacitor.getPlatform() === 'android';
 }
 
-export function isIOS(): boolean {
-  return isNativePlatform() && Capacitor.getPlatform() === 'ios';
-}
-
 export function getAppUrl(): string {
   // On the web, deep links fall back to the deployed site URL.
   if (isNativePlatform()) {

@@ -76,7 +76,7 @@ pnpm run db:studio    # Drizzle Studio GUI
 
 ## Native App (Capacitor)
 
-AuraIsHub ships as a Capacitor 8 app for Android (and iOS, once built on a Mac), wrapping the existing React build in a thin native shell — no rewrite. The `android/` directory is committed; `ios/` is not (Capacitor requires macOS for iOS builds).
+AuraIsHub ships as a Capacitor 8 Android app, wrapping the existing React build in a thin native shell — no rewrite. The `android/` directory is committed. The app is distributed only on Android.
 
 ### Native-only features
 
@@ -98,15 +98,32 @@ pnpm run cap:sync       # Sync web build into the native projects
 pnpm run cap:build:android  # Open Android Studio (or build APK with Gradle)
 ```
 
-On a Mac, run `pnpm exec cap add ios && pnpm run cap:build:ios` to open Xcode.
+### CI: build & publish to GitHub Releases
+
+`.github/workflows/build-and-release.yml` builds the signed release APK/AAB and publishes them to a GitHub Release:
+
+- Push a tag matching `v*` (e.g. `git tag v1.2.0 && git push --tags`), or trigger it manually from the Actions tab.
+- The `auraishub.apk` is always attached to the release; the AAB is included once the signing secrets below are configured.
+- The website's **Download App** button links to the latest release.
+
+To produce a **signed** release build, add these repository secrets (`Settings → Secrets and variables → Actions`):
+
+| Secret | Value |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | `base64 -w 0 app.keystore` output of your `.jks` keystore |
+| `ANDROID_KEYSTORE_PASSWORD` | Keystore password |
+| `ANDROID_KEY_ALIAS` | Key alias inside the keystore |
+| `ANDROID_KEY_PASSWORD` | Key password |
+
+Without them the workflow still builds and uploads an unsigned APK.
 
 ### Push notification setup (production)
 
-Push needs real credentials set on Netlify (Functions): `FCM_PROJECT_ID` and `FCM_SERVICE_ACCOUNT_JSON` (a GCP service account with Firebase Messaging scope) for Android, and `APNS_KEY_P8`, `APNS_KEY_ID`, `APNS_TEAM_ID` for direct iOS pushes. Without them, trade updates still work — pushes simply no-op. The `push_notification_token` column is added to `user_profiles`; run `pnpm run db:push` after merging to apply the schema change.
+Push needs real credentials set on Netlify (Functions): `FCM_PROJECT_ID` and `FCM_SERVICE_ACCOUNT_JSON` (a GCP service account with Firebase Messaging scope). Without them, trade updates still work — pushes simply no-op. The `push_notification_token` column is added to `user_profiles`; run `pnpm run db:push` after merging to apply the schema change.
 
 ### Store publishing
 
-Android: `./gradlew assembleRelease` in `android/` produces an AAB for the Play Console (one-time $25 developer fee). iOS requires Xcode + an Apple Developer account ($99/yr). Deep-link scheme `auraishub` is already declared in `AndroidManifest.xml` and `capacitor.config.ts` (`app.aurais`).
+`./gradlew assembleRelease` (or `bundleRelease`) in `android/` produces the APK/AAB. The AAB goes to the Google Play Console (one-time $25 developer fee), or you can sideload the APK directly. The deep-link scheme `auraishub` is already declared in `AndroidManifest.xml` and `capacitor.config.ts` (`app.aurais`).
 
 ## Seeding
 
