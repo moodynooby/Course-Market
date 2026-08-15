@@ -376,9 +376,9 @@ export default function CalendarView({
 
   /**
    * Share or download the schedule as an iCalendar (.ics) file with one
-   * recurring event per weekly class slot. On Android the native share sheet
-   * opens directly into Google Calendar / other calendar apps; on iOS and
-   * desktop it falls back to a download.
+   * recurring event per weekly class slot. In the Android app the native share
+   * sheet opens directly into Google Calendar / other calendar apps; on the web
+   * it falls back to a download.
    */
   const handleExportIcs = useCallback(async () => {
     const ics = sectionsToIcs(sections, courses, date);

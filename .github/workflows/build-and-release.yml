@@ -1,0 +1,150 @@
+# Build the AuraIsHub Android app and publish it to a GitHub Release.
+#
+# Triggering:
+#   - Automatically, whenever a tag matching `v*` (e.g. `v1.2.0`) is pushed
+#   - Manually, via the "Run workflow" button in the Actions tab
+#
+# Artifacts attached to the release:
+#   - auraishub.apk   (always)
+#   - auraishub.aab   (Android App Bundle, Play-ready; built when signing
+#                       secrets are configured, skipped otherwise)
+#
+# APK signing (optional):
+#   Add these repository secrets to enable a signed release APK/AAB:
+#     - ANDROID_KEYSTORE_BASE64   : base64-encoded contents of your keystore
+#                                   (.jks) file  ->  base64 -w 0 app.keystore
+#     - ANDROID_KEYSTORE_PASSWORD : keystore password
+#     - ANDROID_KEY_ALIAS         : key alias inside the keystore
+#     - ANDROID_KEY_PASSWORD      : key password
+#   Without them the workflow still produces and uploads an unsigned APK.
+
+name: Build & Release Android App
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    name: Build Android
+    runs-on: ubuntu-latest
+    outputs:
+      has_aab: ${{ steps.build.outputs.has_aab }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install web app dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ${{ github.workspace }}
+
+      - name: Sync Capacitor project
+        run: npx cap sync android
+        working-directory: ${{ github.workspace }}
+
+      - name: Enable Gradle wrapper
+        run: chmod +x ./gradlew
+        working-directory: ${{ github.workspace }}/android
+
+      - name: Create keystore and signing config (optional)
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > app/aurais.keystore
+          echo "storeFile=aurais.keystore" >> gradle.properties
+          echo "storePassword=$ANDROID_KEYSTORE_PASSWORD" >> gradle.properties
+          echo "keyAlias=$ANDROID_KEY_ALIAS" >> gradle.properties
+          echo "keyPassword=$ANDROID_KEY_PASSWORD" >> gradle.properties
+        working-directory: ${{ github.workspace }}/android
+
+      - name: Build APK and AAB
+        id: build
+        run: |
+          ./gradlew assembleRelease bundleRelease --no-daemon
+          mkdir -p ${{ github.workspace }}/release
+          cp app/build/outputs/apk/release/auraishub.apk ${{ github.workspace }}/release/
+          if [ -f app/build/outputs/bundle/release/app-release.aab ]; then
+            cp app/build/outputs/bundle/release/app-release.aab ${{ github.workspace }}/release/auraishub.aab
+            echo "has_aab=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_aab=false" >> "$GITHUB_OUTPUT"
+          fi
+        working-directory: ${{ github.workspace }}/android
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: auraishub-apk
+          path: ${{ github.workspace }}/release/auraishub.apk
+
+      - name: Upload AAB
+        if: steps.build.outputs.has_aab == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: auraishub-aab
+          path: ${{ github.workspace }}/release/auraishub.aab
+
+  release:
+    name: Publish GitHub Release
+    needs: build-android
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: auraishub-apk
+          path: ${{ github.workspace }}/release
+
+      - name: Download AAB
+        if: needs.build-android.outputs.has_aab == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: auraishub-aab
+          path: ${{ github.workspace }}/release
+
+      - name: Detect AAB presence
+        id: aab
+        run: |
+          if [ -f "${{ github.workspace }}/release/auraishub.aab" ]; then
+            echo "aab=auraishub.aab" >> "$GITHUB_OUTPUT"
+          else
+            echo "aab=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: true
+          files: |
+            ${{ github.workspace }}/release/auraishub.apk
+            ${{ steps.aab.outputs.aab }}
