@@ -4,9 +4,9 @@
 #   - Automatically, whenever a tag matching `v*` (e.g. `v1.2.0`) is pushed
 #   - Manually, via the "Run workflow" button in the Actions tab
 #
-# Node & pnpm: runners default to Node 24; the pnpm version comes from the
-# `packageManager` field in package.json via Corepack (no version pinning here
-# to avoid ERR_PNPM_BAD_PM_VERSION).
+# Node & pnpm: runners default to Node 24; pnpm is installed globally via npm
+# using the exact version from the `packageManager` field in package.json
+# (Corepack is not reliably on PATH on the runners).
 #
 # Artifacts attached to the release:
 #   - auraishub.apk   (always)
@@ -47,10 +47,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: pnpm
-
-      - name: Enable Corepack (pnpm version pinned in package.json)
-        run: corepack enable && corepack prepare --activate
+          cache: npm
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -67,12 +64,22 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle*', 'android/gradle/**') }}
           restore-keys: ${{ runner.os }}-gradle-
 
+      - name: Install pnpm (version pinned in package.json)
+        run: |
+          # Parse "pnpm@11.21.0+sha512..." from the packageManager field so the
+          # exact pinned version is used (Corepack may not be on PATH on the
+          # runner).
+          PM_VERSION=$(node -p "require('./package.json').packageManager.split('@')[1].split('+')[0]")
+          npm install -g "pnpm@$PM_VERSION"
+          pnpm --version
+        working-directory: ${{ github.workspace }}
+
       - name: Install web app dependencies
         run: pnpm install --frozen-lockfile
         working-directory: ${{ github.workspace }}
 
       - name: Sync Capacitor project
-        run: npx cap sync android
+        run: pnpm exec cap sync android
         working-directory: ${{ github.workspace }}
 
       - name: Enable Gradle wrapper
