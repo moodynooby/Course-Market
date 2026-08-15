@@ -13,7 +13,7 @@ import { useAuthContext } from '../context/AuthContext';
 import { isNativePlatform } from './capacitor';
 import { useDeepLinks } from './deepLinks';
 import { configureStatusBar, syncBadgeWithOpenTrades } from './haptics';
-import { usePushNotifications } from './pushNotifications';
+import { registerPushNotifications, usePushNotifications } from './pushNotifications';
 
 export function useNativeApp() {
   useDeepLinks();
@@ -46,10 +46,12 @@ export function useNativeApp() {
   useEffect(() => {
     if (!isNativePlatform() || !isAuthenticated || registeredRef.current) return;
     registeredRef.current = true;
-    void import('./pushNotifications').then(({ registerPushNotifications }) =>
-      getToken().then((token) => registerPushNotifications(token)),
-    );
-  }, [isAuthenticated, getToken]);
+    void registerPushNotifications()
+      .then((token) => (token ? undefined : undefined))
+      .catch(() => {
+        /* registration errors are already logged inside the module */
+      });
+  }, [isAuthenticated]);
 
   // Keep the icon badge in sync with open trades while authenticated.
   useEffect(() => {
