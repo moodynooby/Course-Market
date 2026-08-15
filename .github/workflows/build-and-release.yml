@@ -4,6 +4,10 @@
 #   - Automatically, whenever a tag matching `v*` (e.g. `v1.2.0`) is pushed
 #   - Manually, via the "Run workflow" button in the Actions tab
 #
+# Node & pnpm: runners default to Node 24; the pnpm version comes from the
+# `packageManager` field in package.json via Corepack (no version pinning here
+# to avoid ERR_PNPM_BAD_PM_VERSION).
+#
 # Artifacts attached to the release:
 #   - auraishub.apk   (always)
 #   - auraishub.aab   (Android App Bundle, Play-ready; built when signing
@@ -43,11 +47,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: pnpm
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 11
+      - name: Enable Corepack (pnpm version pinned in package.json)
+        run: corepack enable && corepack prepare --activate
 
       - name: Set up Java
         uses: actions/setup-java@v4
