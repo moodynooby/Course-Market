@@ -3,9 +3,9 @@ import { alpha, Box, Button, Card, Stack, Typography, useTheme } from '@mui/mate
 import { useNavigate } from 'react-router-dom';
 
 const STEPS = [
-  { label: 'Browse', color: 'primary.main' as const },
-  { label: 'Select', color: 'secondary.main' as const },
-  { label: 'Optimize', color: 'secondary.main' as const },
+  { label: 'Browse', colorKey: 'primary' as const },
+  { label: 'Select', colorKey: 'secondary' as const },
+  { label: 'Optimize', colorKey: 'secondary' as const },
 ];
 
 export function EmptyDashboardState() {
@@ -60,14 +60,14 @@ export function EmptyDashboardState() {
                 width: 40,
                 height: 40,
                 borderRadius: '50%',
-                bgcolor: alpha(step.color, 0.1),
+                bgcolor: alpha(theme.palette[step.colorKey].main, 0.1),
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 mx: 'auto',
                 mb: 1,
                 fontWeight: 700,
-                color: step.color,
+                color: theme.palette[step.colorKey].main,
               }}
             >
               {index + 1}

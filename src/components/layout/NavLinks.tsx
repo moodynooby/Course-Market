@@ -4,6 +4,7 @@ import callMissedIcon from '../../assets/3dicons-call-missed-dynamic-color.png';
 import folderIcon from '../../assets/3dicons-folder-dynamic-color.png';
 import lockIcon from '../../assets/3dicons-locker-dynamic-premium.png';
 import ProfIcon from '../../assets/3dicons-skull-dynamic-color.png';
+import { isNativePlatform } from '../../native/capacitor';
 
 interface NavLinkProps {
   to: string;
@@ -52,10 +53,13 @@ interface NavLinksProps {
 }
 
 export function NavLinks({ currentPath }: NavLinksProps) {
+  // Native apps are always sized like a phone, so the desktop-only header tabs
+  // would never appear. Show them in the header regardless of breakpoint there.
+  const showTabs = isNativePlatform();
   return (
     <Box
       sx={{
-        display: { xs: 'none', md: 'flex' },
+        display: showTabs ? 'flex' : { xs: 'none', md: 'flex' },
         alignItems: 'center',
         gap: { xs: 1, sm: 2 },
         minWidth: 0,

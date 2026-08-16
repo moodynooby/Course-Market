@@ -29,7 +29,7 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             // CI signing: the release signing config is attached when keystore
             // credentials are supplied via gradle.properties (ANDROID_KEYSTORE_*
             // secrets in GitHub Actions).
@@ -61,12 +61,10 @@ dependencies {
 apply from: 'capacitor.build.gradle'
 
 // Give the release APK a stable, user-friendly filename.
-android.applicationVariants.all { variant ->
-    if (variant.buildType.name == 'release') {
-        variant.outputs.each { output ->
-            if (output.outputFileName?.endsWith('.apk')) {
-                output.outputFileName = 'auraishub.apk'
-            }
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.outputs.forEach { output ->
+            output.outputFileName.set("auraishub.apk")
         }
     }
 }

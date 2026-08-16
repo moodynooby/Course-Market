@@ -5,6 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import logoIcon from '../../assets/logo.png';
 import { useAuthContext } from '../../context/AuthContext';
 import { useThemeMode } from '../../context/ThemeContext';
+import { isNativePlatform } from '../../native/capacitor';
 import { NavLinks } from './NavLinks';
 import { SemesterMenu } from './SemesterMenu';
 import { UserMenu } from './UserMenu';
@@ -90,19 +91,21 @@ export function AppBarHeader() {
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-          <Button
-            component="a"
-            href="https://github.com/moodynooby/Course-Market/releases/latest"
-            target="_blank"
-            rel="noopener noreferrer"
-            variant="contained"
-            color="secondary"
-            size="small"
-            startIcon={<Download fontSize="small" />}
-            sx={{ textTransform: 'none', fontWeight: 700 }}
-          >
-            Download App
-          </Button>
+          {!isNativePlatform() && (
+            <Button
+              component="a"
+              href="https://github.com/moodynooby/Course-Market/releases/latest"
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="contained"
+              color="secondary"
+              size="small"
+              startIcon={<Download fontSize="small" />}
+              sx={{ textTransform: 'none', fontWeight: 700 }}
+            >
+              Download App
+            </Button>
+          )}
           {user && <SemesterMenu />}
           <Tooltip title={modeTooltip}>
             <IconButton

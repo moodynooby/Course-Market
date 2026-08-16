@@ -1,9 +1,13 @@
 import { Dashboard, MenuBook, Person, SwapHoriz } from '@mui/icons-material';
 import { BottomNavigation, BottomNavigationAction, Box } from '@mui/material';
 import { Link, useLocation } from 'react-router-dom';
+import { isNativePlatform } from '../../native/capacitor';
 
 export function MobileNav() {
   const location = useLocation();
+
+  // Native apps show the header tabs instead, so the bottom nav is redundant there.
+  if (isNativePlatform()) return null;
 
   return (
     <Box

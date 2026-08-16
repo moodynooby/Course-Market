@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "531829028920",
+    "project_id": "manasuite-bb31b",
+    "storage_bucket": "manasuite-bb31b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:531829028920:android:e98f1cf733baafa4a80ecd",
+        "android_client_info": {
+          "package_name": "app.aurais"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "531829028920-6mk8vo6g167jselpp87ijbsk2le2s17r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeFNzA3XeLE0mvxNs2ZGYjOPG1shyg_OM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "531829028920-6mk8vo6g167jselpp87ijbsk2le2s17r.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

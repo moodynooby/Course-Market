@@ -1,9 +1,16 @@
+import { isNativePlatform } from '../native/capacitor';
 import { env } from '../utils/env';
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 
+// The web app runs next to the Netlify functions, so the relative path works
+// there. A native app loads from bundled assets (https://localhost) and must
+// call the deployed backend directly.
+const NATIVE_DEFAULT_API_URL = 'https://aurais.netlify.app/.netlify/functions';
+
 const getBaseUrl = (): string => {
   if (env.NETLIFY_FUNCTION_URL) return env.NETLIFY_FUNCTION_URL.replace(/\/$/, '');
+  if (isNativePlatform()) return NATIVE_DEFAULT_API_URL;
   return '/.netlify/functions';
 };
 
