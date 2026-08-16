@@ -79,9 +79,12 @@ export async function openAuthUrlInSystemBrowser(url: string): Promise<void> {
 
   // Guard: if the user abandons the flow and the browser is closed manually
   // (e.g. back button), drop the listener after a generous window.
-  window.setTimeout(() => {
-    removeListener?.();
-  }, 10 * 60 * 1000);
+  window.setTimeout(
+    () => {
+      removeListener?.();
+    },
+    10 * 60 * 1000,
+  );
 }
 
 /**
@@ -102,4 +105,4 @@ export function buildNativeOpenUrlHandler(): ((url: string) => void | Promise<vo
  * tests and other modules have a single point of reference for native-only
  * behaviour.
  */
-export { isNativePlatform, isAndroid, APP_ID };
+export { APP_ID, isAndroid, isNativePlatform };

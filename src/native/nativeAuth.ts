@@ -19,8 +19,8 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { App as CapacitorApp, URLOpenListenerEvent } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { useCallback, useEffect, useRef } from 'react';
-import { isNativePlatform } from './capacitor';
 import { APP_ID } from './auth';
+import { isNativePlatform } from './capacitor';
 
 const AUTH0_DOMAIN_PLACEHOLDER = import.meta.env.VITE_AUTH0_DOMAIN || '';
 
