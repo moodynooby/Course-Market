@@ -10,6 +10,14 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        // Auth0 native sign-in callback host (AndroidManifest.xml intent
+        // filter). Override per build if needed:
+        //   ./gradlew assembleRelease -Pauth0Domain=dev-xxxx.us.auth0.com
+        manifestPlaceholders = [
+            auth0Domain: project.hasProperty('auth0Domain')
+                ? project.property('auth0Domain')
+                : 'YOUR_AUTH0_DOMAIN'
+        ]
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61

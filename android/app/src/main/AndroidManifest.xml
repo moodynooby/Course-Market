@@ -30,6 +30,21 @@
                 <data android:scheme="auraishub" />
             </intent-filter>
 
+            <!-- Auth0 sign-in callback (system browser -> app).
+                 After the user signs in via Chrome Custom Tabs, Auth0
+                 redirects to auraishub://{domain}/capacitor/app.aurais/callback
+                 and Android routes it back into this app, where the native
+                 auth bridge (src/native/nativeAuth.ts) finishes the flow. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="${auth0Domain}"
+                    android:pathPrefix="/capacitor/app.aurais/callback"
+                    android:scheme="auraishub" />
+            </intent-filter>
+
         </activity>
 
         <provider

@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { buildNativeOpenUrlHandler } from '../native/auth';
 import { ApiError, api } from '../services/apiClient';
 import type { UserProfile } from '../types';
 
@@ -104,10 +105,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [getAccessTokenSilently, loginWithRedirect]);
 
   const signIn = useCallback(
-    (returnUrl?: string) =>
-      loginWithRedirect({
+    (returnUrl?: string) => {
+      // On the web, Auth0 navigates in the same window and the SPA redirect
+      // flow (with `/callback` as redirect_uri) completes automatically.
+      // On native, the same redirect inside a Capacitor WebView leaves the
+      // app stuck on a blank page: open the login URL in the device system
+      // browser instead and let the native callback listener route the
+      // result back in (see src/native/auth.ts).
+      const openUrl = buildNativeOpenUrlHandler();
+      return loginWithRedirect({
+        ...(openUrl ? { openUrl } : {}),
         ...(returnUrl ? { appState: { returnTo: returnUrl } } : {}),
-      }),
+      });
+    },
     [loginWithRedirect],
   );
 

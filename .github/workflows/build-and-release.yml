@@ -104,6 +104,21 @@ jobs:
           echo "keyPassword=$ANDROID_KEY_PASSWORD" >> gradle.properties
         working-directory: ${{ github.workspace }}/android
 
+      - name: Inject the Auth0 domain into the manifest placeholder
+        run: |
+          # android.app/build.gradle exposes the Auth0 callback intent filter
+          # host as the `auth0Domain` manifest placeholder. Read it from the
+          # same VITE_AUTH0_DOMAIN the web build already uses, so the native
+          # sign-in callback route is configured automatically.
+          AUTH0_DOMAIN="${VITE_AUTH0_DOMAIN:-}"
+          if [ -n "$AUTH0_DOMAIN" ]; then
+            echo "auth0Domain=$AUTH0_DOMAIN" >> gradle.properties
+            echo "Auth0 callback host set to $AUTH0_DOMAIN"
+          else
+            echo "VITE_AUTH0_DOMAIN not set; manifest placeholder keeps its default."
+          fi
+        working-directory: ${{ github.workspace }}/android
+
       - name: Build APK and AAB
         id: build
         run: |

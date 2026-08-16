@@ -13,10 +13,12 @@ import { useAuthContext } from '../context/AuthContext';
 import { isNativePlatform } from './capacitor';
 import { useDeepLinks } from './deepLinks';
 import { configureStatusBar, syncBadgeWithOpenTrades } from './haptics';
+import { useNativeAuth } from './nativeAuth';
 import { registerPushNotifications, usePushNotifications } from './pushNotifications';
 
 export function useNativeApp() {
   useDeepLinks();
+  useNativeAuth();
   const { isAuthenticated, getToken, profile } = useAuthContext();
   const { unregister } = usePushNotifications({ getToken });
   const registeredRef = useRef(false);

@@ -26,6 +26,13 @@ export interface ParsedDeepLink {
 
 export function parseDeepLink(url: string): ParsedDeepLink | null {
   try {
+    // Auth0 native callbacks (auraishub://{domain}/capacitor/app.aurais/callback)
+    // carry an authorization `code` + `state` and are consumed by the native
+    // auth bridge (src/native/auth.ts) — they are not app routes.
+    if (/^auraishub:\/\/.*\/capacitor\/app\.aurais\/callback/.test(url)) {
+      return null;
+    }
+
     const parsed = new URL(url);
 
     // Native scheme links: auraishub://... (protocol is 'auraishub:').
