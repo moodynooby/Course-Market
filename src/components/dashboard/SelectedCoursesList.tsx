@@ -1,4 +1,4 @@
-import { ArrowForward, Close, PushPin } from '@mui/icons-material';
+import { ArrowForward, Close, PushPin, Schedule } from '@mui/icons-material';
 import {
   alpha,
   Box,
@@ -15,6 +15,7 @@ import {
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Course, Section } from '../../types';
+import { EmptyState } from '../EmptyState';
 
 interface SelectedCoursesListProps {
   sections: Section[];
@@ -53,14 +54,23 @@ export function SelectedCoursesList({
 
   if (sections.length === 0) {
     return (
-      <Card sx={{ borderRadius: 4, bgcolor: 'background.paper', p: 3 }} variant="outlined">
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-          Selected Courses
-        </Typography>
-        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          No courses selected yet
-        </Typography>
-      </Card>
+      <EmptyState
+        variant="compact"
+        icon={<Schedule sx={{ fontSize: 40 }} />}
+        title="No courses selected"
+        description="Select courses from the browser to build your schedule."
+        action={
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => navigate('/courses')}
+            endIcon={<ArrowForward />}
+            sx={{ borderRadius: 2 }}
+          >
+            Manage Courses
+          </Button>
+        }
+      />
     );
   }
 
