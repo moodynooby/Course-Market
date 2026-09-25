@@ -31,18 +31,17 @@ import {
 } from '@mui/material';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Course, DayOfWeek, Section } from '../../types';
+import { SCORE_EXCELLENT, SCORE_GOOD } from '../../utils/constants';
 import { DAY_ORDER } from '../../utils/schedule';
 import type { ScheduleDiagnostics } from '../../utils/schedule-diagnostics';
 import { clusterSchedulesBySimilarity } from '../../utils/schedule-generator';
 import type { PrefilterSummary } from '../../utils/schedule-prefilter';
 import type { GeneratedSchedule, SearchResult } from '../../utils/schedule-types';
-import CalendarView from '../CalendarView';
 import { EmptyState } from '../EmptyState';
+import { ScheduleDetails } from './ScheduleDetails';
 import { ScheduleDiagnosticsPanel } from './ScheduleDiagnosticsPanel';
 
 const MAX_DISPLAY_SCHEDULES = 50;
-const SCORE_EXCELLENT = 80;
-const SCORE_GOOD = 60;
 const MATCH_EXCELLENT = 0.8;
 const MATCH_GOOD = 0.6;
 
@@ -883,95 +882,3 @@ const GroupedScheduleCard = memo(function GroupedScheduleCard({
     </Card>
   );
 });
-
-interface ScheduleDetailsProps {
-  selectedSchedule: GeneratedSchedule;
-  courses: Course[];
-  onApply: () => void;
-  similarSectionCounts?: Map<string, number>;
-}
-
-function ScheduleDetails({
-  selectedSchedule,
-  courses,
-  onApply,
-  similarSectionCounts,
-}: ScheduleDetailsProps) {
-  const theme = useTheme();
-
-  return (
-    <Stack sx={{ p: 3, height: '100%', position: 'relative' }}>
-      <Box sx={{ overflow: 'auto', pb: 7 }}>
-        <Stack direction="row" spacing={2} sx={{ alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
-          <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Schedule Details
-          </Typography>
-          <Chip
-            label={`Score: ${selectedSchedule.score}`}
-            color={selectedSchedule.score >= SCORE_EXCELLENT ? 'success' : 'default'}
-            sx={{ borderRadius: 2, fontWeight: 600 }}
-          />
-          <Chip
-            label={`${selectedSchedule.totalCredits} Credits`}
-            variant="outlined"
-            sx={{ borderRadius: 2, fontWeight: 600 }}
-          />
-        </Stack>
-
-        <Box sx={{ height: { xs: 360, sm: 480 }, mb: 2 }}>
-          <CalendarView
-            sections={selectedSchedule.sections}
-            courses={courses}
-            conflicts={selectedSchedule.conflicts}
-            similarSectionCounts={similarSectionCounts}
-          />
-        </Box>
-
-        {selectedSchedule.conflicts.length > 0 && (
-          <Box
-            sx={{
-              p: 2,
-              borderRadius: 3,
-              bgcolor: alpha(theme.palette.warning.main, 0.1),
-              border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
-            }}
-          >
-            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'warning.main', mb: 1 }}>
-              ⚠️ Conflicts:
-            </Typography>
-            <ul style={{ margin: 0, paddingLeft: 20 }}>
-              {selectedSchedule.conflicts.map((c: string, i: number) => (
-                <li key={i}>
-                  <Typography variant="caption" sx={{ color: 'warning.main' }}>
-                    {c}
-                  </Typography>
-                </li>
-              ))}
-            </ul>
-          </Box>
-        )}
-      </Box>
-      <Box
-        sx={{
-          position: 'sticky',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          pt: 2,
-          bgcolor: 'background.paper',
-          borderTop: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-        }}
-      >
-        <Button
-          variant="contained"
-          color="secondary"
-          fullWidth
-          sx={{ borderRadius: 3, py: 1.5, fontWeight: 600 }}
-          onClick={onApply}
-        >
-          Apply This Schedule
-        </Button>
-      </Box>
-    </Stack>
-  );
-}

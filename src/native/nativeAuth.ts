@@ -16,7 +16,7 @@
  * = localstorage, `/callback` route) completes the flow there.
  */
 import { useAuth0 } from '@auth0/auth0-react';
-import { App as CapacitorApp, URLOpenListenerEvent } from '@capacitor/app';
+import { App as CapacitorApp, type URLOpenListenerEvent } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { useCallback, useEffect, useRef } from 'react';
 import { APP_ID } from './auth';

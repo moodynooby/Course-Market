@@ -39,7 +39,6 @@ function backtrackSchedules(
       const combination = [...current];
       const schedule: Schedule = {
         id: `gen-${results.length}`,
-        name: `Generated Schedule ${results.length + 1}`,
         sections: combination,
         totalCredits: currentCredits,
         score: 0,

@@ -1,5 +1,5 @@
 import { desc, eq, sql } from 'drizzle-orm';
-import { ZodError } from 'zod';
+import { ZodError, type z } from 'zod';
 import { db } from '../../db';
 import * as schema from '../../db/schema';
 import { formatZodError, professorRatingSchema } from '../../db/validation';
@@ -126,7 +126,7 @@ export const handler = withCors(async (event) => {
 
   if (httpMethod === 'POST') {
     if (path.endsWith('/rate')) {
-      let requestBody;
+      let requestBody: z.infer<typeof professorRatingSchema>;
       try {
         requestBody = professorRatingSchema.parse(body ? JSON.parse(body) : {});
       } catch (e) {

@@ -106,7 +106,7 @@ export default function CoursesPage() {
         });
       }, SAVE_DEBOUNCE_MS);
     },
-    [updateProfile, toast.error],
+    [toast, updateProfile],
   );
 
   useEffect(() => {
@@ -137,7 +137,7 @@ export default function CoursesPage() {
     }
 
     previousSelectionsRef.current = new Map(curr);
-  }, [selectedSections, toast.success, toast.info]);
+  }, [selectedSections, toast]);
 
   useEffect(() => {
     if (!initialSyncDoneRef.current) return;

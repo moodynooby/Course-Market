@@ -11,48 +11,54 @@ Github [GitHub](https://github.com/moodynooby/Course-Market)
 ## Features
 
 ### Course Browser & Preferences
+
 - Search and filter by subject; pick sections visually with a card layout
 - Set time windows, gaps, morning vs afternoon, credit range, and day preferences
 - Block specific instructors
 - Deterministic schedule scoring ranks alternatives against your preferences
 
 ### Schedule View
+
 - Calendar grid + list view
 - Live conflict warnings and scoring
 - Flip between multiple generated options
 
 ### Trading Board
+
 - Post section swap requests, browse others'
 - Online (Netlify + PostgreSQL) or local-only mode
 - Open → pending → completed status tracking
 
 ### Rate My Professor
+
 - Leave ratings and reviews for instructors
 - See ratings while browsing sections so you know what you're signing up for
 
 ## Architecture
 
 ### Frontend
-```
+
+```text
 src/
-├── components/
-├── hooks/
-│   ├── useCourses.ts
-│   ├── usePreferences.ts
-│   ├── useSelections.ts
-│   └── useTrading.ts
-├── services/
-│   └── tradesApi.ts
-├── types/
-├── utils/
-│   └── schedule.ts
-└── constants/
+├── components/       # Reusable UI and feature components
+├── context/          # Auth, config, theme, and toast providers
+├── hooks/            # Feature orchestration
+├── native/           # Capacitor and platform adapters
+├── pages/            # Route-level screens
+├── services/         # API and search boundaries
+├── types/            # Shared domain types
+└── utils/            # Schedule, storage, export, and search helpers
 ```
 
 ### Backend (Netlify Functions)
-```
+
+```text
 netlify/functions/
-└── trades.ts
+├── professors.ts
+├── semesters.ts
+├── trades.ts
+├── user-profile.ts
+└── lib/              # Auth, response, wrapping, and push helpers
 ```
 
 ## Dev
@@ -61,17 +67,20 @@ netlify/functions/
 pnpm run dev          # Vite + Netlify dev server
 pnpm run build        # Production build
 pnpm run preview      # Preview it
-pnpm run test         # Tests
-pnpm run fix          # Lint + format
-pnpm run typecheck    # TS check
-pnpm run ci           # The whole pipeline
+pnpm run lint         # Complete non-mutating quality gate
+pnpm run lint:fix     # Apply Biome fixes
+pnpm run test         # Unit tests
+pnpm run typecheck    # TypeScript checks
 ```
 
 ### Database
+
 ```bash
 pnpm run db:generate  # Generate migration
-pnpm run db:migrate   # Apply it
+pnpm run db:check     # Check migration state
+pnpm run db:push      # Apply schema changes
 pnpm run db:studio    # Drizzle Studio GUI
+pnpm run db:seed      # Seed the database
 ```
 
 ## Native App (Capacitor)
@@ -80,15 +89,14 @@ AuraIsHub ships as a Capacitor 8 Android app, wrapping the existing React build 
 
 ### Native-only features
 
-| Feature | Implementation |
-|---|---|
+| Feature            | Implementation                                                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
 | Push notifications | `@capacitor/push-notifications` + `netlify/functions/lib/push.ts` (FCM v1 / APNs); trade status changes ping watching students |
-| Deep links | `auraishub://trading?tradeId=42`, `auraishub://courses?courseCode=...` land on the exact trade/course and highlight it |
-| Native share sheet | Timetable screenshots share straight to WhatsApp/Instagram via `@capacitor/share` (web falls back to clipboard) |
-| Offline schedule | `src/native/offline.ts` pins the current schedule to IndexedDB; works with zero connectivity |
-| Icon badges | `@capawesome/capacitor-badge` shows pending activity; clears on foreground |
-| Haptics | Success/error/light feedback on trade actions and calendar swipes |
-| Touch gestures | Swipe between weeks/days on the calendar |
+| Deep links         | `auraishub://trading?tradeId=42`, `auraishub://courses?courseCode=...` land on the exact trade/course and highlight it         |
+| Native share sheet | Timetable screenshots share straight to WhatsApp/Instagram via `@capacitor/share` (web falls back to clipboard)                |
+| Icon badges        | `@capawesome/capacitor-badge` shows pending activity; clears on foreground                                                     |
+| Haptics            | Success/error/light feedback on trade actions and calendar swipes                                                              |
+| Touch gestures     | Swipe between weeks/days on the calendar                                                                                       |
 
 ### Build & run
 
@@ -108,12 +116,12 @@ pnpm run cap:build:android  # Open Android Studio (or build APK with Gradle)
 
 To produce a **signed** release build, add these repository secrets (`Settings → Secrets and variables → Actions`):
 
-| Secret | Value |
-|---|---|
-| `ANDROID_KEYSTORE_BASE64` | `base64 -w 0 app.keystore` output of your `.jks` keystore |
-| `ANDROID_KEYSTORE_PASSWORD` | Keystore password |
-| `ANDROID_KEY_ALIAS` | Key alias inside the keystore |
-| `ANDROID_KEY_PASSWORD` | Key password |
+| Secret                      | Value                                                     |
+| --------------------------- | --------------------------------------------------------- |
+| `ANDROID_KEYSTORE_BASE64`   | `base64 -w 0 app.keystore` output of your `.jks` keystore |
+| `ANDROID_KEYSTORE_PASSWORD` | Keystore password                                         |
+| `ANDROID_KEY_ALIAS`         | Key alias inside the keystore                             |
+| `ANDROID_KEY_PASSWORD`      | Key password                                              |
 
 Without them the workflow still builds and uploads an unsigned APK.
 
@@ -128,6 +136,7 @@ Push needs real credentials set on Netlify (Functions): `FCM_PROJECT_ID` and `FC
 ## Seeding
 
 ### Step 1 — CSVs to JSON
+
 ```bash
 python scripts/csv_to_semester_json.py \
   --semester-id Monsoon2026 \
@@ -136,6 +145,7 @@ python scripts/csv_to_semester_json.py \
 ```
 
 ### Step 2 — Seed
+
 ```bash
 npx tsx scripts/seed-semester.ts Monsoon2026
 ```

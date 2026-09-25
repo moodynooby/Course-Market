@@ -77,25 +77,27 @@ describe('performance', () => {
     });
 
     it('ignores time conflicts across different date ranges', () => {
-      const slot1 = makeTimeSlot('M', '09:00', '10:00');
-      (slot1 as any).startDate = '2026-01-15';
-      (slot1 as any).endDate = '2026-03-07';
-
-      const slot2 = makeTimeSlot('M', '09:00', '10:00');
-      (slot2 as any).startDate = '2026-03-15';
-      (slot2 as any).endDate = '2026-05-01';
+      const slot1 = makeTimeSlot('M', '09:00', '10:00', {
+        startDate: '2026-01-15',
+        endDate: '2026-03-07',
+      });
+      const slot2 = makeTimeSlot('M', '09:00', '10:00', {
+        startDate: '2026-03-15',
+        endDate: '2026-05-01',
+      });
 
       expect(hasTimeConflict(slot1, slot2)).toBe(false);
     });
 
     it('detects time conflicts when date ranges overlap', () => {
-      const slot1 = makeTimeSlot('M', '09:00', '10:00');
-      (slot1 as any).startDate = '2026-01-15';
-      (slot1 as any).endDate = '2026-04-01';
-
-      const slot2 = makeTimeSlot('M', '09:00', '10:00');
-      (slot2 as any).startDate = '2026-03-01';
-      (slot2 as any).endDate = '2026-05-01';
+      const slot1 = makeTimeSlot('M', '09:00', '10:00', {
+        startDate: '2026-01-15',
+        endDate: '2026-04-01',
+      });
+      const slot2 = makeTimeSlot('M', '09:00', '10:00', {
+        startDate: '2026-03-01',
+        endDate: '2026-05-01',
+      });
 
       expect(hasTimeConflict(slot1, slot2)).toBe(true);
     });

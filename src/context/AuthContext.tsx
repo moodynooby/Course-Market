@@ -89,7 +89,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const getToken = useCallback(async () => {
     try {
-      return await getAccessTokenSilently();
+      const token = await getAccessTokenSilently();
+      if (!token) {
+        throw new Error('No access token is available. Please sign in again.');
+      }
+      return token;
     } catch (error) {
       // A dead refresh token is unrecoverable client-side: clear the stale
       // Auth0 cache and send the user through a fresh login instead of

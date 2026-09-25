@@ -15,21 +15,10 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Path aliases */
-    "paths": {
-      "@/*": ["./src/*"],
-      "@components/*": ["./src/components/*"],
-      "@pages/*": ["./src/pages/*"],
-      "@context/*": ["./src/context/*"],
-      "@hooks/*": ["./src/hooks/*"],
-      "@utils/*": ["./src/utils/*"],
-      "@types/*": ["./src/types/*"],
-      "@services/*": ["./src/services/*"],
-      "@assets/*": ["./src/assets/*"]
-    },
-
     /* Linting - strict mode enabled */
     "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
     "noImplicitReturns": true,

@@ -123,9 +123,11 @@ export default function RateProfessorModal({
       setTakeAgain(true);
       setError(null);
       onClose();
-    } catch (err: any) {
-      console.error('Error submitting rating:', err);
-      setError(err.message || 'Failed to submit rating. Please try again.');
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+      setError(
+        error instanceof Error ? error.message : 'Failed to submit rating. Please try again.',
+      );
     } finally {
       setSubmitting(false);
     }

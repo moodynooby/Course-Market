@@ -2,6 +2,7 @@ import { CssBaseline, ThemeProvider as MuiThemeProvider } from '@mui/material';
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { createAppTheme } from '../theme';
 import { STORAGE_KEYS } from '../utils/constants';
+import { storage } from '../utils/storage';
 
 export type ThemeMode = 'light' | 'dark' | 'system';
 
@@ -23,19 +24,16 @@ interface ThemeProviderProps {
   children: ReactNode;
 }
 
+function isThemeMode(value: unknown): value is ThemeMode {
+  return value === 'light' || value === 'dark' || value === 'system';
+}
+
 function getInitialMode(): ThemeMode {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEYS.THEME_MODE);
-    if (stored) return JSON.parse(stored) as ThemeMode;
-  } catch {}
-  try {
-    const prefs = localStorage.getItem(STORAGE_KEYS.PREFERENCES);
-    if (prefs) {
-      const parsed = JSON.parse(prefs);
-      if (parsed.theme) return parsed.theme as ThemeMode;
-    }
-  } catch {}
-  return 'system';
+  const storedMode = storage.get<unknown>(STORAGE_KEYS.THEME_MODE, 'system');
+  if (isThemeMode(storedMode)) return storedMode;
+
+  const preferences = storage.get<{ theme?: unknown }>(STORAGE_KEYS.PREFERENCES, {});
+  return isThemeMode(preferences.theme) ? preferences.theme : 'system';
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
@@ -53,7 +51,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   const setMode = (newMode: ThemeMode) => {
     setModeState(newMode);
-    localStorage.setItem(STORAGE_KEYS.THEME_MODE, JSON.stringify(newMode));
+    storage.set(STORAGE_KEYS.THEME_MODE, newMode);
   };
 
   const isDark = mode === 'system' ? systemDark : mode === 'dark';

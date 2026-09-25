@@ -60,7 +60,6 @@ export function useSemesterData() {
 
         setSchedule({
           id: 'current',
-          name: 'Current Selection',
           sections: selectedSections,
           totalCredits,
           score: 0,

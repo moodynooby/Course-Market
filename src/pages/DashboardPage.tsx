@@ -78,18 +78,20 @@ export default function DashboardPage() {
 
   const handleDeselect = useCallback(
     async (courseId: string) => {
+      if (!schedule) return;
+
       const prev = profileRef.current?.courseSelections || {};
       const updated = { ...prev };
       delete updated[courseId];
-      const newSections = (schedule?.sections || []).filter((s) => s.courseId !== courseId);
-      setSchedule(newSections.length > 0 ? { ...schedule!, sections: newSections } : null);
+      const newSections = schedule.sections.filter((s) => s.courseId !== courseId);
+      setSchedule(newSections.length > 0 ? { ...schedule, sections: newSections } : null);
       try {
         await updateProfile({ courseSelections: updated });
       } catch {
         toast.error('Failed to remove course. Please try again.');
       }
     },
-    [schedule, setSchedule, updateProfile, toast.error],
+    [schedule, setSchedule, toast, updateProfile],
   );
 
   const handleUndoDeselect = useCallback(
@@ -101,7 +103,6 @@ export default function DashboardPage() {
       } else if (section) {
         setSchedule({
           id: 'current',
-          name: 'Current Selection',
           sections: [section],
           totalCredits: 0,
           score: 0,
@@ -114,7 +115,7 @@ export default function DashboardPage() {
         toast.error('Failed to restore course. Please try again.');
       }
     },
-    [allSections, schedule, setSchedule, updateProfile, toast.error],
+    [allSections, schedule, setSchedule, toast, updateProfile],
   );
 
   const coursesSelected = Boolean(schedule && schedule.sections.length > 0);

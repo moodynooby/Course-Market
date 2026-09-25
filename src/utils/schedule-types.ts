@@ -1,12 +1,6 @@
-import type { Section } from '../types';
+import type { Schedule } from '../types';
 
-export interface GeneratedSchedule {
-  id: string;
-  sections: Section[];
-  totalCredits: number;
-  score: number;
-  conflicts: string[];
-}
+export type GeneratedSchedule = Schedule;
 
 export interface GeneratorOptions {
   maxSchedules?: number;

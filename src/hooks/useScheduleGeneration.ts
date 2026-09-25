@@ -4,6 +4,7 @@ import { useConfigContext } from '../context/ConfigContext';
 import { useToast } from '../context/ToastContext';
 import { searchSchedules } from '../services/search';
 import type { Course, Schedule, Section } from '../types';
+import { sectionsToCourseSelections } from '../utils/schedule';
 import type { ScheduleDiagnostics } from '../utils/schedule-diagnostics';
 import { diagnoseEmptyGeneration } from '../utils/schedule-diagnostics';
 import type { PrefilterSummary } from '../utils/schedule-prefilter';
@@ -81,7 +82,6 @@ export function useScheduleGeneration({
         maxSchedules: 200,
       }).map<Schedule>((g) => ({
         id: g.id,
-        name: `Candidate ${g.id}`,
         sections: g.sections,
         totalCredits: g.totalCredits,
         score: g.score,
@@ -95,13 +95,7 @@ export function useScheduleGeneration({
       const bestSchedule = [...candidates].sort((a, b) => b.score - a.score)[0];
       if (bestSchedule) {
         setSchedule(bestSchedule);
-        const selections = bestSchedule.sections.reduce(
-          (acc, section) => {
-            acc[section.courseId] = section.id;
-            return acc;
-          },
-          {} as Record<string, string>,
-        );
+        const selections = sectionsToCourseSelections(bestSchedule.sections);
         try {
           await updateProfile({ courseSelections: selections });
         } catch {
@@ -175,13 +169,7 @@ export function useScheduleGeneration({
 
   const handleApplySchedule = useCallback(
     async (genSchedule: GeneratedSchedule) => {
-      const selections = genSchedule.sections.reduce(
-        (acc: Record<string, string>, section: Section) => {
-          acc[section.courseId] = section.id;
-          return acc;
-        },
-        {} as Record<string, string>,
-      );
+      const selections = sectionsToCourseSelections(genSchedule.sections);
       try {
         await updateProfile({ courseSelections: selections });
       } catch {
@@ -191,7 +179,6 @@ export function useScheduleGeneration({
 
       const newSchedule: Schedule = {
         id: genSchedule.id,
-        name: 'Applied Schedule',
         sections: genSchedule.sections,
         totalCredits: genSchedule.totalCredits,
         score: genSchedule.score,
@@ -199,7 +186,7 @@ export function useScheduleGeneration({
       };
       setSchedule(newSchedule);
     },
-    [updateProfile, setSchedule, toast.error],
+    [setSchedule, toast, updateProfile],
   );
 
   useEffect(() => {

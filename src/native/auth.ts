@@ -19,7 +19,7 @@
  * On the web this module is a no-op — the standard SPA redirect flow keeps
  * working unchanged.
  */
-import { App as CapacitorApp, URLOpenListenerEvent } from '@capacitor/app';
+import { App as CapacitorApp, type URLOpenListenerEvent } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { env } from '../utils/env';
 import { isAndroid, isNativePlatform } from './capacitor';

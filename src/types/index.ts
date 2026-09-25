@@ -29,7 +29,6 @@ export type DayOfWeek = 'M' | 'T' | 'W' | 'Th' | 'F' | 'Sa' | 'Su';
 
 export interface Schedule {
   id: string;
-  name: string;
   sections: Section[];
   totalCredits: number;
   score: number;

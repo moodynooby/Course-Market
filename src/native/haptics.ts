@@ -27,7 +27,7 @@ export async function hapticLight(): Promise<void> {
   await Haptics.impact({ style: ImpactStyle.Light });
 }
 
-export async function setBadgeCount(count: number): Promise<void> {
+async function setBadgeCount(count: number): Promise<void> {
   if (!isNativePlatform()) return;
   try {
     if (count <= 0) {

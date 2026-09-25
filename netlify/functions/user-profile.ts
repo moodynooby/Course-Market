@@ -41,7 +41,7 @@ export const handler = withAuth(async (event, user) => {
       .from(schema.userProfiles)
       .where(eq(schema.userProfiles.auth0UserId, user.sub));
 
-    let requestBody;
+    let requestBody: UserProfileInput | UserProfileUpdateInput;
     try {
       const schemaToUse = existingProfile ? userProfileUpdateSchema : userProfileSchema;
       requestBody = schemaToUse.parse(body ? JSON.parse(body) : {});
@@ -52,7 +52,7 @@ export const handler = withAuth(async (event, user) => {
       return jsonResponse(400, { error: 'Invalid JSON' });
     }
 
-    let profile;
+    let profile: typeof existingProfile;
 
     if (existingProfile) {
       const input = requestBody as UserProfileUpdateInput;

@@ -12,7 +12,7 @@
  * everywhere.
  */
 
-import { App as CapacitorApp, URLOpenListenerEvent } from '@capacitor/app';
+import { App as CapacitorApp, type URLOpenListenerEvent } from '@capacitor/app';
 import { useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isNativePlatform } from './capacitor';

@@ -120,7 +120,6 @@ const defaultPrefs: Preferences = {
 function scheduleWithCredits(id: string, totalCredits: number): Schedule {
   return {
     id,
-    name: id,
     sections: [
       {
         id: `${id}-sec`,

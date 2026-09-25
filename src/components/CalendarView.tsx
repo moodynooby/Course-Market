@@ -13,7 +13,6 @@ import {
   Snackbar,
   Stack,
   Toolbar,
-  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -21,7 +20,7 @@ import {
 import { addWeeks, format, getDay, parse, startOfWeek, subWeeks } from 'date-fns';
 import { enUS } from 'date-fns/locale/en-US';
 import html2canvas from 'html2canvas';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { View } from 'react-big-calendar';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import { buildDeepLink } from '../native/deepLinks';
@@ -31,7 +30,7 @@ import type { CalendarEvent, Course, Section } from '../types';
 import { buildGoogleCalendarUrlForSlot, openGoogleCalendarUrl } from '../utils/googleCalendar';
 import { icsToBlob, sectionsToIcs, timeToMinutes } from '../utils/icsExport';
 import { isSlotActiveDuring, sectionsToCalendarEvents } from '../utils/schedule';
-
+import { COURSE_COLORS, EventComponent } from './CalendarEventComponent';
 import CalendarToolbar from './CalendarToolbar';
 
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -52,138 +51,6 @@ interface CalendarViewProps {
   conflicts: string[];
   similarSectionCounts?: Map<string, number>;
 }
-
-interface EventProps {
-  event: CalendarEvent;
-  onSelect?: (event: CalendarEvent) => void;
-  touchFriendly?: boolean;
-}
-
-const COURSE_COLORS = [
-  '#c87a2a',
-  '#0891b2',
-  '#7c3aed',
-  '#059669',
-  '#dc2626',
-  '#ea580c',
-  '#4f46e5',
-  '#be185d',
-];
-
-const EventComponent = memo(function EventComponent({
-  event,
-  onSelect,
-  touchFriendly,
-}: EventProps) {
-  const courseCode = event.resource?.course?.code || '';
-  const courseName = event.resource?.course?.name || '';
-  const sectionNumber = event.resource?.section?.sectionNumber || '';
-  const similarPeers = event.resource?.similarPeers ?? 0;
-  const colorIndex = courseCode.length > 0 ? courseCode.charCodeAt(0) % COURSE_COLORS.length : 0;
-  const backgroundColor = COURSE_COLORS[colorIndex];
-  const timeStr = `${format(event.start, 'h:mm a')} - ${format(event.end, 'h:mm a')}`;
-
-  const content = (
-    <Box sx={{ py: 0.5 }}>
-      <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.8rem' }}>
-        {courseCode}
-        {sectionNumber ? ` - ${sectionNumber}` : ''}
-      </Typography>
-      {courseName && (
-        <Typography variant="body2" sx={{ fontSize: '0.75rem', opacity: 0.9, mt: 0.25 }}>
-          {courseName}
-        </Typography>
-      )}
-      <Typography variant="body2" sx={{ fontSize: '0.75rem', opacity: 0.8, mt: 0.25 }}>
-        {timeStr}
-      </Typography>
-      {similarPeers > 0 && (
-        <Typography
-          variant="body2"
-          sx={{ fontSize: '0.7rem', opacity: 0.75, mt: 0.5, fontStyle: 'italic' }}
-        >
-          {similarPeers} similar section{similarPeers === 1 ? '' : 's'} available
-        </Typography>
-      )}
-    </Box>
-  );
-
-  // On touch devices hover tooltips never fire, so a tap opens the detail
-  // sheet instead. On desktop the tooltip remains for instant previews.
-  if (touchFriendly && onSelect) {
-    return (
-      <Box
-        role="button"
-        tabIndex={0}
-        onClick={(e) => {
-          e.stopPropagation();
-          onSelect(event);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onSelect(event);
-          }
-        }}
-        aria-label={`Open details for ${courseCode}${sectionNumber ? ` ${sectionNumber}` : ''}`}
-        sx={{ height: '100%', cursor: 'pointer' }}
-      >
-        {content}
-      </Box>
-    );
-  }
-
-  return (
-    <Tooltip title={content} arrow enterDelay={200} enterNextDelay={200} leaveDelay={0}>
-      <Box
-        sx={{
-          px: 0.5,
-          py: 0.5,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          fontSize: '0.75rem',
-          fontWeight: 600,
-          backgroundColor,
-          color: '#fff',
-          borderRadius: 1,
-          height: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          lineHeight: 1.2,
-        }}
-      >
-        <Typography
-          variant="caption"
-          sx={{
-            fontWeight: 700,
-            lineHeight: 1.1,
-            display: 'block',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            fontSize: '0.7rem',
-          }}
-        >
-          {courseCode}
-        </Typography>
-        {sectionNumber && (
-          <Typography
-            variant="caption"
-            sx={{
-              fontSize: '0.6rem',
-              lineHeight: 1.1,
-              opacity: 0.9,
-              fontWeight: 500,
-            }}
-          >
-            {sectionNumber}
-          </Typography>
-        )}
-      </Box>
-    </Tooltip>
-  );
-});
 
 export default function CalendarView({
   sections,
@@ -921,6 +788,7 @@ export default function CalendarView({
             const course = selectedEvent.resource?.course;
             if (!section || !course) return null;
             const slot = section.timeSlots[0];
+            const startDate = slot?.startDate;
             const remaining = section.capacity - section.enrolled;
             const gcalUrl = section.timeSlots.length
               ? buildGoogleCalendarUrlForSlot(
@@ -979,13 +847,13 @@ export default function CalendarView({
                           : ''}
                       </Typography>
                     </Stack>
-                    {slot?.startDate &&
+                    {startDate &&
                       (() => {
-                        const s = new Date(slot.startDate);
+                        const s = new Date(startDate);
                         return !Number.isNaN(s.getTime());
                       })() && (
                         <Typography variant="body2" color="text.secondary">
-                          Meets weekly from {format(new Date(slot.startDate!), 'MMMM d, yyyy')}
+                          Meets weekly from {format(new Date(startDate), 'MMMM d, yyyy')}
                           {slot.endDate
                             ? ` to ${format(new Date(slot.endDate), 'MMMM d, yyyy')}`
                             : ''}

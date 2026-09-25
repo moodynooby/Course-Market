@@ -1,22 +1,27 @@
 import type { Course, Section } from '../types';
 import { api } from './apiClient';
 
-let semestersPromise: Promise<{
+type SemestersResponse = {
   semesters: Array<{ id: string; name: string; isActive: boolean }>;
-}> | null = null;
+};
+
+let semestersPromise: Promise<SemestersResponse> | null = null;
 
 /**
  * Fetch available semesters. Uses a shared promise so all callers
  * across the app share one in-flight request (and one cached result
- * for the lifetime of the module).
+ * for the lifetime of the module). Failed requests are evicted so callers
+ * can retry after transient network errors.
  */
-export async function getSemesters(): Promise<{
-  semesters: Array<{ id: string; name: string; isActive: boolean }>;
-}> {
-  if (!semestersPromise) {
-    semestersPromise = api.get('/semesters');
-  }
-  return semestersPromise;
+export async function getSemesters(): Promise<SemestersResponse> {
+  if (semestersPromise) return semestersPromise;
+
+  const request = api.get<SemestersResponse>('/semesters').catch((error: unknown) => {
+    semestersPromise = null;
+    throw error;
+  });
+  semestersPromise = request;
+  return request;
 }
 
 /**

@@ -1,4 +1,3 @@
-import path from 'node:path';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 
@@ -25,19 +24,6 @@ export default defineConfig({
       reporter: ['text', 'json', 'html'],
       include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/**/*.d.ts', 'src/test/**', 'src/**/*.{test,spec}.{ts,tsx}'],
-    },
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(import.meta.dirname, './src'),
-      '@components': path.resolve(import.meta.dirname, './src/components'),
-      '@pages': path.resolve(import.meta.dirname, './src/pages'),
-      '@context': path.resolve(import.meta.dirname, './src/context'),
-      '@hooks': path.resolve(import.meta.dirname, './src/hooks'),
-      '@utils': path.resolve(import.meta.dirname, './src/utils'),
-      '@types': path.resolve(import.meta.dirname, './src/types'),
-      '@services': path.resolve(import.meta.dirname, './src/services'),
-      '@assets': path.resolve(import.meta.dirname, './src/assets'),
     },
   },
 });

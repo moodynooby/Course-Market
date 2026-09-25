@@ -37,17 +37,22 @@ export async function validateToken(authHeader: string | undefined): Promise<Aut
   try {
     if (!JWKS) throw new Error('JWKS not initialized. Check environment variables.');
 
-    const { payload } = await jwtVerify(token, JWKS!, {
+    const { payload } = await jwtVerify(token, JWKS, {
       issuer,
       audience,
       algorithms: ['RS256'],
     });
 
+    if (!payload.sub) {
+      throw new Error('Token subject is missing.');
+    }
+
+    const sub = payload.sub;
     return {
-      sub: payload.sub!,
-      email: (payload.email as string) || payload.sub!,
-      name: (payload.name as string) || 'Anonymous Trader',
-      picture: payload.picture as string | undefined,
+      sub,
+      email: (typeof payload.email === 'string' && payload.email) || sub,
+      name: (typeof payload.name === 'string' && payload.name) || 'Anonymous Trader',
+      picture: typeof payload.picture === 'string' ? payload.picture : undefined,
     };
   } catch (error) {
     console.error('Token validation failed:', error);

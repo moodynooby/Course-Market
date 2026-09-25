@@ -1,4 +1,5 @@
 import type { Section } from '../types';
+import { AFTERNOON_END_MINUTES, MORNING_END_MINUTES } from './constants';
 import { timeToMinutesCached } from './schedule';
 import type { GeneratedSchedule } from './schedule-types';
 
@@ -16,8 +17,6 @@ const INTRINSIC_WINDOW_START_MIN = 480; // 08:00
 const INTRINSIC_WINDOW_END_MIN = 1080; // 18:00
 const INTRINSIC_GAP_THRESHOLD_MIN = 60;
 const INTRINSIC_AVOID_DAY_PENALTY = 60;
-const MORNING_END_MIN = 720;
-const AFTERNOON_END_MIN = 1020;
 
 const FEATURE_VECTOR_DIMS = 12;
 const DAY_INDEX: Record<string, number> = { M: 0, T: 1, W: 2, Th: 3, F: 4 };
@@ -66,8 +65,8 @@ function accumulateIntrinsic(sections: Section[]): IntrinsicAccumulator {
         avoidDay += INTRINSIC_AVOID_DAY_PENALTY;
       }
 
-      if (startMin < MORNING_END_MIN) morning++;
-      else if (startMin < AFTERNOON_END_MIN) afternoon++;
+      if (startMin < MORNING_END_MINUTES) morning++;
+      else if (startMin < AFTERNOON_END_MINUTES) afternoon++;
       else evening++;
 
       const dayIdx = DAY_INDEX[slot.day];

@@ -60,7 +60,7 @@ const getPalette = (isDark: boolean): ThemeOptions['palette'] => {
   };
 };
 
-const getComponents = (_isDark: boolean): ThemeOptions['components'] => {
+const getComponents = (): ThemeOptions['components'] => {
   return {
     MuiCssBaseline: {
       styleOverrides: {
@@ -351,6 +351,6 @@ export const createAppTheme = (isDark: boolean) => {
       },
     },
     shape: { borderRadius: 16 },
-    components: getComponents(isDark),
+    components: getComponents(),
   });
 };

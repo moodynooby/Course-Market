@@ -26,7 +26,6 @@ import {
   DialogTitle,
   IconButton,
   InputAdornment,
-  Skeleton,
   Stack,
   TextField,
   Tooltip,
@@ -39,6 +38,7 @@ import { Virtuoso } from 'react-virtuoso';
 import { ZodError } from 'zod';
 import { formatZodError, tradeSchema } from '../../db/validation';
 import { EmptyState } from '../components/EmptyState';
+import { TradingSkeleton } from '../components/trading/TradingSkeleton';
 import { useAuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { hapticError, hapticSuccess } from '../native/haptics';
@@ -218,9 +218,9 @@ const TradeCard = memo(function TradeCard({
 
         {conflicts.length > 0 && (
           <Stack spacing={0.5} sx={{ mb: 1.5 }}>
-            {conflicts.map((conflict, idx) => (
+            {conflicts.map((conflict) => (
               <Tooltip
-                key={idx}
+                key={`${conflict.type}-${conflict.sectionNumber}-${conflict.conflictingCourseCode}-${conflict.conflictingSectionNumber}`}
                 title={
                   conflict.type === 'offered'
                     ? `Your ${conflict.sectionNumber} conflicts with ${conflict.conflictingCourseCode} (${conflict.conflictingSectionNumber})`
@@ -570,61 +570,7 @@ export default function TradingPage() {
     return searchTradeIndex(debouncedSearch);
   }, [debouncedSearch]);
 
-  if (loading) {
-    return (
-      <Box>
-        <Stack
-          direction={{ xs: 'column', sm: 'row' }}
-          spacing={1}
-          sx={{
-            alignItems: { xs: 'flex-start', sm: 'center' },
-            justifyContent: 'space-between',
-            mb: 3,
-          }}
-        >
-          <Typography variant="h4" sx={{ fontSize: { xs: '1.6rem', sm: '2rem' } }}>
-            Course Trading
-          </Typography>
-        </Stack>
-        <Stack spacing={2}>
-          {[1, 2, 3].map((i) => (
-            <Card key={i} variant="outlined">
-              <CardContent>
-                <Stack
-                  direction="row"
-                  sx={{
-                    justifyContent: 'space-between',
-                    mb: 2,
-                  }}
-                >
-                  <Stack direction="row" spacing={1}>
-                    <Skeleton variant="circular" width={32} height={32} />
-                    <Skeleton variant="text" width={80} />
-                  </Stack>
-                  <Stack direction="row" spacing={1}>
-                    <Skeleton variant="rounded" width={60} height={24} />
-                    <Skeleton variant="rounded" width={60} height={24} />
-                  </Stack>
-                </Stack>
-                <Skeleton variant="text" width="40%" />
-                <Skeleton variant="text" width="60%" />
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  sx={{
-                    mt: 2,
-                  }}
-                >
-                  <Skeleton variant="rounded" width={100} height={24} />
-                  <Skeleton variant="rounded" width={100} height={24} />
-                </Stack>
-              </CardContent>
-            </Card>
-          ))}
-        </Stack>
-      </Box>
-    );
-  }
+  if (loading) return <TradingSkeleton />;
 
   return (
     <Box>

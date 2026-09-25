@@ -146,7 +146,7 @@ export function SchedulePreferences({
     } finally {
       setSaving(false);
     }
-  }, [toast.error]);
+  }, [toast]);
 
   useEffect(() => {
     return () => {
@@ -486,9 +486,9 @@ export function SchedulePreferences({
 
         {!isValid && validationErrors.length > 0 && (
           <Box sx={{ mt: 2 }}>
-            {validationErrors.map((error, index) => (
+            {validationErrors.map((error) => (
               <Typography
-                key={index}
+                key={error}
                 variant="caption"
                 color="error"
                 sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}

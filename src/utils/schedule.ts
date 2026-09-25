@@ -7,6 +7,7 @@ import type {
   Section,
   TimeSlot,
 } from '../types';
+import { AFTERNOON_END_MINUTES, LUNCH_AFTER_MINUTES, MORNING_END_MINUTES } from './constants';
 
 const DAY_TO_NUMBER: Record<DayOfWeek, number> = {
   M: 0,
@@ -158,15 +159,18 @@ export function hasTimeConflict(slot1: TimeSlot, slot2: TimeSlot): boolean {
   return start1 < end2 && start2 < end1;
 }
 
+export function sectionsToCourseSelections(sections: Section[]): Record<string, string> {
+  return sections.reduce<Record<string, string>>((selections, section) => {
+    selections[section.courseId] = section.id;
+    return selections;
+  }, {});
+}
+
 export function isSlotActiveDuring(slot: TimeSlot, referenceDate: Date): boolean {
   if (!slot.startDate || !slot.endDate) return true;
   const start = new Date(slot.startDate);
   const end = new Date(slot.endDate);
   return referenceDate >= start && referenceDate <= end;
-}
-
-export function filterSlotsByDate(timeSlots: TimeSlot[], referenceDate: Date): TimeSlot[] {
-  return timeSlots.filter((slot) => isSlotActiveDuring(slot, referenceDate));
 }
 
 export function formatSlotDates(slot: TimeSlot): string {
@@ -179,9 +183,6 @@ export function formatSlotDates(slot: TimeSlot): string {
 }
 
 export const COMPACT_DAY_THRESHOLD = 3;
-const MORNING_END = 720;
-const AFTERNOON_END = 1020;
-const LUNCH_AFTER = 780;
 
 export interface ScheduleFeatures {
   creditDelta: number;
@@ -245,9 +246,9 @@ export function computeScheduleFeaturesWithContext(
       const end = timeToMinutesCached(slot.endTime);
       allSlots.push({ day: slot.day, start, end });
 
-      if (start < MORNING_END) hasMorning = true;
-      if (start >= MORNING_END && start < AFTERNOON_END) hasAfternoon = true;
-      if (start >= AFTERNOON_END) hasEvening = true;
+      if (start < MORNING_END_MINUTES) hasMorning = true;
+      if (start >= MORNING_END_MINUTES && start < AFTERNOON_END_MINUTES) hasAfternoon = true;
+      if (start >= AFTERNOON_END_MINUTES) hasEvening = true;
 
       if (start < preferredStart) outsideWindowMinutes += preferredStart - start;
       if (end > preferredEnd) outsideWindowMinutes += end - preferredEnd;
@@ -314,8 +315,8 @@ export function computeScheduleFeaturesWithContext(
         dayEndsBeforeLunch = false;
         dayStartsAfterLunch = false;
       }
-      if (s.end <= MORNING_END) dayEndsBeforeLunch = true;
-      if (s.start >= LUNCH_AFTER) dayStartsAfterLunch = true;
+      if (s.end <= MORNING_END_MINUTES) dayEndsBeforeLunch = true;
+      if (s.start >= LUNCH_AFTER_MINUTES) dayStartsAfterLunch = true;
     }
     if (hasLunchBreak === 0 && dayEndsBeforeLunch && dayStartsAfterLunch) {
       hasLunchBreak = 1;
@@ -391,8 +392,11 @@ export function scoreSchedulesRelative(
     let total = 0;
     let totalWeight = 0;
     for (const spec of specs) {
-      const min = mins.get(spec.key)!;
-      const max = maxs.get(spec.key)!;
+      const min = mins.get(spec.key);
+      const max = maxs.get(spec.key);
+      if (min === undefined || max === undefined) {
+        throw new Error(`Missing feature range: ${spec.key}`);
+      }
       const range = max - min;
       let norm: number;
       if (range === 0) {

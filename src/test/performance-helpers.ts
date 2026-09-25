@@ -1,9 +1,15 @@
 import type { DayOfWeek, Preferences, Schedule, Section, TimeSlot } from '../types';
 
-export const makeTimeSlot = (day: DayOfWeek, startTime: string, endTime: string): TimeSlot => ({
+export const makeTimeSlot = (
+  day: DayOfWeek,
+  startTime: string,
+  endTime: string,
+  dateRange?: Pick<TimeSlot, 'startDate' | 'endDate'>,
+): TimeSlot => ({
   day,
   startTime,
   endTime,
+  ...dateRange,
 });
 
 export const makeSection = (overrides: Partial<Section>): Section => ({
@@ -31,7 +37,6 @@ export const basePreferences: Preferences = {
 
 export const makeSchedule = (sections: Section[], totalCredits: number): Schedule => ({
   id: 'sched',
-  name: 'Test',
   sections,
   totalCredits,
   score: 0,

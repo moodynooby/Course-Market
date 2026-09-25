@@ -57,7 +57,6 @@ interface MiniSearchResult {
   id: string | number;
   score: number;
   match: Record<string, string[]>;
-  [key: string]: any;
 }
 
 let courseIndex: MiniSearch | null = null;
@@ -244,16 +243,20 @@ export const searchSchedules = (schedules: GeneratedSchedule[], query: string): 
     scheduleCache.set(schedules, cached);
   }
 
-  const results = cached.index.search(query) as unknown as MiniSearchResult[];
+  const activeCache = cached;
+  const results = activeCache.index.search(query) as unknown as MiniSearchResult[];
 
-  return results.map((r) => {
-    const schedule = cached!.lookup.get(r.id.toString())!;
-    return {
-      schedule,
-      relevanceScore: r.score,
-      matchedCriteria: Object.keys(r.match),
-      explanation: `Matched ${Object.keys(r.match).join(', ')}`,
-    };
+  return results.flatMap((r) => {
+    const schedule = activeCache.lookup.get(r.id.toString());
+    if (!schedule) return [];
+    return [
+      {
+        schedule,
+        relevanceScore: r.score,
+        matchedCriteria: Object.keys(r.match),
+        explanation: `Matched ${Object.keys(r.match).join(', ')}`,
+      },
+    ];
   });
 };
 
@@ -279,5 +282,8 @@ export const searchProfessors = (professors: Professor[], query: string): Profes
   }
 
   const results = cached.index.search(query) as unknown as MiniSearchResult[];
-  return results.map((r) => cached!.lookup.get(r.id)!);
+  return results.flatMap((r) => {
+    const professor = cached.lookup.get(r.id);
+    return professor ? [professor] : [];
+  });
 };

@@ -1,5 +1,5 @@
 import { desc, eq } from 'drizzle-orm';
-import { ZodError } from 'zod';
+import { ZodError, type z } from 'zod';
 import { db } from '../../db';
 import * as schema from '../../db/schema';
 import { formatZodError, tradeSchema, tradeUpdateSchema } from '../../db/validation';
@@ -46,7 +46,7 @@ export const handler = withAuth(async (event, user) => {
   }
 
   if (httpMethod === 'POST' && path.endsWith('/trades')) {
-    let requestBody;
+    let requestBody: z.infer<typeof tradeSchema>;
     try {
       requestBody = tradeSchema.parse(body ? JSON.parse(body) : {});
     } catch (e) {
@@ -94,7 +94,7 @@ export const handler = withAuth(async (event, user) => {
       return jsonResponse(400, { error: 'Invalid trade ID' });
     }
 
-    let requestBody;
+    let requestBody: z.infer<typeof tradeUpdateSchema>;
     try {
       requestBody = tradeUpdateSchema.parse(body ? JSON.parse(body) : {});
     } catch (e) {

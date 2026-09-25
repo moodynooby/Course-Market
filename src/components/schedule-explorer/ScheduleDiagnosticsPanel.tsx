@@ -43,9 +43,9 @@ export function ScheduleDiagnosticsPanel({
 
       {diagnostics.reasons.length > 0 && (
         <Stack spacing={1.5} sx={{ mb: 3, textAlign: 'left' }}>
-          {diagnostics.reasons.map((reason, i) => (
+          {diagnostics.reasons.map((reason) => (
             <Box
-              key={i}
+              key={`${reason.message}-${reason.detail}`}
               sx={{
                 p: 2,
                 borderRadius: 2,
@@ -70,9 +70,9 @@ export function ScheduleDiagnosticsPanel({
             Suggestions
           </Typography>
           <Stack spacing={1}>
-            {diagnostics.suggestions.map((suggestion, i) => (
+            {diagnostics.suggestions.map((suggestion) => (
               <Chip
-                key={i}
+                key={suggestion}
                 label={suggestion}
                 onClick={() => onSuggestionClick(suggestion)}
                 variant="outlined"

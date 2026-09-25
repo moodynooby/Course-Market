@@ -2,7 +2,14 @@ export const STORAGE_KEYS = {
   PREFERENCES: 'auraishub_preferences',
   PREFS_DIRTY: 'auraishub_prefs_dirty',
   THEME_MODE: 'theme-mode',
+  PUSH_TOKEN: 'aurais:pushToken',
 } as const;
+
+export const MORNING_END_MINUTES = 720;
+export const AFTERNOON_END_MINUTES = 1020;
+export const LUNCH_AFTER_MINUTES = 780;
+export const SCORE_EXCELLENT = 80;
+export const SCORE_GOOD = 60;
 
 import type { Preferences } from '../types';
 

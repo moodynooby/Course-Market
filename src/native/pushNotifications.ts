@@ -18,14 +18,13 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { PushNotifications, type Token } from '@capacitor/push-notifications';
 import { useCallback, useEffect, useRef } from 'react';
 import { api } from '../services/apiClient';
+import { storage } from '../utils/storage';
 import { isNativePlatform } from './capacitor';
-
-const TOKEN_STORAGE_KEY = 'aurais:pushToken';
 
 async function registerWithBackend(authToken: string, registration: Token): Promise<void> {
   try {
     await api.post('/user-profile', { pushNotificationToken: registration.value }, authToken);
-    window.localStorage.setItem(TOKEN_STORAGE_KEY, registration.value);
+    storage.set(storage.keys.PUSH_TOKEN, registration.value);
   } catch (error) {
     // Never block the app on push registration failures.
     console.error('[PushNotifications] Failed to register token with backend:', error);
@@ -37,7 +36,7 @@ async function registerWithBackend(authToken: string, registration: Token): Prom
  * received token, or null when not on a native platform or when registration
  * failed.
  */
-export async function registerPushNotifications(_authToken?: string): Promise<string | null> {
+export async function registerPushNotifications(): Promise<string | null> {
   if (!isNativePlatform()) return null;
 
   try {
@@ -47,7 +46,7 @@ export async function registerPushNotifications(_authToken?: string): Promise<st
     await PushNotifications.register();
     // The actual token arrives via the 'registration' event; we resolve it
     // from storage (set by the listener registered in usePushNotifications).
-    return window.localStorage.getItem(TOKEN_STORAGE_KEY);
+    return storage.get<string | null>(storage.keys.PUSH_TOKEN, null);
   } catch (error) {
     console.error('[PushNotifications] Registration failed:', error);
     return null;
@@ -113,7 +112,7 @@ export function usePushNotifications({ getToken }: { getToken: () => Promise<str
 
   const unregister = useCallback(async () => {
     if (!isNativePlatform()) return;
-    window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+    storage.remove(storage.keys.PUSH_TOKEN);
     await PushNotifications.unregister();
   }, []);
 

@@ -1,4 +1,3 @@
-import path from 'node:path';
 import netlify from '@netlify/vite-plugin';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
@@ -10,22 +9,8 @@ export default defineConfig({
     }),
     netlify(),
   ],
-  resolve: {
-    alias: {
-      '@': path.resolve(import.meta.dirname, './src'),
-      '@components': path.resolve(import.meta.dirname, './src/components'),
-      '@pages': path.resolve(import.meta.dirname, './src/pages'),
-      '@context': path.resolve(import.meta.dirname, './src/context'),
-      '@hooks': path.resolve(import.meta.dirname, './src/hooks'),
-      '@utils': path.resolve(import.meta.dirname, './src/utils'),
-      '@types': path.resolve(import.meta.dirname, './src/types'),
-      '@services': path.resolve(import.meta.dirname, './src/services'),
-      '@assets': path.resolve(import.meta.dirname, './src/assets'),
-    },
-  },
   build: {
     rollupOptions: {
-      // Ship only the production entry; preview.html is a local dev harness
       input: {
         main: './index.html',
       },
