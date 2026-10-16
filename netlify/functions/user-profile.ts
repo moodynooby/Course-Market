@@ -76,7 +76,7 @@ export const handler = withAuth(async (event, user) => {
         .insert(schema.userProfiles)
         .values({
           auth0UserId: user.sub,
-          phone: input.phone,
+          phone: input.phone || '',
           semesterId: input.semesterId || null,
           preferences: input.preferences || null,
           courseSelections: input.courseSelections || null,

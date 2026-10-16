@@ -46,8 +46,10 @@ export const tradeUpdateSchema = z
 export type TradeInput = z.infer<typeof tradeSchema>;
 export type TradeUpdateInput = z.infer<typeof tradeUpdateSchema>;
 
+export const optionalPhoneSchema = z.union([phoneSchema, z.literal('')]).optional();
+
 export const userProfileSchema = z.object({
-  phone: phoneSchema,
+  phone: optionalPhoneSchema,
   semesterId: z.string().max(50).optional(),
   preferences: z.record(z.string(), z.unknown()).optional(),
   courseSelections: z.record(z.string(), z.string()).optional(),
