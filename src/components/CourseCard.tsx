@@ -6,7 +6,6 @@ import {
   CardContent,
   Chip,
   Collapse,
-  FormControlLabel,
   IconButton,
   Radio,
   Stack,
@@ -14,9 +13,10 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { forwardRef, memo } from 'react';
+import { forwardRef, memo, useMemo } from 'react';
 import type { ProfessorRatingInfo } from '../hooks/useProfessorsMap';
 import type { Course, Section } from '../types';
+import { splitInstructorNames } from '../utils/instructor-name';
 import { formatSlotDates, formatTimeSlots } from '../utils/schedule';
 import { InstructorChip } from './InstructorChip';
 
@@ -27,6 +27,7 @@ interface CourseCardProps {
   pinnedSectionId?: string;
   isExpanded: boolean;
   conflictIds: Set<string>;
+  conflictDetails?: Map<string, string>;
   onExpand: () => void;
   onSelectSection: (sectionId: string) => void;
   onTogglePin?: (sectionId: string) => void;
@@ -54,6 +55,7 @@ export const CourseCard = memo(
       pinnedSectionId,
       isExpanded,
       conflictIds,
+      conflictDetails,
       onExpand,
       onSelectSection,
       onTogglePin,
@@ -63,63 +65,230 @@ export const CourseCard = memo(
   ) {
     const theme = useTheme();
 
+    const selectedSection = useMemo(
+      () => sections.find((s) => s.id === selectedSectionId),
+      [sections, selectedSectionId],
+    );
+
+    const instructors = useMemo(() => {
+      const set = new Set<string>();
+      for (const section of sections) {
+        if (section.instructor) {
+          for (const name of splitInstructorNames(section.instructor)) {
+            set.add(name);
+          }
+        }
+      }
+      return Array.from(set);
+    }, [sections]);
+
+    const seatStats = useMemo(() => {
+      let totalCap = 0;
+      let totalEnrolled = 0;
+      let hasData = false;
+      for (const section of sections) {
+        if (section.capacity > 0) {
+          hasData = true;
+          totalCap += section.capacity;
+          totalEnrolled += section.enrolled;
+        }
+      }
+      return {
+        hasData,
+        openSeats: Math.max(0, totalCap - totalEnrolled),
+        totalCap,
+        totalEnrolled,
+      };
+    }, [sections]);
+
     return (
-      <Card ref={ref} variant="outlined" sx={{ mb: 2 }}>
-        <CardContent sx={{ pb: 1 }}>
-          <Stack
-            direction="row"
-            sx={{
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 600,
-                }}
-              >
-                {course.code}
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'text.secondary',
-                }}
-              >
-                {course.name} • {course.credits} credits
-              </Typography>
-            </Box>
+      <Card
+        ref={ref}
+        variant="outlined"
+        sx={{
+          mb: 2,
+          borderRadius: 3,
+          overflow: 'hidden',
+          transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+          borderColor: selectedSection ? alpha(theme.palette.success.main, 0.4) : 'divider',
+          '&:hover': {
+            borderColor: selectedSection
+              ? theme.palette.success.main
+              : alpha(theme.palette.primary.main, 0.3),
+          },
+        }}
+      >
+        <Box
+          onClick={onExpand}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onExpand();
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-expanded={isExpanded}
+          aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${course.code} ${course.name}`}
+          sx={{
+            cursor: 'pointer',
+            p: 2,
+            pb: isExpanded ? 1.5 : 2,
+            transition: 'background-color 0.15s ease',
+            '&:hover': {
+              bgcolor: alpha(theme.palette.action.hover, 0.4),
+            },
+            '&:focus-visible': {
+              outline: `2px solid ${theme.palette.primary.main}`,
+              outlineOffset: -2,
+            },
+          }}
+        >
+          <Stack spacing={1}>
             <Stack
               direction="row"
               spacing={1}
               sx={{
                 alignItems: 'center',
+                justifyContent: 'space-between',
               }}
             >
-              {selectedSectionId && (
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 0.75 }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 700,
+                    lineHeight: 1.2,
+                    color: 'text.primary',
+                  }}
+                >
+                  {course.code}
+                </Typography>
                 <Chip
                   size="small"
-                  label={`Section ${sections.find((s) => s.id === selectedSectionId)?.sectionNumber}`}
-                  color="success"
+                  label={course.subject}
+                  variant="outlined"
+                  sx={{
+                    height: 20,
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    borderRadius: 1,
+                  }}
                 />
-              )}
-              <Tooltip title={isExpanded ? 'Collapse' : 'Expand'}>
-                <IconButton onClick={onExpand} aria-label={isExpanded ? 'Collapse' : 'Expand'}>
-                  {isExpanded ? <ExpandLess /> : <ExpandMore />}
-                </IconButton>
-              </Tooltip>
+                <Chip
+                  size="small"
+                  label={`${course.credits} cr`}
+                  sx={{
+                    height: 20,
+                    fontSize: '0.7rem',
+                    borderRadius: 1,
+                    bgcolor: alpha(theme.palette.secondary.main, 0.1),
+                    color: 'secondary.main',
+                  }}
+                />
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                  {sections.length} {sections.length === 1 ? 'section' : 'sections'}
+                </Typography>
+              </Stack>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                {selectedSection && (
+                  <Chip
+                    size="small"
+                    label={`Sec ${selectedSection.sectionNumber} Selected`}
+                    color="success"
+                    sx={{ fontWeight: 600 }}
+                  />
+                )}
+                <Tooltip title={isExpanded ? 'Collapse' : 'Expand'}>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onExpand();
+                    }}
+                    aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                    tabIndex={-1}
+                  >
+                    {isExpanded ? <ExpandLess /> : <ExpandMore />}
+                  </IconButton>
+                </Tooltip>
+              </Stack>
             </Stack>
+
+            <Typography
+              variant="body2"
+              sx={{
+                fontWeight: 500,
+                color: 'text.secondary',
+              }}
+            >
+              {course.name}
+            </Typography>
+
+            {!isExpanded && (
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={{ xs: 0.5, sm: 2 }}
+                sx={{
+                  color: 'text.secondary',
+                  fontSize: '0.75rem',
+                }}
+              >
+                {instructors.length > 0 && (
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    Taught by: {instructors.slice(0, 3).join(', ')}
+                    {instructors.length > 3 ? '…' : ''}
+                  </Typography>
+                )}
+                {seatStats.hasData && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: seatStats.openSeats === 0 ? 'error.main' : 'text.secondary',
+                      fontWeight: seatStats.openSeats === 0 ? 600 : 400,
+                    }}
+                  >
+                    {seatStats.openSeats === 0
+                      ? 'All sections full'
+                      : `${seatStats.openSeats} spots open across sections`}
+                  </Typography>
+                )}
+              </Stack>
+            )}
           </Stack>
-        </CardContent>
+        </Box>
+
         <Collapse in={isExpanded} timeout="auto" unmountOnExit>
           <CardContent sx={{ pt: 0, px: 2, pb: 2 }}>
-            <Stack spacing={2} sx={{ width: '100%' }}>
+            {course.description && (
+              <Box
+                sx={{
+                  mb: 2,
+                  p: 1.5,
+                  borderRadius: 2,
+                  bgcolor: alpha(theme.palette.action.hover, 0.25),
+                  borderLeft: `3px solid ${theme.palette.primary.main}`,
+                }}
+              >
+                <Typography variant="body2" sx={{ color: 'text.secondary', lineHeight: 1.5 }}>
+                  {course.description}
+                </Typography>
+              </Box>
+            )}
+            <Stack spacing={1.5} sx={{ width: '100%' }}>
               {sections.map((section) => {
                 const isSelected = selectedSectionId === section.id;
                 const conflict = conflictIds.has(section.id);
-                const { dayDisplay, timeDisplay } = formatTimeSlots(section.timeSlots);
+                const conflictMessage = conflictDetails?.get(section.id);
+                const { timeDisplay } = formatTimeSlots(section.timeSlots);
+                const uniqueDays = Array.from(new Set(section.timeSlots.map((s) => s.day)));
+                const seatsLeft = Math.max(0, section.capacity - section.enrolled);
+                const isFull = section.capacity > 0 && seatsLeft === 0;
+                const isNearFull = section.capacity > 0 && seatsLeft > 0 && seatsLeft <= 5;
 
                 return (
                   <Card
@@ -140,112 +309,159 @@ export const CourseCard = memo(
                     sx={{
                       cursor: 'pointer',
                       transition:
-                        'transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease',
-                      borderRadius: 3,
+                        'transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
+                      borderRadius: 2.5,
+                      borderWidth: isSelected ? 2 : 1,
+                      borderColor: isSelected
+                        ? 'success.main'
+                        : conflict
+                          ? alpha(theme.palette.error.main, 0.5)
+                          : 'divider',
                       bgcolor: isSelected
                         ? alpha(theme.palette.success.main, 0.08)
                         : conflict
-                          ? alpha(theme.palette.error.main, 0.08)
+                          ? alpha(theme.palette.error.main, 0.04)
                           : alpha(theme.palette.action.hover, 0.15),
-                      color: isSelected ? 'success.main' : conflict ? 'error.main' : 'inherit',
                       '&:hover': {
-                        transform: 'translateY(-2px)',
+                        transform: 'translateY(-1px)',
                         bgcolor: isSelected
                           ? alpha(theme.palette.success.main, 0.12)
-                          : alpha(theme.palette.action.hover, 0.5),
+                          : alpha(theme.palette.action.hover, 0.4),
                       },
                     }}
                   >
-                    <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
                       <Stack
-                        direction="row"
+                        direction={{ xs: 'column', sm: 'row' }}
+                        spacing={1.5}
                         sx={{
-                          alignItems: 'center',
+                          alignItems: { xs: 'flex-start', sm: 'center' },
                           justifyContent: 'space-between',
-                          py: 0.5,
                         }}
                       >
-                        <Box sx={{ flex: 1 }}>
-                          <FormControlLabel
-                            value={section.id}
+                        <Stack
+                          direction="row"
+                          spacing={1.5}
+                          sx={{ alignItems: 'flex-start', flex: 1, minWidth: 0 }}
+                        >
+                          <Radio
+                            checked={isSelected}
+                            onChange={() => onSelectSection(section.id)}
                             onClick={(e) => e.stopPropagation()}
-                            control={
-                              <Radio
-                                checked={isSelected}
-                                onChange={() => onSelectSection(section.id)}
-                                color="success"
-                                sx={{ ml: -1.5, mr: 1 }}
-                              />
-                            }
-                            label={
-                              <Stack spacing={1}>
-                                <Typography
-                                  variant="subtitle2"
-                                  sx={{
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  Section {section.sectionNumber}
-                                </Typography>
-                                <Stack direction="row" spacing={2}>
-                                  <Stack
-                                    direction="row"
-                                    spacing={0.5}
-                                    sx={{
-                                      alignItems: 'center',
-                                    }}
-                                  >
-                                    <InstructorChip
-                                      instructor={section.instructor}
-                                      professorRatings={professorRatings}
-                                    />
-                                  </Stack>
-                                  <Stack
-                                    direction="row"
-                                    spacing={0.5}
-                                    sx={{
-                                      alignItems: 'center',
-                                    }}
-                                  >
-                                    <Schedule sx={{ fontSize: 16 }} />
-                                    <Typography variant="caption">
-                                      {dayDisplay && timeDisplay ? (
-                                        <>
-                                          {dayDisplay}
-                                          <Box component="span" sx={{ mx: 0.5 }}>
-                                            •
-                                          </Box>
-                                          {timeDisplay}
-                                          {section.timeSlots[0]?.startDate &&
-                                            section.timeSlots[0]?.endDate && (
-                                              <>
-                                                <Box component="span" sx={{ mx: 0.5 }}>
-                                                  •
-                                                </Box>
-                                                {formatSlotDates(section.timeSlots[0])}
-                                              </>
-                                            )}
-                                        </>
-                                      ) : (
-                                        'No schedule'
-                                      )}
-                                    </Typography>
-                                  </Stack>
-                                </Stack>
-                              </Stack>
-                            }
-                            sx={{
-                              ml: -1,
-                              flex: 1,
-                              '& .MuiFormControlLabel-label': { width: '100%' },
+                            color="success"
+                            size="small"
+                            sx={{ mt: -0.25, p: 0.5 }}
+                            slotProps={{
+                              input: { 'aria-label': `Select section ${section.sectionNumber}` },
                             }}
                           />
-                        </Box>
+                          <Stack spacing={0.75} sx={{ flex: 1, minWidth: 0 }}>
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              sx={{ alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}
+                            >
+                              <Typography
+                                variant="subtitle2"
+                                sx={{
+                                  fontWeight: 700,
+                                  color: isSelected ? 'success.main' : 'text.primary',
+                                }}
+                              >
+                                Section {section.sectionNumber}
+                              </Typography>
+                              {section.capacity > 0 && (
+                                <Chip
+                                  size="small"
+                                  variant="outlined"
+                                  label={
+                                    isFull
+                                      ? 'Full (0 seats)'
+                                      : `${seatsLeft} ${seatsLeft === 1 ? 'seat' : 'seats'} left (${section.enrolled}/${section.capacity})`
+                                  }
+                                  color={isFull ? 'error' : isNearFull ? 'warning' : 'default'}
+                                  sx={{
+                                    height: 20,
+                                    fontSize: '0.7rem',
+                                    fontWeight: isFull || isNearFull ? 600 : 400,
+                                    borderRadius: 1,
+                                  }}
+                                />
+                              )}
+                            </Stack>
+
+                            <Stack
+                              direction="row"
+                              spacing={2}
+                              sx={{
+                                alignItems: 'center',
+                                flexWrap: 'wrap',
+                                gap: 1,
+                              }}
+                            >
+                              <InstructorChip
+                                instructor={section.instructor}
+                                professorRatings={professorRatings}
+                              />
+                              <Stack
+                                direction="row"
+                                spacing={0.75}
+                                sx={{
+                                  alignItems: 'center',
+                                  flexWrap: 'wrap',
+                                }}
+                              >
+                                <Schedule sx={{ fontSize: 15, color: 'text.secondary' }} />
+                                {uniqueDays.length > 0 ? (
+                                  <Stack
+                                    direction="row"
+                                    spacing={0.5}
+                                    sx={{ alignItems: 'center' }}
+                                  >
+                                    {uniqueDays.map((day) => (
+                                      <Box
+                                        key={day}
+                                        component="span"
+                                        sx={{
+                                          px: 0.5,
+                                          py: 0.1,
+                                          borderRadius: 0.75,
+                                          fontSize: '0.68rem',
+                                          fontWeight: 700,
+                                          bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                          color: 'primary.main',
+                                        }}
+                                      >
+                                        {day}
+                                      </Box>
+                                    ))}
+                                    <Typography
+                                      variant="caption"
+                                      sx={{ color: 'text.secondary', ml: 0.5 }}
+                                    >
+                                      {timeDisplay}
+                                      {section.timeSlots[0]?.startDate &&
+                                        section.timeSlots[0]?.endDate && (
+                                          <> • {formatSlotDates(section.timeSlots[0])}</>
+                                        )}
+                                    </Typography>
+                                  </Stack>
+                                ) : (
+                                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                                    No schedule (TBA)
+                                  </Typography>
+                                )}
+                              </Stack>
+                            </Stack>
+                          </Stack>
+                        </Stack>
+
                         <Stack
                           direction="row"
                           spacing={1}
                           sx={{
                             alignItems: 'center',
+                            alignSelf: { xs: 'flex-end', sm: 'center' },
                           }}
                         >
                           {isSelected && (
@@ -254,8 +470,8 @@ export const CourseCard = memo(
                                 <Tooltip
                                   title={
                                     pinnedSectionId === section.id
-                                      ? 'Unpin section — allow alternatives'
-                                      : 'Pin section — only use this section'
+                                      ? 'Unpin section — allow alternatives in generator'
+                                      : 'Pin section — lock this specific section'
                                   }
                                 >
                                   <IconButton
@@ -269,7 +485,7 @@ export const CourseCard = memo(
                                       e.stopPropagation();
                                       onTogglePin(section.id);
                                     }}
-                                    sx={{ borderRadius: 2 }}
+                                    sx={{ borderRadius: 1.5 }}
                                   >
                                     <PushPin
                                       fontSize="small"
@@ -287,17 +503,41 @@ export const CourseCard = memo(
                                   </IconButton>
                                 </Tooltip>
                               )}
-                              <Chip size="small" label="Selected" color="success" />
+                              <Chip
+                                size="small"
+                                label="Selected"
+                                color="success"
+                                sx={{ fontWeight: 600 }}
+                              />
                             </>
                           )}
                           {conflict && !isSelected && (
-                            <Chip
-                              size="small"
-                              icon={<Warning />}
-                              label="Conflict"
-                              color="error"
-                              variant="outlined"
-                            />
+                            <Tooltip
+                              title={
+                                conflictMessage
+                                  ? `Time conflict with ${conflictMessage}`
+                                  : 'Conflicts with a selected course'
+                              }
+                              arrow
+                            >
+                              <Chip
+                                size="small"
+                                icon={<Warning />}
+                                label={
+                                  conflictMessage ? `Conflict: ${conflictMessage}` : 'Conflict'
+                                }
+                                color="error"
+                                variant="outlined"
+                                sx={{
+                                  maxWidth: { xs: 200, sm: 260 },
+                                  '& .MuiChip-label': {
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                  },
+                                }}
+                              />
+                            </Tooltip>
                           )}
                         </Stack>
                       </Stack>

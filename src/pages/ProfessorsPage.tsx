@@ -239,7 +239,8 @@ export default function ProfessorsPage() {
                 transition: 'transform 0.2s',
                 '&:hover': {
                   transform: 'translateY(-4px)',
-                  borderColor: 'secondary.main',
+                  borderColor: 'primary.main',
+                  boxShadow: '0 8px 24px -4px rgba(79, 70, 229, 0.15)',
                 },
               }}
             >

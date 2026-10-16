@@ -27,9 +27,21 @@ export function ScheduleDetails({
             Schedule Details
           </Typography>
           <Chip
-            label={`Score: ${selectedSchedule.score}`}
-            color={selectedSchedule.score >= SCORE_EXCELLENT ? 'success' : 'default'}
-            sx={{ borderRadius: 2, fontWeight: 600 }}
+            label={`Score: ${selectedSchedule.score} • ${
+              selectedSchedule.score >= SCORE_EXCELLENT
+                ? '✨ Peak Aura'
+                : selectedSchedule.score >= 60
+                  ? '⚡ Strong Flow'
+                  : '⚠️ Conflicts'
+            }`}
+            color={
+              selectedSchedule.score >= SCORE_EXCELLENT
+                ? 'success'
+                : selectedSchedule.score >= 60
+                  ? 'primary'
+                  : 'warning'
+            }
+            sx={{ borderRadius: 2, fontWeight: 700 }}
           />
           <Chip
             label={`${selectedSchedule.totalCredits} Credits`}

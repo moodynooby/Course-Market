@@ -76,7 +76,7 @@ a,
 .active-indicator {
   width: 8px;
   height: 8px;
-  background: #0061a4;
+  background: #4f46e5;
   border-radius: 50%;
   position: relative;
 }
@@ -89,7 +89,7 @@ a,
   transform: translate(-50%, -50%);
   width: 16px;
   height: 16px;
-  background: #0061a4;
+  background: #4f46e5;
   border-radius: 50%;
   opacity: 0.3;
   z-index: -1;

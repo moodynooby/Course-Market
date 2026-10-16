@@ -41,7 +41,6 @@ import { EmptyState } from '../components/EmptyState';
 import { TradingSkeleton } from '../components/trading/TradingSkeleton';
 import { useAuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { hapticError, hapticSuccess } from '../native/haptics';
 import { formatApiErrorDetails } from '../services/apiClient';
 import { getSemesterData, getSemesters } from '../services/coursesApi';
 import { buildTradeIndex, searchTradeIndex } from '../services/search';
@@ -52,6 +51,7 @@ import {
   updateTrade,
 } from '../services/tradesApi';
 import type { Course, Section, TradePost } from '../types';
+import { hapticError, hapticSuccess } from '../utils/haptics';
 import { hasSectionConflict } from '../utils/schedule';
 import { timeAgo } from '../utils/timeAgo';
 
@@ -167,54 +167,116 @@ const TradeCard = memo(function TradeCard({
           />
         </Stack>
 
-        <Box
-          sx={{
-            display: 'inline-block',
-            bgcolor: 'primary.main',
-            color: 'white',
-            px: 1.5,
-            py: 0.5,
-            borderRadius: 1,
-            mb: 1.5,
-          }}
-        >
-          <Typography
-            variant="subtitle2"
+        <Box sx={{ mb: 1.5 }}>
+          <Box
             sx={{
-              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              bgcolor: alpha(
+                theme.palette.primary.main,
+                theme.palette.mode === 'dark' ? 0.2 : 0.08,
+              ),
+              color: 'primary.main',
+              border: '1px solid',
+              borderColor: alpha(
+                theme.palette.primary.main,
+                theme.palette.mode === 'dark' ? 0.35 : 0.2,
+              ),
+              px: 1.25,
+              py: 0.35,
+              borderRadius: 1.5,
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              letterSpacing: '0.02em',
             }}
           >
             {trade.courseCode}
-          </Typography>
+          </Box>
+          {trade.courseName && (
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+                mt: 0.5,
+                fontWeight: 500,
+              }}
+            >
+              {trade.courseName}
+            </Typography>
+          )}
         </Box>
-        {trade.courseName && (
-          <Typography
-            variant="body2"
+
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            p: 1.25,
+            borderRadius: 2,
+            bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.1 : 0.04),
+            border: '1px solid',
+            borderColor: alpha(theme.palette.divider, 0.8),
+            mb: 1.5,
+            gap: 1,
+          }}
+        >
+          <Box sx={{ flex: 1, textAlign: 'center' }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                fontWeight: 600,
+                display: 'block',
+                fontSize: '0.7rem',
+              }}
+            >
+              OFFERING
+            </Typography>
+            <Typography
+              variant="subtitle2"
+              sx={{ fontWeight: 800, color: 'success.main', mt: 0.25 }}
+            >
+              Sec {trade.sectionOffered}
+            </Typography>
+          </Box>
+
+          <Box
             sx={{
-              color: 'text.secondary',
-              mb: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 28,
+              height: 28,
+              borderRadius: '50%',
+              bgcolor: 'background.paper',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+              color: 'primary.main',
+              flexShrink: 0,
             }}
           >
-            {trade.courseName}
-          </Typography>
-        )}
+            <SwapHoriz fontSize="small" />
+          </Box>
 
-        <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
-          <Chip
-            icon={<ArrowForward />}
-            label={`Has: ${trade.sectionOffered}`}
-            size="small"
-            color="success"
-            variant="outlined"
-          />
-          <Chip
-            icon={<ArrowBack />}
-            label={`Wants: ${trade.sectionWanted}`}
-            size="small"
-            color="primary"
-            variant="outlined"
-          />
-        </Stack>
+          <Box sx={{ flex: 1, textAlign: 'center' }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                fontWeight: 600,
+                display: 'block',
+                fontSize: '0.7rem',
+              }}
+            >
+              WANTS
+            </Typography>
+            <Typography
+              variant="subtitle2"
+              sx={{ fontWeight: 800, color: 'primary.main', mt: 0.25 }}
+            >
+              Sec {trade.sectionWanted}
+            </Typography>
+          </Box>
+        </Box>
 
         {conflicts.length > 0 && (
           <Stack spacing={0.5} sx={{ mb: 1.5 }}>
@@ -265,7 +327,7 @@ const TradeCard = memo(function TradeCard({
               <Button
                 size="small"
                 variant="contained"
-                color="secondary"
+                color="primary"
                 startIcon={<ContactPhone />}
                 onClick={() => onContact(trade.contactPhone)}
               >
@@ -601,7 +663,7 @@ export default function TradingPage() {
           </Button>
           <Button
             variant="contained"
-            color="secondary"
+            color="primary"
             startIcon={<SwapHoriz />}
             onClick={() => {
               setEditingTrade(null);
@@ -635,7 +697,7 @@ export default function TradingPage() {
           action={
             <Button
               variant="contained"
-              color="secondary"
+              color="primary"
               startIcon={<SwapHoriz />}
               onClick={() => {
                 setEditingTrade(null);

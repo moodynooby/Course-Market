@@ -1,14 +1,14 @@
-import { Dashboard, MenuBook, Person, SwapHoriz } from '@mui/icons-material';
+import {
+  CalendarMonthRounded,
+  MenuBookRounded,
+  SchoolRounded,
+  SwapHorizRounded,
+} from '@mui/icons-material';
 import { BottomNavigation, BottomNavigationAction, Box } from '@mui/material';
 import { Link, useLocation } from 'react-router-dom';
-import { isNativePlatform } from '../../native/capacitor';
 
 export function MobileNav() {
   const location = useLocation();
-
-  // Native apps show the header tabs instead, so the bottom nav is redundant there.
-  if (isNativePlatform()) return null;
-
   return (
     <Box
       component="nav"
@@ -30,34 +30,34 @@ export function MobileNav() {
         <BottomNavigationAction
           label="Dashboard"
           value="/"
-          icon={<Dashboard />}
+          icon={<CalendarMonthRounded />}
           component={Link}
           to="/"
-          sx={{ '&.Mui-selected': { color: 'secondary.main' } }}
+          sx={{ '&.Mui-selected': { color: 'primary.main', fontWeight: 700 } }}
         />
         <BottomNavigationAction
           label="Trading"
           value="/trading"
-          icon={<SwapHoriz />}
+          icon={<SwapHorizRounded />}
           component={Link}
           to="/trading"
-          sx={{ '&.Mui-selected': { color: 'secondary.main' } }}
+          sx={{ '&.Mui-selected': { color: '#f59e0b', fontWeight: 700 } }}
         />
         <BottomNavigationAction
           label="Rate My Prof"
           value="/professors"
-          icon={<Person />}
+          icon={<SchoolRounded />}
           component={Link}
           to="/professors"
-          sx={{ '&.Mui-selected': { color: 'secondary.main' } }}
+          sx={{ '&.Mui-selected': { color: '#10b981', fontWeight: 700 } }}
         />
         <BottomNavigationAction
           label="Courses"
           value="/courses"
-          icon={<MenuBook />}
+          icon={<MenuBookRounded />}
           component={Link}
           to="/courses"
-          sx={{ '&.Mui-selected': { color: 'secondary.main' } }}
+          sx={{ '&.Mui-selected': { color: '#0284c7', fontWeight: 700 } }}
         />
       </BottomNavigation>
     </Box>

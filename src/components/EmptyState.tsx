@@ -57,34 +57,31 @@ export function EmptyState({
         alignItems: 'center',
         justifyContent: 'center',
         textAlign: 'center',
-        borderRadius: 4,
+        borderRadius: 3,
         bgcolor: 'background.paper',
+        border: '1px solid',
+        borderColor: theme.palette.divider,
       }}
     >
       <Box
         sx={{
           width: iconSize,
           height: iconSize,
-          borderRadius: '50%',
-          bgcolor: alpha(theme.palette.primary.main, 0.1),
+          borderRadius: 2.5,
+          bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.15 : 0.08),
+          border: '1px solid',
+          borderColor: alpha(
+            theme.palette.primary.main,
+            theme.palette.mode === 'dark' ? 0.25 : 0.15,
+          ),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           mb: 2,
-          position: 'relative',
+          color: 'primary.main',
         }}
       >
-        <Box
-          sx={{
-            width: iconSize * 0.5,
-            height: iconSize * 0.5,
-            borderRadius: '50%',
-            bgcolor: alpha(theme.palette.primary.main, 0.3),
-            filter: 'blur(8px)',
-            position: 'absolute',
-          }}
-        />
-        <Box sx={{ position: 'relative', zIndex: 1, color: 'primary.main' }}>{icon}</Box>
+        {icon}
       </Box>
       <Typography
         variant="h6"

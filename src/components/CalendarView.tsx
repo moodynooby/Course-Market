@@ -23,13 +23,12 @@ import html2canvas from 'html2canvas';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { View } from 'react-big-calendar';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
-import { buildDeepLink } from '../native/deepLinks';
-import { hapticLight, hapticSuccess } from '../native/haptics';
-import { shareContent } from '../native/share';
 import type { CalendarEvent, Course, Section } from '../types';
 import { buildGoogleCalendarUrlForSlot, openGoogleCalendarUrl } from '../utils/googleCalendar';
+import { hapticLight, hapticSuccess } from '../utils/haptics';
 import { icsToBlob, sectionsToIcs, timeToMinutes } from '../utils/icsExport';
 import { isSlotActiveDuring, sectionsToCalendarEvents } from '../utils/schedule';
+import { buildDeepLink, shareContent } from '../utils/share';
 import { COURSE_COLORS, EventComponent } from './CalendarEventComponent';
 import CalendarToolbar from './CalendarToolbar';
 

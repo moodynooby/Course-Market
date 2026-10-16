@@ -30,10 +30,10 @@ export function UserMenu() {
     return (
       <Button
         variant="contained"
-        color="secondary"
+        color="primary"
         size="small"
         onClick={() => signIn(location.pathname + location.search)}
-        sx={{ borderRadius: 9999, ml: 1 }}
+        sx={{ borderRadius: 2, ml: 1, fontWeight: 700 }}
       >
         Sign In
       </Button>
@@ -53,12 +53,13 @@ export function UserMenu() {
           pl: 1.5,
           pr: 0.5,
           py: 0.5,
-          borderRadius: 9999,
-          border: 'none',
+          borderRadius: 2,
+          border: '1px solid',
+          borderColor: 'divider',
           bgcolor: 'background.paper',
           textTransform: 'none',
           color: 'text.primary',
-          '&:hover': { bgcolor: 'background.paper' },
+          '&:hover': { bgcolor: 'action.hover' },
         }}
       >
         <Typography variant="body2" sx={{ fontWeight: 600, display: { xs: 'none', md: 'block' } }}>
@@ -66,12 +67,14 @@ export function UserMenu() {
         </Typography>
         <Avatar
           sx={{
-            width: 32,
-            height: 32,
+            width: 30,
+            height: 30,
             border: `2px solid`,
-            borderColor: 'secondary.main',
+            borderColor: 'primary.main',
             bgcolor: 'primary.main',
             color: 'primary.contrastText',
+            fontSize: '0.875rem',
+            fontWeight: 700,
           }}
         >
           {user.displayName?.[0] || 'U'}
@@ -86,8 +89,9 @@ export function UserMenu() {
             sx: {
               mt: 1.5,
               minWidth: 200,
-              borderRadius: '24px',
-              border: 'none',
+              borderRadius: 3,
+              border: '1px solid',
+              borderColor: 'divider',
               backgroundImage: 'none',
               bgcolor: 'background.paper',
             },

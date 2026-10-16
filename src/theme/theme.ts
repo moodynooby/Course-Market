@@ -5,58 +5,94 @@ const getPalette = (isDark: boolean): ThemeOptions['palette'] => {
     return {
       mode: 'light',
       primary: {
-        main: '#0061a4',
+        main: '#4f46e5',
+        light: '#6366f1',
+        dark: '#4338ca',
         contrastText: '#ffffff',
       },
       secondary: {
-        main: '#535f70',
+        main: '#0f172a',
+        light: '#334155',
+        dark: '#020617',
+        contrastText: '#ffffff',
+      },
+      error: {
+        main: '#ef4444',
+        contrastText: '#ffffff',
+      },
+      warning: {
+        main: '#f59e0b',
+        contrastText: '#ffffff',
+      },
+      info: {
+        main: '#06b6d4',
+        contrastText: '#ffffff',
+      },
+      success: {
+        main: '#10b981',
         contrastText: '#ffffff',
       },
       background: {
-        default: '#fdfbff',
-        paper: '#fdfbff',
+        default: '#f8fafc',
+        paper: '#ffffff',
       },
       text: {
-        primary: '#1a1c1e',
-        secondary: '#43474e',
+        primary: '#0f172a',
+        secondary: '#64748b',
       },
       action: {
-        hover: 'rgba(26, 28, 30, 0.08)',
-        selected: 'rgba(26, 28, 30, 0.12)',
+        hover: 'rgba(15, 23, 42, 0.04)',
+        selected: 'rgba(79, 70, 229, 0.08)',
       },
-      divider: '#c4c6d0',
+      divider: '#e2e8f0',
     };
   }
 
   return {
     mode: 'dark',
     primary: {
-      main: '#9ecaef',
-      contrastText: '#003258',
+      main: '#818cf8',
+      light: '#a5b4fc',
+      dark: '#6366f1',
+      contrastText: '#0f172a',
     },
     secondary: {
-      main: '#bbc7db',
-      contrastText: '#253140',
+      main: '#e2e8f0',
+      light: '#f8fafc',
+      dark: '#94a3b8',
+      contrastText: '#0f172a',
     },
     error: {
-      main: '#ffb4ab',
-      contrastText: '#690005',
+      main: '#f87171',
+      contrastText: '#450a0a',
+    },
+    warning: {
+      main: '#fbbf24',
+      contrastText: '#451a03',
+    },
+    info: {
+      main: '#22d3ee',
+      contrastText: '#083344',
+    },
+    success: {
+      main: '#34d399',
+      contrastText: '#022c22',
     },
     background: {
-      default: '#1a1c1e',
-      paper: '#1a1c1e',
+      default: '#0b0f19',
+      paper: '#111827',
     },
     text: {
-      primary: '#e2e2e6',
-      secondary: '#c3c6cf',
+      primary: '#f8fafc',
+      secondary: '#94a3b8',
     },
     action: {
-      hover: 'rgba(226, 226, 230, 0.08)',
-      selected: 'rgba(226, 226, 230, 0.12)',
-      disabled: 'rgba(226, 226, 230, 0.38)',
-      disabledBackground: 'rgba(226, 226, 230, 0.12)',
+      hover: 'rgba(255, 255, 255, 0.05)',
+      selected: 'rgba(129, 140, 248, 0.12)',
+      disabled: 'rgba(255, 255, 255, 0.38)',
+      disabledBackground: 'rgba(255, 255, 255, 0.08)',
     },
-    divider: '#8e9099',
+    divider: 'rgba(255, 255, 255, 0.08)',
   };
 };
 
@@ -77,44 +113,53 @@ const getComponents = (): ThemeOptions['components'] => {
         {
           props: { variant: 'contained', color: 'secondary', size: 'large' },
           style: {
-            borderRadius: 9999,
-            padding: '12px 32px',
+            borderRadius: 10,
+            padding: '12px 28px',
             fontWeight: 700,
           },
         },
         {
           props: { variant: 'contained', size: 'medium' },
           style: {
-            borderRadius: 9999,
-            padding: '10px 24px',
+            borderRadius: 10,
+            padding: '8px 20px',
             fontWeight: 600,
           },
         },
         {
           props: { variant: 'outlined', size: 'small' },
           style: {
-            borderRadius: 9999,
+            borderRadius: 8,
           },
         },
       ],
       styleOverrides: {
         root: {
-          borderRadius: 9999,
-          padding: '10px 24px',
+          borderRadius: 10,
+          padding: '8px 20px',
           fontWeight: 600,
           textTransform: 'none',
-          transition: 'all 0.2s ease',
+          transition: 'all 0.15s ease-in-out',
+          '&:active': {
+            transform: 'scale(0.98)',
+          },
         },
       },
     },
     MuiCard: {
       styleOverrides: {
         root: ({ theme }) => ({
-          borderRadius: 24,
+          borderRadius: 14,
           [theme.breakpoints.up('sm')]: {
-            borderRadius: 32,
+            borderRadius: 16,
           },
           backgroundImage: 'none',
+          border: '1px solid',
+          borderColor: theme.palette.divider,
+          boxShadow:
+            theme.palette.mode === 'dark'
+              ? '0 4px 20px -2px rgba(0,0,0,0.45)'
+              : '0 1px 3px 0 rgba(0,0,0,0.04), 0 1px 2px -1px rgba(0,0,0,0.02)',
         }),
       },
     },
@@ -132,9 +177,9 @@ const getComponents = (): ThemeOptions['components'] => {
       styleOverrides: {
         root: ({ theme }) => ({
           backgroundImage: 'none',
-          borderRadius: 24,
+          borderRadius: 14,
           [theme.breakpoints.up('sm')]: {
-            borderRadius: 32,
+            borderRadius: 16,
           },
         }),
       },
@@ -142,7 +187,7 @@ const getComponents = (): ThemeOptions['components'] => {
     MuiChip: {
       styleOverrides: {
         root: {
-          borderRadius: 9999,
+          borderRadius: 8,
           fontWeight: 600,
         },
       },
@@ -151,7 +196,7 @@ const getComponents = (): ThemeOptions['components'] => {
       styleOverrides: {
         root: {
           '& .MuiOutlinedInput-root': {
-            borderRadius: 24,
+            borderRadius: 10,
           },
         },
       },
@@ -159,24 +204,26 @@ const getComponents = (): ThemeOptions['components'] => {
     MuiInputBase: {
       styleOverrides: {
         root: {
-          borderRadius: 24,
+          borderRadius: 10,
         },
       },
     },
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          borderRadius: 24,
+          borderRadius: 10,
         },
       },
     },
     MuiDialog: {
       styleOverrides: {
         paper: ({ theme }) => ({
-          borderRadius: 24,
+          borderRadius: 16,
           [theme.breakpoints.up('sm')]: {
-            borderRadius: 32,
+            borderRadius: 20,
           },
+          border: '1px solid',
+          borderColor: theme.palette.divider,
         }),
       },
     },
@@ -204,32 +251,36 @@ const getComponents = (): ThemeOptions['components'] => {
     },
     MuiMenu: {
       styleOverrides: {
-        paper: {
-          borderRadius: 24,
+        paper: ({ theme }) => ({
+          borderRadius: 12,
           marginTop: 8,
-        },
+          border: '1px solid',
+          borderColor: theme.palette.divider,
+          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
+        }),
       },
     },
     MuiMenuItem: {
       styleOverrides: {
         root: {
-          borderRadius: 16,
-          margin: '4px 8px',
-          padding: '10px 16px',
+          borderRadius: 8,
+          margin: '2px 6px',
+          padding: '8px 14px',
+          fontWeight: 500,
         },
       },
     },
     MuiAlert: {
       styleOverrides: {
         root: {
-          borderRadius: 24,
+          borderRadius: 12,
         },
       },
     },
     MuiSnackbarContent: {
       styleOverrides: {
         root: {
-          borderRadius: 24,
+          borderRadius: 12,
         },
       },
     },
@@ -244,16 +295,21 @@ const getComponents = (): ThemeOptions['components'] => {
     MuiIconButton: {
       styleOverrides: {
         root: {
-          borderRadius: 9999,
+          borderRadius: 10,
+          transition: 'all 0.15s ease-in-out',
+          '&:active': {
+            transform: 'scale(0.95)',
+          },
         },
       },
     },
     MuiTooltip: {
       styleOverrides: {
         tooltip: {
-          borderRadius: 16,
-          padding: '8px 12px',
-          fontSize: '0.875rem',
+          borderRadius: 8,
+          padding: '6px 10px',
+          fontSize: '0.8125rem',
+          fontWeight: 500,
         },
       },
     },
@@ -261,6 +317,7 @@ const getComponents = (): ThemeOptions['components'] => {
       styleOverrides: {
         badge: {
           borderRadius: 9999,
+          fontWeight: 700,
         },
       },
     },
@@ -269,8 +326,8 @@ const getComponents = (): ThemeOptions['components'] => {
         root: ({ theme }) => ({
           textTransform: 'none',
           fontWeight: 600,
-          borderRadius: 9999,
-          minHeight: 48,
+          borderRadius: 10,
+          minHeight: 44,
           zIndex: 1,
           color: theme.palette.text.secondary,
           '&.Mui-selected': {
@@ -282,7 +339,7 @@ const getComponents = (): ThemeOptions['components'] => {
     MuiTabs: {
       styleOverrides: {
         indicator: {
-          borderRadius: 9999,
+          borderRadius: 10,
           height: '100%',
           zIndex: 0,
         },
@@ -291,15 +348,15 @@ const getComponents = (): ThemeOptions['components'] => {
     MuiListItemButton: {
       styleOverrides: {
         root: {
-          borderRadius: 16,
-          margin: '4px 8px',
+          borderRadius: 10,
+          margin: '2px 6px',
         },
       },
     },
     MuiSelect: {
       styleOverrides: {
         root: {
-          borderRadius: 24,
+          borderRadius: 10,
         },
       },
     },
@@ -310,47 +367,52 @@ export const createAppTheme = (isDark: boolean) => {
   return createTheme({
     palette: getPalette(isDark),
     typography: {
-      fontFamily: '"Plus Jakarta Sans", sans-serif',
+      fontFamily:
+        '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       h1: {
-        fontSize: '3.5rem',
-        fontWeight: 700,
-        letterSpacing: '-0.02em',
-        fontFamily: '"Zilla Slab", serif',
+        fontSize: '2.75rem',
+        fontWeight: 800,
+        letterSpacing: '-0.03em',
       },
       h2: {
-        fontSize: '1.75rem',
+        fontSize: '2rem',
         fontWeight: 700,
-        letterSpacing: '-0.01em',
-        fontFamily: '"Zilla Slab", serif',
+        letterSpacing: '-0.025em',
       },
       h3: {
         fontSize: '1.5rem',
         fontWeight: 700,
-        letterSpacing: '-0.01em',
-        fontFamily: '"Zilla Slab", serif',
+        letterSpacing: '-0.02em',
       },
       h4: {
         fontSize: '1.25rem',
         fontWeight: 700,
         letterSpacing: '-0.02em',
-        fontFamily: '"Zilla Slab", serif',
       },
-      h5: { fontSize: '1.125rem', fontWeight: 700, fontFamily: '"Zilla Slab", serif' },
-      h6: { fontSize: '1rem', fontWeight: 700, fontFamily: '"Zilla Slab", serif' },
+      h5: {
+        fontSize: '1.125rem',
+        fontWeight: 700,
+        letterSpacing: '-0.015em',
+      },
+      h6: {
+        fontSize: '1rem',
+        fontWeight: 700,
+        letterSpacing: '-0.01em',
+      },
       subtitle1: { fontSize: '1rem', fontWeight: 600 },
       subtitle2: { fontSize: '0.875rem', fontWeight: 600 },
-      body1: { fontSize: '1rem', fontWeight: 400 },
-      body2: { fontSize: '0.875rem', fontWeight: 400 },
+      body1: { fontSize: '0.9375rem', lineHeight: 1.6, fontWeight: 400 },
+      body2: { fontSize: '0.875rem', lineHeight: 1.5, fontWeight: 400 },
       button: { textTransform: 'none', fontWeight: 600, letterSpacing: '0' },
-      caption: { fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.05em' },
+      caption: { fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.02em' },
       overline: {
         fontSize: '0.75rem',
-        fontWeight: 600,
-        letterSpacing: '0.1em',
+        fontWeight: 700,
+        letterSpacing: '0.08em',
         textTransform: 'uppercase',
       },
     },
-    shape: { borderRadius: 16 },
+    shape: { borderRadius: 10 },
     components: getComponents(),
   });
 };

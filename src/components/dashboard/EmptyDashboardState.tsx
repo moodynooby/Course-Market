@@ -3,9 +3,9 @@ import { alpha, Box, Button, Card, Stack, Typography, useTheme } from '@mui/mate
 import { useNavigate } from 'react-router-dom';
 
 const STEPS = [
-  { label: 'Browse', colorKey: 'primary' as const },
-  { label: 'Select', colorKey: 'secondary' as const },
-  { label: 'Optimize', colorKey: 'secondary' as const },
+  { label: 'Pick Courses', color: '#4f46e5' },
+  { label: 'Set Preferences', color: '#f59e0b' },
+  { label: 'Optimize Aura', color: '#10b981' },
 ];
 
 export function EmptyDashboardState() {
@@ -15,14 +15,20 @@ export function EmptyDashboardState() {
   return (
     <Card
       variant="outlined"
-      sx={{ p: 5, textAlign: 'center', mb: 4, borderRadius: 6, bgcolor: 'background.paper' }}
+      sx={{
+        p: { xs: 3, sm: 5 },
+        textAlign: 'center',
+        mb: 4,
+        borderRadius: 4,
+        bgcolor: 'background.paper',
+      }}
     >
       <Box
         sx={{
-          width: 100,
-          height: 100,
-          borderRadius: '50%',
-          bgcolor: alpha(theme.palette.secondary?.main || theme.palette.secondary.main, 0.1),
+          width: 80,
+          height: 80,
+          borderRadius: 3,
+          bgcolor: alpha(theme.palette.primary.main, 0.1),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -31,48 +37,41 @@ export function EmptyDashboardState() {
           position: 'relative',
         }}
       >
-        <Box
-          sx={{
-            width: 50,
-            height: 50,
-            borderRadius: '50%',
-            bgcolor: alpha(theme.palette.secondary?.main || theme.palette.secondary.main, 0.3),
-            filter: 'blur(12px)',
-            position: 'absolute',
-          }}
-        />
         <AutoAwesome
-          sx={{ fontSize: 48, color: 'secondary.main', position: 'relative', zIndex: 1 }}
+          sx={{ fontSize: 40, color: 'primary.main', position: 'relative', zIndex: 1 }}
         />
       </Box>
-      <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
-        Build Your Perfect Schedule
+      <Typography variant="h5" gutterBottom sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
+        Build Your Maximum Aura Schedule
       </Typography>
-      <Typography sx={{ color: 'text.secondary', mb: 4, maxWidth: 500, mx: 'auto' }}>
-        Browse available courses, select your preferred sections, and find the timetable that best
-        matches your preferences.
+      <Typography
+        sx={{ color: 'text.secondary', mb: 4, maxWidth: 520, mx: 'auto', lineHeight: 1.6 }}
+      >
+        Browse available courses, select your sections, and let AuraIsHub generate high-efficiency
+        timetables tailored to your sleep schedule, campus walking speed, and credit targets.
       </Typography>
-      <Stack direction="row" spacing={2} sx={{ justifyContent: 'center', mb: 4 }}>
+      <Stack direction="row" spacing={3} sx={{ justifyContent: 'center', mb: 4, flexWrap: 'wrap' }}>
         {STEPS.map((step, index) => (
-          <Box key={step.label} sx={{ textAlign: 'center' }}>
+          <Box key={step.label} sx={{ textAlign: 'center', minWidth: 90 }}>
             <Box
               sx={{
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
-                bgcolor: alpha(theme.palette[step.colorKey].main, 0.1),
+                width: 36,
+                height: 36,
+                borderRadius: 2,
+                bgcolor: alpha(step.color, 0.12),
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 mx: 'auto',
                 mb: 1,
-                fontWeight: 700,
-                color: theme.palette[step.colorKey].main,
+                fontWeight: 800,
+                color: step.color,
+                fontSize: '0.875rem',
               }}
             >
               {index + 1}
             </Box>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 600 }}>
               {step.label}
             </Typography>
           </Box>
@@ -80,10 +79,11 @@ export function EmptyDashboardState() {
       </Stack>
       <Button
         variant="contained"
-        color="secondary"
+        color="primary"
         size="large"
         onClick={() => navigate('/courses')}
         startIcon={<ArrowForward />}
+        sx={{ px: 4, py: 1.25, fontWeight: 700 }}
       >
         Browse Courses
       </Button>

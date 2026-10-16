@@ -9,7 +9,7 @@ import { withAuth } from './lib/wrap';
 
 // Public trade projection (no PII like userEmail). Reused for select and both
 // mutation `.returning()` calls so field lists cannot drift.
-const tradeColumns = {
+export const tradeColumns = {
   id: schema.trades.id,
   auth0UserId: schema.trades.auth0UserId,
   userDisplayName: schema.trades.userDisplayName,

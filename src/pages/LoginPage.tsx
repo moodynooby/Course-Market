@@ -26,31 +26,37 @@ export default function LoginPage() {
               sx={{
                 width: 72,
                 height: 72,
-                bgcolor: 'secondary.main',
+                bgcolor: 'primary.main',
                 mx: 'auto',
                 mb: 2,
+                boxShadow: '0 8px 24px -4px rgba(79, 70, 229, 0.4)',
               }}
             >
-              <School sx={{ fontSize: 40 }} />
+              <School sx={{ fontSize: 38 }} />
             </Avatar>
             <Typography
               variant="h4"
               component="h1"
               gutterBottom
               sx={{
-                fontWeight: 700,
+                fontWeight: 800,
+                letterSpacing: '-0.03em',
               }}
             >
-              AuraIsHub
+              AuraIs
+              <Box component="span" sx={{ color: 'primary.main' }}>
+                Hub
+              </Box>
             </Typography>
             <Typography
               variant="body1"
               sx={{
                 color: 'text.secondary',
                 mb: 1,
+                fontWeight: 500,
               }}
             >
-              Plan your semester with confidence
+              Engineered schedules. Seamless trades. Maximum aura.
             </Typography>
 
             {actionLabel && (
@@ -71,10 +77,10 @@ export default function LoginPage() {
             <Button
               fullWidth
               variant="contained"
-              color="secondary"
+              color="primary"
               size="large"
               onClick={() => signIn(returnUrl ?? undefined)}
-              sx={{ py: 1.5 }}
+              sx={{ py: 1.5, fontWeight: 700 }}
             >
               Sign in
             </Button>

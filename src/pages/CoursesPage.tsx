@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -22,9 +23,10 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useTheme,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Virtuoso } from 'react-virtuoso';
 import { CourseCard } from '../components/CourseCard';
 import { EmptyState } from '../components/EmptyState';
@@ -38,14 +40,19 @@ import { hasSectionConflict } from '../utils/schedule';
 
 const SEARCH_DEBOUNCE_MS = 150;
 const SAVE_DEBOUNCE_MS = 2000;
+
 export default function CoursesPage() {
-  const { isAuthenticated, profile, updateProfile } = useAuthContext();
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const { profile, updateProfile } = useAuthContext();
   const { toast } = useToast();
   const [courses, setCourses] = useState<Course[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [subject, setSubject] = useState('all');
+  const [hideConflicts, setHideConflicts] = useState(false);
+  const [openSeatsOnly, setOpenSeatsOnly] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState('Loading courses...');
@@ -169,11 +176,6 @@ export default function CoursesPage() {
   }, []);
 
   const autoLoadCourses = useCallback(async () => {
-    if (!isAuthenticated) {
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoadingMessage('Checking your profile...');
 
@@ -202,7 +204,7 @@ export default function CoursesPage() {
       setError('Failed to load courses. Please try again later.');
       setLoading(false);
     }
-  }, [isAuthenticated, profile?.semesterId, loadCoursesFromSemester]);
+  }, [profile?.semesterId, loadCoursesFromSemester]);
 
   useEffect(() => {
     autoLoadCourses();
@@ -223,34 +225,6 @@ export default function CoursesPage() {
   // Optimization: O(1) lookup maps to avoid nested O(N) searches in loops
   const coursesMap = useMemo(() => new Map(courses.map((c) => [c.id, c])), [courses]);
   const sectionsMap = useMemo(() => new Map(sections.map((s) => [s.id, s])), [sections]);
-
-  const filteredCourses = useMemo(() => {
-    let result = courses;
-
-    if (debouncedSearch.trim()) {
-      // Optimization: Uses relevance-ordered results from search index
-      result = searchCourses(debouncedSearch);
-    }
-
-    if (subject !== 'all') {
-      result = result.filter((c) => c.subject === subject);
-    }
-
-    if (showSelectedOnly) {
-      result = result.filter((course) => selectedSections.has(course.id));
-    } else if (debouncedSearch.trim() || subject !== 'all') {
-      // Optimization: Partition selected vs unselected in a single pass O(N)
-      const selected: Course[] = [];
-      const unselected: Course[] = [];
-      for (const course of result) {
-        if (selectedSections.has(course.id)) selected.push(course);
-        else unselected.push(course);
-      }
-      result = [...selected, ...unselected];
-    }
-
-    return result;
-  }, [courses, debouncedSearch, subject, selectedSections, showSelectedOnly]);
 
   const courseSectionsMap = useMemo(() => {
     const map = new Map<string, Section[]>();
@@ -286,20 +260,98 @@ export default function CoursesPage() {
     return sections.filter((section) => ids.has(section.id));
   }, [selectedSections, sections]);
 
-  const conflictIds = useMemo(() => {
-    const set = new Set<string>();
+  const conflictDetails = useMemo(() => {
+    const details = new Map<string, string>();
     const selected = selectedSectionList;
-    if (selected.length === 0) return set;
+    if (selected.length === 0) return details;
     for (const section of sections) {
       for (const sel of selected) {
         if (sel.id !== section.id && hasSectionConflict(section, sel)) {
-          set.add(section.id);
+          const conflictingCourse = coursesMap.get(sel.courseId);
+          const code = conflictingCourse ? conflictingCourse.code : 'Selected course';
+          details.set(section.id, `${code} Sec ${sel.sectionNumber}`);
           break;
         }
       }
     }
-    return set;
-  }, [sections, selectedSectionList]);
+    return details;
+  }, [sections, selectedSectionList, coursesMap]);
+
+  const conflictIds = useMemo(() => new Set(conflictDetails.keys()), [conflictDetails]);
+
+  const filteredCourses = useMemo(() => {
+    let result = courses;
+
+    if (debouncedSearch.trim()) {
+      // Optimization: Uses relevance-ordered results from search index
+      result = searchCourses(debouncedSearch);
+    }
+
+    if (subject !== 'all') {
+      result = result.filter((c) => c.subject === subject);
+    }
+
+    if (showSelectedOnly) {
+      result = result.filter((course) => selectedSections.has(course.id));
+    }
+
+    if (openSeatsOnly) {
+      result = result.filter((course) => {
+        const courseSecs = courseSectionsMap.get(course.id) || [];
+        return courseSecs.some((s) => s.capacity === 0 || s.enrolled < s.capacity);
+      });
+    }
+
+    if (hideConflicts && selectedSections.size > 0) {
+      result = result.filter((course) => {
+        if (selectedSections.has(course.id)) return true;
+        const courseSecs = courseSectionsMap.get(course.id) || [];
+        return courseSecs.some((s) => !conflictIds.has(s.id));
+      });
+    }
+
+    if (
+      !showSelectedOnly &&
+      (debouncedSearch.trim() || subject !== 'all' || openSeatsOnly || hideConflicts)
+    ) {
+      // Optimization: Partition selected vs unselected in a single pass O(N)
+      const selected: Course[] = [];
+      const unselected: Course[] = [];
+      for (const course of result) {
+        if (selectedSections.has(course.id)) selected.push(course);
+        else unselected.push(course);
+      }
+      result = [...selected, ...unselected];
+    }
+
+    return result;
+  }, [
+    courses,
+    debouncedSearch,
+    subject,
+    selectedSections,
+    showSelectedOnly,
+    openSeatsOnly,
+    hideConflicts,
+    courseSectionsMap,
+    conflictIds,
+  ]);
+
+  const hasActiveFilters =
+    debouncedSearch.trim() !== '' ||
+    subject !== 'all' ||
+    showSelectedOnly ||
+    hideConflicts ||
+    openSeatsOnly;
+
+  const handleResetFilters = useCallback(() => {
+    setSearch('');
+    setDebouncedSearch('');
+    setSubject('all');
+    setShowSelectedOnly(false);
+    setHideConflicts(false);
+    setOpenSeatsOnly(false);
+  }, []);
 
   const handleSelectSection = useCallback((courseId: string, sectionId: string) => {
     setSelectedSections((prev) => {
@@ -407,46 +459,6 @@ export default function CoursesPage() {
             </Card>
           ))}
         </Stack>
-      </Box>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <Box>
-        <Box component="header" sx={{ mb: 5 }}>
-          <Typography variant="h4" gutterBottom>
-            Course Browser
-          </Typography>
-        </Box>
-        <Alert
-          severity="info"
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-          }}
-        >
-          <Box>
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
-              Browsing as a guest — sign in to save schedules and trade sections
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              Course listings are fully browsable. Saving selections, trading, and posting reviews
-              require an account.
-            </Typography>
-          </Box>
-          <Button
-            component={Link}
-            to="/login"
-            variant="contained"
-            color="secondary"
-            size="small"
-            sx={{ whiteSpace: 'nowrap' }}
-          >
-            Sign in
-          </Button>
-        </Alert>
       </Box>
     );
   }
@@ -614,37 +626,65 @@ export default function CoursesPage() {
           variant="outlined"
           role="status"
           aria-live="polite"
-          sx={{ mb: 2, bgcolor: alpha('#22c55e', 0.05) }}
+          sx={{
+            mb: 2.5,
+            borderRadius: 3,
+            bgcolor: alpha(theme.palette.success.main, 0.05),
+            borderColor: alpha(theme.palette.success.main, 0.3),
+          }}
         >
           <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
-              spacing={1}
+              spacing={1.5}
               sx={{
                 alignItems: { xs: 'flex-start', sm: 'center' },
                 justifyContent: 'space-between',
               }}
             >
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {selectedCourseInfo.items.length} course
-                {selectedCourseInfo.items.length > 1 ? 's' : ''} selected (
-                {selectedCourseInfo.totalCredits} credits)
-              </Typography>
-              <Stack direction="row" spacing={1}>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                  {selectedCourseInfo.items.length} course
+                  {selectedCourseInfo.items.length > 1 ? 's' : ''} selected
+                </Typography>
+                <Chip
+                  label={`${selectedCourseInfo.totalCredits} credits`}
+                  size="small"
+                  color="success"
+                  sx={{ height: 22, fontSize: '0.72rem', fontWeight: 600 }}
+                />
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  (Target: 12–18 credits)
+                </Typography>
+              </Stack>
+              <Stack
+                direction="row"
+                spacing={1}
+                sx={{ width: { xs: '100%', sm: 'auto' }, flexWrap: 'wrap' }}
+              >
+                <Button
+                  size="small"
+                  variant="contained"
+                  color="primary"
+                  onClick={() => navigate('/')}
+                  sx={{ borderRadius: 2, flex: { xs: 1, sm: 'initial' }, fontWeight: 600 }}
+                >
+                  Generate Schedules
+                </Button>
                 <Button
                   size="small"
                   variant={showSelectedOnly ? 'contained' : 'outlined'}
                   onClick={() => setShowSelectedOnly((v) => !v)}
-                  sx={{ width: { xs: '100%', sm: 'auto' } }}
+                  sx={{ borderRadius: 2 }}
                 >
-                  View Selected
+                  {showSelectedOnly ? 'Show All' : 'View Selected'}
                 </Button>
                 <Button
                   size="small"
                   color="error"
                   variant="outlined"
                   onClick={handleClearAll}
-                  sx={{ width: { xs: '100%', sm: 'auto' } }}
+                  sx={{ borderRadius: 2 }}
                 >
                   Clear All
                 </Button>
@@ -653,10 +693,11 @@ export default function CoursesPage() {
           </CardContent>
         </Card>
       )}
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3 }}>
+
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 1.5 }}>
         <TextField
           label="Search courses"
-          placeholder="Search by course, title, or instructor"
+          placeholder="Search by course code, title, or instructor"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           sx={{ flex: 1 }}
@@ -694,6 +735,58 @@ export default function CoursesPage() {
           </Select>
         </FormControl>
       </Stack>
+
+      <Stack
+        direction="row"
+        spacing={1}
+        sx={{
+          mb: 2.5,
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 1,
+        }}
+      >
+        <Chip
+          label={`Selected (${selectedCourseInfo.items.length})`}
+          clickable
+          color={showSelectedOnly ? 'primary' : 'default'}
+          variant={showSelectedOnly ? 'filled' : 'outlined'}
+          onClick={() => setShowSelectedOnly((v) => !v)}
+          disabled={selectedCourseInfo.items.length === 0}
+          size="small"
+        />
+        <Chip
+          label="Open Seats Only"
+          clickable
+          color={openSeatsOnly ? 'primary' : 'default'}
+          variant={openSeatsOnly ? 'filled' : 'outlined'}
+          onClick={() => setOpenSeatsOnly((v) => !v)}
+          size="small"
+        />
+        <Chip
+          label="No Conflicts"
+          clickable
+          color={hideConflicts ? 'primary' : 'default'}
+          variant={hideConflicts ? 'filled' : 'outlined'}
+          onClick={() => setHideConflicts((v) => !v)}
+          disabled={selectedCourseInfo.items.length === 0}
+          size="small"
+        />
+        <Box sx={{ flexGrow: 1 }} />
+        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+          Showing {filteredCourses.length} of {courses.length} courses
+        </Typography>
+        {hasActiveFilters && (
+          <Button
+            size="small"
+            onClick={handleResetFilters}
+            sx={{ fontSize: '0.75rem', py: 0.2, px: 0.8, minWidth: 'auto', textTransform: 'none' }}
+          >
+            Reset Filters
+          </Button>
+        )}
+      </Stack>
+
       {filteredCourses.length === 0 && (
         <EmptyState
           icon={<Search />}
@@ -701,6 +794,7 @@ export default function CoursesPage() {
           description="No courses found matching your criteria. Try adjusting your search or filters."
         />
       )}
+
       <Virtuoso
         data={filteredCourses}
         overscan={3}
@@ -715,6 +809,7 @@ export default function CoursesPage() {
                 pinnedSectionId={pinnedSections.get(course.id)}
                 isExpanded={expanded === course.id}
                 conflictIds={conflictIds}
+                conflictDetails={conflictDetails}
                 onExpand={() => handleExpand(course.id)}
                 onSelectSection={(sectionId) => handleSelectSection(course.id, sectionId)}
                 onTogglePin={(sectionId) => handleTogglePin(course.id, sectionId)}
@@ -723,8 +818,73 @@ export default function CoursesPage() {
             </Box>
           );
         }}
-        style={{ height: 'calc(100vh - 340px)', minHeight: '400px' }}
+        style={{
+          height: 'calc(100vh - 340px)',
+          minHeight: '400px',
+          paddingBottom: selectedCourseInfo.items.length > 0 ? 80 : 0,
+        }}
       />
+
+      {selectedCourseInfo.items.length > 0 && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: { xs: 68, md: 24 },
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 110,
+            width: { xs: 'calc(100% - 32px)', sm: 'auto' },
+            minWidth: { sm: 460 },
+            maxWidth: 680,
+            bgcolor: 'background.paper',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+            border: '1px solid',
+            borderColor: alpha(theme.palette.divider, 0.8),
+            backdropFilter: 'blur(8px)',
+            borderRadius: 4,
+            p: { xs: 1.25, sm: 1.5 },
+          }}
+        >
+          <Stack
+            direction="row"
+            spacing={1.5}
+            sx={{
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <Box sx={{ minWidth: 0, pl: 0.5 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+                {selectedCourseInfo.items.length} Selected • {selectedCourseInfo.totalCredits}{' '}
+                Credits
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                Ready to build timetable
+              </Typography>
+            </Box>
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setShowSelectedOnly((v) => !v)}
+                sx={{ borderRadius: 2, display: { xs: 'none', sm: 'inline-flex' } }}
+              >
+                {showSelectedOnly ? 'Show All' : 'View Selected'}
+              </Button>
+              <Button
+                size="small"
+                variant="contained"
+                color="primary"
+                onClick={() => navigate('/')}
+                sx={{ borderRadius: 2, fontWeight: 600, px: 2 }}
+              >
+                Generate Schedules
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
+      )}
+
       <Dialog open={clearConfirmOpen} onClose={() => setClearConfirmOpen(false)}>
         <DialogTitle>Clear all selections?</DialogTitle>
         <DialogContent>
