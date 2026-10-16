@@ -94,6 +94,15 @@ export async function apiClient<T>(path: string, options: RequestOptions = {}): 
     }
 
     if (response.status === 204) return undefined as T;
+    const contentType = response.headers.get('content-type');
+    if (contentType?.includes('text/html')) {
+      throw new ApiError(
+        response.status,
+        'API route returned an HTML page instead of JSON. Check server redirects or endpoint availability.',
+        undefined,
+        'INVALID_RESPONSE',
+      );
+    }
     return (await response.json()) as T;
   } catch (error) {
     if (error instanceof ApiError) throw error;

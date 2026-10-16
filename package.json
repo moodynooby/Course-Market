@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "tsx scripts/ensure-env.ts && netlify dev",
     "env:pull": "tsx scripts/ensure-env.ts --force",
-    "build": "tsc -b && vite build && echo '/*  /index.html  200' > dist/_redirects",
+    "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit --incremental -p tsconfig.app.json && tsc --noEmit --incremental -p tsconfig.node.json && tsc --noEmit --incremental -p tsconfig.netlify.json",
     "lint": "pnpm run lint:biome && pnpm run lint:markdown && pnpm run lint:shell && pnpm run typecheck && pnpm run test",
