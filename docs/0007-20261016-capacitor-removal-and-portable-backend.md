@@ -8,6 +8,7 @@
 ## Context & Motivation
 
 AuraIsHub historically packaged an Android Studio shell via Capacitor (`android/`, `capacitor.config.ts`, `src/native/`). This introduced substantial friction:
+
 - 12 `@capacitor/*` and `@capawesome/*` dependencies.
 - Divergent OAuth code paths (custom URL scheme handlers vs. web callback).
 - Divergent sharing and haptic code paths.
