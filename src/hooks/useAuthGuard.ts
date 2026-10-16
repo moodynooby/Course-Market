@@ -15,6 +15,14 @@ const AUTH_ACTION_LABEL_KEY = 'authActionLabel';
  *     sign-in is needed.
  *  3. Auth0's redirect is invoked; on return the user lands back in context.
  */
+function sanitizeReturnUrl(url: string | null): string | null {
+  if (!url) return null;
+  if (url.startsWith('/') && !url.startsWith('//') && !url.includes(':')) {
+    return url;
+  }
+  return null;
+}
+
 export function useAuthGuard() {
   const { isAuthenticated, signIn } = useAuthContext();
 
@@ -25,11 +33,14 @@ export function useAuthGuard() {
         return true;
       }
 
-      // Store the return URL and reason before redirecting.
-      window.sessionStorage.setItem(
-        AUTH_RETURN_URL_KEY,
-        window.location.pathname + window.location.search,
-      );
+      const currentPath = window.location.pathname + window.location.search;
+      if (
+        currentPath.startsWith('/') &&
+        !currentPath.startsWith('//') &&
+        !currentPath.includes(':')
+      ) {
+        window.sessionStorage.setItem(AUTH_RETURN_URL_KEY, currentPath);
+      }
       window.sessionStorage.setItem(AUTH_ACTION_LABEL_KEY, ctxLabel);
       await signIn();
       return false;
@@ -48,5 +59,5 @@ export function consumeAuthReturnContext(): {
   const actionLabel = window.sessionStorage.getItem(AUTH_ACTION_LABEL_KEY);
   window.sessionStorage.removeItem(AUTH_RETURN_URL_KEY);
   window.sessionStorage.removeItem(AUTH_ACTION_LABEL_KEY);
-  return { returnUrl, actionLabel };
+  return { returnUrl: sanitizeReturnUrl(returnUrl), actionLabel };
 }

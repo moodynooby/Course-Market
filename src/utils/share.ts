@@ -61,12 +61,9 @@ export async function shareContent(payload: SharePayload): Promise<boolean> {
         });
         return true;
       }
-    } catch {
-      // User cancelled or share not supported — fall through to clipboard
-    }
+    } catch {}
   }
 
-  // Fallback: clipboard
   try {
     const value = payload.url || payload.text || '';
     if (value && typeof navigator !== 'undefined') {

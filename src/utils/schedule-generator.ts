@@ -225,7 +225,7 @@ function labelFromSeed(seed: SeedSummary): string {
 function describeSeed(seed: SeedSummary): string {
   const start = formatHour(seed.earliestHour);
   const end = formatHour(seed.latestHour);
-  const window = start && end ? `${start}–${end}` : '';
+  const window = start && end ? `${start}-${end}` : '';
   const days = seed.days.join(', ');
   return [days, window].filter(Boolean).join(' · ');
 }
@@ -295,7 +295,6 @@ export function generateSchedules(
   const maxCredits = preferences.maxCredits ?? 18;
   const sectionArrays = Array.from(sectionsByCourse.values());
 
-  // Pre-calculate suffixMax for credit limit pruning
   const suffixMax = new Array(sectionArrays.length).fill(0);
   let currentMaxSum = 0;
   for (let i = sectionArrays.length - 1; i >= 0; i--) {
@@ -334,8 +333,6 @@ export function generateSchedules(
     conflicts: p.conflicts,
   }));
 
-  // Pick one winner per footprint (highest score; ties broken by first seen).
-  // Every other variant gets a large penalty so it sinks below all unique schedules.
   const winnerByFootprint = new Map<string, number>();
   const footprints: string[] = new Array(generated.length);
   for (let i = 0; i < generated.length; i++) {

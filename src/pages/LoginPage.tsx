@@ -19,7 +19,16 @@ export default function LoginPage() {
         p: 2,
       }}
     >
-      <Card variant="outlined" sx={{ maxWidth: 450, width: '100%' }}>
+      <Card
+        variant="outlined"
+        sx={{
+          maxWidth: 450,
+          width: '100%',
+          borderRadius: '16px',
+          border: '2px solid',
+          borderColor: 'divider',
+        }}
+      >
         <CardContent sx={{ p: 4 }}>
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Avatar
@@ -27,9 +36,10 @@ export default function LoginPage() {
                 width: 72,
                 height: 72,
                 bgcolor: 'primary.main',
+                color: 'primary.contrastText',
                 mx: 'auto',
                 mb: 2,
-                boxShadow: '0 8px 24px -4px rgba(79, 70, 229, 0.4)',
+                boxShadow: (theme) => `0 4px 0 ${theme.palette.primary.dark}`,
               }}
             >
               <School sx={{ fontSize: 38 }} />
@@ -40,12 +50,27 @@ export default function LoginPage() {
               gutterBottom
               sx={{
                 fontWeight: 800,
-                letterSpacing: '-0.03em',
+                letterSpacing: '-0.02em',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               AuraIs
-              <Box component="span" sx={{ color: 'primary.main' }}>
-                Hub
+              <Box
+                component="span"
+                sx={{
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                  px: 1,
+                  py: 0.2,
+                  borderRadius: '8px',
+                  ml: 0.75,
+                  fontSize: '0.85em',
+                  fontWeight: 800,
+                }}
+              >
+                HUB
               </Box>
             </Typography>
             <Typography
@@ -53,10 +78,10 @@ export default function LoginPage() {
               sx={{
                 color: 'text.secondary',
                 mb: 1,
-                fontWeight: 500,
+                fontWeight: 600,
               }}
             >
-              Engineered schedules. Seamless trades. Maximum aura.
+              Course scheduling and section trading made simple and fun.
             </Typography>
 
             {actionLabel && (

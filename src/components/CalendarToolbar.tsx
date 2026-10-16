@@ -123,7 +123,7 @@ export default function CalendarToolbar({
         }),
       }}
     >
-      {/* Navigation and current period */}
+      {}
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', minWidth: 0 }}>
         <ButtonGroup variant="outlined" size="small">
           <Button onClick={onPrev} aria-label="Previous" sx={{ minWidth: 32, px: 0 }}>
@@ -142,7 +142,7 @@ export default function CalendarToolbar({
         </Typography>
       </Stack>
 
-      {/* View switcher and actions */}
+      {}
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <ButtonGroup variant="outlined" size="small">
           {VIEW_OPTIONS.map(({ value, label, icon }) =>

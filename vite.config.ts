@@ -1,9 +1,24 @@
 import netlify from '@netlify/vite-plugin';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
+
+function apiDevRewritePlugin(): Plugin {
+  return {
+    name: 'api-dev-rewrite',
+    configureServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        if (req.url?.startsWith('/api/')) {
+          req.url = req.url.replace(/^\/api\//, '/.netlify/functions/');
+        }
+        next();
+      });
+    },
+  };
+}
 
 export default defineConfig({
   plugins: [
+    apiDevRewritePlugin(),
     react({
       ...reactCompilerPreset(),
     }),

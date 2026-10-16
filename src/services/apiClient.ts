@@ -2,13 +2,10 @@ import { env } from '../utils/env';
 
 const DEFAULT_TIMEOUT_MS = 15_000;
 
-// The web app runs next to the Netlify functions, so the relative path works
-// there. A native app loads from bundled assets (https://localhost) and must
-// call the deployed backend directly.
-
 const getBaseUrl = (): string => {
+  if (env.API_BASE_URL) return env.API_BASE_URL.replace(/\/$/, '');
   if (env.NETLIFY_FUNCTION_URL) return env.NETLIFY_FUNCTION_URL.replace(/\/$/, '');
-  return '/.netlify/functions';
+  return '/api';
 };
 
 export function formatApiErrorDetails(err: unknown, separator = '. '): string | null {

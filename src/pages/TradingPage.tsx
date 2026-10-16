@@ -100,14 +100,9 @@ const TradeCard = memo(function TradeCard({
         transition: 'transform 0.2s ease',
         transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
         opacity: trade.status === 'cancelled' ? 0.75 : 1,
-        // Deep-link highlight: a glow around the trade opened via
-        // auraishub://trading?tradeId=... so the user lands exactly on it.
         ...(highlighted
           ? {
               boxShadow: `0 0 0 2px ${theme.palette.secondary.main}`,
-              // Replaces a global keyframe with an MUI-safe entrance: the
-              // glow fades out over two seconds so the deep-linked trade is
-              // unmistakable without adding theme-global CSS.
               transition: 'box-shadow 2s ease-out',
             }
           : {}),
@@ -172,22 +167,14 @@ const TradeCard = memo(function TradeCard({
             sx={{
               display: 'inline-flex',
               alignItems: 'center',
-              bgcolor: alpha(
-                theme.palette.primary.main,
-                theme.palette.mode === 'dark' ? 0.2 : 0.08,
-              ),
-              color: 'primary.main',
-              border: '1px solid',
-              borderColor: alpha(
-                theme.palette.primary.main,
-                theme.palette.mode === 'dark' ? 0.35 : 0.2,
-              ),
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
               px: 1.25,
               py: 0.35,
-              borderRadius: 1.5,
-              fontWeight: 700,
+              borderRadius: '8px',
+              fontWeight: 800,
               fontSize: '0.85rem',
-              letterSpacing: '0.02em',
+              letterSpacing: '0.4px',
             }}
           >
             {trade.courseCode}
@@ -212,10 +199,13 @@ const TradeCard = memo(function TradeCard({
             alignItems: 'center',
             justifyContent: 'space-between',
             p: 1.25,
-            borderRadius: 2,
-            bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.1 : 0.04),
-            border: '1px solid',
-            borderColor: alpha(theme.palette.divider, 0.8),
+            borderRadius: '12px',
+            bgcolor: alpha(
+              theme.palette.secondary.main,
+              theme.palette.mode === 'dark' ? 0.12 : 0.08,
+            ),
+            border: '2px solid',
+            borderColor: alpha(theme.palette.secondary.main, 0.25),
             mb: 1.5,
             gap: 1,
           }}
@@ -225,16 +215,17 @@ const TradeCard = memo(function TradeCard({
               variant="caption"
               sx={{
                 color: 'text.secondary',
-                fontWeight: 600,
+                fontWeight: 700,
                 display: 'block',
                 fontSize: '0.7rem',
+                letterSpacing: '0.5px',
               }}
             >
               OFFERING
             </Typography>
             <Typography
               variant="subtitle2"
-              sx={{ fontWeight: 800, color: 'success.main', mt: 0.25 }}
+              sx={{ fontWeight: 800, color: 'primary.main', mt: 0.25 }}
             >
               Sec {trade.sectionOffered}
             </Typography>
@@ -250,7 +241,7 @@ const TradeCard = memo(function TradeCard({
               borderRadius: '50%',
               bgcolor: 'background.paper',
               boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
-              color: 'primary.main',
+              color: 'secondary.main',
               flexShrink: 0,
             }}
           >
@@ -429,13 +420,9 @@ export default function TradingPage() {
     }
   }, [getToken]);
 
-  // Deep-link support: opening auraishub://trading?tradeId=42 (or
-  // /trading?tradeId=42 on the web) highlights and scrolls to that trade.
   const [searchParams] = useSearchParams();
   const deepLinkTradeId = searchParams.get('tradeId');
 
-  // Keep the module-level search index in sync with local trades state so that
-  // in-place status updates and deletes are reflected in filtered results.
   useEffect(() => {
     buildTradeIndex(trades);
   }, [trades]);
@@ -541,7 +528,6 @@ export default function TradingPage() {
         const updated = await updateTrade(token, id, updates);
         setTrades((prev) => prev.map((t) => (t.id === id ? updated : t)));
         toast.success('Trade updated.');
-        // Native app only: success haptic for trade actions.
         void hapticSuccess();
       } catch (e) {
         void hapticError();
@@ -580,7 +566,6 @@ export default function TradingPage() {
     const map = new Map<string, TradeConflict[]>();
     if (!selectedSections.length || !allSections.length) return map;
 
-    // Resolve human course code -> internal courseId so we can index sections by code.
     const codeToCourseId = new Map<string, string>();
     for (const course of allCourses) {
       codeToCourseId.set(course.code, course.id);
@@ -693,7 +678,7 @@ export default function TradingPage() {
         <EmptyState
           icon={<SwapHoriz sx={{ fontSize: 60 }} />}
           title="No Trades Yet"
-          description="Find the perfect section swap — post your first trade."
+          description="Find the perfect section swap. Post your first trade."
           action={
             <Button
               variant="contained"

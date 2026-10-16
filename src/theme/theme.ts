@@ -5,27 +5,27 @@ const getPalette = (isDark: boolean): ThemeOptions['palette'] => {
     return {
       mode: 'light',
       primary: {
-        main: '#4f46e5',
-        light: '#6366f1',
-        dark: '#4338ca',
+        main: '#ea2b2b',
+        light: '#f87171',
+        dark: '#b91c1c',
         contrastText: '#ffffff',
       },
       secondary: {
-        main: '#0f172a',
-        light: '#334155',
-        dark: '#020617',
+        main: '#1cb0f6',
+        light: '#4bc2f8',
+        dark: '#028ce0',
         contrastText: '#ffffff',
       },
       error: {
-        main: '#ef4444',
+        main: '#ff4b4b',
         contrastText: '#ffffff',
       },
       warning: {
-        main: '#f59e0b',
+        main: '#ff9600',
         contrastText: '#ffffff',
       },
       info: {
-        main: '#06b6d4',
+        main: '#1cb0f6',
         contrastText: '#ffffff',
       },
       success: {
@@ -33,66 +33,66 @@ const getPalette = (isDark: boolean): ThemeOptions['palette'] => {
         contrastText: '#ffffff',
       },
       background: {
-        default: '#f8fafc',
+        default: '#ddf4ff',
         paper: '#ffffff',
       },
       text: {
-        primary: '#0f172a',
-        secondary: '#64748b',
+        primary: '#3c3c3c',
+        secondary: '#777777',
       },
       action: {
-        hover: 'rgba(15, 23, 42, 0.04)',
-        selected: 'rgba(79, 70, 229, 0.08)',
+        hover: 'rgba(28, 176, 246, 0.08)',
+        selected: 'rgba(234, 43, 43, 0.14)',
       },
-      divider: '#e2e8f0',
+      divider: '#cde4f0',
     };
   }
 
   return {
     mode: 'dark',
     primary: {
-      main: '#818cf8',
-      light: '#a5b4fc',
-      dark: '#6366f1',
-      contrastText: '#0f172a',
+      main: '#ff5c5c',
+      light: '#ff8585',
+      dark: '#c52222',
+      contrastText: '#ffffff',
     },
     secondary: {
-      main: '#e2e8f0',
-      light: '#f8fafc',
-      dark: '#94a3b8',
-      contrastText: '#0f172a',
+      main: '#1cb0f6',
+      light: '#4bc2f8',
+      dark: '#028ce0',
+      contrastText: '#ffffff',
     },
     error: {
-      main: '#f87171',
-      contrastText: '#450a0a',
+      main: '#ff6b6b',
+      contrastText: '#ffffff',
     },
     warning: {
-      main: '#fbbf24',
-      contrastText: '#451a03',
+      main: '#ffaa1a',
+      contrastText: '#111111',
     },
     info: {
-      main: '#22d3ee',
-      contrastText: '#083344',
+      main: '#4bc2f8',
+      contrastText: '#111111',
     },
     success: {
       main: '#34d399',
-      contrastText: '#022c22',
+      contrastText: '#111111',
     },
     background: {
-      default: '#0b0f19',
-      paper: '#111827',
+      default: '#131f24',
+      paper: '#1b2a32',
     },
     text: {
-      primary: '#f8fafc',
-      secondary: '#94a3b8',
+      primary: '#f7f7f7',
+      secondary: '#9fb4c0',
     },
     action: {
-      hover: 'rgba(255, 255, 255, 0.05)',
-      selected: 'rgba(129, 140, 248, 0.12)',
+      hover: 'rgba(255, 255, 255, 0.06)',
+      selected: 'rgba(255, 92, 92, 0.16)',
       disabled: 'rgba(255, 255, 255, 0.38)',
       disabledBackground: 'rgba(255, 255, 255, 0.08)',
     },
-    divider: 'rgba(255, 255, 255, 0.08)',
+    divider: '#283b46',
   };
 };
 
@@ -111,34 +111,79 @@ const getComponents = (): ThemeOptions['components'] => {
       },
       variants: [
         {
-          props: { variant: 'contained', color: 'secondary', size: 'large' },
+          props: { variant: 'contained', color: 'primary' },
+          style: ({ theme }) => ({
+            fontWeight: 700,
+            letterSpacing: '0.6px',
+            backgroundColor: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
+            boxShadow: `0 3px 0 ${theme.palette.primary.dark}`,
+            '&:hover': {
+              backgroundColor: theme.palette.mode === 'dark' ? '#ff4b4b' : '#dc2626',
+              boxShadow: `0 3px 0 ${theme.palette.mode === 'dark' ? '#b91c1c' : '#991b1b'}`,
+            },
+            '&:active': {
+              transform: 'translateY(2px)',
+              boxShadow: `0 1px 0 ${theme.palette.mode === 'dark' ? '#b91c1c' : '#991b1b'}`,
+            },
+          }),
+        },
+        {
+          props: { variant: 'contained', color: 'secondary' },
+          style: ({ theme }) => ({
+            fontWeight: 700,
+            letterSpacing: '0.6px',
+            backgroundColor: theme.palette.secondary.main,
+            color: theme.palette.secondary.contrastText,
+            boxShadow: `0 3px 0 ${theme.palette.secondary.dark}`,
+            '&:hover': {
+              backgroundColor: '#189edc',
+              boxShadow: '0 3px 0 #027bc4',
+            },
+            '&:active': {
+              transform: 'translateY(2px)',
+              boxShadow: '0 1px 0 #027bc4',
+            },
+          }),
+        },
+        {
+          props: { variant: 'contained', size: 'large' },
           style: {
-            borderRadius: 10,
+            borderRadius: 12,
             padding: '12px 28px',
+            fontSize: '0.9375rem',
             fontWeight: 700,
           },
         },
         {
           props: { variant: 'contained', size: 'medium' },
           style: {
-            borderRadius: 10,
+            borderRadius: 12,
             padding: '8px 20px',
-            fontWeight: 600,
+            fontSize: '0.875rem',
+            fontWeight: 700,
           },
         },
         {
-          props: { variant: 'outlined', size: 'small' },
+          props: { variant: 'outlined' },
           style: {
-            borderRadius: 8,
+            borderRadius: 12,
+            borderWidth: 2,
+            fontWeight: 700,
+            letterSpacing: '0.5px',
+            '&:hover': {
+              borderWidth: 2,
+            },
           },
         },
       ],
       styleOverrides: {
         root: {
-          borderRadius: 10,
+          borderRadius: 12,
           padding: '8px 20px',
-          fontWeight: 600,
+          fontWeight: 700,
           textTransform: 'none',
+          letterSpacing: '0.5px',
           transition: 'all 0.15s ease-in-out',
           '&:active': {
             transform: 'scale(0.98)',
@@ -149,26 +194,26 @@ const getComponents = (): ThemeOptions['components'] => {
     MuiCard: {
       styleOverrides: {
         root: ({ theme }) => ({
-          borderRadius: 14,
+          borderRadius: 12,
           [theme.breakpoints.up('sm')]: {
-            borderRadius: 16,
+            borderRadius: 14,
           },
           backgroundImage: 'none',
-          border: '1px solid',
+          border: '2px solid',
           borderColor: theme.palette.divider,
           boxShadow:
             theme.palette.mode === 'dark'
-              ? '0 4px 20px -2px rgba(0,0,0,0.45)'
-              : '0 1px 3px 0 rgba(0,0,0,0.04), 0 1px 2px -1px rgba(0,0,0,0.02)',
+              ? '0 4px 16px rgba(0,0,0,0.4)'
+              : '0 2px 8px rgba(0,0,0,0.04)',
         }),
       },
     },
     MuiCardContent: {
       styleOverrides: {
         root: {
-          padding: '24px',
+          padding: '20px',
           '&:last-child': {
-            paddingBottom: '24px',
+            paddingBottom: '20px',
           },
         },
       },
@@ -177,9 +222,9 @@ const getComponents = (): ThemeOptions['components'] => {
       styleOverrides: {
         root: ({ theme }) => ({
           backgroundImage: 'none',
-          borderRadius: 14,
+          borderRadius: 12,
           [theme.breakpoints.up('sm')]: {
-            borderRadius: 16,
+            borderRadius: 14,
           },
         }),
       },
@@ -187,8 +232,9 @@ const getComponents = (): ThemeOptions['components'] => {
     MuiChip: {
       styleOverrides: {
         root: {
-          borderRadius: 8,
-          fontWeight: 600,
+          borderRadius: 10,
+          fontWeight: 700,
+          letterSpacing: '0.4px',
         },
       },
     },
@@ -196,7 +242,16 @@ const getComponents = (): ThemeOptions['components'] => {
       styleOverrides: {
         root: {
           '& .MuiOutlinedInput-root': {
-            borderRadius: 10,
+            borderRadius: 12,
+            '& fieldset': {
+              borderWidth: 2,
+            },
+            '&:hover fieldset': {
+              borderWidth: 2,
+            },
+            '&.Mui-focused fieldset': {
+              borderWidth: 2,
+            },
           },
         },
       },
@@ -204,14 +259,23 @@ const getComponents = (): ThemeOptions['components'] => {
     MuiInputBase: {
       styleOverrides: {
         root: {
-          borderRadius: 10,
+          borderRadius: 12,
         },
       },
     },
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          borderRadius: 10,
+          borderRadius: 12,
+          '& fieldset': {
+            borderWidth: 2,
+          },
+          '&:hover fieldset': {
+            borderWidth: 2,
+          },
+          '&.Mui-focused fieldset': {
+            borderWidth: 2,
+          },
         },
       },
     },
@@ -219,10 +283,7 @@ const getComponents = (): ThemeOptions['components'] => {
       styleOverrides: {
         paper: ({ theme }) => ({
           borderRadius: 16,
-          [theme.breakpoints.up('sm')]: {
-            borderRadius: 20,
-          },
-          border: '1px solid',
+          border: '2px solid',
           borderColor: theme.palette.divider,
         }),
       },
@@ -232,6 +293,7 @@ const getComponents = (): ThemeOptions['components'] => {
         root: {
           padding: 24,
           paddingBottom: 16,
+          fontWeight: 700,
         },
       },
     },
@@ -254,9 +316,9 @@ const getComponents = (): ThemeOptions['components'] => {
         paper: ({ theme }) => ({
           borderRadius: 12,
           marginTop: 8,
-          border: '1px solid',
+          border: '2px solid',
           borderColor: theme.palette.divider,
-          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
+          boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
         }),
       },
     },
@@ -266,7 +328,7 @@ const getComponents = (): ThemeOptions['components'] => {
           borderRadius: 8,
           margin: '2px 6px',
           padding: '8px 14px',
-          fontWeight: 500,
+          fontWeight: 600,
         },
       },
     },
@@ -274,6 +336,7 @@ const getComponents = (): ThemeOptions['components'] => {
       styleOverrides: {
         root: {
           borderRadius: 12,
+          fontWeight: 600,
         },
       },
     },
@@ -281,6 +344,7 @@ const getComponents = (): ThemeOptions['components'] => {
       styleOverrides: {
         root: {
           borderRadius: 12,
+          fontWeight: 600,
         },
       },
     },
@@ -288,7 +352,7 @@ const getComponents = (): ThemeOptions['components'] => {
       styleOverrides: {
         root: {
           borderRadius: 9999,
-          height: 8,
+          height: 10,
         },
       },
     },
@@ -309,7 +373,7 @@ const getComponents = (): ThemeOptions['components'] => {
           borderRadius: 8,
           padding: '6px 10px',
           fontSize: '0.8125rem',
-          fontWeight: 500,
+          fontWeight: 600,
         },
       },
     },
@@ -325,9 +389,10 @@ const getComponents = (): ThemeOptions['components'] => {
       styleOverrides: {
         root: ({ theme }) => ({
           textTransform: 'none',
-          fontWeight: 600,
+          fontWeight: 700,
           borderRadius: 10,
           minHeight: 44,
+          letterSpacing: '0.5px',
           zIndex: 1,
           color: theme.palette.text.secondary,
           '&.Mui-selected': {
@@ -350,13 +415,14 @@ const getComponents = (): ThemeOptions['components'] => {
         root: {
           borderRadius: 10,
           margin: '2px 6px',
+          fontWeight: 600,
         },
       },
     },
     MuiSelect: {
       styleOverrides: {
         root: {
-          borderRadius: 10,
+          borderRadius: 12,
         },
       },
     },
@@ -370,49 +436,49 @@ export const createAppTheme = (isDark: boolean) => {
       fontFamily:
         '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       h1: {
-        fontSize: '2.75rem',
+        fontSize: '2.5rem',
         fontWeight: 800,
-        letterSpacing: '-0.03em',
+        letterSpacing: '0.8px',
       },
       h2: {
         fontSize: '2rem',
         fontWeight: 700,
-        letterSpacing: '-0.025em',
+        letterSpacing: '0.8px',
       },
       h3: {
         fontSize: '1.5rem',
         fontWeight: 700,
-        letterSpacing: '-0.02em',
+        letterSpacing: '0.8px',
       },
       h4: {
         fontSize: '1.25rem',
         fontWeight: 700,
-        letterSpacing: '-0.02em',
+        letterSpacing: '0.8px',
       },
       h5: {
         fontSize: '1.125rem',
         fontWeight: 700,
-        letterSpacing: '-0.015em',
+        letterSpacing: '0.8px',
       },
       h6: {
         fontSize: '1rem',
         fontWeight: 700,
-        letterSpacing: '-0.01em',
+        letterSpacing: '0.8px',
       },
-      subtitle1: { fontSize: '1rem', fontWeight: 600 },
-      subtitle2: { fontSize: '0.875rem', fontWeight: 600 },
-      body1: { fontSize: '0.9375rem', lineHeight: 1.6, fontWeight: 400 },
-      body2: { fontSize: '0.875rem', lineHeight: 1.5, fontWeight: 400 },
-      button: { textTransform: 'none', fontWeight: 600, letterSpacing: '0' },
-      caption: { fontSize: '0.75rem', fontWeight: 500, letterSpacing: '0.02em' },
+      subtitle1: { fontSize: '1rem', fontWeight: 600, letterSpacing: '0.6px' },
+      subtitle2: { fontSize: '0.875rem', fontWeight: 600, letterSpacing: '0.6px' },
+      body1: { fontSize: '0.9375rem', lineHeight: 1.5, fontWeight: 600 },
+      body2: { fontSize: '0.8125rem', lineHeight: 1.4, fontWeight: 500 },
+      button: { textTransform: 'none', fontWeight: 700, letterSpacing: '0.6px' },
+      caption: { fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.4px' },
       overline: {
         fontSize: '0.75rem',
         fontWeight: 700,
-        letterSpacing: '0.08em',
+        letterSpacing: '0.8px',
         textTransform: 'uppercase',
       },
     },
-    shape: { borderRadius: 10 },
+    shape: { borderRadius: 12 },
     components: getComponents(),
   });
 };

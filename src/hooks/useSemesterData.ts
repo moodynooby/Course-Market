@@ -16,7 +16,6 @@ export function useSemesterData() {
   const [schedule, setSchedule] = useState<Schedule | null>(null);
   const [allCourses, setAllCourses] = useState<Course[]>([]);
   const [allSections, setAllSections] = useState<Section[]>([]);
-  // Semester whose data is currently held in state; a change triggers a re-fetch
   const loadedSemesterRef = useRef<string | null>(null);
   const dataLoadedRef = useRef(false);
   const coursesRef = useRef<Course[]>([]);
@@ -119,8 +118,6 @@ export function useSemesterData() {
     }
   }, [loadScheduleFromSelections, profile?.semesterId]);
 
-  // A semester switch requires a full re-fetch; everything else can be
-  // re-derived from the already-loaded data inside loadData.
   useEffect(() => {
     if (loadedSemesterRef.current === profile?.semesterId) return;
     loadedSemesterRef.current = profile?.semesterId ?? null;

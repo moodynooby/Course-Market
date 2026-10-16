@@ -92,14 +92,26 @@ export function AppBarHeader() {
               sx={{
                 fontWeight: 800,
                 color: 'text.primary',
-                letterSpacing: '-0.03em',
+                letterSpacing: '-0.02em',
                 display: { xs: 'none', sm: 'inline-flex' },
                 alignItems: 'center',
               }}
             >
               AuraIs
-              <Box component="span" sx={{ color: 'primary.main', ml: '1px' }}>
-                Hub
+              <Box
+                component="span"
+                sx={{
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                  px: 0.75,
+                  py: 0.1,
+                  borderRadius: '6px',
+                  ml: 0.5,
+                  fontSize: '0.85em',
+                  fontWeight: 800,
+                }}
+              >
+                HUB
               </Box>
             </Typography>
           </Box>

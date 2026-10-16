@@ -127,30 +127,24 @@ describe('CourseCard', () => {
       </MemoryRouter>,
     );
 
-    // Description is visible
     expect(
       screen.getByText('Foundational programming and algorithmic problem solving.'),
     ).toBeInTheDocument();
 
-    // Section 1: open seats & conflict with details
     expect(screen.getByText('5 seats left (25/30)')).toBeInTheDocument();
     expect(screen.getByText('Conflict: MATH101 Sec 1')).toBeInTheDocument();
 
-    // Section 2: Full seats & selected
     expect(screen.getByText('Full (0 seats)')).toBeInTheDocument();
     expect(screen.getByText('Selected')).toBeInTheDocument();
 
-    // Day badges
     expect(screen.getByText('M')).toBeInTheDocument();
     expect(screen.getByText('W')).toBeInTheDocument();
     expect(screen.getByText('T')).toBeInTheDocument();
 
-    // Click section to select
     const sec1Card = screen.getByRole('button', { name: /Select section 1/i });
     fireEvent.click(sec1Card);
     expect(handleSelect).toHaveBeenCalledWith('sec-1');
 
-    // Click pin to toggle
     const pinBtn = screen.getByRole('button', { name: /Unpin section/i });
     fireEvent.click(pinBtn);
     expect(handlePin).toHaveBeenCalledWith('sec-2');

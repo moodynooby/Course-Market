@@ -57,7 +57,7 @@ export function EmptyState({
         alignItems: 'center',
         justifyContent: 'center',
         textAlign: 'center',
-        borderRadius: 3,
+        borderRadius: '12px',
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: theme.palette.divider,
@@ -67,7 +67,7 @@ export function EmptyState({
         sx={{
           width: iconSize,
           height: iconSize,
-          borderRadius: 2.5,
+          borderRadius: '12px',
           bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.15 : 0.08),
           border: '1px solid',
           borderColor: alpha(

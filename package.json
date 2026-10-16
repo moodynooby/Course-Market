@@ -7,7 +7,8 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "dev": "netlify dev",
+    "dev": "tsx scripts/ensure-env.ts && netlify dev",
+    "env:pull": "tsx scripts/ensure-env.ts --force",
     "build": "tsc -b && vite build && echo '/*  /index.html  200' > dist/_redirects",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit --incremental -p tsconfig.app.json && tsc --noEmit --incremental -p tsconfig.node.json && tsc --noEmit --incremental -p tsconfig.netlify.json",
@@ -25,9 +26,11 @@
     "setup:hooks": "husky",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
+    "db:migrate": "tsx --env-file=.env db/migrate.ts",
     "db:check": "drizzle-kit check",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx --env-file=.env db/seed.ts"
+    "db:seed": "tsx --env-file=.env db/seed.ts",
+    "migrate": "pnpm run db:migrate"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.27.0",

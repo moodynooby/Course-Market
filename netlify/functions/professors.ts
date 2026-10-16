@@ -16,7 +16,6 @@ const professorWithStats = {
   ratingCount: sql<number>`count(${schema.professorRatings.id})`,
 } as const;
 
-// Rating projection reused across select() and .returning() so the shape can't drift.
 const ratingPublicColumns = {
   id: schema.professorRatings.id,
   professorId: schema.professorRatings.professorId,
@@ -63,7 +62,6 @@ export const handler = withCors(async (event) => {
         return jsonResponse(404, { error: 'Professor not found' });
       }
 
-      // Single query instead of N+1: fetch all sections with their semester names at once
       const sections = await db
         .select({
           semesterName: schema.semesters.name,
@@ -77,7 +75,6 @@ export const handler = withCors(async (event) => {
         )
         .innerJoin(schema.semesters, eq(schema.semesterSections.semesterId, schema.semesters.id));
 
-      // Group by semester in JS — no further DB round-trips
       const semesterMap = new Map<string, Set<string>>();
       for (const section of sections) {
         if (splitInstructorNames(section.instructor).includes(professor.name)) {
@@ -121,7 +118,6 @@ export const handler = withCors(async (event) => {
     }
   }
 
-  // Everything below requires auth.
   const user = await validateToken(event.headers.authorization);
 
   if (httpMethod === 'POST') {
@@ -136,7 +132,6 @@ export const handler = withCors(async (event) => {
         return jsonResponse(400, { error: 'Invalid JSON' });
       }
 
-      // One rating per (user, professor); resubmit overwrites the previous row.
       const [newRating] = await db
         .insert(schema.professorRatings)
         .values({

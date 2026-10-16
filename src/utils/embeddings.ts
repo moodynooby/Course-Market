@@ -10,11 +10,8 @@ export const SLOTS_PER_DAY_NORMALIZATION_MAX = 4;
 /** Caps the "cost" feature mix used by the intrinsic quality proxy. */
 export const QUALITY_COST_CAP = 600;
 
-// Fixed thresholds for the *intrinsic* (preference-free) quality proxy.
-// These intentionally do not read from user preferences so that feature
-// vectors remain comparable across generation runs.
-const INTRINSIC_WINDOW_START_MIN = 480; // 08:00
-const INTRINSIC_WINDOW_END_MIN = 1080; // 18:00
+const INTRINSIC_WINDOW_START_MIN = 480;
+const INTRINSIC_WINDOW_END_MIN = 1080;
 const INTRINSIC_GAP_THRESHOLD_MIN = 60;
 const INTRINSIC_AVOID_DAY_PENALTY = 60;
 

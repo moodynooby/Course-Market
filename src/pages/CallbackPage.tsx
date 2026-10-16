@@ -19,8 +19,6 @@ export default function CallbackPage() {
       return;
     }
 
-    // Return the user to the exact page they were on when they signed in,
-    // if the guard stored one and it is safe to navigate to.
     const { returnUrl, actionLabel } = consumeAuthReturnContext();
     if (returnUrl) {
       void actionLabel;

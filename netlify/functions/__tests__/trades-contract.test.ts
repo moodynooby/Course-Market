@@ -24,7 +24,6 @@ describe('trade projection privacy contract', () => {
       ]),
     );
 
-    // Verify sensitive PII or credentials are never exposed
     expect(projectedKeys).not.toContain('userEmail');
     expect(projectedKeys).not.toContain('email');
     expect(projectedKeys).not.toContain('token');

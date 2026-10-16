@@ -18,6 +18,7 @@ interface NavLinkProps {
 function NavLink({ to, label, currentPath, icon, accentColor }: NavLinkProps) {
   const theme = useTheme();
   const isActive = currentPath === to || (to !== '/' && currentPath.startsWith(to));
+  const effectiveColor = to === '/' ? theme.palette.primary.main : accentColor;
 
   return (
     <Box
@@ -29,26 +30,23 @@ function NavLink({ to, label, currentPath, icon, accentColor }: NavLinkProps) {
         alignItems: 'center',
         gap: 1,
         flexShrink: 0,
-        height: 38,
-        px: 1.25,
-        borderRadius: 2,
-        fontWeight: isActive ? 700 : 600,
+        height: 40,
+        px: 1.5,
+        borderRadius: '12px',
+        fontWeight: 700,
+        letterSpacing: '0.4px',
         fontSize: '0.875rem',
         color: isActive ? 'text.primary' : 'text.secondary',
-        bgcolor: isActive
-          ? alpha(accentColor, theme.palette.mode === 'dark' ? 0.18 : 0.08)
-          : 'transparent',
-        border: '1px solid',
-        borderColor: isActive
-          ? alpha(accentColor, theme.palette.mode === 'dark' ? 0.35 : 0.2)
-          : 'transparent',
+        bgcolor: isActive ? alpha(effectiveColor, 0.12) : 'transparent',
+        border: '2px solid',
+        borderColor: isActive ? effectiveColor : 'transparent',
         transition: 'all 0.15s ease-in-out',
         '&:hover': {
           color: 'text.primary',
-          bgcolor: alpha(accentColor, theme.palette.mode === 'dark' ? 0.22 : 0.12),
+          bgcolor: alpha(effectiveColor, 0.08),
         },
         '&:active': {
-          transform: 'scale(0.96)',
+          transform: 'scale(0.97)',
         },
       }}
     >
@@ -57,13 +55,9 @@ function NavLink({ to, label, currentPath, icon, accentColor }: NavLinkProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: 24,
-          height: 24,
-          borderRadius: 1.2,
-          bgcolor: alpha(accentColor, theme.palette.mode === 'dark' ? 0.3 : 0.14),
-          color: accentColor,
+          color: isActive ? effectiveColor : accentColor,
           '& .MuiSvgIcon-root': {
-            fontSize: 16,
+            fontSize: 18,
           },
         }}
       >
@@ -83,25 +77,25 @@ export const NAV_ITEMS = [
     to: '/',
     label: 'Dashboard',
     icon: <CalendarMonthRounded />,
-    accentColor: '#4f46e5',
+    accentColor: '#ea2b2b',
   },
   {
     to: '/trading',
     label: 'Trading',
     icon: <SwapHorizRounded />,
-    accentColor: '#f59e0b',
+    accentColor: '#1cb0f6',
   },
   {
     to: '/professors',
     label: 'Rate My Prof',
     icon: <SchoolRounded />,
-    accentColor: '#10b981',
+    accentColor: '#ff9600',
   },
   {
     to: '/courses',
     label: 'Courses',
     icon: <MenuBookRounded />,
-    accentColor: '#0284c7',
+    accentColor: '#af70ff',
   },
 ] as const;
 

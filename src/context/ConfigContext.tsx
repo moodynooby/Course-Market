@@ -24,8 +24,6 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     setPreferences((prev) => {
       const local = storage.get(STORAGE_KEYS.PREFERENCES, DEFAULT_PREFERENCES);
       const isDirty = storage.get(STORAGE_KEYS.PREFS_DIRTY, false);
-      // While sync runs (dirty flag set), keep locally tuned prefs; only
-      // overwrite with cloud prefs when local state has not been modified.
       if (isDirty) return prev;
       if (JSON.stringify(local) !== JSON.stringify(profile.preferences)) {
         return profile.preferences as Preferences;
@@ -48,8 +46,6 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     [isAuthenticated, updateProfile],
   );
 
-  // Once the cloud profile is available, merge it with any locally tuned
-  // preferences (post-login sync). See `usePreferenceSync` for the merge rules.
   usePreferenceSync(updatePreferences);
 
   return (

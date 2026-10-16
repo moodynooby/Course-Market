@@ -19,5 +19,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["db", "netlify/functions", "drizzle.config.ts"]
+  "include": ["db", "netlify/functions", "api", "drizzle.config.ts"]
 }

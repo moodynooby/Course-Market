@@ -123,6 +123,18 @@ describe('userProfileSchema', () => {
     expect(result.semesterId).toBe('winter2025');
   });
 
+  it('accepts profile without phone', () => {
+    const result = userProfileSchema.parse({ semesterId: 'winter2025' });
+    expect(result.semesterId).toBe('winter2025');
+    expect(result.phone).toBeUndefined();
+  });
+
+  it('accepts profile with empty string phone', () => {
+    const result = userProfileSchema.parse({ semesterId: 'winter2025', phone: '' });
+    expect(result.semesterId).toBe('winter2025');
+    expect(result.phone).toBe('');
+  });
+
   it('rejects profile with invalid phone', () => {
     expect(() => userProfileSchema.parse({ phone: '123' })).toThrow();
   });

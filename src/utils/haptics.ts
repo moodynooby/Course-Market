@@ -7,9 +7,7 @@ export async function hapticSuccess(): Promise<void> {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
       navigator.vibrate(20);
-    } catch {
-      // Ignore vibration errors
-    }
+    } catch {}
   }
 }
 
@@ -17,9 +15,7 @@ export async function hapticError(): Promise<void> {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
       navigator.vibrate([40, 40, 40]);
-    } catch {
-      // Ignore vibration errors
-    }
+    } catch {}
   }
 }
 
@@ -27,8 +23,6 @@ export async function hapticLight(): Promise<void> {
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
       navigator.vibrate(10);
-    } catch {
-      // Ignore vibration errors
-    }
+    } catch {}
   }
 }

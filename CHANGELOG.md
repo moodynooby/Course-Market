@@ -13,14 +13,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Focused calendar event, schedule details, and trading skeleton components.
 - Course Browser UI/UX overhaul: clickable card headers, subject badges, section counts, instructor previews, seat availability indicators, day pills, detailed conflict tooltips, quick filter chips ("Selected", "Open Seats", "No Conflicts"), and floating sticky selection dock with "Generate Schedules" primary CTA.
 - Essential regression tests for schedule prefiltering combinatorics, Netlify function auth/CORS/privacy contracts, native OAuth callback routing, CourseCard UI interactions, and API client timeouts.
-- Vibrant & Social design overhaul: Electric Indigo (`#4f46e5`) and Obsidian (`#0f172a` / `#0b0f19`) palette, modern SVG micro-badges for navigation, tactile trade card exchange blocks, and playful "✨ Peak Aura" schedule badges.
+- Duolingo-grade design system overhaul: Vivid Red (`#ea2b2b`), cyan (`#1cb0f6`), sky-blue (`#ddf4ff`), and charcoal (`#3c3c3c`) palette, 12px geometry, tactile button feedback, and dedicated `DESIGN.md` specification for agents.
+- Dual-cloud portability support: universal Node/Serverless adapter (`api/_adapter.ts`, `api/[...path].ts`), `vercel.json` rewrites and headers, and Netlify `/api/*` redirection so AuraIsHub deploys seamlessly to both Vercel and Netlify.
+- Server-side schedule generation and optimization endpoint (`POST /api/schedules/generate`) with client offline fallback.
+- Server-side course search and filtering endpoint (`GET /api/courses/search`) with instructor, subject, and open seats querying.
 
 ### Changed
 
 - Pinned Biome `2.5.14` as the single formatter and linter for supported source files.
 - Centralized storage keys, schedule thresholds, and the canonical schedule type.
 - Consolidated schedule scoring and conflict tests into canonical `src/utils/__tests__/schedule.test.ts`.
-- Modernized theme geometry and component radii from 32px hyper-bubbles to a disciplined 10px–14px scale with 1px hairline border strokes.
+- Modernized theme geometry and component radii to Duolingo standard 12px scale with 2px borders and tactile button elevation.
 
 ### Fixed
 

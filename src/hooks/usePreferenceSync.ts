@@ -78,7 +78,6 @@ export function usePreferenceSync(updatePreferences: (updates: Partial<Preferenc
     } else if (decision.action === 'pull') {
       updatePreferences(decision.preferences);
     }
-    // 'none' requires no work.
   }, [isAuthenticated, profile, updateProfile, updatePreferences]);
 }
 

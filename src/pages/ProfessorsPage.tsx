@@ -75,7 +75,7 @@ export default function ProfessorsPage() {
       setSyncing(true);
       const result = await professorsApi.syncProfessors(await getToken());
       await fetchProfessors();
-      setSyncMessage(`Sync complete — ${result.instructorsFound} instructors found`);
+      setSyncMessage(`Sync complete: ${result.instructorsFound} instructors found`);
     } catch (err) {
       console.error('Error syncing professors:', err);
       setError('Failed to sync professors.');

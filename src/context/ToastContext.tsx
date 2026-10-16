@@ -34,7 +34,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       setPack((prev) => prev.slice(1));
       setOpen(true);
     } else if (pack.length && current && open) {
-      // Dismiss current so we can show the next one
       setOpen(false);
     }
   }, [pack, current, open]);

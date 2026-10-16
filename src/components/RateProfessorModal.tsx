@@ -67,7 +67,6 @@ export default function RateProfessorModal({
 
   useEffect(() => {
     if (open) {
-      // Reset all fields every time the modal opens to prevent stale values
       setRating(5);
       setDifficulty(3);
       setComment('');
@@ -114,7 +113,6 @@ export default function RateProfessorModal({
         token,
       );
       onSuccess();
-      // Reset before closing so state setters don't fire on an unmounted component
       setRating(5);
       setDifficulty(3);
       setComment('');
@@ -145,7 +143,7 @@ export default function RateProfessorModal({
               <Typography variant="subtitle2">Overall Quality</Typography>
               {rating && (
                 <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600 }}>
-                  — {RATING_LABELS[rating]}
+                  ({RATING_LABELS[rating]})
                 </Typography>
               )}
             </Stack>
@@ -162,7 +160,7 @@ export default function RateProfessorModal({
               <Typography variant="subtitle2">Level of Difficulty</Typography>
               {difficulty && (
                 <Typography variant="caption" sx={{ color: 'secondary.main', fontWeight: 600 }}>
-                  — {DIFFICULTY_LABELS[difficulty]}
+                  ({DIFFICULTY_LABELS[difficulty]})
                 </Typography>
               )}
             </Stack>

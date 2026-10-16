@@ -16,7 +16,7 @@ export const COURSE_COLORS = [
   '#059669',
   '#dc2626',
   '#ea580c',
-  '#4f46e5',
+  '#1cb0f6',
   '#be185d',
 ];
 
@@ -58,7 +58,6 @@ export const EventComponent = memo(function EventComponent({
     </Box>
   );
 
-  // On touch devices hover tooltips never fire, so a tap opens the detail
   // sheet instead. On desktop the tooltip remains for instant previews.
   if (touchFriendly && onSelect) {
     return (

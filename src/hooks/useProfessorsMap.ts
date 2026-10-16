@@ -6,7 +6,6 @@ export interface ProfessorRatingInfo {
   ratingCount: number;
 }
 
-// Module-level cache to share data across all hook instances immediately
 let sharedPromise: Promise<Map<string, ProfessorRatingInfo>> | null = null;
 let cachedMap: Map<string, ProfessorRatingInfo> | null = null;
 
@@ -47,7 +46,6 @@ export function useProfessorsMap() {
         return m;
       } catch (e) {
         console.error('Failed to fetch professor ratings:', e);
-        // Don't cache the failure permanently to allow retries on next mount
         sharedPromise = null;
         return new Map<string, ProfessorRatingInfo>();
       }

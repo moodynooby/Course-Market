@@ -3,6 +3,7 @@
 ## Source of Truth
 
 - **ARCHITECTURE-MAP.md** — living navigation map of the codebase (domain ownership, dependencies, hot spots, anti-regression contracts). Read it before starting any task so you work from the real structure, not assumptions.
+- **DESIGN.md** — authoritative visual identity, tokens (reddish primary, cyan accent, sky-blue canvas), 12px geometry, tactile feedback, and anti-slop rules for UI.
 - **CONTRIBUTING.md** — authoritative automation rules (never push/PR/merge without permission, commit only when asked, feature branches). This file only summarises them; if they drift, CONTRIBUTING.md wins.
 - **docs/** — repo conventions: `docs/documentation-standards.md` (docs naming, status lifecycle, "update docs/CHANGELOG after a task") plus architecture/features/issues history to check before touching sensitive areas (streaming, routing, metadata, thinking config).
 - Treat repository evidence and verified runtime results as authoritative; never accept claims without checking them.

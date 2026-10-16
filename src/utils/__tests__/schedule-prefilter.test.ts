@@ -33,7 +33,7 @@ describe('buildSectionsByCourse', () => {
     const all = [
       makeSection({ id: 's1', courseId: 'c1' }),
       makeSection({ id: 's2', courseId: 'c1' }),
-      makeSection({ id: 's3', courseId: 'c2' }), // unselected course
+      makeSection({ id: 's3', courseId: 'c2' }),
     ];
 
     const result = buildSectionsByCourse(selected, all, {});

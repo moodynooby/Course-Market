@@ -297,18 +297,15 @@ export function computeScheduleFeaturesWithContext(
 
     for (let i = 0; i < allSlots.length; i++) {
       if (hasLunchBreak === 1 && preferences.maxGapMinutes <= 0) {
-        // We only need to continue if gap calculation is active
         break;
       }
       const s = allSlots[i];
 
-      // Gap calculation
       if (i < allSlots.length - 1 && s.day === allSlots[i + 1].day) {
         const gap = allSlots[i + 1].start - s.end;
         if (gap > gapLimit) gapMinutesTotal += gap - gapLimit;
       }
 
-      // Lunch break detection
       if (s.day !== currentDay) {
         if (dayEndsBeforeLunch && dayStartsAfterLunch) hasLunchBreak = 1;
         currentDay = s.day;

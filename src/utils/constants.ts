@@ -2,7 +2,6 @@ export const STORAGE_KEYS = {
   PREFERENCES: 'auraishub_preferences',
   PREFS_DIRTY: 'auraishub_prefs_dirty',
   THEME_MODE: 'theme-mode',
-  PUSH_TOKEN: 'aurais:pushToken',
 } as const;
 
 export const MORNING_END_MINUTES = 720;
@@ -55,7 +54,7 @@ export const SCHEDULE_PRESETS: SchedulePreset[] = [
   {
     id: 'balanced',
     label: 'Balanced',
-    description: 'Standard 9–5, moderate gaps',
+    description: 'Standard 9-5, moderate gaps',
     icon: '⚖️',
     preferences: {
       preferredStartTime: '09:00',

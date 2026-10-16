@@ -8,8 +8,6 @@ interface HandlerResult {
   body: string;
 }
 
-// Short-circuits CORS preflight and routes uncaught errors through
-// secureErrorResponse. Public endpoints get this; no token is required.
 export function withCors(handler: (event: NetlifyEvent) => Promise<HandlerResult>) {
   return async (event: NetlifyEvent): Promise<HandlerResult> => {
     if (event.httpMethod === 'OPTIONS') return corsResponse();
@@ -24,8 +22,6 @@ export function withCors(handler: (event: NetlifyEvent) => Promise<HandlerResult
   };
 }
 
-// Validates the bearer token and passes the resolved user to the inner
-// handler. AuthError -> 401, everything else -> secureErrorResponse.
 export function withAuth(handler: (event: NetlifyEvent, user: AuthUser) => Promise<HandlerResult>) {
   return withCors(async (event) => {
     const user = await validateToken(event.headers.authorization);

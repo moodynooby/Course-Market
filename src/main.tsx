@@ -20,7 +20,7 @@ const auth0Config = {
 const rootElement = document.getElementById('root');
 
 if (!rootElement) {
-  throw new Error('Course-Market root element was not found.');
+  throw new Error('AuraIsHub root element was not found.');
 }
 
 const application = env.AUTH0_CONFIGURED ? (

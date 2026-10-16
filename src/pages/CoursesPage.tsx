@@ -69,9 +69,6 @@ export default function CoursesPage() {
   const professorRatings = useProfessorsMap();
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
-  // Deep-link support: auraishub://courses?courseCode=CSE201 (or
-  // /courses?code=CSE201 on the web) pre-fills the search so the linked
-  // course is shown immediately.
   const [searchParams] = useSearchParams();
   const deepLinkCode = searchParams.get('courseCode') ?? searchParams.get('code');
   useEffect(() => {
@@ -222,7 +219,6 @@ export default function CoursesPage() {
     return Array.from(subs).sort();
   }, [courses]);
 
-  // Optimization: O(1) lookup maps to avoid nested O(N) searches in loops
   const coursesMap = useMemo(() => new Map(courses.map((c) => [c.id, c])), [courses]);
   const sectionsMap = useMemo(() => new Map(sections.map((s) => [s.id, s])), [sections]);
 
@@ -243,7 +239,6 @@ export default function CoursesPage() {
     let totalCredits = 0;
     const items: Array<{ course: Course; section: Section }> = [];
     selectedSections.forEach((sectionId, courseId) => {
-      // Optimization: O(1) lookup instead of O(N) .find()
       const course = coursesMap.get(courseId);
       const section = sectionsMap.get(sectionId);
       if (course && section) {
@@ -255,7 +250,6 @@ export default function CoursesPage() {
   }, [selectedSections, coursesMap, sectionsMap]);
 
   const selectedSectionList = useMemo(() => {
-    // Optimization: Filter in a single pass O(N) while maintaining section array order
     const ids = new Set(selectedSections.values());
     return sections.filter((section) => ids.has(section.id));
   }, [selectedSections, sections]);
@@ -283,7 +277,6 @@ export default function CoursesPage() {
     let result = courses;
 
     if (debouncedSearch.trim()) {
-      // Optimization: Uses relevance-ordered results from search index
       result = searchCourses(debouncedSearch);
     }
 
@@ -314,7 +307,6 @@ export default function CoursesPage() {
       !showSelectedOnly &&
       (debouncedSearch.trim() || subject !== 'all' || openSeatsOnly || hideConflicts)
     ) {
-      // Optimization: Partition selected vs unselected in a single pass O(N)
       const selected: Course[] = [];
       const unselected: Course[] = [];
       for (const course of result) {
@@ -654,7 +646,7 @@ export default function CoursesPage() {
                   sx={{ height: 22, fontSize: '0.72rem', fontWeight: 600 }}
                 />
                 <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  (Target: 12–18 credits)
+                  (Target: 12-18 credits)
                 </Typography>
               </Stack>
               <Stack

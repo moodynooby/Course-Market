@@ -23,7 +23,7 @@ import type { Semester } from '../types';
  *
  * The semester is the only required step (everything else needs it to load
  * courses), and it defaults to the most recent active semester. The phone
- * number is optional and asked inline here only for convenience — it can also
+ * number is optional and asked inline here only for convenience - it can also
  * be supplied later directly inside the trade form. Skipping always lands the
  * user on the page they were trying to reach, so the first meaningful action
  * (building a schedule) is never blocked.
@@ -45,7 +45,6 @@ export default function OnboardingPage() {
       setLoadingSemesters(true);
       const response = await getSemesters();
       setSemesters(response.semesters);
-      // Smart default: preselect the newest active semester.
       if (!selectedSemester && response.semesters.length > 0) {
         setSelectedSemester(response.semesters[0].id);
       }
@@ -140,7 +139,7 @@ export default function OnboardingPage() {
             </Avatar>
             <Typography variant="h4">Welcome to AuraIsHub!</Typography>
             <Typography variant="body1" sx={{ color: 'text.secondary', mb: 1 }}>
-              Pick your semester to load this term's courses — you can change it anytime.
+              Pick your semester to load this term's courses. You can change it anytime.
             </Typography>
           </Stack>
 
@@ -236,7 +235,7 @@ export default function OnboardingPage() {
                     variant="caption"
                     sx={{ color: 'text.secondary', textAlign: 'center' }}
                   >
-                    Your phone number is optional — add it later in the trade form when you want
+                    Your phone number is optional. Add it later in the trade form when you want
                     other students to reach you.
                   </Typography>
                 </Stack>

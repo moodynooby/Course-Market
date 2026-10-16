@@ -8,9 +8,15 @@
   PNPM_VERSION = "11.21.0"
 
 [[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
 
 [images]
   remote_images = []
@@ -58,11 +64,6 @@
 [functions]
   node_bundler = "esbuild"
   external_node_modules = []
-
-  [functions."*"]
-    node_version = "24"
-    memory = 1024
-    timeout = 10
 
 [dev]
   command = "vite"

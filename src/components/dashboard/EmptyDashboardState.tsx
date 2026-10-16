@@ -2,15 +2,15 @@ import { ArrowForward, AutoAwesome } from '@mui/icons-material';
 import { alpha, Box, Button, Card, Stack, Typography, useTheme } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
-const STEPS = [
-  { label: 'Pick Courses', color: '#4f46e5' },
-  { label: 'Set Preferences', color: '#f59e0b' },
-  { label: 'Optimize Aura', color: '#10b981' },
-];
-
 export function EmptyDashboardState() {
   const theme = useTheme();
   const navigate = useNavigate();
+
+  const steps = [
+    { label: 'Pick Courses', color: theme.palette.primary.main },
+    { label: 'Set Preferences', color: theme.palette.secondary.main },
+    { label: 'Generate Timetable', color: theme.palette.warning.main },
+  ];
 
   return (
     <Card
@@ -19,46 +19,55 @@ export function EmptyDashboardState() {
         p: { xs: 3, sm: 5 },
         textAlign: 'center',
         mb: 4,
-        borderRadius: 4,
+        borderRadius: '16px',
         bgcolor: 'background.paper',
+        border: '2px solid',
+        borderColor: 'divider',
       }}
     >
       <Box
         sx={{
-          width: 80,
-          height: 80,
-          borderRadius: 3,
-          bgcolor: alpha(theme.palette.primary.main, 0.1),
+          width: 72,
+          height: 72,
+          borderRadius: '16px',
+          bgcolor: alpha(theme.palette.primary.main, 0.2),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           mb: 3,
           mx: 'auto',
-          position: 'relative',
+          border: '2px solid',
+          borderColor: alpha(theme.palette.primary.main, 0.4),
         }}
       >
-        <AutoAwesome
-          sx={{ fontSize: 40, color: 'primary.main', position: 'relative', zIndex: 1 }}
-        />
+        <AutoAwesome sx={{ fontSize: 36, color: 'primary.main' }} />
       </Box>
-      <Typography variant="h5" gutterBottom sx={{ fontWeight: 800, letterSpacing: '-0.02em' }}>
-        Build Your Maximum Aura Schedule
+      <Typography variant="h5" gutterBottom sx={{ fontWeight: 800, letterSpacing: '0.6px' }}>
+        Build your ideal schedule
       </Typography>
       <Typography
-        sx={{ color: 'text.secondary', mb: 4, maxWidth: 520, mx: 'auto', lineHeight: 1.6 }}
+        sx={{
+          color: 'text.secondary',
+          mb: 4,
+          maxWidth: 520,
+          mx: 'auto',
+          lineHeight: 1.6,
+          fontWeight: 500,
+        }}
       >
-        Browse available courses, select your sections, and let AuraIsHub generate high-efficiency
-        timetables tailored to your sleep schedule, campus walking speed, and credit targets.
+        Select your courses, tune your scheduling preferences, and generate conflict-free timetables
+        tailored to your term.
       </Typography>
       <Stack direction="row" spacing={3} sx={{ justifyContent: 'center', mb: 4, flexWrap: 'wrap' }}>
-        {STEPS.map((step, index) => (
+        {steps.map((step, index) => (
           <Box key={step.label} sx={{ textAlign: 'center', minWidth: 90 }}>
             <Box
               sx={{
-                width: 36,
-                height: 36,
-                borderRadius: 2,
-                bgcolor: alpha(step.color, 0.12),
+                width: 40,
+                height: 40,
+                borderRadius: '12px',
+                bgcolor: alpha(step.color, 0.15),
+                border: `2px solid ${alpha(step.color, 0.35)}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -66,12 +75,12 @@ export function EmptyDashboardState() {
                 mb: 1,
                 fontWeight: 800,
                 color: step.color,
-                fontSize: '0.875rem',
+                fontSize: '0.9375rem',
               }}
             >
               {index + 1}
             </Box>
-            <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 600 }}>
+            <Typography variant="caption" sx={{ color: 'text.primary', fontWeight: 700 }}>
               {step.label}
             </Typography>
           </Box>
@@ -83,7 +92,7 @@ export function EmptyDashboardState() {
         size="large"
         onClick={() => navigate('/courses')}
         startIcon={<ArrowForward />}
-        sx={{ px: 4, py: 1.25, fontWeight: 700 }}
+        sx={{ px: 4, py: 1.25, fontWeight: 700, borderRadius: '12px' }}
       >
         Browse Courses
       </Button>

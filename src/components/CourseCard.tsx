@@ -470,8 +470,8 @@ export const CourseCard = memo(
                                 <Tooltip
                                   title={
                                     pinnedSectionId === section.id
-                                      ? 'Unpin section — allow alternatives in generator'
-                                      : 'Pin section — lock this specific section'
+                                      ? 'Unpin section - allow alternatives in generator'
+                                      : 'Pin section - lock this specific section'
                                   }
                                 >
                                   <IconButton

@@ -37,6 +37,14 @@ function isInvalidRefreshTokenError(error: unknown): boolean {
   return message.toLowerCase().includes('unknown or invalid refresh token');
 }
 
+function safeRelativePath(url?: string): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith('/') && !url.startsWith('//') && !url.includes(':')) {
+    return url;
+  }
+  return undefined;
+}
+
 interface AuthContextValue {
   user: {
     id: string;
@@ -95,13 +103,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       return token;
     } catch (error) {
-      // A dead refresh token is unrecoverable client-side: clear the stale
-      // Auth0 cache and send the user through a fresh login instead of
-      // retrying silently forever.
       if (isInvalidRefreshTokenError(error)) {
         clearAuth0Cache();
+        const returnTo = safeRelativePath(window.location.pathname + window.location.search) ?? '/';
         await loginWithRedirect({
-          appState: { returnTo: window.location.pathname + window.location.search },
+          appState: { returnTo },
         });
       }
       throw error;
@@ -110,8 +116,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signIn = useCallback(
     (returnUrl?: string) => {
+      const returnTo = safeRelativePath(returnUrl);
       return loginWithRedirect({
-        ...(returnUrl ? { appState: { returnTo: returnUrl } } : {}),
+        ...(returnTo ? { appState: { returnTo } } : {}),
       });
     },
     [loginWithRedirect],
@@ -128,7 +135,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return;
     }
 
-    // Guard against overlapping calls: the last caller wins
     const ticket = Symbol();
     fetchInFlight.current = ticket;
 
@@ -136,13 +142,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const token = await getToken();
       const result = await api.get<{ profile: UserProfile }>('/user-profile', token);
-      // Only apply if this is still the latest call
       if (fetchInFlight.current === ticket) {
         setProfile(result.profile);
       }
     } catch (error) {
       if (fetchInFlight.current !== ticket) return;
-      // 404 is expected for a brand-new user with no profile row yet.
       if (!(error instanceof ApiError && error.status === 404)) {
         console.error('[AuthContext] Failed to refresh profile:', error);
       }
