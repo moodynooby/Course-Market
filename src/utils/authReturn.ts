@@ -7,8 +7,7 @@ const AUTH_RETURN_URL_KEY = 'authReturnUrl';
 export function setAuthReturnContext(returnUrl: string): void {
   try {
     window.sessionStorage.setItem(AUTH_RETURN_URL_KEY, returnUrl);
-  } catch {
-  }
+  } catch {}
 }
 
 export function getAuthReturnContext(): { returnUrl: string | null } {
@@ -24,7 +23,6 @@ export function consumeAuthReturnContext(): { returnUrl: string | null } {
   const context = getAuthReturnContext();
   try {
     window.sessionStorage.removeItem(AUTH_RETURN_URL_KEY);
-  } catch {
-  }
+  } catch {}
   return context;
 }

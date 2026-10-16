@@ -3,16 +3,13 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { ConfigurationError } from './components/ConfigurationError.tsx';
-import { getNativeAuthRedirectUri, isNativePlatform } from './native/auth.ts';
 import { env } from './utils/env.ts';
 
 const auth0Config = {
   domain: env.AUTH0_DOMAIN,
   clientId: env.AUTH0_CLIENT_ID,
   authorizationParams: {
-    redirect_uri: isNativePlatform()
-      ? getNativeAuthRedirectUri()
-      : `${window.location.origin}/callback`,
+    redirect_uri: `${window.location.origin}/callback`,
     ...(env.AUTH0_AUDIENCE ? { audience: env.AUTH0_AUDIENCE } : {}),
     scope: 'openid profile email',
   },

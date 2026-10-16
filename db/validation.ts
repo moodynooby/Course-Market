@@ -59,8 +59,6 @@ export const optionalPhoneSchema = z
 export type TradeInput = z.infer<typeof tradeSchema>;
 export type TradeUpdateInput = z.infer<typeof tradeUpdateSchema>;
 
-export const optionalPhoneSchema = z.union([phoneSchema, z.literal('')]).optional();
-
 export const userProfileSchema = z.object({
   phone: optionalPhoneSchema,
   semesterId: z.string().max(50).optional(),

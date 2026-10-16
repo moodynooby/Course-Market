@@ -33,7 +33,6 @@ const suspended = (El: React.LazyExoticComponent<React.ComponentType>) => (
   </Suspense>
 );
 
-
 const router = createBrowserRouter([
   {
     path: '/',
