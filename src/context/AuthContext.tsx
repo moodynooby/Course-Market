@@ -8,12 +8,9 @@ import {
   useRef,
   useState,
 } from 'react';
-import {
-  buildNativeOpenUrlHandler,
-  getNativeAuthRedirectUri,
-  isNativePlatform,
-} from '../native/auth';
+
 import { ApiError, api } from '../services/apiClient';
+
 import type { UserProfile } from '../types';
 import { setAuthReturnContext } from '../utils/authReturn';
 
@@ -40,6 +37,14 @@ function clearAuth0Cache(): void {
 function isInvalidRefreshTokenError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
   return message.toLowerCase().includes('unknown or invalid refresh token');
+}
+
+function safeRelativePath(url?: string): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith('/') && !url.startsWith('//') && !url.includes(':')) {
+    return url;
+  }
+  return undefined;
 }
 
 interface AuthContextValue {
@@ -97,26 +102,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signIn = useCallback(
     (returnUrl?: string) => {
-      // On the web, Auth0 navigates in the same window and the SPA redirect
-      // flow (with `/callback` as redirect_uri) completes automatically.
-      // On native, the same redirect inside a Capacitor WebView leaves the
-      // app stuck on a blank page: open the login URL in the device system
-      // browser instead and let the native callback listener route the
-      // result back in (see src/native/auth.ts).
-      const openUrl = buildNativeOpenUrlHandler();
-      const nativeRedirect = isNativePlatform() ? { redirect_uri: getNativeAuthRedirectUri() } : {};
-
-      if (returnUrl) {
-        setAuthReturnContext(returnUrl);
+      const returnTo = safeRelativePath(returnUrl);
+      if (returnTo) {
+        setAuthReturnContext(returnTo);
       }
 
       return loginWithRedirect({
-        ...(openUrl ? { openUrl } : {}),
         authorizationParams: {
           connection: 'google-oauth2',
-          ...nativeRedirect,
         },
-        ...(returnUrl ? { appState: { returnTo: returnUrl } } : {}),
+        ...(returnTo ? { appState: { returnTo } } : {}),
       });
     },
     [loginWithRedirect],
@@ -130,9 +125,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       return token;
     } catch (error) {
-      // A dead refresh token is unrecoverable client-side: clear the stale
-      // Auth0 cache and send the user through a fresh login instead of
-      // retrying silently forever.
       if (isInvalidRefreshTokenError(error)) {
         clearAuth0Cache();
         await signIn(window.location.pathname + window.location.search);
@@ -153,7 +145,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return;
     }
 
-    // Guard against overlapping calls: the last caller wins
     const ticket = Symbol();
     fetchInFlight.current = ticket;
 
@@ -161,13 +152,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const token = await getToken();
       const result = await api.get<{ profile: UserProfile }>('/user-profile', token);
-      // Only apply if this is still the latest call
       if (fetchInFlight.current === ticket) {
         setProfile(result.profile);
       }
     } catch (error) {
       if (fetchInFlight.current !== ticket) return;
-      // 404 is expected for a brand-new user with no profile row yet.
       if (!(error instanceof ApiError && error.status === 404)) {
         console.error('[AuthContext] Failed to refresh profile:', error);
       }

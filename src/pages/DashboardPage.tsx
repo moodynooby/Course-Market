@@ -56,7 +56,6 @@ export default function DashboardPage() {
   const [prefsOpen, setPrefsOpen] = useState(false);
   const { profile, updateProfile } = useAuthContext();
   const { toast } = useToast();
-  // Always holds the latest profile so async callbacks don't capture a stale snapshot
   const profileRef = useRef(profile);
   const { preferences, updatePreferences } = useConfigContext();
   const { mode, setMode } = useThemeMode();

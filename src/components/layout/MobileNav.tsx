@@ -1,13 +1,10 @@
-import { Dashboard, MenuBook, Person, SwapHoriz } from '@mui/icons-material';
-import { BottomNavigation, BottomNavigationAction, Box } from '@mui/material';
+import { BottomNavigation, BottomNavigationAction, Box, useTheme } from '@mui/material';
 import { Link, useLocation } from 'react-router-dom';
-import { isNativePlatform } from '../../native/capacitor';
+import { NAV_ITEMS } from './NavLinks';
 
 export function MobileNav() {
   const location = useLocation();
-
-  // Native apps show the header tabs instead, so the bottom nav is redundant there.
-  if (isNativePlatform()) return null;
+  const theme = useTheme();
 
   return (
     <Box
@@ -27,38 +24,20 @@ export function MobileNav() {
       }}
     >
       <BottomNavigation value={location.pathname} showLabels sx={{ bgcolor: 'background.paper' }}>
-        <BottomNavigationAction
-          label="Dashboard"
-          value="/"
-          icon={<Dashboard />}
-          component={Link}
-          to="/"
-          sx={{ '&.Mui-selected': { color: 'secondary.main' } }}
-        />
-        <BottomNavigationAction
-          label="Trading"
-          value="/trading"
-          icon={<SwapHoriz />}
-          component={Link}
-          to="/trading"
-          sx={{ '&.Mui-selected': { color: 'secondary.main' } }}
-        />
-        <BottomNavigationAction
-          label="Rate My Prof"
-          value="/professors"
-          icon={<Person />}
-          component={Link}
-          to="/professors"
-          sx={{ '&.Mui-selected': { color: 'secondary.main' } }}
-        />
-        <BottomNavigationAction
-          label="Courses"
-          value="/courses"
-          icon={<MenuBook />}
-          component={Link}
-          to="/courses"
-          sx={{ '&.Mui-selected': { color: 'secondary.main' } }}
-        />
+        {NAV_ITEMS.map((item) => {
+          const selectedColor = item.to === '/' ? theme.palette.primary.main : item.accentColor;
+          return (
+            <BottomNavigationAction
+              key={item.to}
+              label={item.label}
+              value={item.to}
+              icon={item.icon}
+              component={Link}
+              to={item.to}
+              sx={{ '&.Mui-selected': { color: selectedColor, fontWeight: 700 } }}
+            />
+          );
+        })}
       </BottomNavigation>
     </Box>
   );

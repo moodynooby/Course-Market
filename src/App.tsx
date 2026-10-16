@@ -9,7 +9,6 @@ import { AuthProvider } from './context/AuthContext';
 import { ConfigProvider } from './context/ConfigContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
-import { useNativeApp } from './native/useNativeApp';
 
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const CallbackPage = lazy(() => import('./pages/CallbackPage'));
@@ -34,17 +33,11 @@ const suspended = (El: React.LazyExoticComponent<React.ComponentType>) => (
   </Suspense>
 );
 
-// Rendered inside the router so native hooks (deep links, etc.) that rely on
-// useNavigate() have access to the router context.
-function AppShell() {
-  useNativeApp();
-  return <Outlet />;
-}
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <AppShell />,
+    element: <Outlet />,
     children: [
       { path: 'login', element: suspended(LoginPage) },
       { path: 'callback', element: suspended(CallbackPage) },

@@ -27,14 +27,26 @@ export function ScheduleDetails({
             Schedule Details
           </Typography>
           <Chip
-            label={`Score: ${selectedSchedule.score}`}
-            color={selectedSchedule.score >= SCORE_EXCELLENT ? 'success' : 'default'}
-            sx={{ borderRadius: 2, fontWeight: 600 }}
+            label={`Score: ${selectedSchedule.score} / 100 • ${
+              selectedSchedule.score >= SCORE_EXCELLENT
+                ? 'Optimal'
+                : selectedSchedule.score >= 60
+                  ? 'Good'
+                  : 'Conflicts'
+            }`}
+            color={
+              selectedSchedule.score >= SCORE_EXCELLENT
+                ? 'success'
+                : selectedSchedule.score >= 60
+                  ? 'primary'
+                  : 'warning'
+            }
+            sx={{ borderRadius: '10px', fontWeight: 700 }}
           />
           <Chip
             label={`${selectedSchedule.totalCredits} Credits`}
             variant="outlined"
-            sx={{ borderRadius: 2, fontWeight: 600 }}
+            sx={{ borderRadius: '10px', fontWeight: 700 }}
           />
         </Stack>
 
@@ -51,18 +63,18 @@ export function ScheduleDetails({
           <Box
             sx={{
               p: 2,
-              borderRadius: 3,
+              borderRadius: '12px',
               bgcolor: alpha(theme.palette.warning.main, 0.1),
-              border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
+              border: `2px solid ${alpha(theme.palette.warning.main, 0.4)}`,
             }}
           >
             <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'warning.main', mb: 1 }}>
-              ⚠️ Conflicts:
+              Schedule Conflicts:
             </Typography>
             <ul style={{ margin: 0, paddingLeft: 20 }}>
               {selectedSchedule.conflicts.map((conflict) => (
                 <li key={conflict}>
-                  <Typography variant="caption" sx={{ color: 'warning.main' }}>
+                  <Typography variant="caption" sx={{ color: 'warning.main', fontWeight: 600 }}>
                     {conflict}
                   </Typography>
                 </li>
@@ -84,9 +96,9 @@ export function ScheduleDetails({
       >
         <Button
           variant="contained"
-          color="secondary"
+          color="primary"
           fullWidth
-          sx={{ borderRadius: 3, py: 1.5, fontWeight: 600 }}
+          sx={{ borderRadius: '12px', py: 1.5, fontWeight: 700 }}
           onClick={onApply}
         >
           Apply This Schedule

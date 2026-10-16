@@ -73,28 +73,6 @@ a,
   background: #555;
 }
 
-.active-indicator {
-  width: 8px;
-  height: 8px;
-  background: #0061a4;
-  border-radius: 50%;
-  position: relative;
-}
-
-.active-indicator::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 16px;
-  height: 16px;
-  background: #0061a4;
-  border-radius: 50%;
-  opacity: 0.3;
-  z-index: -1;
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

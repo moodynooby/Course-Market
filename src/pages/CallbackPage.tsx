@@ -32,7 +32,6 @@ export default function CallbackPage() {
       return;
     }
 
-    // Return the user to the exact page they were trying to reach.
     const { returnUrl } = consumeAuthReturnContext();
     const returnToParam = searchParams.get('returnTo');
     const candidate = returnUrl || returnToParam;

@@ -74,7 +74,7 @@ export default function ProfessorsPage() {
       setSyncing(true);
       const result = await professorsApi.syncProfessors(await getToken());
       await fetchProfessors();
-      setSyncMessage(`Sync complete — ${result.instructorsFound} instructors found`);
+      setSyncMessage(`Sync complete: ${result.instructorsFound} instructors found`);
     } catch (err) {
       console.error('Error syncing professors:', err);
       setError('Failed to sync professors.');
@@ -234,7 +234,8 @@ export default function ProfessorsPage() {
                 transition: 'transform 0.2s',
                 '&:hover': {
                   transform: 'translateY(-4px)',
-                  borderColor: 'secondary.main',
+                  borderColor: 'primary.main',
+                  boxShadow: '0 8px 24px -4px rgba(79, 70, 229, 0.15)',
                 },
               }}
             >

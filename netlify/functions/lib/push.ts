@@ -107,8 +107,6 @@ async function getFcmAccessToken(account: Record<string, string>): Promise<strin
     }),
   );
 
-  // Import the private key and sign the assertion with the built-in
-  // WebCrypto API (Node 20+, which Netlify Functions run on).
   const key = await crypto.subtle.importKey(
     'pkcs8',
     pemToDer(account.private_key),
@@ -141,8 +139,6 @@ async function getFcmAccessToken(account: Record<string, string>): Promise<strin
 async function sendViaApns(token: string, payload: PushPayload, opts: PushOptions): Promise<void> {
   if (!opts.apnsKey || !opts.apnsKeyId || !opts.apnsTeamId) return;
 
-  // APNs requires an ES256 JWT signed with the key id; minted per-request
-  // (tokens are valid for ~50 minutes; per-request signing is safe and simple).
   const now = Math.floor(Date.now() / 1000);
   const header = btoaUrl(JSON.stringify({ alg: 'ES256', kid: opts.apnsKeyId }));
   const claim = btoaUrl(JSON.stringify({ iss: opts.apnsTeamId, iat: now }));
@@ -191,7 +187,6 @@ export async function sendPushNotification(token: string, payload: PushPayload):
       await sendViaApns(token, payload, opts);
     }
   } catch (error) {
-    // Best-effort: log but never fail the caller.
     console.error('[Push] Failed to send notification:', error);
   }
 }

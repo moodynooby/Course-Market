@@ -95,8 +95,6 @@ describe('sectionsToIcs', () => {
         ],
       },
     ];
-    // Anchor the reference date inside the slot's active range so
-    // isSlotActiveDuring includes the occurrence.
     const reference = new Date(Date.UTC(2026, 8, 1, 12, 0, 0));
     const ics = sectionsToIcs(withDates, courses, reference);
     expect(ics).toContain('UNTIL');

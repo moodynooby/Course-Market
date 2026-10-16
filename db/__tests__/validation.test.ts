@@ -125,12 +125,13 @@ describe('userProfileSchema', () => {
 
   it('accepts profile without phone', () => {
     const result = userProfileSchema.parse({ semesterId: 'winter2025' });
-    expect(result.phone).toBeUndefined();
     expect(result.semesterId).toBe('winter2025');
+    expect(result.phone).toBeUndefined();
   });
 
-  it('accepts profile with empty phone string', () => {
-    const result = userProfileSchema.parse({ phone: '', semesterId: 'winter2025' });
+  it('accepts profile with empty string phone', () => {
+    const result = userProfileSchema.parse({ semesterId: 'winter2025', phone: '' });
+    expect(result.semesterId).toBe('winter2025');
     expect(result.phone).toBe('');
   });
 

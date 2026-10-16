@@ -41,7 +41,6 @@ import { EmptyState } from '../components/EmptyState';
 import { TradingSkeleton } from '../components/trading/TradingSkeleton';
 import { useAuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { hapticError, hapticSuccess } from '../native/haptics';
 import { formatApiErrorDetails } from '../services/apiClient';
 import { getSemesterData, getSemesters } from '../services/coursesApi';
 import { buildTradeIndex, searchTradeIndex } from '../services/search';
@@ -52,6 +51,7 @@ import {
   updateTrade,
 } from '../services/tradesApi';
 import type { Course, Section, TradePost } from '../types';
+import { hapticError, hapticSuccess } from '../utils/haptics';
 import { hasSectionConflict } from '../utils/schedule';
 import { timeAgo } from '../utils/timeAgo';
 
@@ -100,14 +100,9 @@ const TradeCard = memo(function TradeCard({
         transition: 'transform 0.2s ease',
         transform: isHovered ? 'translateY(-2px)' : 'translateY(0)',
         opacity: trade.status === 'cancelled' ? 0.75 : 1,
-        // Deep-link highlight: a glow around the trade opened via
-        // auraishub://trading?tradeId=... so the user lands exactly on it.
         ...(highlighted
           ? {
               boxShadow: `0 0 0 2px ${theme.palette.secondary.main}`,
-              // Replaces a global keyframe with an MUI-safe entrance: the
-              // glow fades out over two seconds so the deep-linked trade is
-              // unmistakable without adding theme-global CSS.
               transition: 'box-shadow 2s ease-out',
             }
           : {}),
@@ -167,54 +162,112 @@ const TradeCard = memo(function TradeCard({
           />
         </Stack>
 
-        <Box
-          sx={{
-            display: 'inline-block',
-            bgcolor: 'primary.main',
-            color: 'white',
-            px: 1.5,
-            py: 0.5,
-            borderRadius: 1,
-            mb: 1.5,
-          }}
-        >
-          <Typography
-            variant="subtitle2"
+        <Box sx={{ mb: 1.5 }}>
+          <Box
             sx={{
-              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText',
+              px: 1.25,
+              py: 0.35,
+              borderRadius: '8px',
+              fontWeight: 800,
+              fontSize: '0.85rem',
+              letterSpacing: '0.4px',
             }}
           >
             {trade.courseCode}
-          </Typography>
+          </Box>
+          {trade.courseName && (
+            <Typography
+              variant="body2"
+              sx={{
+                color: 'text.secondary',
+                mt: 0.5,
+                fontWeight: 500,
+              }}
+            >
+              {trade.courseName}
+            </Typography>
+          )}
         </Box>
-        {trade.courseName && (
-          <Typography
-            variant="body2"
+
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            p: 1.25,
+            borderRadius: '12px',
+            bgcolor: alpha(
+              theme.palette.secondary.main,
+              theme.palette.mode === 'dark' ? 0.12 : 0.08,
+            ),
+            border: '2px solid',
+            borderColor: alpha(theme.palette.secondary.main, 0.25),
+            mb: 1.5,
+            gap: 1,
+          }}
+        >
+          <Box sx={{ flex: 1, textAlign: 'center' }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                fontWeight: 700,
+                display: 'block',
+                fontSize: '0.7rem',
+                letterSpacing: '0.5px',
+              }}
+            >
+              OFFERING
+            </Typography>
+            <Typography
+              variant="subtitle2"
+              sx={{ fontWeight: 800, color: 'primary.main', mt: 0.25 }}
+            >
+              Sec {trade.sectionOffered}
+            </Typography>
+          </Box>
+
+          <Box
             sx={{
-              color: 'text.secondary',
-              mb: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 28,
+              height: 28,
+              borderRadius: '50%',
+              bgcolor: 'background.paper',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.06)',
+              color: 'secondary.main',
+              flexShrink: 0,
             }}
           >
-            {trade.courseName}
-          </Typography>
-        )}
+            <SwapHoriz fontSize="small" />
+          </Box>
 
-        <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
-          <Chip
-            icon={<ArrowForward />}
-            label={`Has: ${trade.sectionOffered}`}
-            size="small"
-            color="success"
-            variant="outlined"
-          />
-          <Chip
-            icon={<ArrowBack />}
-            label={`Wants: ${trade.sectionWanted}`}
-            size="small"
-            color="primary"
-            variant="outlined"
-          />
-        </Stack>
+          <Box sx={{ flex: 1, textAlign: 'center' }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: 'text.secondary',
+                fontWeight: 600,
+                display: 'block',
+                fontSize: '0.7rem',
+              }}
+            >
+              WANTS
+            </Typography>
+            <Typography
+              variant="subtitle2"
+              sx={{ fontWeight: 800, color: 'primary.main', mt: 0.25 }}
+            >
+              Sec {trade.sectionWanted}
+            </Typography>
+          </Box>
+        </Box>
 
         {conflicts.length > 0 && (
           <Stack spacing={0.5} sx={{ mb: 1.5 }}>
@@ -265,7 +318,7 @@ const TradeCard = memo(function TradeCard({
               <Button
                 size="small"
                 variant="contained"
-                color="secondary"
+                color="primary"
                 startIcon={<ContactPhone />}
                 onClick={() => onContact(trade.contactPhone)}
               >
@@ -367,13 +420,9 @@ export default function TradingPage() {
     }
   }, [getToken]);
 
-  // Deep-link support: opening auraishub://trading?tradeId=42 (or
-  // /trading?tradeId=42 on the web) highlights and scrolls to that trade.
   const [searchParams] = useSearchParams();
   const deepLinkTradeId = searchParams.get('tradeId');
 
-  // Keep the module-level search index in sync with local trades state so that
-  // in-place status updates and deletes are reflected in filtered results.
   useEffect(() => {
     buildTradeIndex(trades);
   }, [trades]);
@@ -492,7 +541,6 @@ export default function TradingPage() {
         const updated = await updateTrade(token, id, updates);
         setTrades((prev) => prev.map((t) => (t.id === id ? updated : t)));
         toast.success('Trade updated.');
-        // Native app only: success haptic for trade actions.
         void hapticSuccess();
       } catch (e) {
         void hapticError();
@@ -531,7 +579,6 @@ export default function TradingPage() {
     const map = new Map<string, TradeConflict[]>();
     if (!selectedSections.length || !allSections.length) return map;
 
-    // Resolve human course code -> internal courseId so we can index sections by code.
     const codeToCourseId = new Map<string, string>();
     for (const course of allCourses) {
       codeToCourseId.set(course.code, course.id);
@@ -614,7 +661,7 @@ export default function TradingPage() {
           </Button>
           <Button
             variant="contained"
-            color="secondary"
+            color="primary"
             startIcon={<SwapHoriz />}
             onClick={handleOpenPostTrade}
             sx={{ width: { xs: '100%', sm: 'auto' } }}
@@ -634,11 +681,11 @@ export default function TradingPage() {
         <EmptyState
           icon={<SwapHoriz sx={{ fontSize: 60 }} />}
           title="No Trades Yet"
-          description="Find the perfect section swap — post your first trade."
+          description="Find the perfect section swap. Post your first trade."
           action={
             <Button
               variant="contained"
-              color="secondary"
+              color="primary"
               startIcon={<SwapHoriz />}
               onClick={handleOpenPostTrade}
             >

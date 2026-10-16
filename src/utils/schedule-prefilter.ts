@@ -83,10 +83,8 @@ export function prefilterSections(
       dedupCourseIds.add(courseId);
     }
 
-    // Never leave a course empty if it had sections originally
     if (filtered.length === 0 && sections.length > 0) {
       filtered = [sections[0]];
-      // Adjust counts
       if (before === 0 && avoidDayRemoved > 0) avoidDayRemoved--;
       if (removed > 0) dedupRemoved--;
     }

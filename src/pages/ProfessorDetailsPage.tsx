@@ -38,9 +38,7 @@ export default function ProfessorDetailsPage() {
       try {
         const { coursesTaught } = await professorsApi.getProfessorCourses(Number(id));
         if (!cancelled) setCoursesTaught(coursesTaught);
-      } catch {
-        // Non-critical — degrades gracefully
-      }
+      } catch {}
     })();
     return () => {
       cancelled = true;

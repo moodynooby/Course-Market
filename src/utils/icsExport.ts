@@ -151,7 +151,6 @@ export function sectionsToIcs(
       );
       if (slotEvents.length === 0) continue;
 
-      // Sort chronologically so the first/last occurrences are reliable.
       slotEvents.sort((a, b) => a.start.getTime() - b.start.getTime());
       const firstStart = slotEvents[0].start;
       const lastEvent = slotEvents[slotEvents.length - 1];

@@ -168,7 +168,7 @@ export function diagnoseEmptyGeneration(
         .map((c) => c.courseCode);
       if (worst.length > 0) {
         suggestions.push(
-          `Try dropping ${worst.join(' or ')} — every section conflicts with other courses`,
+          `Try dropping ${worst.join(' or ')}: every section conflicts with other courses`,
         );
       } else {
         suggestions.push('Try deselecting one course to reduce conflicts');

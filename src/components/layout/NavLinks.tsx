@@ -1,20 +1,24 @@
-import { Box } from '@mui/material';
+import {
+  CalendarMonthRounded,
+  MenuBookRounded,
+  SchoolRounded,
+  SwapHorizRounded,
+} from '@mui/icons-material';
+import { alpha, Box, useTheme } from '@mui/material';
 import { Link } from 'react-router-dom';
-import callMissedIcon from '../../assets/3dicons-call-missed-dynamic-color.png';
-import folderIcon from '../../assets/3dicons-folder-dynamic-color.png';
-import lockIcon from '../../assets/3dicons-locker-dynamic-premium.png';
-import ProfIcon from '../../assets/3dicons-skull-dynamic-color.png';
-import { isNativePlatform } from '../../native/capacitor';
 
 interface NavLinkProps {
   to: string;
   label: string;
   currentPath: string;
-  icon?: React.ReactNode;
+  icon: React.ReactNode;
+  accentColor: string;
 }
 
-function NavLink({ to, label, currentPath, icon }: NavLinkProps) {
+function NavLink({ to, label, currentPath, icon, accentColor }: NavLinkProps) {
+  const theme = useTheme();
   const isActive = currentPath === to || (to !== '/' && currentPath.startsWith(to));
+  const effectiveColor = to === '/' ? theme.palette.primary.main : accentColor;
 
   return (
     <Box
@@ -26,24 +30,40 @@ function NavLink({ to, label, currentPath, icon }: NavLinkProps) {
         alignItems: 'center',
         gap: 1,
         flexShrink: 0,
-        minHeight: 48,
-        height: 64,
-        px: 1,
+        height: 40,
+        px: 1.5,
+        borderRadius: '12px',
         fontWeight: 700,
-        color: isActive ? 'secondary.main' : 'text.secondary',
-        borderBottom: isActive ? '2px solid' : '2px solid transparent',
-        borderColor: isActive ? 'secondary.main' : 'transparent',
-        transition: 'all 0.2s',
+        letterSpacing: '0.4px',
+        fontSize: '0.875rem',
+        color: isActive ? 'text.primary' : 'text.secondary',
+        bgcolor: isActive ? alpha(effectiveColor, 0.12) : 'transparent',
+        border: '2px solid',
+        borderColor: isActive ? effectiveColor : 'transparent',
+        transition: 'all 0.15s ease-in-out',
         '&:hover': {
-          color: isActive ? 'secondary.main' : 'text.primary',
+          color: 'text.primary',
+          bgcolor: alpha(effectiveColor, 0.08),
         },
         '&:active': {
-          transform: 'scale(0.95)',
+          transform: 'scale(0.97)',
         },
       }}
     >
-      {icon}
-      {label}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: isActive ? effectiveColor : accentColor,
+          '& .MuiSvgIcon-root': {
+            fontSize: 18,
+          },
+        }}
+      >
+        {icon}
+      </Box>
+      <Box component="span">{label}</Box>
     </Box>
   );
 }
@@ -52,46 +72,56 @@ interface NavLinksProps {
   currentPath: string;
 }
 
+export const NAV_ITEMS = [
+  {
+    to: '/',
+    label: 'Dashboard',
+    icon: <CalendarMonthRounded />,
+    accentColor: '#ea2b2b',
+  },
+  {
+    to: '/trading',
+    label: 'Trading',
+    icon: <SwapHorizRounded />,
+    accentColor: '#1cb0f6',
+  },
+  {
+    to: '/professors',
+    label: 'Rate My Prof',
+    icon: <SchoolRounded />,
+    accentColor: '#ff9600',
+  },
+  {
+    to: '/courses',
+    label: 'Courses',
+    icon: <MenuBookRounded />,
+    accentColor: '#af70ff',
+  },
+] as const;
+
 export function NavLinks({ currentPath }: NavLinksProps) {
-  // Native apps are always sized like a phone, so the desktop-only header tabs
-  // would never appear. Show them in the header regardless of breakpoint there.
-  const showTabs = isNativePlatform();
   return (
     <Box
       sx={{
-        display: showTabs ? 'flex' : { xs: 'none', md: 'flex' },
+        display: { xs: 'none', md: 'flex' },
         alignItems: 'center',
-        gap: { xs: 1, sm: 2 },
+        gap: 0.75,
         minWidth: 0,
         overflowX: 'auto',
         scrollbarWidth: 'none',
         '&::-webkit-scrollbar': { display: 'none' },
       }}
     >
-      <NavLink
-        to="/"
-        label="Dashboard"
-        currentPath={currentPath}
-        icon={<Box component="img" src={callMissedIcon} alt="" sx={{ width: 24, height: 24 }} />}
-      />
-      <NavLink
-        to="/trading"
-        label="Trading"
-        currentPath={currentPath}
-        icon={<Box component="img" src={lockIcon} alt="" sx={{ width: 24, height: 24 }} />}
-      />
-      <NavLink
-        to="/professors"
-        label="Rate My Prof"
-        currentPath={currentPath}
-        icon={<Box component="img" src={ProfIcon} alt="" sx={{ width: 24, height: 24 }} />}
-      />
-      <NavLink
-        to="/courses"
-        label="Courses"
-        currentPath={currentPath}
-        icon={<Box component="img" src={folderIcon} alt="" sx={{ width: 24, height: 24 }} />}
-      />
+      {NAV_ITEMS.map((item) => (
+        <NavLink
+          key={item.to}
+          to={item.to}
+          label={item.label}
+          currentPath={currentPath}
+          icon={item.icon}
+          accentColor={item.accentColor}
+        />
+      ))}
     </Box>
   );
 }

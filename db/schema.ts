@@ -37,13 +37,11 @@ export type NewTrade = typeof trades.$inferInsert;
 
 export const userProfiles = pgTable('user_profiles', {
   auth0UserId: varchar('auth0_user_id', { length: 255 }).primaryKey(),
-  phone: varchar('contact_phone', { length: 20 }).notNull(),
+  phone: varchar('contact_phone', { length: 20 }).default('').notNull(),
   semesterId: varchar('semester_id', { length: 50 }),
   preferences: jsonb('preferences'),
   courseSelections: jsonb('course_selections'),
   pinnedSelections: jsonb('pinned_selections'),
-  // FCM (Android) / APNs (iOS) device token registered by the native app so
-  // the trades backend can push trade-update notifications.
   pushNotificationToken: text('push_notification_token'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -91,7 +89,6 @@ export const professorRatings = pgTable(
   (t) => ({
     professorIdIdx: index('idx_professor_ratings_professor_id').on(t.professorId),
     createdAtIdx: index('idx_professor_ratings_created_at').on(t.createdAt),
-    // One rating per (user, professor); subsequent submissions overwrite the prior row.
     userProfessorUnique: uniqueIndex('uniq_professor_ratings_user_professor').on(
       t.auth0UserId,
       t.professorId,

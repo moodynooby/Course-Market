@@ -17,9 +17,6 @@ export interface AuthUser {
   picture?: string;
 }
 
-// Typed marker so downstream handlers can branch on 401 vs 500 without
-// string-matching an error message. Both "missing header" and "invalid token"
-// use this so an expired JWT no longer falls through to 500.
 export class AuthError extends Error {
   constructor(message: string) {
     super(message);

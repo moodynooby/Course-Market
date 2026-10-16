@@ -3,6 +3,7 @@ const auth0ClientId = import.meta.env.VITE_AUTH0_CLIENT_ID || '';
 const auth0Audience = import.meta.env.VITE_AUTH0_AUDIENCE || '';
 
 export const env = {
+  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || '',
   NETLIFY_FUNCTION_URL: import.meta.env.VITE_NETLIFY_FUNCTION_URL || '',
   AUTH0_DOMAIN: auth0Domain,
   AUTH0_CLIENT_ID: auth0ClientId,

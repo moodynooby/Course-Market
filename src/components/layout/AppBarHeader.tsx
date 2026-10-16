@@ -61,28 +61,58 @@ export function AppBarHeader() {
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 4 }, minWidth: 0 }}>
           <Box
+            component={Link}
+            to="/"
             sx={{
               display: 'flex',
               alignItems: 'center',
-              gap: { xs: 0, sm: 1 },
-              pl: 1,
-              marginRight: 1,
+              gap: 1.25,
+              textDecoration: 'none',
+              pl: 0.5,
+              mr: 1.5,
+              '&:hover img': {
+                transform: 'scale(1.06)',
+              },
             }}
           >
-            <img src={logoIcon} alt="Logo" width={32} height={32} fetchPriority="high" />
+            <Box
+              component="img"
+              src={logoIcon}
+              alt="AuraIsHub"
+              width={32}
+              height={32}
+              fetchPriority="high"
+              sx={{
+                borderRadius: '8px',
+                transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+              }}
+            />
             <Typography
-              component={Link}
-              to="/"
               variant="h6"
               sx={{
-                fontWeight: 900,
-                color: 'secondary.main',
-                textDecoration: 'none',
+                fontWeight: 800,
+                color: 'text.primary',
                 letterSpacing: '-0.02em',
-                display: { xs: 'none', sm: 'block' },
+                display: { xs: 'none', sm: 'inline-flex' },
+                alignItems: 'center',
               }}
             >
-              AuraIsHub
+              AuraIs
+              <Box
+                component="span"
+                sx={{
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                  px: 0.75,
+                  py: 0.1,
+                  borderRadius: '6px',
+                  ml: 0.5,
+                  fontSize: '0.85em',
+                  fontWeight: 800,
+                }}
+              >
+                HUB
+              </Box>
             </Typography>
           </Box>
 

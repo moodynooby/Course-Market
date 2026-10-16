@@ -56,21 +56,17 @@ def split_instructor_names(raw: str) -> list[str]:
 
     Filters out placeholders like "To Be Announced", "Not added", "TBA".
     """
-    # Normalize double spaces (artifact from comma removal)
     raw = re.sub(r'\s{2,}', ' ', raw).strip()
     if not raw:
         return []
 
-    # Split by comma first
     parts = [p.strip() for p in raw.split(',') if p.strip()]
 
-    # Split at lowercase→uppercase boundaries (catches concatenated names)
     split_parts: list[str] = []
     for part in parts:
         sub = re.sub(r'([a-z])([A-Z])', r'\1\x00\2', part).split('\x00')
         split_parts.extend(s.strip() for s in sub if s.strip())
 
-    # Strip trailing ellipsis, filter placeholders
     result = []
     for name in split_parts:
         cleaned = re.sub(r'\.\.\.$', '', name).strip()
@@ -284,7 +280,6 @@ def main():
     unique_courses = len(set(s["courseCode"] for s in sections))
     subjects = sorted(set(s["subject"] for s in sections))
 
-    # Instructor cleanup summary
     multi_instructor = [s for s in sections if ',' in s["instructor"]]
     print(f"  Multi-instructor sections: {len(multi_instructor)} (names split & joined with commas)")
 

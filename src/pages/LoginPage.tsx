@@ -85,21 +85,28 @@ export default function LoginPage() {
     >
       <Card
         variant="outlined"
-        sx={{ maxWidth: 440, width: '100%', borderRadius: 4, boxShadow: (t) => t.shadows[2] }}
+        sx={{
+          maxWidth: 450,
+          width: '100%',
+          borderRadius: '16px',
+          border: '2px solid',
+          borderColor: 'divider',
+        }}
       >
-        <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
+        <CardContent sx={{ p: 4 }}>
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Avatar
               sx={{
-                width: 64,
-                height: 64,
-                bgcolor: 'secondary.main',
+                width: 72,
+                height: 72,
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
                 mx: 'auto',
                 mb: 2,
-                boxShadow: 2,
+                boxShadow: (theme) => `0 4px 0 ${theme.palette.primary.dark}`,
               }}
             >
-              <School sx={{ fontSize: 36 }} />
+              <School sx={{ fontSize: 38 }} />
             </Avatar>
             <Typography
               variant="h4"
@@ -108,18 +115,37 @@ export default function LoginPage() {
               sx={{
                 fontWeight: 800,
                 letterSpacing: '-0.02em',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              AuraIsHub
+              AuraIs
+              <Box
+                component="span"
+                sx={{
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                  px: 1,
+                  py: 0.2,
+                  borderRadius: '8px',
+                  ml: 0.75,
+                  fontSize: '0.85em',
+                  fontWeight: 800,
+                }}
+              >
+                HUB
+              </Box>
             </Typography>
             <Typography
               variant="body2"
               sx={{
                 color: 'text.secondary',
-                lineHeight: 1.5,
+                mb: 1,
+                fontWeight: 600,
               }}
             >
-              Plan your semester, build optimal schedules, and trade course sections with peers.
+              Course scheduling and section trading made simple and fun.
             </Typography>
           </Box>
 
@@ -137,7 +163,7 @@ export default function LoginPage() {
             <Button
               fullWidth
               variant="contained"
-              color="secondary"
+              color="primary"
               size="large"
               disabled={signingIn}
               onClick={handleSignIn}

@@ -76,10 +76,10 @@ function getScheduleSignature(schedule: GeneratedSchedule): ScheduleSignature {
   }
 
   const days = DAY_ORDER.filter((d) => daySet.has(d));
-  const daysLabel = days.length === 0 ? '—' : days.join('/');
+  const daysLabel = days.length === 0 ? '-' : days.join('/');
   const start = formatHour(earliest);
   const end = formatHour(latest);
-  const timeRange = start && end ? `${start}–${end}` : '';
+  const timeRange = start && end ? `${start}-${end}` : '';
 
   const lastNames = Array.from(instructorByCourse.values())
     .map((name) => {
@@ -322,8 +322,8 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
                     {prefilterSummary.avoidDayRemoved} section
                     {prefilterSummary.avoidDayRemoved > 1 ? 's' : ''} hidden (avoided{' '}
                     {prefilterSummary.avoidDayCourses.length > 3
-                      ? `days — ${prefilterSummary.avoidDayCourses.slice(0, 3).join(', ')}…`
-                      : `days — ${prefilterSummary.avoidDayCourses.join(', ')}`}
+                      ? `days: ${prefilterSummary.avoidDayCourses.slice(0, 3).join(', ')}...`
+                      : `days: ${prefilterSummary.avoidDayCourses.join(', ')}`}
                     )
                   </Typography>
                 )}

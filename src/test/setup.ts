@@ -1,5 +1,10 @@
 import '@testing-library/jest-dom';
-import './mocks';
+const envHolder = globalThis as unknown as {
+  process?: { env: Record<string, string | undefined> };
+};
+if (envHolder.process) {
+  envHolder.process.env.DATABASE_URL ??= 'postgres://test:test@localhost:5432/test';
+}
 
 class MemoryStorage implements Storage {
   private store = new Map<string, string>();

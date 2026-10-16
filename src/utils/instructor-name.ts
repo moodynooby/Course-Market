@@ -1,9 +1,5 @@
 const PLACEHOLDER_NAMES = new Set(['Not added', 'To Be Announced', 'TBA']);
 
-// Between-instructor separators. Upstream data joins multiple instructors with
-// a comma ("Smith, Doe" = two people), so comma IS a separator here.
-// The old camelCase heuristic (/([a-z])([A-Z])/) is intentionally dropped —
-// it split "McDonald" / "MacGregor" / "DeMarco" into bogus pairs.
 const SEPARATOR = /\s*(?:,|;|&|\band\b)\s*/i;
 
 function normalizeName(name: string): string {

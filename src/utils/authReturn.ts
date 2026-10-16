@@ -8,7 +8,6 @@ export function setAuthReturnContext(returnUrl: string): void {
   try {
     window.sessionStorage.setItem(AUTH_RETURN_URL_KEY, returnUrl);
   } catch {
-    // SessionStorage may be restricted in private browsing
   }
 }
 
@@ -26,7 +25,6 @@ export function consumeAuthReturnContext(): { returnUrl: string | null } {
   try {
     window.sessionStorage.removeItem(AUTH_RETURN_URL_KEY);
   } catch {
-    // Ignore cleanup errors
   }
   return context;
 }

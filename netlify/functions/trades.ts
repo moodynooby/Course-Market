@@ -7,9 +7,7 @@ import { sendPushNotification } from './lib/push';
 import { jsonResponse } from './lib/response';
 import { withAuth } from './lib/wrap';
 
-// Public trade projection (no PII like userEmail). Reused for select and both
-// mutation `.returning()` calls so field lists cannot drift.
-const tradeColumns = {
+export const tradeColumns = {
   id: schema.trades.id,
   auth0UserId: schema.trades.auth0UserId,
   userDisplayName: schema.trades.userDisplayName,
@@ -119,7 +117,6 @@ export const handler = withAuth(async (event, user) => {
       });
     }
 
-    // Terminal states are one-way; reject any request that tries to move out of them.
     if (
       (existingTrade.status === 'filled' || existingTrade.status === 'cancelled') &&
       requestBody.status !== undefined &&
@@ -151,9 +148,6 @@ export const handler = withAuth(async (event, user) => {
       .where(eq(schema.trades.id, idNum))
       .returning(tradeColumns);
 
-    // Notify interested students when a trade reaches a terminal state or is
-    // newly accepted by its owner. Failures here must never fail the trade
-    // update itself (best-effort pushes).
     if (requestBody.status && requestBody.status !== existingTrade.status) {
       void notifyTradeStatusChange(updatedTrade);
     }
@@ -214,9 +208,6 @@ async function notifyTradeStatusChange(trade: {
     path: '/trading',
   };
 
-  // Students who want exactly the section this trade offered (and are not
-  // the owner) get alerted. courseSelections is a JSONB map of
-  // courseCode -> sectionNumber pinned by the user.
   const watcherRows = await db
     .select({
       auth0UserId: schema.userProfiles.auth0UserId,

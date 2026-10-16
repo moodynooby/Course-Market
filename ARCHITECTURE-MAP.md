@@ -1,10 +1,10 @@
 # Architecture Map
 
-Last updated: 2026-09-25
+Last updated: 2026-10-16
 
 ## System Overview
 
-AuraIsHub is a React single-page application with Netlify Functions, a PostgreSQL/Drizzle data layer, and a thin Capacitor Android shell.
+AuraIsHub is a React application with a PostgreSQL/Drizzle data layer and portable serverless/edge APIs.
 
 ```text
 src/pages and src/components
@@ -13,35 +13,33 @@ src/context and src/hooks
         ↓
 src/services and src/utils
         ↓
-Netlify Functions / native adapters
+Server API functions
         ↓
-PostgreSQL / Auth0 / device capabilities
+PostgreSQL / Auth0
 ```
 
 ## Domain Ownership
 
-| Area                  | Primary location                     | Responsibility                                                       |
-| --------------------- | ------------------------------------ | -------------------------------------------------------------------- |
-| Application shell     | `src/main.tsx`, `src/App.tsx`        | Providers, routing, application startup                              |
-| Pages                 | `src/pages/`                         | Route-level composition and page workflows                           |
-| UI components         | `src/components/`                    | Reusable presentation and feature UI                                 |
-| Global state          | `src/context/`                       | Authentication, configuration, theme, and notifications              |
-| Feature orchestration | `src/hooks/`                         | Course selection, semester loading, preferences, schedule generation |
-| Client boundaries     | `src/services/`                      | HTTP requests, caching, and search indexes                           |
-| Pure domain logic     | `src/utils/`                         | Schedule generation, scoring, conflicts, calendar export, storage    |
-| Native integration    | `src/native/`                        | Capacitor and platform-specific adapters                             |
-| Server functions      | `netlify/functions/`                 | Authenticated HTTP handlers and response contracts                   |
-| Persistence           | `db/`                                | Drizzle schema, validation, seed data                                |
-| Verification          | `src/**/__tests__/`, `db/__tests__/` | Owner-boundary behavior tests                                        |
+| Area                  | Primary location                     | Responsibility                                                           |
+| --------------------- | ------------------------------------ | ------------------------------------------------------------------------ |
+| Application shell     | `src/main.tsx`, `src/App.tsx`        | Providers, routing, application startup                                  |
+| Pages                 | `src/pages/`                         | Route-level composition and page workflows                               |
+| UI components         | `src/components/`                    | Reusable presentation and feature UI                                     |
+| Global state          | `src/context/`                       | Authentication, configuration, theme, and notifications                  |
+| Feature orchestration | `src/hooks/`                         | Course selection, semester loading, preferences, schedule generation     |
+| Client boundaries     | `src/services/`                      | HTTP requests, caching, and search indexes                               |
+| Pure domain logic     | `src/utils/`                         | Schedule generation, scoring, conflicts, calendar export, storage        |
+| Server functions      | `netlify/functions/`, `api/`         | Authenticated HTTP handlers, Vercel/Netlify adapters, response contracts |
+| Persistence           | `db/`                                | Drizzle schema, validation, seed data                                    |
+| Verification          | `src/**/__tests__/`, `db/__tests__/` | Owner-boundary behavior tests                                            |
 
 ## Dependency Direction
 
 1. Pages and components may import contexts, hooks, services, utilities, and types.
 2. Hooks may import contexts, services, utilities, and types.
 3. Services must not import React components or pages.
-4. Pure utilities must not import React contexts, Netlify Functions, or database modules.
-5. Netlify Functions validate authentication and input before calling `db/`.
-6. Native adapters isolate Capacitor APIs from feature code.
+4. Pure utilities must not import React contexts, server functions, or database modules.
+5. Server functions validate authentication and input before calling `db/`.
 
 ## Schedule Pipeline
 
@@ -66,16 +64,19 @@ The ordering, score, section membership, progress callbacks, and conflict metada
 - `src/utils/schedule.ts` — calendar projection, conflicts, features, and scoring.
 - `src/utils/schedule-generator.ts` — generation, deduplication, clustering, and labels.
 - `src/hooks/useScheduleGeneration.ts` — generation and explorer state/actions.
+- `netlify/functions/schedules.ts`, `api/schedules.ts` — server-side combinatorial schedule generation & optimization.
+- `netlify/functions/courses.ts`, `api/courses.ts` — server-side course search, filtering, and pagination.
+- `api/_adapter.ts`, `api/[...path].ts` — universal Node/Vercel serverless request adapter.
 
 Split these files only along independently testable responsibilities.
 
 ## Anti-Regression Contracts
 
+- **Dual platform compatibility:** all API endpoints must execute identically on Vercel (via `api/` adapter) and Netlify (via `netlify/functions/`), sharing identical validation, error handling, and response shapes.
 - **Schedule output:** preserve deterministic ordering, score ordering, section membership, conflicts, and progress behavior unless a product change explicitly requires otherwise.
-- **Server responses:** preserve public Netlify Function response shapes and status codes.
+- **Server responses:** preserve public serverless response shapes and status codes.
 - **Privacy:** select explicit database columns in both `select()` and `returning()`; never expose newly added columns implicitly.
 - **Authentication:** keep authentication and authorization checks at the server boundary; client guards are not security controls.
-- **Native behavior:** web and native callers must use the same feature interface while adapters retain platform-specific fallbacks.
 - **Persistence:** use `src/utils/storage.ts` for application preferences and keep storage keys centralized.
 - **Quality gate:** `npm run lint` and `pnpm run lint` are equivalent, non-mutating Biome-based checks; `pnpm run lint:fix` is the explicit rewrite command.
 

@@ -23,13 +23,12 @@ import html2canvas from 'html2canvas';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { View } from 'react-big-calendar';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
-import { buildDeepLink } from '../native/deepLinks';
-import { hapticLight, hapticSuccess } from '../native/haptics';
-import { shareContent } from '../native/share';
 import type { CalendarEvent, Course, Section } from '../types';
 import { buildGoogleCalendarUrlForSlot, openGoogleCalendarUrl } from '../utils/googleCalendar';
+import { hapticLight, hapticSuccess } from '../utils/haptics';
 import { icsToBlob, sectionsToIcs, timeToMinutes } from '../utils/icsExport';
 import { isSlotActiveDuring, sectionsToCalendarEvents } from '../utils/schedule';
+import { buildDeepLink, shareContent } from '../utils/share';
 import { COURSE_COLORS, EventComponent } from './CalendarEventComponent';
 import CalendarToolbar from './CalendarToolbar';
 
@@ -73,9 +72,6 @@ export default function CalendarView({
   const autoNavigated = useRef(false);
   const calendarRef = useRef<HTMLDivElement>(null);
 
-  // Touch swipe navigation: horizontal swipes move between weeks/days.
-  // Works in the native app (touch-first) and on touch laptops/tablets in
-  // the browser; desktop users still use the chevron buttons.
   const swipeStartX = useRef<number | null>(null);
   const swipeStartY = useRef<number | null>(null);
 
@@ -92,8 +88,6 @@ export default function CalendarView({
     swipeStartX.current = null;
     swipeStartY.current = null;
 
-    // Require a mostly-horizontal swipe of at least 60px to avoid
-    // conflicting with vertical scrolling.
     if (Math.abs(deltaY) > Math.abs(deltaX) || Math.abs(deltaX) < 60) return;
 
     if (deltaX > 0) {
@@ -177,7 +171,7 @@ export default function CalendarView({
     setCapturing(true);
     try {
       const canvas = await html2canvas(calendarRef.current, {
-        backgroundColor: theme.palette.mode === 'dark' ? '#1a1a2e' : '#ffffff',
+        backgroundColor: theme.palette.background.paper,
         scale: 2,
         useCORS: true,
         logging: false,
@@ -194,9 +188,6 @@ export default function CalendarView({
           return;
         }
 
-        // Native app: the Capacitor Share plugin hands the image to the OS
-        // share sheet (WhatsApp, Instagram DMs, ...). Web browsers fall back
-        // through the Web Share API to a clipboard copy automatically.
         const ok = await shareContent({
           title: 'My Schedule',
           text: `Check out my course schedule! Build yours at ${buildDeepLink({})}`,
@@ -212,8 +203,6 @@ export default function CalendarView({
             severity: 'success',
           });
         } else {
-          // Share cancelled or unsupported — still offer the download so
-          // the captured image is never wasted.
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
@@ -239,7 +228,7 @@ export default function CalendarView({
       });
       setCapturing(false);
     }
-  }, [theme.palette.mode]);
+  }, [theme.palette.background.paper]);
 
   /**
    * Share or download the schedule as an iCalendar (.ics) file with one
@@ -257,7 +246,7 @@ export default function CalendarView({
         await navigator.share({
           files: [file],
           title: 'My Schedule',
-          text: 'My course schedule (.ics) — import into any calendar app',
+          text: 'My course schedule (.ics) - import into any calendar app',
         });
         setShareAlert({ open: true, message: 'Schedule exported', severity: 'success' });
       } else {
@@ -281,8 +270,6 @@ export default function CalendarView({
   /** Open Google Calendar for the whole schedule (recurring template URL). */
   const handleAddAllToGoogleCalendar = useCallback(() => {
     if (sections.length === 0) return;
-    // Open one Google Calendar tab per weekly slot so each class becomes its
-    // own recurring event in the user's calendar.
     sections.forEach((section, sectionIdx) => {
       section.timeSlots.forEach((slot, slotIdx) => {
         const course = courses.find((c) => c.id === section.courseId);
@@ -294,7 +281,6 @@ export default function CalendarView({
         if (slotEvents.length === 0) return;
         slotEvents.sort((a, b) => a.start.getTime() - b.start.getTime());
         const anchor = slotEvents[0].start;
-        // Delay each tab slightly so browsers do not silently block all of them.
         window.setTimeout(
           () => {
             const url = buildGoogleCalendarUrlForSlot(section, slot, course, anchor);
@@ -306,7 +292,7 @@ export default function CalendarView({
     });
     setShareAlert({
       open: true,
-      message: 'Opening Google Calendar for each class — accept each prompt to save',
+      message: 'Opening Google Calendar for each class. Accept each prompt to save',
       severity: 'success',
     });
   }, [sections, courses]);
@@ -348,7 +334,7 @@ export default function CalendarView({
   const formats = useMemo(
     () => ({
       eventTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) =>
-        `${format(start, 'h:mm a')} – ${format(end, 'h:mm a')}`,
+        `${format(start, 'h:mm a')} - ${format(end, 'h:mm a')}`,
       dayHeaderFormat: (date: Date) => format(date, 'EEEE'),
       dayRangeHeaderFormat: ({ start, end }: { start: Date; end: Date }) =>
         `${format(start, 'MMMM d')} - ${format(end, 'MMMM d, yyyy')}`,
@@ -440,7 +426,6 @@ export default function CalendarView({
         fontWeight: 600,
         color: theme.palette.secondary.main,
       },
-      // Agenda view: more breathable rows on mobile
       '& .rbc-agenda-table': {
         border: `1px solid ${theme.palette.divider}`,
       },
@@ -464,7 +449,6 @@ export default function CalendarView({
       '& .rbc-event.rbc-selected, & .rbc-event:focus': {
         opacity: 0.85,
       },
-      // Touch: bigger tap targets for week columns
       [`@media (max-width: ${theme.breakpoints.values.sm - 1}px)`]: {
         '& .rbc-timeslot-group': {
           minHeight: 64,
@@ -774,8 +758,7 @@ export default function CalendarView({
         </DialogContent>
       </Dialog>
 
-      {/* Event detail dialog: tap a class to see full info and export options.
-          Renders as a bottom sheet on mobile for thumb-friendly access. */}
+      {}
       <Dialog
         open={selectedEvent !== null}
         onClose={() => setSelectedEvent(null)}

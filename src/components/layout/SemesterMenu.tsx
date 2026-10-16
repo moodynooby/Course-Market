@@ -82,7 +82,7 @@ export function SemesterMenu() {
               <ListItemText>{semester.name}</ListItemText>
               {semester.id === profile?.semesterId && (
                 <ListItemIcon sx={{ minWidth: 28 }}>
-                  <Check fontSize="small" color="secondary" />
+                  <Check fontSize="small" color="primary" />
                 </ListItemIcon>
               )}
             </MenuItem>

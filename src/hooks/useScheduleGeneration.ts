@@ -67,26 +67,41 @@ export function useScheduleGeneration({
     setPrefilterSummary(null);
 
     try {
-      const { generateSchedules } = await import('../utils/schedule-generator');
+      let candidates: Schedule[] = [];
 
-      const sectionsByCourse = sectionsByCourseForSchedule();
-      const courseCodeMap = new Map(allCourses.map((c) => [c.id, c.code]));
-      const { sectionsByCourse: filteredByCourse, summary } = prefilterSections(
-        sectionsByCourse,
-        preferences,
-        courseCodeMap,
-      );
-      setPrefilterSummary(summary);
+      try {
+        const { generateSchedulesApi } = await import('../services/schedulesApi');
+        const res = await generateSchedulesApi({
+          courses: allCourses,
+          sections: allSections,
+          scheduleSections: schedule.sections,
+          pinnedSelections: profile?.pinnedSelections ?? {},
+          preferences,
+          options: { maxSchedules: 200 },
+        });
+        candidates = res.schedules;
+        setPrefilterSummary(res.summary);
+      } catch {
+        const { generateSchedules } = await import('../utils/schedule-generator');
+        const sectionsByCourse = sectionsByCourseForSchedule();
+        const courseCodeMap = new Map(allCourses.map((c) => [c.id, c.code]));
+        const { sectionsByCourse: filteredByCourse, summary } = prefilterSections(
+          sectionsByCourse,
+          preferences,
+          courseCodeMap,
+        );
+        setPrefilterSummary(summary);
 
-      let candidates = generateSchedules(allCourses, filteredByCourse, preferences, {
-        maxSchedules: 200,
-      }).map<Schedule>((g) => ({
-        id: g.id,
-        sections: g.sections,
-        totalCredits: g.totalCredits,
-        score: g.score,
-        conflicts: g.conflicts,
-      }));
+        candidates = generateSchedules(allCourses, filteredByCourse, preferences, {
+          maxSchedules: 200,
+        }).map<Schedule>((g) => ({
+          id: g.id,
+          sections: g.sections,
+          totalCredits: g.totalCredits,
+          score: g.score,
+          conflicts: g.conflicts,
+        }));
+      }
 
       if (candidates.length === 0) {
         candidates = [schedule];
@@ -121,40 +136,51 @@ export function useScheduleGeneration({
     setPrefilterSummary(null);
 
     try {
-      const { generateSchedules } = await import('../utils/schedule-generator');
-      const prefs = preferences;
+      let schedules: GeneratedSchedule[] = [];
+      let summary: PrefilterSummary | null = null;
+      let diagnostics: ScheduleDiagnostics | null = null;
 
-      const sectionsByCourse = sectionsByCourseForSchedule();
+      try {
+        const { generateSchedulesApi } = await import('../services/schedulesApi');
+        const res = await generateSchedulesApi({
+          courses: allCourses,
+          sections: allSections,
+          scheduleSections: schedule.sections,
+          pinnedSelections: profile?.pinnedSelections ?? {},
+          preferences,
+          options: { maxSchedules: DEFAULT_MAX_SCHEDULES },
+        });
+        schedules = res.schedules;
+        summary = res.summary;
+        diagnostics = res.diagnostics;
+      } catch {
+        const { generateSchedules } = await import('../utils/schedule-generator');
+        const prefs = preferences;
+        const sectionsByCourse = sectionsByCourseForSchedule();
 
-      if (sectionsByCourse.size === 0) {
-        setGeneratedSchedules([]);
-        setGenerating(false);
-        return;
+        if (sectionsByCourse.size > 0) {
+          const courseCodeMap = new Map(allCourses.map((c) => [c.id, c.code]));
+          const prefilterRes = prefilterSections(sectionsByCourse, prefs, courseCodeMap);
+          summary = prefilterRes.summary;
+
+          schedules = generateSchedules(allCourses, prefilterRes.sectionsByCourse, prefs, {
+            maxSchedules: DEFAULT_MAX_SCHEDULES,
+            onProgress: setGenerationProgress,
+          });
+
+          if (schedules.length === 0) {
+            diagnostics = diagnoseEmptyGeneration(
+              allCourses,
+              sectionsByCourse,
+              prefs,
+              new Map(Object.entries(profile?.pinnedSelections ?? {})),
+            );
+          }
+        }
       }
 
-      const courseCodeMap = new Map(allCourses.map((c) => [c.id, c.code]));
-      const { sectionsByCourse: filteredByCourse, summary } = prefilterSections(
-        sectionsByCourse,
-        prefs,
-        courseCodeMap,
-      );
       setPrefilterSummary(summary);
-
-      const schedules = generateSchedules(allCourses, filteredByCourse, prefs, {
-        maxSchedules: DEFAULT_MAX_SCHEDULES,
-        onProgress: setGenerationProgress,
-      });
-
-      if (schedules.length === 0) {
-        const diagnostics = diagnoseEmptyGeneration(
-          allCourses,
-          sectionsByCourse,
-          prefs,
-          new Map(Object.entries(profile?.pinnedSelections ?? {})),
-        );
-        setScheduleDiagnostics(diagnostics);
-      }
-
+      setScheduleDiagnostics(diagnostics);
       setGeneratedSchedules(schedules);
       if (schedules.length > 0) {
         setSelectedSchedule(schedules[0]);
@@ -212,7 +238,6 @@ export function useScheduleGeneration({
     generationProgress,
     handleGenerateAll,
     handleApplySchedule,
-    // explorer dialog state
     scheduleExplorerOpen,
     setScheduleExplorerOpen,
     generatedSchedules,
