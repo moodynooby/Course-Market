@@ -1,12 +1,76 @@
-import { School } from '@mui/icons-material';
-import { Avatar, Box, Button, Card, CardContent, Stack, Typography } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Google, School } from '@mui/icons-material';
+import {
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Stack,
+  Typography,
+} from '@mui/material';
+import { useCallback, useMemo, useState } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useAuthContext } from '../context/AuthContext';
-import { consumeAuthReturnContext } from '../hooks/useAuthGuard';
+import { getAuthReturnContext } from '../utils/authReturn';
 
 export default function LoginPage() {
-  const { signIn } = useAuthContext();
-  const { returnUrl, actionLabel } = consumeAuthReturnContext();
+  const { signIn, isAuthenticated, loading } = useAuthContext();
+  const location = useLocation();
+  const [signingIn, setSigningIn] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const { returnUrl, errorMsg } = useMemo(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const stored = getAuthReturnContext();
+    const state = location.state as
+      | {
+          from?: string | { pathname: string; search?: string };
+          error?: string;
+        }
+      | undefined;
+
+    const fromState =
+      typeof state?.from === 'string'
+        ? state.from
+        : state?.from?.pathname
+          ? `${state.from.pathname}${state.from.search || ''}`
+          : null;
+
+    const targetUrl = searchParams.get('returnTo') || fromState || stored.returnUrl || '/';
+    const safeTargetUrl =
+      targetUrl.startsWith('/') && !targetUrl.startsWith('//') ? targetUrl : '/';
+
+    const err =
+      searchParams.get('error_description') || searchParams.get('error') || state?.error || null;
+
+    return { returnUrl: safeTargetUrl, errorMsg: err };
+  }, [location]);
+
+  const activeError = localError || errorMsg;
+
+  const handleSignIn = useCallback(async () => {
+    setSigningIn(true);
+    setLocalError(null);
+    try {
+      await signIn(returnUrl);
+    } catch (err) {
+      setSigningIn(false);
+      const msg =
+        err instanceof Error ? err.message : 'Sign-in could not be started. Please try again.';
+      setLocalError(msg);
+    }
+  }, [returnUrl, signIn]);
+
+  if (loading) {
+    return <LoadingSpinner fullScreen />;
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to={returnUrl} replace />;
+  }
 
   return (
     <Box
@@ -19,102 +83,86 @@ export default function LoginPage() {
         p: 2,
       }}
     >
-      <Card variant="outlined" sx={{ maxWidth: 450, width: '100%' }}>
-        <CardContent sx={{ p: 4 }}>
+      <Card
+        variant="outlined"
+        sx={{ maxWidth: 440, width: '100%', borderRadius: 4, boxShadow: (t) => t.shadows[2] }}
+      >
+        <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <Avatar
               sx={{
-                width: 72,
-                height: 72,
+                width: 64,
+                height: 64,
                 bgcolor: 'secondary.main',
                 mx: 'auto',
                 mb: 2,
+                boxShadow: 2,
               }}
             >
-              <School sx={{ fontSize: 40 }} />
+              <School sx={{ fontSize: 36 }} />
             </Avatar>
             <Typography
               variant="h4"
               component="h1"
               gutterBottom
               sx={{
-                fontWeight: 700,
+                fontWeight: 800,
+                letterSpacing: '-0.02em',
               }}
             >
               AuraIsHub
             </Typography>
             <Typography
-              variant="body1"
+              variant="body2"
               sx={{
                 color: 'text.secondary',
-                mb: 1,
+                lineHeight: 1.5,
               }}
             >
-              Plan your semester with confidence
+              Plan your semester, build optimal schedules, and trade course sections with peers.
             </Typography>
-
-            {actionLabel && (
-              <Typography
-                variant="subtitle1"
-                sx={{
-                  mt: 2,
-                  color: 'primary.main',
-                  fontWeight: 600,
-                }}
-              >
-                Sign in to {actionLabel}
-              </Typography>
-            )}
           </Box>
 
-          <Stack spacing={2} sx={{ mb: 4 }}>
+          {activeError && (
+            <Alert
+              severity="error"
+              sx={{ mb: 3, borderRadius: 2 }}
+              onClose={() => setLocalError(null)}
+            >
+              {activeError}
+            </Alert>
+          )}
+
+          <Stack spacing={2}>
             <Button
               fullWidth
               variant="contained"
               color="secondary"
               size="large"
-              onClick={() => signIn(returnUrl ?? undefined)}
-              sx={{ py: 1.5 }}
+              disabled={signingIn}
+              onClick={handleSignIn}
+              startIcon={!signingIn ? <Google /> : undefined}
+              sx={{
+                py: 1.5,
+                fontWeight: 700,
+                borderRadius: 2,
+                textTransform: 'none',
+                fontSize: '1rem',
+              }}
             >
-              Sign in
+              {signingIn ? (
+                <Stack
+                  direction="row"
+                  spacing={1.5}
+                  sx={{ alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <CircularProgress size={20} color="inherit" />
+                  <span>Connecting to Google...</span>
+                </Stack>
+              ) : (
+                'Continue with Google'
+              )}
             </Button>
-
-            <Typography variant="body2" align="center" sx={{ color: 'text.secondary' }}>
-              <RouterLink to="/" style={{ color: 'inherit', textDecoration: 'underline' }}>
-                Continue browsing without signing in
-              </RouterLink>
-            </Typography>
-
-            <Box sx={{ px: 1 }}>
-              <Typography
-                variant="caption"
-                component="div"
-                sx={{
-                  color: 'text.secondary',
-                  mb: 1,
-                  fontWeight: 600,
-                }}
-              >
-                What signing in unlocks
-              </Typography>
-              <ul style={{ margin: 0, paddingLeft: 18 }}>
-                <li>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    Save schedules and sync them across devices
-                  </Typography>
-                </li>
-                <li>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    Trade course sections with other students
-                  </Typography>
-                </li>
-                <li>
-                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                    Rate professors and share your reviews
-                  </Typography>
-                </li>
-              </ul>
-            </Box>
           </Stack>
         </CardContent>
       </Card>

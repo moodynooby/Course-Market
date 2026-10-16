@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useAuthContext } from '../context/AuthContext';
+import { formatApiErrorDetails } from '../services/apiClient';
 import { getSemesters } from '../services/coursesApi';
 import type { Semester } from '../types';
 
@@ -31,7 +32,7 @@ import type { Semester } from '../types';
 export default function OnboardingPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile, updateProfile, loading, signOut } = useAuthContext();
+  const { profile, updateProfile, loading, isAuthenticated, signOut } = useAuthContext();
 
   const [phone, setPhone] = useState(profile?.phone || '');
   const [semesters, setSemesters] = useState<Semester[]>([]);
@@ -39,6 +40,15 @@ export default function OnboardingPage() {
   const [selectedSemester, setSelectedSemester] = useState<string>(profile?.semesterId || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const resolveReturnUrl = useCallback(() => {
+    const state = location.state as
+      | { from?: string | { pathname: string; search?: string } }
+      | undefined;
+    if (typeof state?.from === 'string') return state.from;
+    if (state?.from?.pathname) return `${state.from.pathname}${state.from.search || ''}`;
+    return '/';
+  }, [location.state]);
 
   const loadSemesters = useCallback(async () => {
     try {
@@ -65,10 +75,14 @@ export default function OnboardingPage() {
     if (initialRedirectChecked.current) return;
     if (loading) return;
     initialRedirectChecked.current = true;
-    if (profile?.semesterId) {
-      navigate('/', { replace: true });
+    if (!isAuthenticated) {
+      navigate('/login', { replace: true });
+      return;
     }
-  }, [profile, loading, navigate]);
+    if (profile?.semesterId) {
+      navigate(resolveReturnUrl(), { replace: true });
+    }
+  }, [profile, loading, isAuthenticated, navigate, resolveReturnUrl]);
 
   useEffect(() => {
     if (profile?.phone) setPhone(profile.phone);
@@ -89,10 +103,11 @@ export default function OnboardingPage() {
     setError(null);
     try {
       await updateProfile({ semesterId: selectedSemester, ...(phone.trim() ? { phone } : {}) });
-      const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
-      navigate(from, { replace: true });
+      navigate(resolveReturnUrl(), { replace: true });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to save your details';
+      const detailedError = formatApiErrorDetails(err);
+      const errorMessage =
+        detailedError || (err instanceof Error ? err.message : 'Failed to save your details');
       setError(`${errorMessage}. Please try again or refresh the page.`);
       console.error('Error saving details:', err);
     } finally {
@@ -100,10 +115,19 @@ export default function OnboardingPage() {
     }
   };
 
-  /** Skip onboarding entirely; the user can set the semester later. */
-  const handleSkip = () => {
-    const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
-    navigate(from, { replace: true });
+  /** Skip onboarding by saving the default semester so the user is not bounced back. */
+  const handleSkip = async () => {
+    setSaving(true);
+    const fallbackSemester = selectedSemester || semesters[0]?.id;
+    if (fallbackSemester) {
+      try {
+        await updateProfile({ semesterId: fallbackSemester });
+      } catch (err) {
+        console.warn('[Onboarding] Failed to save default semester on skip:', err);
+      }
+    }
+    setSaving(false);
+    navigate(resolveReturnUrl(), { replace: true });
   };
 
   if (loading) return <LoadingSpinner fullScreen />;

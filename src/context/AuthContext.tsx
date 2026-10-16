@@ -8,9 +8,14 @@ import {
   useRef,
   useState,
 } from 'react';
-import { buildNativeOpenUrlHandler } from '../native/auth';
+import {
+  buildNativeOpenUrlHandler,
+  getNativeAuthRedirectUri,
+  isNativePlatform,
+} from '../native/auth';
 import { ApiError, api } from '../services/apiClient';
 import type { UserProfile } from '../types';
+import { setAuthReturnContext } from '../utils/authReturn';
 
 /**
  * Auth0 caches tokens (including the refresh token, since `useRefreshTokens`
@@ -47,6 +52,7 @@ interface AuthContextValue {
   profile: UserProfile | null;
   loading: boolean;
   isAuthenticated: boolean;
+  error: Error | null;
   signIn: (returnUrl?: string) => Promise<void>;
   signOut: () => void;
   getToken: () => Promise<string>;
@@ -65,6 +71,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated,
     isLoading: authLoading,
     user: auth0User,
+    error: authError,
     loginWithRedirect,
     logout,
     getAccessTokenSilently,
@@ -72,6 +79,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [profileInitialized, setProfileInitialized] = useState(false);
   const fetchInFlight = useRef<symbol | null>(null);
 
   const appUser = useMemo(
@@ -87,6 +95,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [auth0User],
   );
 
+  const signIn = useCallback(
+    (returnUrl?: string) => {
+      // On the web, Auth0 navigates in the same window and the SPA redirect
+      // flow (with `/callback` as redirect_uri) completes automatically.
+      // On native, the same redirect inside a Capacitor WebView leaves the
+      // app stuck on a blank page: open the login URL in the device system
+      // browser instead and let the native callback listener route the
+      // result back in (see src/native/auth.ts).
+      const openUrl = buildNativeOpenUrlHandler();
+      const nativeRedirect = isNativePlatform() ? { redirect_uri: getNativeAuthRedirectUri() } : {};
+
+      if (returnUrl) {
+        setAuthReturnContext(returnUrl);
+      }
+
+      return loginWithRedirect({
+        ...(openUrl ? { openUrl } : {}),
+        authorizationParams: {
+          connection: 'google-oauth2',
+          ...nativeRedirect,
+        },
+        ...(returnUrl ? { appState: { returnTo: returnUrl } } : {}),
+      });
+    },
+    [loginWithRedirect],
+  );
+
   const getToken = useCallback(async () => {
     try {
       const token = await getAccessTokenSilently();
@@ -100,30 +135,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // retrying silently forever.
       if (isInvalidRefreshTokenError(error)) {
         clearAuth0Cache();
-        await loginWithRedirect({
-          appState: { returnTo: window.location.pathname + window.location.search },
-        });
+        await signIn(window.location.pathname + window.location.search);
       }
       throw error;
     }
-  }, [getAccessTokenSilently, loginWithRedirect]);
-
-  const signIn = useCallback(
-    (returnUrl?: string) => {
-      // On the web, Auth0 navigates in the same window and the SPA redirect
-      // flow (with `/callback` as redirect_uri) completes automatically.
-      // On native, the same redirect inside a Capacitor WebView leaves the
-      // app stuck on a blank page: open the login URL in the device system
-      // browser instead and let the native callback listener route the
-      // result back in (see src/native/auth.ts).
-      const openUrl = buildNativeOpenUrlHandler();
-      return loginWithRedirect({
-        ...(openUrl ? { openUrl } : {}),
-        ...(returnUrl ? { appState: { returnTo: returnUrl } } : {}),
-      });
-    },
-    [loginWithRedirect],
-  );
+  }, [getAccessTokenSilently, signIn]);
 
   const signOut = useCallback(
     () => logout({ logoutParams: { returnTo: window.location.origin } }),
@@ -133,6 +149,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const refreshProfile = useCallback(async () => {
     if (!isAuthenticated) {
       setProfile(null);
+      setProfileInitialized(true);
       return;
     }
 
@@ -158,6 +175,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       if (fetchInFlight.current === ticket) {
         setProfileLoading(false);
+        setProfileInitialized(true);
         fetchInFlight.current = null;
       }
     }
@@ -182,6 +200,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       refreshProfile();
     } else {
       setProfile(null);
+      setProfileInitialized(true);
     }
   }, [isAuthenticated, authLoading, refreshProfile]);
 
@@ -189,8 +208,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     () => ({
       user: appUser,
       profile,
-      loading: authLoading || profileLoading,
+      loading: authLoading || (!profileInitialized && isAuthenticated) || profileLoading,
       isAuthenticated,
+      error: authError ?? null,
       signIn,
       signOut,
       getToken,
@@ -201,8 +221,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       appUser,
       profile,
       authLoading,
+      profileInitialized,
       profileLoading,
       isAuthenticated,
+      authError,
       signIn,
       signOut,
       getToken,

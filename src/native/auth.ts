@@ -42,12 +42,16 @@ export function getNativeAuthRedirectUri(): string {
 }
 
 /** True when a URL looks like an Auth0 authorization callback on the native scheme. */
-function isAuthCallback(url: string): boolean {
+export function isAuthCallback(url: string): boolean {
   if (!url.startsWith(`auraishub://${env.AUTH0_DOMAIN}/capacitor/${APP_ID}`)) {
     return false;
   }
-  const params = new URL(url.replace('auraishub://', 'https://capacitor.local')).searchParams;
-  return params.has('state') && (params.has('code') || params.has('error'));
+  try {
+    const params = new URL(url.replace('auraishub://', 'https://capacitor.local')).searchParams;
+    return params.has('state') && (params.has('code') || params.has('error'));
+  } catch {
+    return false;
+  }
 }
 
 /**

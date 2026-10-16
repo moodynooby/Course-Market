@@ -34,10 +34,6 @@ const suspended = (El: React.LazyExoticComponent<React.ComponentType>) => (
   </Suspense>
 );
 
-const protectedRoute = (El: React.LazyExoticComponent<React.ComponentType>) => (
-  <ProtectedRoute>{suspended(El)}</ProtectedRoute>
-);
-
 // Rendered inside the router so native hooks (deep links, etc.) that rely on
 // useNavigate() have access to the router context.
 function AppShell() {
@@ -54,13 +50,17 @@ const router = createBrowserRouter([
       { path: 'callback', element: suspended(CallbackPage) },
       { path: 'onboarding', element: suspended(OnboardingPage) },
       {
-        element: <Layout />,
+        element: (
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        ),
         children: [
-          { index: true, element: protectedRoute(DashboardPage) },
-          { path: 'courses', element: protectedRoute(CoursesPage) },
-          { path: 'trading', element: protectedRoute(TradingPage) },
-          { path: 'professors', element: protectedRoute(ProfessorsPage) },
-          { path: 'professors/:id', element: protectedRoute(ProfessorDetailsPage) },
+          { index: true, element: suspended(DashboardPage) },
+          { path: 'courses', element: suspended(CoursesPage) },
+          { path: 'trading', element: suspended(TradingPage) },
+          { path: 'professors', element: suspended(ProfessorsPage) },
+          { path: 'professors/:id', element: suspended(ProfessorDetailsPage) },
         ],
       },
       { path: '*', element: <Navigate to="/" replace /> },

@@ -19,21 +19,8 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { App as CapacitorApp, type URLOpenListenerEvent } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { useCallback, useEffect, useRef } from 'react';
-import { APP_ID } from './auth';
+import { isAuthCallback } from './auth';
 import { isNativePlatform } from './capacitor';
-
-const AUTH0_DOMAIN_PLACEHOLDER = import.meta.env.VITE_AUTH0_DOMAIN || '';
-
-function isAuthCallback(url: string): boolean {
-  const expected = `auraishub://${AUTH0_DOMAIN_PLACEHOLDER}/capacitor/${APP_ID}/callback`;
-  if (!url.startsWith(expected)) return false;
-  try {
-    const params = new URL(url.replace('auraishub://', 'https://capacitor.local')).searchParams;
-    return params.has('state') && (params.has('code') || params.has('error'));
-  } catch {
-    return false;
-  }
-}
 
 export function useNativeAuth() {
   const { handleRedirectCallback } = useAuth0();
