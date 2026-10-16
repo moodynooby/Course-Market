@@ -10,13 +10,11 @@ import {
   Typography,
 } from '@mui/material';
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { useAuthContext } from '../../context/AuthContext';
 
 export function UserMenu() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const location = useLocation();
-  const { user, signOut, signIn } = useAuthContext();
+  const { user, signOut } = useAuthContext();
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -27,17 +25,7 @@ export function UserMenu() {
   };
 
   if (!user) {
-    return (
-      <Button
-        variant="contained"
-        color="secondary"
-        size="small"
-        onClick={() => signIn(location.pathname + location.search)}
-        sx={{ borderRadius: 9999, ml: 1 }}
-      >
-        Sign In
-      </Button>
-    );
+    return null;
   }
 
   return (

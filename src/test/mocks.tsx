@@ -7,6 +7,7 @@ vi.mock('@auth0/auth0-react', () => ({
     isAuthenticated: false,
     isLoading: false,
     user: undefined,
+    error: null,
     loginWithRedirect: vi.fn(),
     logout: vi.fn(),
     getAccessTokenSilently: vi.fn(),
@@ -19,8 +20,8 @@ vi.mock('./pages/LoginPage', () => ({
 vi.mock('./pages/CoursesPage', () => ({
   default: () => <div data-testid="mock-courses-page">Courses</div>,
 }));
-vi.mock('./pages/SchedulePage', () => ({
-  default: () => <div data-testid="mock-schedule-page">Schedule</div>,
+vi.mock('../pages/DashboardPage', () => ({
+  default: () => <div data-testid="mock-dashboard-page">Dashboard</div>,
 }));
 vi.mock('./pages/TradingPage', () => ({
   default: () => <div data-testid="mock-trading-page">Trading</div>,

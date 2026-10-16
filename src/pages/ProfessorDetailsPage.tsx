@@ -19,14 +19,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { EmptyState } from '../components/EmptyState';
 import RateProfessorModal from '../components/RateProfessorModal';
-import { useAuthContext } from '../context/AuthContext';
 import { professorsApi } from '../services/professorsApi';
 import type { ProfessorDetails } from '../types';
 
 export default function ProfessorDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthContext();
   const [professor, setProfessor] = useState<ProfessorDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,11 +67,7 @@ export default function ProfessorDetailsPage() {
   }, [fetchDetails]);
 
   const handleRateClick = () => {
-    if (isAuthenticated) {
-      setModalOpen(true);
-    } else {
-      navigate('/login', { state: { from: `/professors/${id}` } });
-    }
+    setModalOpen(true);
   };
 
   if (loading) {

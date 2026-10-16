@@ -29,7 +29,7 @@ import type { Professor } from '../types';
 type SortKey = 'name' | 'rating' | 'count';
 
 export default function ProfessorsPage() {
-  const { isAuthenticated, getToken } = useAuthContext();
+  const { getToken } = useAuthContext();
   const [searchParams] = useSearchParams();
   const [professors, setProfessors] = useState<Professor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +70,6 @@ export default function ProfessorsPage() {
   }, [fetchProfessors]);
 
   const handleSync = async () => {
-    if (!isAuthenticated) return;
     try {
       setSyncing(true);
       const result = await professorsApi.syncProfessors(await getToken());
@@ -114,18 +113,16 @@ export default function ProfessorsPage() {
             Browse and rate your instructors
           </Typography>
         </Box>
-        {isAuthenticated && (
-          <Tooltip title="Sync professors from semester data">
-            <Button
-              variant="outlined"
-              startIcon={syncing ? <CircularProgress size={20} /> : <Sync />}
-              onClick={handleSync}
-              disabled={syncing}
-            >
-              Sync Data
-            </Button>
-          </Tooltip>
-        )}
+        <Tooltip title="Sync professors from semester data">
+          <Button
+            variant="outlined"
+            startIcon={syncing ? <CircularProgress size={20} /> : <Sync />}
+            onClick={handleSync}
+            disabled={syncing}
+          >
+            Sync Data
+          </Button>
+        </Tooltip>
       </Stack>
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 4 }}>
@@ -208,11 +205,9 @@ export default function ProfessorsPage() {
             title="No professors found"
             description="Sync semester data to get started."
             action={
-              isAuthenticated && (
-                <Button variant="contained" onClick={handleSync}>
-                  Sync Data
-                </Button>
-              )
+              <Button variant="contained" onClick={handleSync}>
+                Sync Data
+              </Button>
             }
           />
         ) : (

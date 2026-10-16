@@ -460,13 +460,26 @@ export default function TradingPage() {
     }
   };
 
+  const handleOpenPostTrade = useCallback(() => {
+    setEditingTrade(null);
+    setTradeForm({
+      courseCode: '',
+      courseName: '',
+      sectionOffered: '',
+      sectionWanted: '',
+      description: '',
+    });
+    setFormError(null);
+    setDialogOpen(true);
+  }, []);
+
   const handleContact = useCallback(
     async (phone: string) => {
       try {
         await navigator.clipboard.writeText(phone);
-        toast.success('Phone number copied to clipboard!');
+        toast.success(`Copied ${phone} to clipboard — call or message to coordinate your trade.`);
       } catch {
-        toast.info(`Phone: ${phone}`);
+        toast.info(`Contact phone: ${phone}`);
       }
     },
     [toast],
@@ -603,24 +616,14 @@ export default function TradingPage() {
             variant="contained"
             color="secondary"
             startIcon={<SwapHoriz />}
-            onClick={() => {
-              setEditingTrade(null);
-              setTradeForm({
-                courseCode: '',
-                courseName: '',
-                sectionOffered: '',
-                sectionWanted: '',
-                description: '',
-              });
-              setFormError(null);
-              setDialogOpen(true);
-            }}
+            onClick={handleOpenPostTrade}
             sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             Post Trade
           </Button>
         </Stack>
       </Stack>
+
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
           {error}
@@ -637,18 +640,7 @@ export default function TradingPage() {
               variant="contained"
               color="secondary"
               startIcon={<SwapHoriz />}
-              onClick={() => {
-                setEditingTrade(null);
-                setTradeForm({
-                  courseCode: '',
-                  courseName: '',
-                  sectionOffered: '',
-                  sectionWanted: '',
-                  description: '',
-                });
-                setFormError(null);
-                setDialogOpen(true);
-              }}
+              onClick={handleOpenPostTrade}
             >
               Post Trade
             </Button>

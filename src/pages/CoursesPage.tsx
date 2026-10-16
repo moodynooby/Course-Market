@@ -24,7 +24,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Virtuoso } from 'react-virtuoso';
 import { CourseCard } from '../components/CourseCard';
 import { EmptyState } from '../components/EmptyState';
@@ -39,7 +39,7 @@ import { hasSectionConflict } from '../utils/schedule';
 const SEARCH_DEBOUNCE_MS = 150;
 const SAVE_DEBOUNCE_MS = 2000;
 export default function CoursesPage() {
-  const { isAuthenticated, profile, updateProfile } = useAuthContext();
+  const { profile, updateProfile } = useAuthContext();
   const { toast } = useToast();
   const [courses, setCourses] = useState<Course[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
@@ -169,11 +169,6 @@ export default function CoursesPage() {
   }, []);
 
   const autoLoadCourses = useCallback(async () => {
-    if (!isAuthenticated) {
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoadingMessage('Checking your profile...');
 
@@ -202,7 +197,7 @@ export default function CoursesPage() {
       setError('Failed to load courses. Please try again later.');
       setLoading(false);
     }
-  }, [isAuthenticated, profile?.semesterId, loadCoursesFromSemester]);
+  }, [profile?.semesterId, loadCoursesFromSemester]);
 
   useEffect(() => {
     autoLoadCourses();
@@ -407,46 +402,6 @@ export default function CoursesPage() {
             </Card>
           ))}
         </Stack>
-      </Box>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <Box>
-        <Box component="header" sx={{ mb: 5 }}>
-          <Typography variant="h4" gutterBottom>
-            Course Browser
-          </Typography>
-        </Box>
-        <Alert
-          severity="info"
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-          }}
-        >
-          <Box>
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
-              Browsing as a guest — sign in to save schedules and trade sections
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              Course listings are fully browsable. Saving selections, trading, and posting reviews
-              require an account.
-            </Typography>
-          </Box>
-          <Button
-            component={Link}
-            to="/login"
-            variant="contained"
-            color="secondary"
-            size="small"
-            sx={{ whiteSpace: 'nowrap' }}
-          >
-            Sign in
-          </Button>
-        </Alert>
       </Box>
     );
   }
