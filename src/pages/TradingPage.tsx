@@ -792,6 +792,8 @@ export default function TradingPage() {
                 fullWidth
                 required
                 slotProps={{
+                  htmlInput: { maxLength: 50 },
+                  formHelperText: { component: 'div' },
                   input: {
                     startAdornment: (
                       <InputAdornment position="start">
@@ -800,7 +802,12 @@ export default function TradingPage() {
                     ),
                   },
                 }}
-                helperText="Enter the course code (e.g., CS 301)"
+                helperText={
+                  <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+                    <span>Enter the course code (e.g., CS 301)</span>
+                    <span>{tradeForm.courseCode.length}/50</span>
+                  </Stack>
+                }
               />
               <TextField
                 label="Course Name"
@@ -810,6 +817,8 @@ export default function TradingPage() {
                 fullWidth
                 sx={{ mt: 1.5 }}
                 slotProps={{
+                  htmlInput: { maxLength: 255 },
+                  formHelperText: { component: 'div' },
                   input: {
                     startAdornment: (
                       <InputAdornment position="start">
@@ -818,6 +827,11 @@ export default function TradingPage() {
                     ),
                   },
                 }}
+                helperText={
+                  <Stack direction="row" sx={{ justifyContent: 'flex-end' }}>
+                    <span>{tradeForm.courseName.length}/255</span>
+                  </Stack>
+                }
               />
             </Box>
 
@@ -841,6 +855,8 @@ export default function TradingPage() {
                   fullWidth
                   required
                   slotProps={{
+                    htmlInput: { maxLength: 20 },
+                    formHelperText: { component: 'div' },
                     input: {
                       startAdornment: (
                         <InputAdornment position="start">
@@ -849,7 +865,12 @@ export default function TradingPage() {
                       ),
                     },
                   }}
-                  helperText="Your section"
+                  helperText={
+                    <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+                      <span>Your section</span>
+                      <span>{tradeForm.sectionOffered.length}/20</span>
+                    </Stack>
+                  }
                 />
                 <TextField
                   label="Section You Want"
@@ -859,6 +880,8 @@ export default function TradingPage() {
                   fullWidth
                   required
                   slotProps={{
+                    htmlInput: { maxLength: 20 },
+                    formHelperText: { component: 'div' },
                     input: {
                       startAdornment: (
                         <InputAdornment position="start">
@@ -867,7 +890,12 @@ export default function TradingPage() {
                       ),
                     },
                   }}
-                  helperText="Desired section"
+                  helperText={
+                    <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
+                      <span>Desired section</span>
+                      <span>{tradeForm.sectionWanted.length}/20</span>
+                    </Stack>
+                  }
                 />
               </Stack>
             </Box>
@@ -881,6 +909,8 @@ export default function TradingPage() {
               rows={3}
               fullWidth
               slotProps={{
+                htmlInput: { maxLength: 2000 },
+                formHelperText: { component: 'div' },
                 input: {
                   startAdornment: (
                     <InputAdornment position="start">
@@ -889,6 +919,11 @@ export default function TradingPage() {
                   ),
                 },
               }}
+              helperText={
+                <Stack direction="row" sx={{ justifyContent: 'flex-end' }}>
+                  <span>{tradeForm.description.length}/2000</span>
+                </Stack>
+              }
             />
           </Stack>
         </DialogContent>
