@@ -55,7 +55,9 @@ export function decidePreferenceSync(payload: {
  * actively tuned locally (push local over cloud), and an untouched browser
  * with an existing cloud profile (pull cloud down).
  */
-export function usePreferenceSync(updatePreferences: (updates: Partial<Preferences>) => void) {
+export function usePreferenceSync(
+  updatePreferences: (updates: Partial<Preferences>, options?: { skipCloudSync?: boolean }) => void,
+) {
   const { profile, isAuthenticated, updateProfile } = useAuthContext();
   const synced = useRef(false);
 
@@ -76,7 +78,7 @@ export function usePreferenceSync(updatePreferences: (updates: Partial<Preferenc
       void updateProfile({ preferences: decision.preferences });
       storage.remove(STORAGE_KEYS.PREFS_DIRTY);
     } else if (decision.action === 'pull') {
-      updatePreferences(decision.preferences);
+      updatePreferences(decision.preferences, { skipCloudSync: true });
     }
   }, [isAuthenticated, profile, updateProfile, updatePreferences]);
 }

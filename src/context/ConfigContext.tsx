@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useAutoPersistence } from '../hooks/useAutoPersistence';
 import { usePreferenceSync } from '../hooks/usePreferenceSync';
 import type { Preferences } from '../types';
 import { DEFAULT_PREFERENCES, STORAGE_KEYS } from '../utils/constants';
@@ -7,7 +8,7 @@ import { useAuthContext } from './AuthContext';
 
 interface ConfigContextValue {
   preferences: Preferences;
-  updatePreferences: (updates: Partial<Preferences>) => void;
+  updatePreferences: (updates: Partial<Preferences>, options?: { skipCloudSync?: boolean }) => void;
 }
 
 const ConfigContext = createContext<ConfigContextValue | null>(null);
@@ -19,31 +20,44 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     storage.get(STORAGE_KEYS.PREFERENCES, DEFAULT_PREFERENCES),
   );
 
+  const persistence = useAutoPersistence<Preferences>({
+    storageKey: STORAGE_KEYS.PREFERENCES,
+    debounceMs: 300,
+    onSave: async (prefs) => {
+      if (!isAuthenticated) return;
+      await updateProfile({ preferences: prefs });
+    },
+    onError: (err) => {
+      console.error('[ConfigContext] Failed to save preferences:', err);
+    },
+  });
+
   useEffect(() => {
     if (!profile?.preferences) return;
-    setPreferences((prev) => {
-      const local = storage.get(STORAGE_KEYS.PREFERENCES, DEFAULT_PREFERENCES);
-      const isDirty = storage.get(STORAGE_KEYS.PREFS_DIRTY, false);
-      if (isDirty) return prev;
-      if (JSON.stringify(local) !== JSON.stringify(profile.preferences)) {
-        return profile.preferences as Preferences;
-      }
-      return prev;
-    });
+    const cloudPrefs = profile.preferences as Preferences;
+    const local = storage.get(STORAGE_KEYS.PREFERENCES, DEFAULT_PREFERENCES);
+    const isDirty = storage.get(STORAGE_KEYS.PREFS_DIRTY, false);
+    if (isDirty) return;
+
+    if (JSON.stringify(local) !== JSON.stringify(cloudPrefs)) {
+      setPreferences(cloudPrefs);
+      storage.set(STORAGE_KEYS.PREFERENCES, cloudPrefs);
+    }
   }, [profile]);
 
   const updatePreferences = useCallback(
-    (updates: Partial<Preferences>) => {
+    (updates: Partial<Preferences>, options?: { skipCloudSync?: boolean }) => {
       setPreferences((prev) => {
         const merged = { ...prev, ...updates };
-        storage.set(STORAGE_KEYS.PREFERENCES, merged);
-        if (isAuthenticated) {
-          updateProfile({ preferences: merged }).catch(console.error);
+        if (!options?.skipCloudSync) {
+          persistence.queueSave(merged);
+        } else {
+          storage.set(STORAGE_KEYS.PREFERENCES, merged);
         }
         return merged;
       });
     },
-    [isAuthenticated, updateProfile],
+    [persistence],
   );
 
   usePreferenceSync(updatePreferences);

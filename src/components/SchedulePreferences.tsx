@@ -150,7 +150,13 @@ export function SchedulePreferences({
 
   useEffect(() => {
     return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        if (autoSaveRef.current && onSaveRef.current && isValidRef.current) {
+          const currentPrefs = preferencesRef.current;
+          void onSaveRef.current(currentPrefs);
+        }
+      }
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     };
   }, []);
@@ -166,7 +172,7 @@ export function SchedulePreferences({
       if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = setTimeout(() => {
         if (isValidRef.current) performSave();
-      }, 5000);
+      }, 300);
     }
   };
 
@@ -251,11 +257,14 @@ export function SchedulePreferences({
                       if (preset.id !== 'custom') {
                         const merged = { ...preferences, ...preset.preferences };
                         setPreferences(merged);
+                        setSaved(false);
+                        markPreferencesDirty();
                         if (autoSave && onSave) {
+                          setPendingSave(true);
                           if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
                           debounceTimerRef.current = setTimeout(() => {
-                            onSave(merged);
-                          }, 500);
+                            if (isValidRef.current) performSave();
+                          }, 300);
                         }
                       }
                     }}
