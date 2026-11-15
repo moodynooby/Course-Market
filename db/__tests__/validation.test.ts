@@ -4,6 +4,7 @@ import {
   formatZodError,
   phoneSchema,
   professorRatingSchema,
+  scheduleGenerateSchema,
   tradeSchema,
   tradeUpdateSchema,
   userProfileSchema,
@@ -276,5 +277,37 @@ describe('formatZodError', () => {
         expect(result.details[0].field).toBe('nested.value');
       }
     }
+  });
+});
+
+describe('scheduleGenerateSchema', () => {
+  it('preserves startDate and endDate in section timeSlots', () => {
+    const input = {
+      courses: [{ id: 'c1', code: 'ENR208', name: 'Thermo', subject: 'ENR', credits: 2 }],
+      sections: [
+        {
+          id: 's1',
+          courseId: 'c1',
+          sectionNumber: '001',
+          instructor: 'Prof',
+          capacity: 30,
+          enrolled: 10,
+          timeSlots: [
+            {
+              day: 'M' as const,
+              startTime: '11:00',
+              endTime: '12:00',
+              startDate: '2027-03-01',
+              endDate: '2027-04-18',
+            },
+          ],
+        },
+      ],
+      preferences: {},
+    };
+
+    const parsed = scheduleGenerateSchema.parse(input);
+    expect(parsed.sections[0].timeSlots[0].startDate).toBe('2027-03-01');
+    expect(parsed.sections[0].timeSlots[0].endDate).toBe('2027-04-18');
   });
 });
