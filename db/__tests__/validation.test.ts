@@ -135,6 +135,12 @@ describe('userProfileSchema', () => {
     expect(result.phone).toBe('');
   });
 
+  it('transforms null phone to empty string', () => {
+    const result = userProfileSchema.parse({ semesterId: 'winter2025', phone: null });
+    expect(result.semesterId).toBe('winter2025');
+    expect(result.phone).toBe('');
+  });
+
   it('rejects profile with invalid phone', () => {
     expect(() => userProfileSchema.parse({ phone: '123' })).toThrow();
   });

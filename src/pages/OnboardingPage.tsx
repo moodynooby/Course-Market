@@ -101,7 +101,7 @@ export default function OnboardingPage() {
     setSaving(true);
     setError(null);
     try {
-      await updateProfile({ semesterId: selectedSemester, ...(phone.trim() ? { phone } : {}) });
+      await updateProfile({ semesterId: selectedSemester, phone: phone.trim() });
       navigate(resolveReturnUrl(), { replace: true });
     } catch (err) {
       const detailedError = formatApiErrorDetails(err);

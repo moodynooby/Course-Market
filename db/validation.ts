@@ -54,7 +54,7 @@ export const optionalPhoneSchema = z
       .or(z.literal('')),
   )
   .nullish()
-  .transform((val) => val ?? undefined);
+  .transform((val) => (val === null ? '' : val));
 
 export type TradeInput = z.infer<typeof tradeSchema>;
 export type TradeUpdateInput = z.infer<typeof tradeUpdateSchema>;
