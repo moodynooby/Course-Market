@@ -26,10 +26,10 @@
     "setup:hooks": "husky",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "db:migrate": "tsx --env-file=.env db/migrate.ts",
+    "db:migrate": "tsx --env-file-if-exists=.env db/migrate.ts",
     "db:check": "drizzle-kit check",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx --env-file=.env db/seed.ts"
+    "db:seed": "tsx --env-file-if-exists=.env db/seed.ts"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.27.0",

@@ -141,3 +141,10 @@ android/local.properties
 # Local dev harness (dev-only preview)
 preview.html
 src/dev-harness/
+
+# Generated semester import artifacts (the app reads courses from the database)
+.import/
+__pycache__/
+
+# Local course directory source files (seed inputs, not committed)
+Course_Directory_*

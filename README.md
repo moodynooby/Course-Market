@@ -135,17 +135,26 @@ Push needs real credentials set on Netlify (Functions): `FCM_PROJECT_ID` and `FC
 
 ## Seeding
 
-### Step 1 — CSVs to JSON
+Requires `DATABASE_URL` (environment variable or `.env`) pointing at the PostgreSQL/Neon database.
+
+### Step 1 — Course directory to JSON
+
+The university course directory `.xlsx` is the source of truth; its `.csv` export is kept only for quick inspection. The converter accepts either format, uses the workbook's first worksheet for `.xlsx`, and validates section ids, weekdays, and time ranges before writing.
 
 ```bash
-python scripts/csv_to_semester_json.py \
-  --semester-id Monsoon2026 \
-  --semester-name "Monsoon Semester 2026"
-  # --force-refresh to overwrite
+python3 scripts/csv_to_semester_json.py \
+  --input Course_Directory_Winter_2027.xlsx \
+  --semester-id Winter2027 \
+  --semester-name "Winter Semester 2027"
 ```
+
+This writes `.import/semesters/Winter2027.json` (gitignored import scratch file — the app reads courses from Postgres, not from JSON). Pass `--seed` to seed immediately after converting.
 
 ### Step 2 — Seed
 
 ```bash
-npx tsx scripts/seed-semester.ts Monsoon2026
+pnpm run db:seed                                      # every file in .import/semesters/
+pnpm run db:seed -- .import/semesters/Winter2027.json # one semester
 ```
+
+Seeding creates or updates the `semesters` row first, then upserts courses and sections, deletes rows that no longer exist in the directory file, and verifies the final row counts. Re-running is safe and leaves the database matching the file. The scratch JSON is deleted after a successful seed; regenerate it from the directory file when needed.

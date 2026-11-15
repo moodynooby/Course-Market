@@ -17,9 +17,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Dual-cloud portability support: universal Node/Serverless adapter (`api/_adapter.ts`, `api/[...path].ts`), `vercel.json` rewrites and headers, and Netlify `/api/*` redirection so AuraIsHub deploys seamlessly to both Vercel and Netlify.
 - Server-side schedule generation and optimization endpoint (`POST /api/schedules/generate`) with client offline fallback.
 - Server-side course search and filtering endpoint (`GET /api/courses/search`) with instructor, subject, and open seats querying.
+- Winter 2027 course directory import: `.xlsx` and `.csv` conversion with standard-library XLSX parsing, section-level IDs that include the semester, and course descriptions carried into the generated import file.
 
 ### Fixed
 
+- Course directory schedules in the `Section 1 | 08:00-09:30 (Wed)` format now parse into time slots instead of importing with no meetings.
+- Semester seeding now creates the referenced `semesters` row and verifies row counts, so a fresh database seeds without foreign-key failures.
 - Validation failure on new account onboarding caused by requiring phone numbers during profile creation.
 - Native Capacitor login redirect URI configuration so mobile authentication completes via custom scheme.
 - Return context preservation across auth redirects and onboarding to keep users on their intended route.
@@ -36,6 +39,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Centralized storage keys, schedule thresholds, and the canonical schedule type.
 - Consolidated schedule scoring and conflict tests into canonical `src/utils/__tests__/schedule.test.ts`.
 - Modernized theme geometry and component radii to Duolingo standard 12px scale with 2px borders and tactile button elevation.
+- Semester seeding is now a full refresh: courses and sections are upserted, rows removed from the directory are deleted, and `pnpm run db:seed` seeds every `.import/semesters/*.json` by default.
+- `db:seed` and `db:migrate` read `.env` only when it exists, so shell-provided `DATABASE_URL` values work.
+- Seeded scratch files under `.import/semesters/` are deleted after a successful seed, keeping the database as the only course source.
 
 ### Removed
 
