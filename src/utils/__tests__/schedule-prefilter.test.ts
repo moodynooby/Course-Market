@@ -82,6 +82,43 @@ describe('prefilterSections', () => {
     expect(report.summary.dedupCourses).toEqual(['CS101']);
   });
 
+  it('does not deduplicate sections with different date ranges', () => {
+    const sec1 = makeSection({
+      id: 's1',
+      courseId: 'c1',
+      timeSlots: [
+        {
+          day: 'M',
+          startTime: '10:00',
+          endTime: '11:00',
+          startDate: '2026-01-15',
+          endDate: '2026-03-07',
+        },
+      ],
+    });
+    const sec2 = makeSection({
+      id: 's2',
+      courseId: 'c1',
+      timeSlots: [
+        {
+          day: 'M',
+          startTime: '10:00',
+          endTime: '11:00',
+          startDate: '2026-03-15',
+          endDate: '2026-05-01',
+        },
+      ],
+    });
+    const input = new Map([['c1', [sec1, sec2]]]);
+    const courseCodes = new Map([['c1', 'CS101']]);
+
+    const report = prefilterSections(input, basePrefs, courseCodes);
+
+    const filtered = report.sectionsByCourse.get('c1');
+    expect(filtered).toHaveLength(2);
+    expect(report.summary.dedupRemoved).toBe(0);
+  });
+
   it('removes sections on avoided days', () => {
     const secM = makeSection({
       id: 's1',

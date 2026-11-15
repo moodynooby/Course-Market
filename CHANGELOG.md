@@ -22,6 +22,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- False-positive and cross-course calendar conflict highlighting caused by naive substring matching on ambiguous section numbers in `CalendarView`.
+- Courses Page flagging alternative sections of the same course as conflicting with the currently selected section of that same course.
+- Trading Page self-conflict and same-course conflict false alarms when viewing trade offers.
+- Inverted break condition in `schedule-diagnostics.ts` that failed to detect multi-course section conflicts, and reversed credit diagnostic message.
+- Part-of-term / mini-course section loss during prefiltering and schedule footprinting caused by date-range-blind deduplication.
+- Premature cutoff of calendar events on their final meeting date in `isSlotActiveDuring`.
 - Course selection, pin, and schedule preference data loss caused by component unmounts cancelling debounce timers during page navigation and dialog closing.
 - Initial load race condition in `CoursesPage` that queued empty selection saves over saved profile data.
 - Stale pinned courses and cross-semester course leakage during semester switching.

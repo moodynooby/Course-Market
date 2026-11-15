@@ -100,7 +100,7 @@ interface PendingSchedule {
 export function scheduleFootprint(sections: Section[]): string {
   const perCourse = sections.map((s) => {
     const slots = s.timeSlots
-      .map((t) => `${t.day}@${t.startTime}-${t.endTime}`)
+      .map((t) => `${t.day}@${t.startTime}-${t.endTime}@${t.startDate || ''}_${t.endDate || ''}`)
       .sort()
       .join('|');
     return `${s.courseId}:${slots}`;

@@ -13,7 +13,7 @@ interface ScheduleOverviewProps {
 
 export function ScheduleOverview({ sections, courses }: ScheduleOverviewProps) {
   const navigate = useNavigate();
-  const conflicts = checkConflicts(sections);
+  const conflicts = checkConflicts(sections, courses);
 
   if (sections.length === 0) {
     return (

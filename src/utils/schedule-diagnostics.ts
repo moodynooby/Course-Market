@@ -62,18 +62,18 @@ export function diagnoseEmptyGeneration(
     let conflictingCount = 0;
     if (sections.length > 0) {
       for (const section of sections) {
-        let conflictsWithAll = true;
+        let hasUnavoidableConflict = false;
         for (const [otherId, otherSections] of sectionsByCourse) {
           if (otherId === courseId) continue;
-          for (const other of otherSections) {
-            if (!hasSectionConflict(section, other)) {
-              conflictsWithAll = false;
-              break;
-            }
+          if (
+            otherSections.length > 0 &&
+            otherSections.every((other) => hasSectionConflict(section, other))
+          ) {
+            hasUnavoidableConflict = true;
+            break;
           }
-          if (!conflictsWithAll) break;
         }
-        if (conflictsWithAll) conflictingCount++;
+        if (hasUnavoidableConflict) conflictingCount++;
       }
     }
 
@@ -111,8 +111,8 @@ export function diagnoseEmptyGeneration(
   if (totalMinCredits > maxCredits) {
     reasons.push({
       type: 'credit-range',
-      message: `Credit minimum (${minCredits}) exceeds what your courses can provide (${totalMinCredits})`,
-      detail: `Each selected course has at least the minimum credits, totaling ${totalMinCredits}, but your max is set to ${maxCredits}.`,
+      message: `Total selected credits (${totalMinCredits}) exceeds your maximum credit preference (${maxCredits})`,
+      detail: `Your selected courses total ${totalMinCredits} credits, but your maximum credit preference is set to ${maxCredits}.`,
     });
     suggestions.push(`Increase max credits to at least ${totalMinCredits}`);
   }

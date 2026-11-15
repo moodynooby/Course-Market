@@ -8,6 +8,7 @@ import {
   formatTimeSlots,
   hasSectionConflict,
   hasTimeConflict,
+  isSlotActiveDuring,
   scoreSchedulesRelative,
   sectionsToCalendarEvents,
   timeToMinutesCached,
@@ -312,29 +313,61 @@ describe('conflict detection', () => {
     expect(hasSectionConflict(section1, section2)).toBe(true);
   });
 
-  it('identifies all conflicting sections in a schedule', () => {
+  it('does not flag self-conflict when comparing a section to itself', () => {
+    const section1 = makeSection({
+      id: 's1',
+      timeSlots: [makeTimeSlot('M', '09:00', '10:30')],
+    });
+
+    expect(hasSectionConflict(section1, section1)).toBe(false);
+    expect(hasSectionConflict(section1, { ...section1 })).toBe(false);
+  });
+
+  it('identifies all conflicting sections in a schedule and enriches with course codes', () => {
     const sections = [
       makeSection({
         id: 's1',
+        courseId: 'c1',
         sectionNumber: '001',
         timeSlots: [makeTimeSlot('M', '09:00', '10:00')],
       }),
       makeSection({
         id: 's2',
+        courseId: 'c2',
         sectionNumber: '002',
         timeSlots: [makeTimeSlot('M', '09:30', '10:30')],
       }),
       makeSection({
         id: 's3',
+        courseId: 'c3',
         sectionNumber: '003',
         timeSlots: [makeTimeSlot('W', '09:00', '10:00')],
       }),
     ];
+    const courses: Course[] = [
+      { id: 'c1', code: 'CS101', name: 'Intro CS', subject: 'CS', credits: 3 },
+      { id: 'c2', code: 'MATH101', name: 'Calculus', subject: 'MATH', credits: 3 },
+    ];
 
-    const conflicts = checkConflicts(sections);
+    const conflicts = checkConflicts(sections, courses);
 
     expect(conflicts.length).toBe(1);
-    expect(conflicts[0]).toContain('001');
+    expect(conflicts[0]).toBe('CS101 Sec 001 and MATH101 Sec 002 conflict');
+  });
+
+  it('checks slot activity throughout the full duration of the final day', () => {
+    const slot = makeTimeSlot('M', '09:00', '10:00', {
+      startDate: '2026-01-15',
+      endDate: '2026-03-07',
+    });
+
+    // An afternoon time on the final date should still be considered active
+    const finalDayAfternoon = new Date('2026-03-07T14:30:00');
+    expect(isSlotActiveDuring(slot, finalDayAfternoon)).toBe(true);
+
+    // Day after the end date should be inactive
+    const dayAfter = new Date('2026-03-08T09:00:00');
+    expect(isSlotActiveDuring(slot, dayAfter)).toBe(false);
   });
 });
 

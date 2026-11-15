@@ -68,7 +68,7 @@ function deriveScheduleFromSelections(
     sections: matchedSections,
     totalCredits,
     score: 0,
-    conflicts: checkConflicts(matchedSections),
+    conflicts: checkConflicts(matchedSections, courses),
   };
 }
 

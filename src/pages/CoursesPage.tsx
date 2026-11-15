@@ -135,7 +135,7 @@ export default function CoursesPage() {
     if (selected.length === 0) return details;
     for (const section of sections) {
       for (const sel of selected) {
-        if (sel.id !== section.id && hasSectionConflict(section, sel)) {
+        if (sel.courseId !== section.courseId && hasSectionConflict(section, sel)) {
           const conflictingCourse = coursesMap.get(sel.courseId);
           const code = conflictingCourse ? conflictingCourse.code : 'Selected course';
           details.set(section.id, `${code} Sec ${sel.sectionNumber}`);

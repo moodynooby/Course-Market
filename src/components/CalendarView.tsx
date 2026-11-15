@@ -27,7 +27,11 @@ import type { CalendarEvent, Course, Section } from '../types';
 import { buildGoogleCalendarUrlForSlot, openGoogleCalendarUrl } from '../utils/googleCalendar';
 import { hapticLight, hapticSuccess } from '../utils/haptics';
 import { icsToBlob, sectionsToIcs, timeToMinutes } from '../utils/icsExport';
-import { isSlotActiveDuring, sectionsToCalendarEvents } from '../utils/schedule';
+import {
+  hasSectionConflict,
+  isSlotActiveDuring,
+  sectionsToCalendarEvents,
+} from '../utils/schedule';
 import { buildDeepLink, shareContent } from '../utils/share';
 import { COURSE_COLORS, EventComponent } from './CalendarEventComponent';
 import CalendarToolbar from './CalendarToolbar';
@@ -301,11 +305,23 @@ export default function CalendarView({
     setSelectedEvent(event);
   }, []);
 
+  const conflictingSectionIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (let i = 0; i < sections.length; i++) {
+      for (let j = i + 1; j < sections.length; j++) {
+        if (hasSectionConflict(sections[i], sections[j])) {
+          ids.add(sections[i].id);
+          ids.add(sections[j].id);
+        }
+      }
+    }
+    return ids;
+  }, [sections]);
+
   const eventStyleGetter = useCallback(
     (_event: CalendarEvent) => {
-      const isConflicted = conflicts.some((c) =>
-        c.includes(_event.resource?.section?.sectionNumber || ''),
-      );
+      const sectionId = _event.resource?.section?.id;
+      const isConflicted = sectionId ? conflictingSectionIds.has(sectionId) : false;
 
       const courseCode = _event.resource?.course?.code || '';
       const colorIndex =
@@ -328,7 +344,7 @@ export default function CalendarView({
         },
       };
     },
-    [conflicts, theme.palette.error.main],
+    [conflictingSectionIds, theme.palette.error.main],
   );
 
   const formats = useMemo(
@@ -595,7 +611,7 @@ export default function CalendarView({
           </Typography>
           <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: 'wrap' }}>
             {sections
-              .filter((section) => conflicts.some((c) => c.includes(section.sectionNumber)))
+              .filter((section) => conflictingSectionIds.has(section.id))
               .map((section) => {
                 const course = courses.find((c) => c.id === section.courseId);
                 return (

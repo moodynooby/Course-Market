@@ -97,6 +97,9 @@ export function formatTimeSlots(timeSlots: TimeSlot[]): {
 }
 
 export function hasSectionConflict(section1: Section, section2: Section): boolean {
+  if (section1 === section2 || (section1.id && section1.id === section2.id)) {
+    return false;
+  }
   for (const slot1 of section1.timeSlots) {
     for (const slot2 of section2.timeSlots) {
       if (hasTimeConflict(slot1, slot2)) {
@@ -107,13 +110,21 @@ export function hasSectionConflict(section1: Section, section2: Section): boolea
   return false;
 }
 
-export function checkConflicts(sections: Section[]): string[] {
+export function checkConflicts(sections: Section[], courses?: Course[]): string[] {
   const conflicts: string[] = [];
+  const courseMap = courses ? new Map(courses.map((c) => [c.id, c.code])) : undefined;
 
   for (let i = 0; i < sections.length; i++) {
     for (let j = i + 1; j < sections.length; j++) {
+      if (sections[i].id && sections[i].id === sections[j].id) continue;
       if (hasSectionConflict(sections[i], sections[j])) {
-        conflicts.push(`${sections[i].sectionNumber} and ${sections[j].sectionNumber} conflict`);
+        const labelA = courseMap?.get(sections[i].courseId)
+          ? `${courseMap.get(sections[i].courseId)} Sec ${sections[i].sectionNumber}`
+          : sections[i].sectionNumber;
+        const labelB = courseMap?.get(sections[j].courseId)
+          ? `${courseMap.get(sections[j].courseId)} Sec ${sections[j].sectionNumber}`
+          : sections[j].sectionNumber;
+        conflicts.push(`${labelA} and ${labelB} conflict`);
       }
     }
   }
@@ -169,7 +180,9 @@ export function sectionsToCourseSelections(sections: Section[]): Record<string, 
 export function isSlotActiveDuring(slot: TimeSlot, referenceDate: Date): boolean {
   if (!slot.startDate || !slot.endDate) return true;
   const start = new Date(slot.startDate);
+  start.setHours(0, 0, 0, 0);
   const end = new Date(slot.endDate);
+  end.setHours(23, 59, 59, 999);
   return referenceDate >= start && referenceDate <= end;
 }
 

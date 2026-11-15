@@ -600,7 +600,12 @@ export default function TradingPage() {
       const wantedSection = courseSections.find((s) => s.sectionNumber === trade.sectionWanted);
 
       for (const selected of selectedSections) {
-        if (offeredSection && hasSectionConflict(offeredSection, selected)) {
+        if (
+          offeredSection &&
+          selected.courseId !== courseId &&
+          selected.id !== offeredSection.id &&
+          hasSectionConflict(offeredSection, selected)
+        ) {
           const selCourse = allCourses.find((c) => c.id === selected.courseId);
           conflicts.push({
             type: 'offered',
@@ -609,7 +614,12 @@ export default function TradingPage() {
             conflictingSectionNumber: selected.sectionNumber,
           });
         }
-        if (wantedSection && hasSectionConflict(wantedSection, selected)) {
+        if (
+          wantedSection &&
+          selected.courseId !== courseId &&
+          selected.id !== wantedSection.id &&
+          hasSectionConflict(wantedSection, selected)
+        ) {
           const selCourse = allCourses.find((c) => c.id === selected.courseId);
           conflicts.push({
             type: 'wanted',

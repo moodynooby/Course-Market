@@ -38,7 +38,7 @@ function deduplicateSections(sections: Section[]): Section[] {
   const byPattern = new Map<string, Section>();
   for (const s of sections) {
     const key = s.timeSlots
-      .map((t) => `${t.day}-${t.startTime}-${t.endTime}`)
+      .map((t) => `${t.day}-${t.startTime}-${t.endTime}@${t.startDate || ''}_${t.endDate || ''}`)
       .sort()
       .join('|');
     const existing = byPattern.get(key);
