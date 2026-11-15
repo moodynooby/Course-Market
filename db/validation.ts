@@ -114,6 +114,8 @@ export const scheduleGenerateSchema = z.object({
           startTime: z.string(),
           endTime: z.string(),
           location: z.string().optional(),
+          startDate: z.string().optional(),
+          endDate: z.string().optional(),
         }),
       ),
     }),
