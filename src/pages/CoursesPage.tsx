@@ -25,45 +25,50 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Virtuoso } from 'react-virtuoso';
 import { CourseCard } from '../components/CourseCard';
 import { EmptyState } from '../components/EmptyState';
-import { useAuthContext } from '../context/AuthContext';
+import { useCourseSelection } from '../context/CourseSelectionContext';
 import { useToast } from '../context/ToastContext';
 import { useProfessorsMap } from '../hooks/useProfessorsMap';
-import { getSemesterData, getSemesters } from '../services/coursesApi';
-import { buildCourseIndex, searchCourses } from '../services/search';
+import { searchCourses } from '../services/search';
 import type { Course, Section } from '../types';
 import { hasSectionConflict } from '../utils/schedule';
 
 const SEARCH_DEBOUNCE_MS = 150;
-const SAVE_DEBOUNCE_MS = 2000;
 
 export default function CoursesPage() {
   const navigate = useNavigate();
   const theme = useTheme();
-  const { profile, updateProfile } = useAuthContext();
   const { toast } = useToast();
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [sections, setSections] = useState<Section[]>([]);
+  const {
+    semesterId: currentSemesterId,
+    semesterName: currentSemesterName,
+    availableSemesters,
+    courses,
+    sections,
+    loading,
+    error,
+    selectedSections,
+    pinnedSections,
+    selectSection,
+    togglePin,
+    clearAllSelections,
+    switchSemester,
+    refreshCatalog,
+  } = useCourseSelection();
+
+  const [errorDismissed, setErrorDismissed] = useState(false);
+
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [subject, setSubject] = useState('all');
   const [hideConflicts, setHideConflicts] = useState(false);
   const [openSeatsOnly, setOpenSeatsOnly] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState('Loading courses...');
-  const [error, setError] = useState<string | null>(null);
-  const [currentSemesterId, setCurrentSemesterId] = useState<string>('');
-  const [currentSemesterName, setCurrentSemesterName] = useState<string>('');
   const [semesterMenuAnchor, setSemesterMenuAnchor] = useState<null | HTMLElement>(null);
-  const [availableSemesters, setAvailableSemesters] = useState<
-    Array<{ id: string; name: string; isActive: boolean }>
-  >([]);
-  const [loadingSemesters, setLoadingSemesters] = useState(false);
 
   const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   const professorRatings = useProfessorsMap();
@@ -76,136 +81,6 @@ export default function CoursesPage() {
       setSearch(deepLinkCode);
     }
   }, [deepLinkCode]);
-
-  const [selectedSections, setSelectedSections] = useState<Map<string, string>>(new Map());
-  const [pinnedSections, setPinnedSections] = useState<Map<string, string>>(new Map());
-
-  const initialSyncDoneRef = useRef(false);
-  const previousSelectionsRef = useRef<Map<string, string>>(new Map());
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (profile && !initialSyncDoneRef.current) {
-      initialSyncDoneRef.current = true;
-      if (profile.courseSelections) {
-        setSelectedSections(new Map(Object.entries(profile.courseSelections)));
-      }
-      if (profile.pinnedSelections) {
-        setPinnedSections(new Map(Object.entries(profile.pinnedSelections)));
-      }
-    }
-  }, [profile]);
-
-  const saveSelections = useCallback(
-    (selections: Map<string, string>, pins: Map<string, string>) => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-
-      saveTimeoutRef.current = setTimeout(() => {
-        const saved = Object.fromEntries(selections);
-        const savedPins = Object.fromEntries(pins);
-        updateProfile({ courseSelections: saved, pinnedSelections: savedPins }).catch(() => {
-          toast.error('Failed to save course selections. Please try again.');
-        });
-      }, SAVE_DEBOUNCE_MS);
-    },
-    [toast, updateProfile],
-  );
-
-  useEffect(() => {
-    if (!initialSyncDoneRef.current) return;
-
-    const prev = previousSelectionsRef.current;
-    const curr = selectedSections;
-
-    const added: string[] = [];
-    const removed: string[] = [];
-
-    curr.forEach((sectionId, courseId) => {
-      if (!prev.has(courseId) || prev.get(courseId) !== sectionId) {
-        added.push(courseId);
-      }
-    });
-
-    prev.forEach((_, courseId) => {
-      if (!curr.has(courseId)) {
-        removed.push(courseId);
-      }
-    });
-
-    if (added.length > 0) {
-      toast.success(`Selected ${added.length} course${added.length > 1 ? 's' : ''}`);
-    } else if (removed.length > 0) {
-      toast.info(`Deselected ${removed.length} course${removed.length > 1 ? 's' : ''}`);
-    }
-
-    previousSelectionsRef.current = new Map(curr);
-  }, [selectedSections, toast]);
-
-  useEffect(() => {
-    if (!initialSyncDoneRef.current) return;
-
-    saveSelections(selectedSections, pinnedSections);
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [selectedSections, pinnedSections, saveSelections]);
-
-  const loadCoursesFromSemester = useCallback(async (semesterId: string, semesterName: string) => {
-    setLoading(true);
-    setLoadingMessage(`Loading ${semesterName} courses...`);
-    try {
-      const { courses, sections } = await getSemesterData(semesterId);
-      buildCourseIndex(courses, sections);
-      setCourses(courses);
-      setSections(sections);
-      setError(null);
-    } catch (err) {
-      console.error('Error loading courses:', err);
-      setError('Failed to load courses. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const autoLoadCourses = useCallback(async () => {
-    try {
-      setLoadingMessage('Checking your profile...');
-
-      const { semesters } = await getSemesters();
-
-      let selectedSemester: { id: string; name: string } | null = null;
-
-      if (profile?.semesterId) {
-        selectedSemester = semesters.find((s) => s.id === profile.semesterId) || null;
-      }
-
-      if (!selectedSemester && semesters.length > 0) {
-        selectedSemester = semesters[0];
-      }
-
-      if (selectedSemester?.id) {
-        setCurrentSemesterId(selectedSemester.id);
-        setCurrentSemesterName(selectedSemester.name);
-        await loadCoursesFromSemester(selectedSemester.id, selectedSemester.name);
-      } else {
-        setError('No semester data available. Please complete onboarding first.');
-        setLoading(false);
-      }
-    } catch (err) {
-      console.error('[CoursesPage] Error auto-loading courses:', err);
-      setError('Failed to load courses. Please try again later.');
-      setLoading(false);
-    }
-  }, [profile?.semesterId, loadCoursesFromSemester]);
-
-  useEffect(() => {
-    autoLoadCourses();
-  }, [autoLoadCourses]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -345,71 +220,43 @@ export default function CoursesPage() {
     setOpenSeatsOnly(false);
   }, []);
 
-  const handleSelectSection = useCallback((courseId: string, sectionId: string) => {
-    setSelectedSections((prev) => {
-      const newMap = new Map(prev);
-      if (newMap.get(courseId) === sectionId) {
-        newMap.delete(courseId);
-        setPinnedSections((p) => {
-          const np = new Map(p);
-          np.delete(courseId);
-          return np;
-        });
+  const handleSelectSection = useCallback(
+    (courseId: string, sectionId: string) => {
+      const isSelected = selectedSections.get(courseId) === sectionId;
+      selectSection(courseId, sectionId);
+      if (isSelected) {
+        toast.info('Deselected course');
       } else {
-        newMap.set(courseId, sectionId);
+        toast.success('Selected course');
       }
-      if (newMap.size !== prev.size) return newMap;
-      for (const [key, val] of newMap) {
-        if (!prev.has(key) || prev.get(key) !== val) return newMap;
-      }
-      return prev;
-    });
-  }, []);
+    },
+    [selectedSections, selectSection, toast],
+  );
 
-  const handleTogglePin = useCallback((courseId: string, sectionId: string) => {
-    setPinnedSections((prev) => {
-      const newMap = new Map(prev);
-      if (newMap.get(courseId) === sectionId) {
-        newMap.delete(courseId);
-      } else {
-        newMap.set(courseId, sectionId);
-      }
-      return newMap;
-    });
-  }, []);
+  const handleTogglePin = useCallback(
+    (courseId: string, sectionId: string) => {
+      togglePin(courseId, sectionId);
+    },
+    [togglePin],
+  );
 
   const handleClearAll = useCallback(() => {
     setClearConfirmOpen(true);
   }, []);
 
   const handleClearConfirmed = useCallback(() => {
-    setSelectedSections(new Map());
-    setPinnedSections(new Map());
+    clearAllSelections();
     setClearConfirmOpen(false);
     toast.info('Cleared all course selections');
-  }, [toast]);
+  }, [clearAllSelections, toast]);
 
   const handleExpand = useCallback((courseId: string) => {
     setExpanded((prev) => (prev === courseId ? null : courseId));
   }, []);
 
-  const handleSemesterMenuOpen = useCallback(
-    async (event: React.MouseEvent<HTMLElement>) => {
-      setSemesterMenuAnchor(event.currentTarget);
-      if (availableSemesters.length === 0 && !loadingSemesters) {
-        setLoadingSemesters(true);
-        try {
-          const { semesters } = await getSemesters();
-          setAvailableSemesters(semesters);
-        } catch (err) {
-          console.error('Failed to load semesters:', err);
-        } finally {
-          setLoadingSemesters(false);
-        }
-      }
-    },
-    [availableSemesters, loadingSemesters],
-  );
+  const handleSemesterMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    setSemesterMenuAnchor(event.currentTarget);
+  }, []);
 
   const handleSemesterMenuClose = useCallback(() => {
     setSemesterMenuAnchor(null);
@@ -418,15 +265,9 @@ export default function CoursesPage() {
   const handleSemesterChange = useCallback(
     async (semesterId: string, semesterName: string) => {
       setSemesterMenuAnchor(null);
-      if (semesterId === currentSemesterId) return;
-
-      setSelectedSections(new Map());
-      setPinnedSections(new Map());
-      setCurrentSemesterId(semesterId);
-      setCurrentSemesterName(semesterName);
-      await loadCoursesFromSemester(semesterId, semesterName);
+      await switchSemester(semesterId, semesterName);
     },
-    [currentSemesterId, loadCoursesFromSemester],
+    [switchSemester],
   );
 
   if (loading) {
@@ -437,7 +278,7 @@ export default function CoursesPage() {
             Course Browser
           </Typography>
           <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-            {loadingMessage}
+            Loading {currentSemesterName ? `${currentSemesterName} courses...` : 'courses...'}
           </Typography>
         </Box>
         <Stack spacing={2}>
@@ -465,7 +306,7 @@ export default function CoursesPage() {
         </Box>
         {error ? (
           <Stack spacing={2}>
-            <Alert severity="error" action={<Button onClick={autoLoadCourses}>Retry</Button>}>
+            <Alert severity="error" action={<Button onClick={refreshCatalog}>Retry</Button>}>
               {error}
             </Alert>
           </Stack>
@@ -487,7 +328,7 @@ export default function CoursesPage() {
                   </Typography>
                 </Box>
               </Stack>
-              <Button variant="contained" sx={{ mt: 3 }} onClick={autoLoadCourses}>
+              <Button variant="contained" sx={{ mt: 3 }} onClick={refreshCatalog}>
                 Load Courses
               </Button>
             </CardContent>
@@ -525,12 +366,12 @@ export default function CoursesPage() {
             variant="outlined"
             aria-haspopup="menu"
             onClick={handleSemesterMenuOpen}
-            disabled={loadingSemesters}
+            disabled={availableSemesters.length === 0}
             startIcon={<CalendarToday />}
             endIcon={<KeyboardArrowDown />}
             sx={{ minWidth: { xs: '100%', sm: 200 }, maxWidth: { sm: 280 } }}
           >
-            {loadingSemesters
+            {availableSemesters.length === 0
               ? 'Loading...'
               : (currentSemesterName || 'Select Semester').length > 30
                 ? `${(currentSemesterName || 'Select Semester').slice(0, 27)}…`
@@ -543,7 +384,7 @@ export default function CoursesPage() {
         open={Boolean(semesterMenuAnchor)}
         onClose={handleSemesterMenuClose}
       >
-        {loadingSemesters ? (
+        {availableSemesters.length === 0 ? (
           <MenuItem disabled>
             <Typography
               variant="body2"
@@ -552,17 +393,6 @@ export default function CoursesPage() {
               }}
             >
               Loading semesters...
-            </Typography>
-          </MenuItem>
-        ) : availableSemesters.length === 0 ? (
-          <MenuItem disabled>
-            <Typography
-              variant="body2"
-              sx={{
-                color: 'text.secondary',
-              }}
-            >
-              No semesters available
             </Typography>
           </MenuItem>
         ) : (
@@ -608,8 +438,8 @@ export default function CoursesPage() {
           ))
         )}
       </Menu>
-      {error && (
-        <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setError(null)}>
+      {!errorDismissed && error && (
+        <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setErrorDismissed(true)}>
           {error}
         </Alert>
       )}

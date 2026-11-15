@@ -2,41 +2,23 @@ import { CalendarMonth, Check, KeyboardArrowDown } from '@mui/icons-material';
 import { Button, ListItemIcon, ListItemText, Menu, MenuItem } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthContext } from '../../context/AuthContext';
-import { getSemesters } from '../../services/coursesApi';
-import type { Semester } from '../../types';
+import { useCourseSelection } from '../../context/CourseSelectionContext';
 
 export function SemesterMenu() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [semesters, setSemesters] = useState<Semester[]>([]);
-  const [loadingSemesters, setLoadingSemesters] = useState(false);
   const navigate = useNavigate();
-  const { profile, updateProfile } = useAuthContext();
+  const { semesterId, semesterName, availableSemesters, switchSemester } = useCourseSelection();
 
-  const handleSemesterMenuOpen = async (event: React.MouseEvent<HTMLElement>) => {
+  const handleSemesterMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
-    if (semesters.length > 0 || loadingSemesters) return;
-
-    try {
-      setLoadingSemesters(true);
-      const { semesters: availableSemesters } = await getSemesters();
-      setSemesters(availableSemesters);
-    } catch (error) {
-      console.error('Failed to load semesters:', error);
-    } finally {
-      setLoadingSemesters(false);
-    }
   };
 
-  const handleSemesterChange = async (semesterId: string) => {
-    if (semesterId === profile?.semesterId) {
-      setAnchorEl(null);
-      return;
-    }
+  const handleSemesterChange = async (newSemesterId: string) => {
+    setAnchorEl(null);
+    if (newSemesterId === semesterId) return;
 
     try {
-      await updateProfile({ semesterId, courseSelections: {} });
-      setAnchorEl(null);
+      await switchSemester(newSemesterId);
       navigate('/');
     } catch (error) {
       console.error('Failed to change semester:', error);
@@ -60,9 +42,7 @@ export function SemesterMenu() {
           maxWidth: 200,
         }}
       >
-        {semesters.find((semester) => semester.id === profile?.semesterId)?.name ||
-          profile?.semesterId ||
-          'Semester'}
+        {semesterName || semesterId || 'Semester'}
       </Button>
       <Menu
         anchorEl={anchorEl}
@@ -70,17 +50,17 @@ export function SemesterMenu() {
         onClose={() => setAnchorEl(null)}
         slotProps={{ paper: { sx: { mt: 1, minWidth: 220, borderRadius: 3 } } }}
       >
-        {loadingSemesters ? (
+        {availableSemesters.length === 0 ? (
           <MenuItem disabled>Loading semesters…</MenuItem>
         ) : (
-          semesters.map((semester) => (
+          availableSemesters.map((semester) => (
             <MenuItem
               key={semester.id}
-              selected={semester.id === profile?.semesterId}
+              selected={semester.id === semesterId}
               onClick={() => handleSemesterChange(semester.id)}
             >
               <ListItemText>{semester.name}</ListItemText>
-              {semester.id === profile?.semesterId && (
+              {semester.id === semesterId && (
                 <ListItemIcon sx={{ minWidth: 28 }}>
                   <Check fontSize="small" color="primary" />
                 </ListItemIcon>

@@ -1,6 +1,6 @@
 import { Tune } from '@mui/icons-material';
 import { Box, Button, Card, CardContent, Grid, Skeleton, Stack, Typography } from '@mui/material';
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyDashboardState } from '../components/dashboard/EmptyDashboardState';
 import { OptimizationPanel } from '../components/dashboard/OptimizationPanel';
@@ -10,10 +10,9 @@ import { SelectedCoursesList } from '../components/dashboard/SelectedCoursesList
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
+import { useCourseSelection } from '../context/CourseSelectionContext';
 import { useThemeMode } from '../context/ThemeContext';
-import { useToast } from '../context/ToastContext';
 import { useScheduleGeneration } from '../hooks/useScheduleGeneration';
-import { useSemesterData } from '../hooks/useSemesterData';
 
 const ScheduleExplorerDialog = lazy(() =>
   import('../components/schedule-explorer/ScheduleExplorerDialog').then((module) => ({
@@ -54,20 +53,27 @@ function DashboardSkeleton() {
 export default function DashboardPage() {
   const navigate = useNavigate();
   const [prefsOpen, setPrefsOpen] = useState(false);
-  const { profile, updateProfile } = useAuthContext();
-  const { toast } = useToast();
-  const profileRef = useRef(profile);
+  const { profile } = useAuthContext();
   const { preferences, updatePreferences } = useConfigContext();
   const { mode, setMode } = useThemeMode();
 
-  const { loading, coursesImported, schedule, setSchedule, allCourses, allSections } =
-    useSemesterData();
+  const {
+    loading,
+    coursesImported,
+    schedule,
+    courses: allCourses,
+    sections: allSections,
+    deselectCourse,
+    selectSection,
+    applySchedule,
+  } = useCourseSelection();
 
-  const generation = useScheduleGeneration({ schedule, setSchedule, allCourses, allSections });
-
-  useEffect(() => {
-    profileRef.current = profile;
-  }, [profile]);
+  const generation = useScheduleGeneration({
+    schedule,
+    allCourses,
+    allSections,
+    applySchedule,
+  });
 
   useEffect(() => {
     if (profile?.preferences?.theme && profile.preferences.theme !== mode) {
@@ -76,45 +82,17 @@ export default function DashboardPage() {
   }, [profile, mode, setMode]);
 
   const handleDeselect = useCallback(
-    async (courseId: string) => {
-      if (!schedule) return;
-
-      const prev = profileRef.current?.courseSelections || {};
-      const updated = { ...prev };
-      delete updated[courseId];
-      const newSections = schedule.sections.filter((s) => s.courseId !== courseId);
-      setSchedule(newSections.length > 0 ? { ...schedule, sections: newSections } : null);
-      try {
-        await updateProfile({ courseSelections: updated });
-      } catch {
-        toast.error('Failed to remove course. Please try again.');
-      }
+    (courseId: string) => {
+      deselectCourse(courseId);
     },
-    [schedule, setSchedule, toast, updateProfile],
+    [deselectCourse],
   );
 
   const handleUndoDeselect = useCallback(
-    async (courseId: string, sectionId: string) => {
-      const prev = profileRef.current?.courseSelections || {};
-      const section = allSections.find((s) => s.id === sectionId);
-      if (section && schedule) {
-        setSchedule({ ...schedule, sections: [...schedule.sections, section] });
-      } else if (section) {
-        setSchedule({
-          id: 'current',
-          sections: [section],
-          totalCredits: 0,
-          score: 0,
-          conflicts: [],
-        });
-      }
-      try {
-        await updateProfile({ courseSelections: { ...prev, [courseId]: sectionId } });
-      } catch {
-        toast.error('Failed to restore course. Please try again.');
-      }
+    (courseId: string, sectionId: string) => {
+      selectSection(courseId, sectionId);
     },
-    [allSections, schedule, setSchedule, toast, updateProfile],
+    [selectSection],
   );
 
   const coursesSelected = Boolean(schedule && schedule.sections.length > 0);

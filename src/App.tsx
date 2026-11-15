@@ -7,6 +7,7 @@ import { LoadingSpinner } from './components/LoadingSpinner';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { ConfigProvider } from './context/ConfigContext';
+import { CourseSelectionProvider } from './context/CourseSelectionContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
 
@@ -64,13 +65,15 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <ConfigProvider>
-          <ThemeProvider>
-            <ToastProvider>
-              <RouterProvider router={router} />
-            </ToastProvider>
-          </ThemeProvider>
-        </ConfigProvider>
+        <ToastProvider>
+          <ConfigProvider>
+            <ThemeProvider>
+              <CourseSelectionProvider>
+                <RouterProvider router={router} />
+              </CourseSelectionProvider>
+            </ThemeProvider>
+          </ConfigProvider>
+        </ToastProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

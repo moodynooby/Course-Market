@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
-import { useToast } from '../context/ToastContext';
 import { searchSchedules } from '../services/search';
 import type { Course, Schedule, Section } from '../types';
-import { sectionsToCourseSelections } from '../utils/schedule';
 import type { ScheduleDiagnostics } from '../utils/schedule-diagnostics';
 import { diagnoseEmptyGeneration } from '../utils/schedule-diagnostics';
 import type { PrefilterSummary } from '../utils/schedule-prefilter';
@@ -14,9 +12,9 @@ import { DEFAULT_MAX_SCHEDULES } from '../utils/schedule-types';
 
 interface UseScheduleGenerationOptions {
   schedule: Schedule | null;
-  setSchedule: React.Dispatch<React.SetStateAction<Schedule | null>>;
   allCourses: Course[];
   allSections: Section[];
+  applySchedule: (newSchedule: Schedule) => Promise<void>;
 }
 
 /**
@@ -25,13 +23,12 @@ interface UseScheduleGenerationOptions {
  */
 export function useScheduleGeneration({
   schedule,
-  setSchedule,
   allCourses,
   allSections,
+  applySchedule,
 }: UseScheduleGenerationOptions) {
-  const { profile, updateProfile } = useAuthContext();
+  const { profile } = useAuthContext();
   const { preferences } = useConfigContext();
-  const { toast } = useToast();
 
   const [optimizing, setOptimizing] = useState(false);
   const [error, setError] = useState<string>('');
@@ -109,13 +106,7 @@ export function useScheduleGeneration({
 
       const bestSchedule = [...candidates].sort((a, b) => b.score - a.score)[0];
       if (bestSchedule) {
-        setSchedule(bestSchedule);
-        const selections = sectionsToCourseSelections(bestSchedule.sections);
-        try {
-          await updateProfile({ courseSelections: selections });
-        } catch {
-          toast.error('Failed to save optimized schedule. Please try again.');
-        }
+        await applySchedule(bestSchedule);
       }
     } catch (err) {
       const error = err as Error;
@@ -195,12 +186,6 @@ export function useScheduleGeneration({
 
   const handleApplySchedule = useCallback(
     async (genSchedule: GeneratedSchedule) => {
-      const selections = sectionsToCourseSelections(genSchedule.sections);
-      try {
-        await updateProfile({ courseSelections: selections });
-      } catch {
-        toast.error('Failed to save schedule. Please try again.');
-      }
       setScheduleExplorerOpen(false);
 
       const newSchedule: Schedule = {
@@ -210,9 +195,10 @@ export function useScheduleGeneration({
         score: genSchedule.score,
         conflicts: genSchedule.conflicts,
       };
-      setSchedule(newSchedule);
+
+      await applySchedule(newSchedule);
     },
-    [setSchedule, toast, updateProfile],
+    [applySchedule],
   );
 
   useEffect(() => {
