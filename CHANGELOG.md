@@ -18,9 +18,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Server-side schedule generation and optimization endpoint (`POST /api/schedules/generate`) with client offline fallback.
 - Server-side course search and filtering endpoint (`GET /api/courses/search`) with instructor, subject, and open seats querying.
 - Winter 2027 course directory import: `.xlsx` and `.csv` conversion with standard-library XLSX parsing, section-level IDs that include the semester, and course descriptions carried into the generated import file.
+- Unified reactive persistence architecture: `CourseSelectionContext` centralized domain state and `useAutoPersistence` coalesced auto-sync engine with guaranteed lifecycle flushes.
 
 ### Fixed
 
+- Course selection, pin, and schedule preference data loss caused by component unmounts cancelling debounce timers during page navigation and dialog closing.
+- Initial load race condition in `CoursesPage` that queued empty selection saves over saved profile data.
+- Stale pinned courses and cross-semester course leakage during semester switching.
+- LocalStorage array deserialization bug in `storage.ts` that converted arrays into indexed objects during shallow merge.
+- Preference sync infinite ping-pong loop when pulling cloud preferences down to client.
 - Course directory schedules in the `Section 1 | 08:00-09:30 (Wed)` format now parse into time slots instead of importing with no meetings.
 - Semester seeding now creates the referenced `semesters` row and verifies row counts, so a fresh database seeds without foreign-key failures.
 - Validation failure on new account onboarding caused by requiring phone numbers during profile creation.

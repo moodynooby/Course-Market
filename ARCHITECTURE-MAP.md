@@ -25,7 +25,7 @@ PostgreSQL / Auth0
 | Application shell     | `src/main.tsx`, `src/App.tsx`        | Providers, routing, application startup                                  |
 | Pages                 | `src/pages/`                         | Route-level composition and page workflows                               |
 | UI components         | `src/components/`                    | Reusable presentation and feature UI                                     |
-| Global state          | `src/context/`                       | Authentication, configuration, theme, and notifications                  |
+| Global state          | `src/context/`                       | Auth, course selections, preferences, theme, and notifications           |
 | Feature orchestration | `src/hooks/`                         | Course selection, semester loading, preferences, schedule generation     |
 | Client boundaries     | `src/services/`                      | HTTP requests, caching, and search indexes                               |
 | Pure domain logic     | `src/utils/`                         | Schedule generation, scoring, conflicts, calendar export, storage        |
@@ -77,7 +77,7 @@ Split these files only along independently testable responsibilities.
 - **Server responses:** preserve public serverless response shapes and status codes.
 - **Privacy:** select explicit database columns in both `select()` and `returning()`; never expose newly added columns implicitly.
 - **Authentication:** keep authentication and authorization checks at the server boundary; client guards are not security controls.
-- **Persistence:** use `src/utils/storage.ts` for application preferences and keep storage keys centralized.
+- **Persistence:** use `src/utils/storage.ts` for application preferences and keep storage keys centralized; use `useAutoPersistence` for reliable debounced cloud synchronization with guaranteed unmount, visibility, and unload flushes.
 - **Quality gate:** `npm run lint` and `pnpm run lint` are equivalent, non-mutating Biome-based checks; `pnpm run lint:fix` is the explicit rewrite command.
 
 ## Change Discipline
