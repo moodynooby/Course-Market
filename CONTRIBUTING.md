@@ -1,12 +1,11 @@
 # Contributing
 
-Last updated: 2026-09-25
+Last updated: 2026-11-15
 
 ## Prerequisites
 
 - Node.js 24
 - pnpm 11.21.0
-- Android Studio and Android SDK only for native work
 - ShellCheck only when changing shell scripts
 
 Use the pnpm version pinned in `package.json`.
@@ -28,14 +27,10 @@ pnpm run setup:hooks
 Run the complete non-mutating gate before review:
 
 ```bash
-npm run lint
-```
-
-The gate runs Biome, Markdownlint, ShellCheck, TypeScript, and unit tests. Biome is pinned to `2.5.14` and handles formatting/linting for supported source files. Use the package-manager equivalent when preferred:
-
-```bash
 pnpm run lint
 ```
+
+The gate runs Biome, Markdownlint, ShellCheck, TypeScript, and unit tests. Biome is pinned to `2.5.14` and handles formatting/linting for supported source files.
 
 Apply intentional fixes with:
 
@@ -61,10 +56,9 @@ The gate must never rewrite files. Do not bypass checks, suppress real diagnosti
 | Frontend or shared logic      | `pnpm run typecheck` and focused Vitest tests                           |
 | Netlify Functions or database | `pnpm run typecheck` and focused `netlify/` or `db/` tests              |
 | Documentation/config          | Markdown/config checks and `pnpm run typecheck` when scripts change     |
-| Capacitor                     | `pnpm run build:native` and `pnpm exec cap sync android`                |
 | Schedule engine               | `src/utils/__tests__/schedule.test.ts` and `schedule-generator.test.ts` |
 
-Before final review, run `npm run lint`. For user-facing changes, also smoke-test sign-in, course selection, schedule generation, trade actions, and the affected native flow.
+Before final review, run `pnpm run lint`. For user-facing changes, also smoke-test sign-in, course selection, schedule generation, and trade actions.
 
 ## Git Workflow
 

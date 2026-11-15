@@ -68,4 +68,4 @@ After a task:
 2. If no record exists, create one using the naming and header rules.
 3. Update `ARCHITECTURE-MAP.md` when ownership, dependencies, hot spots, or contracts change.
 4. Update `CHANGELOG.md` for release-relevant behavior, tooling, or architecture changes.
-5. Run Markdownlint and Prettier checks for documentation changes.
+5. Run Biome and Markdownlint checks for documentation changes.

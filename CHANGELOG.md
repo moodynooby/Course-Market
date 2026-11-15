@@ -38,6 +38,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Changed
 
+- Streamlined `AGENTS.md` to eliminate persona roleplay ("lazy developer"), contradictory one-liner rules, and duplicated Git/CI instructions, reducing context token overhead by over 50% for smaller context models.
+- Established a structured 5-step agent execution lifecycle (`Inspect` -> `Trace` -> `Edit Surgically` -> `Verify` -> `Document`) and tiered verification ladder in `AGENTS.md`.
+- Purged stale Capacitor prerequisites, native mobile build scripts, and legacy Prettier mentions from `CONTRIBUTING.md` and `docs/documentation-standards.md`, standardizing on `pnpm`.
 - Streamlined authentication to require login upfront, routing directly to Google OAuth (`connection: 'google-oauth2'`).
 - Simplified `LoginPage` to a focused Google sign-in action with automatic redirects for authenticated users.
 - Wrapped `<Layout />` once with `<ProtectedRoute>` in `App.tsx` instead of wrapping each route individually.
