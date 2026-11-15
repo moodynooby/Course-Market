@@ -7,7 +7,12 @@ function safeGetItem<T>(key: string, defaultValue: T): T {
     if (!item) return defaultValue;
 
     const parsed = JSON.parse(item);
-    if (defaultValue === null || typeof defaultValue !== 'object') {
+    if (
+      defaultValue === null ||
+      typeof defaultValue !== 'object' ||
+      Array.isArray(defaultValue) ||
+      Array.isArray(parsed)
+    ) {
       return parsed as T;
     }
     return { ...defaultValue, ...parsed };

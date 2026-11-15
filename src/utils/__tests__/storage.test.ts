@@ -41,4 +41,12 @@ describe('storage', () => {
     const result = storage.get(STORAGE_KEYS.THEME_MODE, null);
     expect(result).toBeNull();
   });
+
+  it('stores and retrieves arrays without converting to object', () => {
+    const days = ['M', 'W', 'F'];
+    storage.set(STORAGE_KEYS.PREFS_DIRTY, days as unknown as boolean);
+    const result = storage.get(STORAGE_KEYS.PREFS_DIRTY, [] as unknown as boolean);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toEqual(days);
+  });
 });
