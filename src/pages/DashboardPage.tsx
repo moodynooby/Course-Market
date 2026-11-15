@@ -1,9 +1,21 @@
-import { Tune } from '@mui/icons-material';
-import { Box, Button, Card, CardContent, Grid, Skeleton, Stack, Typography } from '@mui/material';
+import { AutoAwesome, GridView, Tune, Undo } from '@mui/icons-material';
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Grid,
+  LinearProgress,
+  Skeleton,
+  Stack,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyDashboardState } from '../components/dashboard/EmptyDashboardState';
-import { OptimizationPanel } from '../components/dashboard/OptimizationPanel';
 import { PreferencesDialog } from '../components/dashboard/PreferencesDialog';
 import { ScheduleOverview } from '../components/dashboard/ScheduleOverview';
 import { SelectedCoursesList } from '../components/dashboard/SelectedCoursesList';
@@ -118,16 +130,139 @@ export default function DashboardPage() {
             Review your schedule, browse courses, and optimize your timetable.
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          size="small"
-          startIcon={<Tune />}
-          onClick={() => setPrefsOpen(true)}
-          sx={{ borderRadius: 2, fontWeight: 600, flexShrink: 0 }}
-        >
-          Preferences
-        </Button>
+        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+          <Tooltip
+            title={
+              !coursesSelected
+                ? 'Select courses below to explore alternative timetables'
+                : 'Explore all conflict-free timetable alternatives'
+            }
+            arrow
+          >
+            <span>
+              <Button
+                variant="contained"
+                color="secondary"
+                size="small"
+                startIcon={
+                  generation.generating ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <GridView />
+                  )
+                }
+                disabled={generation.generating || !coursesSelected}
+                onClick={generation.handleGenerateAll}
+                aria-busy={generation.generating}
+                sx={{
+                  borderRadius: '12px',
+                  fontWeight: 700,
+                  boxShadow: '0 3px 0 #028ce0',
+                  '&:active': {
+                    transform: 'translateY(2px)',
+                    boxShadow: '0 1px 0 #027bc4',
+                  },
+                }}
+              >
+                {generation.generating
+                  ? `Generating (${generation.generationProgress}%)`
+                  : 'Explore Alternatives'}
+              </Button>
+            </span>
+          </Tooltip>
+
+          <Tooltip
+            title={
+              !coursesSelected
+                ? 'Select courses below to auto-optimize timetable'
+                : 'Automatically resolve conflicts and find the best timetable matching your preferences'
+            }
+            arrow
+          >
+            <span>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={
+                  generation.optimizing ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <AutoAwesome />
+                  )
+                }
+                disabled={generation.optimizing || !coursesSelected}
+                onClick={generation.handleOptimize}
+                aria-busy={generation.optimizing}
+                sx={{
+                  borderRadius: '12px',
+                  fontWeight: 600,
+                  borderWidth: '2px',
+                  '&:hover': { borderWidth: '2px' },
+                }}
+              >
+                {generation.optimizing ? 'Optimizing Schedule...' : 'Auto-Optimize Schedule'}
+              </Button>
+            </span>
+          </Tooltip>
+
+          {generation.previousSchedule && (
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<Undo />}
+              onClick={generation.handleUndoOptimize}
+              sx={{ borderRadius: '12px', fontWeight: 600 }}
+            >
+              Undo
+            </Button>
+          )}
+
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<Tune />}
+            onClick={() => setPrefsOpen(true)}
+            sx={{
+              borderRadius: '12px',
+              fontWeight: 600,
+              flexShrink: 0,
+              borderWidth: '2px',
+              '&:hover': { borderWidth: '2px' },
+            }}
+          >
+            Preferences
+          </Button>
+        </Stack>
       </Box>
+      {generation.generating && (
+        <Box sx={{ width: '100%', mb: 3 }} role="status" aria-live="polite">
+          <Stack direction="row" sx={{ justifyContent: 'space-between', mb: 0.5 }}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+              Analyzing timetable combinations...
+            </Typography>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: 'secondary.main' }}>
+              {generation.generationProgress}%
+            </Typography>
+          </Stack>
+          <LinearProgress
+            variant="determinate"
+            value={generation.generationProgress}
+            color="secondary"
+            sx={{ borderRadius: '6px', height: 6 }}
+          />
+        </Box>
+      )}
+      {generation.error && (
+        <Alert
+          severity="error"
+          variant="outlined"
+          onClose={generation.clearError}
+          role="alert"
+          sx={{ mb: 3, borderRadius: '12px' }}
+        >
+          {generation.error}
+        </Alert>
+      )}
       {loading ? (
         <DashboardSkeleton />
       ) : !coursesImported ? (
@@ -149,17 +284,6 @@ export default function DashboardPage() {
                 onDeselect={handleDeselect}
                 onUndoDeselect={handleUndoDeselect}
               />
-              {coursesSelected && (
-                <OptimizationPanel
-                  schedule={schedule}
-                  optimizing={generation.optimizing}
-                  generating={generation.generating}
-                  generationProgress={generation.generationProgress}
-                  error={generation.error}
-                  onOptimize={generation.handleOptimize}
-                  onGenerateAll={generation.handleGenerateAll}
-                />
-              )}
             </Stack>
           </Grid>
         </Grid>

@@ -77,6 +77,15 @@ export const handler = withCors(async (event) => {
       typedSections,
       pinnedSelections,
     );
+    // When generating for specific schedule sections, clamp minCredits so schedules are not pruned
+    const targetCourseIds = new Set((scheduleSections as Section[]).map((s) => s.courseId));
+    const targetCredits = typedCourses
+      .filter((c) => targetCourseIds.has(c.id))
+      .reduce((sum, c) => sum + (c.credits || 3), 0);
+
+    if (targetCredits > 0 && typedPrefs.minCredits > targetCredits) {
+      typedPrefs.minCredits = Math.min(typedPrefs.minCredits, targetCredits);
+    }
   } else {
     sectionsByCourse = new Map<string, Section[]>();
     for (const section of typedSections) {

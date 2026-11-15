@@ -64,7 +64,7 @@ export function prefilterSections(
     let filtered = sections;
     let before = filtered.length;
 
-    if (preferences.avoidDays.length > 0) {
+    if (preferences.avoidDays && preferences.avoidDays.length > 0) {
       filtered = filtered.filter(
         (s) => !s.timeSlots.some((slot) => preferences.avoidDays.includes(slot.day)),
       );

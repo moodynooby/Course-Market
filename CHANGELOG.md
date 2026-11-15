@@ -19,6 +19,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Server-side course search and filtering endpoint (`GET /api/courses/search`) with instructor, subject, and open seats querying.
 - Winter 2027 course directory import: `.xlsx` and `.csv` conversion with standard-library XLSX parsing, section-level IDs that include the semester, and course descriptions carried into the generated import file.
 - Unified reactive persistence architecture: `CourseSelectionContext` centralized domain state and `useAutoPersistence` coalesced auto-sync engine with guaranteed lifecycle flushes.
+- Dashboard header schedule actions toolbar: unified `[Explore Alternatives]`, `[Find Best Schedule]`, and `[Preferences]` controls adjacent to the header, immune to viewport displacement from course addition, paired with accessible loading, progress, and toast notifications.
 
 ### Fixed
 

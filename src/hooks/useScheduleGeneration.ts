@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
+import { useOptionalToast } from '../context/ToastContext';
 import { searchSchedules } from '../services/search';
-import type { Course, Schedule, Section } from '../types';
+import type { Course, Preferences, Schedule, Section } from '../types';
 import type { ScheduleDiagnostics } from '../utils/schedule-diagnostics';
 import { diagnoseEmptyGeneration } from '../utils/schedule-diagnostics';
 import type { PrefilterSummary } from '../utils/schedule-prefilter';
@@ -29,9 +30,12 @@ export function useScheduleGeneration({
 }: UseScheduleGenerationOptions) {
   const { profile } = useAuthContext();
   const { preferences } = useConfigContext();
+  const toastContext = useOptionalToast();
+  const toast = toastContext?.toast;
 
   const [optimizing, setOptimizing] = useState(false);
   const [error, setError] = useState<string>('');
+  const [previousSchedule, setPreviousSchedule] = useState<Schedule | null>(null);
 
   const [scheduleExplorerOpen, setScheduleExplorerOpen] = useState(false);
   const [generatedSchedules, setGeneratedSchedules] = useState<GeneratedSchedule[]>([]);
@@ -53,15 +57,29 @@ export function useScheduleGeneration({
     );
   }, [schedule, allSections, profile?.pinnedSelections]);
 
+  const getEffectivePreferences = useCallback((): Preferences => {
+    if (!schedule || schedule.sections.length === 0) return preferences;
+    const scheduleCredits = schedule.totalCredits || 1;
+    return {
+      ...preferences,
+      minCredits: Math.min(preferences.minCredits ?? 12, scheduleCredits),
+      maxCredits: Math.max(preferences.maxCredits ?? 18, scheduleCredits),
+    };
+  }, [schedule, preferences]);
+
   const handleOptimize = async () => {
-    if (!schedule) {
-      setError('No courses selected. Please select some courses first.');
+    if (!schedule || schedule.sections.length === 0) {
+      const msg = 'No courses selected. Please select some courses first.';
+      setError(msg);
+      toast?.warning(msg);
       return;
     }
 
     setOptimizing(true);
     setError('');
     setPrefilterSummary(null);
+
+    const effectivePrefs = getEffectivePreferences();
 
     try {
       let candidates: Schedule[] = [];
@@ -73,7 +91,7 @@ export function useScheduleGeneration({
           sections: allSections,
           scheduleSections: schedule.sections,
           pinnedSelections: profile?.pinnedSelections ?? {},
-          preferences,
+          preferences: effectivePrefs,
           options: { maxSchedules: 200 },
         });
         candidates = res.schedules;
@@ -84,12 +102,12 @@ export function useScheduleGeneration({
         const courseCodeMap = new Map(allCourses.map((c) => [c.id, c.code]));
         const { sectionsByCourse: filteredByCourse, summary } = prefilterSections(
           sectionsByCourse,
-          preferences,
+          effectivePrefs,
           courseCodeMap,
         );
         setPrefilterSummary(summary);
 
-        candidates = generateSchedules(allCourses, filteredByCourse, preferences, {
+        candidates = generateSchedules(allCourses, filteredByCourse, effectivePrefs, {
           maxSchedules: 200,
         }).map<Schedule>((g) => ({
           id: g.id,
@@ -101,20 +119,68 @@ export function useScheduleGeneration({
       }
 
       if (candidates.length === 0) {
-        candidates = [schedule];
+        if (schedule.conflicts && schedule.conflicts.length > 0) {
+          toast?.warning(
+            'Could not find a conflict-free timetable. Try unpinning locked sections or adjusting preferences.',
+          );
+        } else {
+          toast?.info('Your current timetable is already the optimal section combination.');
+        }
+        return;
       }
 
       const bestSchedule = [...candidates].sort((a, b) => b.score - a.score)[0];
       if (bestSchedule) {
-        await applySchedule(bestSchedule);
+        const currentSectionIds = new Set(schedule.sections.map((s) => s.id));
+        const isIdentical =
+          bestSchedule.sections.length === schedule.sections.length &&
+          bestSchedule.sections.every((s) => currentSectionIds.has(s.id));
+
+        if (isIdentical) {
+          if (schedule.conflicts && schedule.conflicts.length > 0) {
+            toast?.warning(
+              'No alternative section combination could resolve the schedule conflicts.',
+            );
+          } else {
+            toast?.info('Your current timetable is already the optimal section combination.');
+          }
+        } else {
+          setPreviousSchedule(schedule);
+          await applySchedule(bestSchedule);
+          if (
+            schedule.conflicts &&
+            schedule.conflicts.length > 0 &&
+            bestSchedule.conflicts.length === 0
+          ) {
+            toast?.success(
+              `Conflicts resolved! Applied optimal schedule (Score: ${Math.round(bestSchedule.score)})`,
+            );
+          } else {
+            toast?.success(`Optimized schedule applied (Score: ${Math.round(bestSchedule.score)})`);
+          }
+        }
       }
     } catch (err) {
-      const error = err as Error;
-      setError(`Optimization failed: ${error.message}`);
+      const errMessage = (err as Error).message;
+      const msg = `Optimization failed: ${errMessage}`;
+      setError(msg);
+      toast?.error(msg);
     } finally {
       setOptimizing(false);
     }
   };
+
+  const handleUndoOptimize = useCallback(async () => {
+    if (previousSchedule) {
+      await applySchedule(previousSchedule);
+      setPreviousSchedule(null);
+      toast?.success('Reverted to previous schedule');
+    }
+  }, [previousSchedule, applySchedule, toast]);
+
+  const clearError = useCallback(() => {
+    setError('');
+  }, []);
 
   const handleGenerateAll = useCallback(async () => {
     if (!schedule || allCourses.length === 0 || allSections.length === 0) return;
@@ -125,6 +191,8 @@ export function useScheduleGeneration({
     setSelectedSchedule(null);
     setScheduleDiagnostics(null);
     setPrefilterSummary(null);
+
+    const effectivePrefs = getEffectivePreferences();
 
     try {
       let schedules: GeneratedSchedule[] = [];
@@ -138,7 +206,7 @@ export function useScheduleGeneration({
           sections: allSections,
           scheduleSections: schedule.sections,
           pinnedSelections: profile?.pinnedSelections ?? {},
-          preferences,
+          preferences: effectivePrefs,
           options: { maxSchedules: DEFAULT_MAX_SCHEDULES },
         });
         schedules = res.schedules;
@@ -146,7 +214,7 @@ export function useScheduleGeneration({
         diagnostics = res.diagnostics;
       } catch {
         const { generateSchedules } = await import('../utils/schedule-generator');
-        const prefs = preferences;
+        const prefs = effectivePrefs;
         const sectionsByCourse = sectionsByCourseForSchedule();
 
         if (sectionsByCourse.size > 0) {
@@ -178,11 +246,21 @@ export function useScheduleGeneration({
       }
       setScheduleExplorerOpen(true);
     } catch (err) {
-      setError(`Failed to generate schedules: ${(err as Error).message}`);
+      const msg = `Failed to generate schedules: ${(err as Error).message}`;
+      setError(msg);
+      toast?.error(msg);
     } finally {
       setGenerating(false);
     }
-  }, [schedule, allCourses, allSections, preferences, profile, sectionsByCourseForSchedule]);
+  }, [
+    schedule,
+    allCourses,
+    allSections,
+    profile,
+    sectionsByCourseForSchedule,
+    toast,
+    getEffectivePreferences,
+  ]);
 
   const handleApplySchedule = useCallback(
     async (genSchedule: GeneratedSchedule) => {
@@ -197,8 +275,9 @@ export function useScheduleGeneration({
       };
 
       await applySchedule(newSchedule);
+      toast?.success('Selected schedule applied successfully');
     },
-    [applySchedule],
+    [applySchedule, toast],
   );
 
   useEffect(() => {
@@ -219,7 +298,10 @@ export function useScheduleGeneration({
     // optimize/generate actions
     optimizing,
     error,
+    clearError,
+    previousSchedule,
     handleOptimize,
+    handleUndoOptimize,
     generating,
     generationProgress,
     handleGenerateAll,
