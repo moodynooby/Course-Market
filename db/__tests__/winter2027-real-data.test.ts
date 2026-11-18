@@ -32,6 +32,7 @@ interface RawWinterSemesterJson {
 }
 
 const winterJsonPath = path.resolve(__dirname, '../../.import/semesters/Winter2027.json');
+const hasWinterData = fs.existsSync(winterJsonPath);
 
 function loadWinter2027Data(): { courses: Course[]; sections: Section[] } {
   const content = fs.readFileSync(winterJsonPath, 'utf8');
@@ -72,8 +73,10 @@ function loadWinter2027Data(): { courses: Course[]; sections: Section[] } {
   return { courses: Array.from(courseMap.values()), sections };
 }
 
-describe('Winter 2027 Real Data Conflict & Scheduling Validation', () => {
-  const { courses, sections } = loadWinter2027Data();
+describe.skipIf(!hasWinterData)('Winter 2027 Real Data Conflict & Scheduling Validation', () => {
+  const { courses, sections } = hasWinterData
+    ? loadWinter2027Data()
+    : { courses: [], sections: [] };
   const sectionsById = new Map(sections.map((s) => [s.id, s]));
 
   it('loaded 328 courses and 475 sections from Winter 2027 directory', () => {
