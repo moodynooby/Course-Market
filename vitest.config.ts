@@ -13,6 +13,7 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: [
       'src/**/*.{test,spec}.{ts,tsx}',
+      'mcp/**/*.{test,spec}.{ts,tsx}',
       'netlify/**/*.{test,spec}.{ts,tsx}',
       'db/**/*.{test,spec}.{ts,tsx}',
     ],

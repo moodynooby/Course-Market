@@ -35,6 +35,8 @@
     "@auth0/auth0-react": "^2.30.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@modelcontextprotocol/server": "^2.4.0",
     "@mui/icons-material": "^9.5.0",
     "@mui/material": "^9.5.0",
     "@neondatabase/serverless": "^1.2.1",

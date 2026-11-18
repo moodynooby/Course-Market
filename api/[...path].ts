@@ -1,4 +1,5 @@
 import { handler as coursesHandler } from '../netlify/functions/courses';
+import { handler as mcpHandler } from '../netlify/functions/mcp';
 import { handler as professorsHandler } from '../netlify/functions/professors';
 import { handler as schedulesHandler } from '../netlify/functions/schedules';
 import { handler as semestersHandler } from '../netlify/functions/semesters';
@@ -13,6 +14,7 @@ export const routeHandlers: Record<string, ServerlessHandler> = {
   'user-profile': userProfileHandler,
   schedules: schedulesHandler,
   courses: coursesHandler,
+  mcp: mcpHandler,
 };
 
 export const catchAllHandler: ServerlessHandler = async (event) => {
