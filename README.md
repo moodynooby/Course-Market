@@ -34,6 +34,40 @@ Github [GitHub](https://github.com/moodynooby/Course-Market)
 - Leave ratings and reviews for instructors
 - See ratings while browsing sections so you know what you're signing up for
 
+### Courses MCP Server & Agent Skills
+
+AuraIsHub exposes a read-only, stateless **Streamable HTTP MCP server** scoped strictly to **semesters, courses, sections, schedule generation, conflict checking, and `.ics` export** (trading, Rate My Professor, and user profiles are excluded).
+
+#### Connect via Streamable HTTP
+
+Add the hosted endpoint to any MCP-compatible client (`mcp_config.json` for Antigravity, Cursor, Claude, VS Code, etc.):
+
+```json
+{
+  "mcpServers": {
+    "aurais-courses": {
+      "url": "https://aurais.netlify.app/api/mcp"
+    }
+  }
+}
+```
+
+Available MCP tools: `list_semesters`, `list_subjects`, `search_courses`, `get_course_details`, `check_section_conflicts`, `generate_schedules`, `export_schedule_ics`.
+
+#### One-Line Skills Install (All Agents)
+
+Install all 3 course-planning skills (`course-catalog-explorer`, `schedule-builder`, `elective-finder`) into any supported coding agent via the open [skills.sh](https://skills.sh) ecosystem:
+
+```bash
+npx skills add moodynooby/Course-Market
+```
+
+To install all skills non-interactively across all detected agents globally:
+
+```bash
+npx skills add moodynooby/Course-Market --all -g -y
+```
+
 ## Architecture
 
 ### Frontend

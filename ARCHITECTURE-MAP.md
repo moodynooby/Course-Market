@@ -1,6 +1,6 @@
 # Architecture Map
 
-Last updated: 2026-10-16
+Last updated: 2026-11-18
 
 ## System Overview
 
@@ -30,8 +30,10 @@ PostgreSQL / Auth0
 | Client boundaries     | `src/services/`                      | HTTP requests, caching, and search indexes                               |
 | Pure domain logic     | `src/utils/`                         | Schedule generation, scoring, conflicts, calendar export, storage        |
 | Server functions      | `netlify/functions/`, `api/`         | Authenticated HTTP handlers, Vercel/Netlify adapters, response contracts |
+| Courses MCP server    | `mcp/`, `netlify/functions/mcp.ts`   | Read-only Streamable HTTP MCP server for semesters, courses, & schedules |
+| Agent skills          | `.agents/skills/`                    | Portable Agent Skills (`SKILL.md`) for course discovery & scheduling     |
 | Persistence           | `db/`                                | Drizzle schema, validation, seed data                                    |
-| Verification          | `src/**/__tests__/`, `db/__tests__/` | Owner-boundary behavior tests                                            |
+| Verification          | `src/`, `mcp/`, `db/` `__tests__/`   | Owner-boundary behavior tests                                            |
 
 ## Dependency Direction
 
@@ -76,6 +78,7 @@ Split these files only along independently testable responsibilities.
 - **Schedule output:** preserve deterministic ordering, score ordering, section membership, conflicts, and progress behavior unless a product change explicitly requires otherwise.
 - **Server responses:** preserve public serverless response shapes and status codes.
 - **Privacy:** select explicit database columns in both `select()` and `returning()`; never expose newly added columns implicitly.
+- **Courses-only MCP isolation:** `mcp/` must remain read-only, unauthenticated, and restricted to `semesters`, `semester_courses`, `semester_sections`, and pure `src/utils/` schedule/export helpers; never import or expose `trades`, `professors`, `professor_ratings`, or `user_profiles`.
 - **Authentication:** keep authentication and authorization checks at the server boundary; client guards are not security controls.
 - **Persistence:** use `src/utils/storage.ts` for application preferences and keep storage keys centralized; use `useAutoPersistence` for reliable debounced cloud synchronization with guaranteed unmount, visibility, and unload flushes.
 - **Quality gate:** `npm run lint` and `pnpm run lint` are equivalent, non-mutating Biome-based checks; `pnpm run lint:fix` is the explicit rewrite command.

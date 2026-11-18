@@ -20,6 +20,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Winter 2027 course directory import: `.xlsx` and `.csv` conversion with standard-library XLSX parsing, section-level IDs that include the semester, and course descriptions carried into the generated import file.
 - Unified reactive persistence architecture: `CourseSelectionContext` centralized domain state and `useAutoPersistence` coalesced auto-sync engine with guaranteed lifecycle flushes.
 - Dashboard header schedule actions toolbar: unified `[Explore Alternatives]`, `[Find Best Schedule]`, and `[Preferences]` controls adjacent to the header, immune to viewport displacement from course addition, paired with accessible loading, progress, and toast notifications.
+- Courses-only Streamable HTTP MCP server (`POST /api/mcp`) with Netlify and Vercel parity, exposing 7 read-only course/schedule tools, 3 resources, and 2 prompts strictly isolated from trading, Rate My Professor, and user-profile data.
+- Portable Agent Skills (`.agents/skills/course-catalog-explorer`, `schedule-builder`, and `elective-finder`) with one-line multi-agent install via `npx skills add moodynooby/Course-Market`.
 
 ### Fixed
 
