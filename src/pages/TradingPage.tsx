@@ -43,7 +43,7 @@ import { useAuthContext } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { formatApiErrorDetails } from '../services/apiClient';
 import { getSemesterData, getSemesters } from '../services/coursesApi';
-import { buildTradeIndex, searchTradeIndex } from '../services/search';
+import { searchTradeIndex } from '../services/search';
 import {
   createTrade,
   deleteTrade,
@@ -423,10 +423,6 @@ export default function TradingPage() {
   const [searchParams] = useSearchParams();
   const deepLinkTradeId = searchParams.get('tradeId');
 
-  useEffect(() => {
-    buildTradeIndex(trades);
-  }, [trades]);
-
   const loadSemesterData = useCallback(async () => {
     try {
       const { semesters } = await getSemesters();
@@ -637,8 +633,8 @@ export default function TradingPage() {
   }, [trades, selectedSections, allSections, allCourses]);
 
   const filteredTrades = useMemo(() => {
-    return searchTradeIndex(debouncedSearch);
-  }, [debouncedSearch]);
+    return searchTradeIndex(trades, debouncedSearch);
+  }, [trades, debouncedSearch]);
 
   if (loading) return <TradingSkeleton />;
 

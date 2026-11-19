@@ -2,14 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuthContext } from '../context/AuthContext';
 import { useConfigContext } from '../context/ConfigContext';
 import { useOptionalToast } from '../context/ToastContext';
-import { searchSchedules } from '../services/search';
+import { type SearchResult, searchSchedules } from '../services/search';
 import type { Course, Preferences, Schedule, Section } from '../types';
+import { DEFAULT_MAX_SCHEDULES } from '../utils/constants';
+import { generateScheduleCandidates } from '../utils/generation';
 import type { ScheduleDiagnostics } from '../utils/schedule-diagnostics';
-import { diagnoseEmptyGeneration } from '../utils/schedule-diagnostics';
 import type { PrefilterSummary } from '../utils/schedule-prefilter';
-import { buildSectionsByCourse, prefilterSections } from '../utils/schedule-prefilter';
-import type { GeneratedSchedule, SearchResult } from '../utils/schedule-types';
-import { DEFAULT_MAX_SCHEDULES } from '../utils/schedule-types';
 
 interface UseScheduleGenerationOptions {
   schedule: Schedule | null;
@@ -38,24 +36,16 @@ export function useScheduleGeneration({
   const [previousSchedule, setPreviousSchedule] = useState<Schedule | null>(null);
 
   const [scheduleExplorerOpen, setScheduleExplorerOpen] = useState(false);
-  const [generatedSchedules, setGeneratedSchedules] = useState<GeneratedSchedule[]>([]);
+  const [generatedSchedules, setSchedules] = useState<Schedule[]>([]);
   const [generating, setGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0);
-  const [selectedSchedule, setSelectedSchedule] = useState<GeneratedSchedule | null>(null);
+  const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showConflicting, setShowConflicting] = useState(false);
   const [scheduleDiagnostics, setScheduleDiagnostics] = useState<ScheduleDiagnostics | null>(null);
   const [prefilterSummary, setPrefilterSummary] = useState<PrefilterSummary | null>(null);
-
-  const sectionsByCourseForSchedule = useCallback(() => {
-    return buildSectionsByCourse(
-      schedule?.sections ?? [],
-      allSections,
-      profile?.pinnedSelections ?? {},
-    );
-  }, [schedule, allSections, profile?.pinnedSelections]);
 
   const getEffectivePreferences = useCallback((): Preferences => {
     if (!schedule || schedule.sections.length === 0) return preferences;
@@ -97,25 +87,18 @@ export function useScheduleGeneration({
         candidates = res.schedules;
         setPrefilterSummary(res.summary);
       } catch {
-        const { generateSchedules } = await import('../utils/schedule-generator');
-        const sectionsByCourse = sectionsByCourseForSchedule();
-        const courseCodeMap = new Map(allCourses.map((c) => [c.id, c.code]));
-        const { sectionsByCourse: filteredByCourse, summary } = prefilterSections(
-          sectionsByCourse,
-          effectivePrefs,
-          courseCodeMap,
-        );
-        setPrefilterSummary(summary);
-
-        candidates = generateSchedules(allCourses, filteredByCourse, effectivePrefs, {
+        const result = generateScheduleCandidates({
+          courses: allCourses,
+          sections: allSections,
+          scheduleSections: schedule.sections,
+          pinnedSelections: profile?.pinnedSelections ?? {},
+          preferences: effectivePrefs,
+          clampMinCredits: false,
+          clampMaxCredits: false,
           maxSchedules: 200,
-        }).map<Schedule>((g) => ({
-          id: g.id,
-          sections: g.sections,
-          totalCredits: g.totalCredits,
-          score: g.score,
-          conflicts: g.conflicts,
-        }));
+        });
+        candidates = result.schedules;
+        setPrefilterSummary(result.summary);
       }
 
       if (candidates.length === 0) {
@@ -187,7 +170,7 @@ export function useScheduleGeneration({
 
     setGenerating(true);
     setGenerationProgress(0);
-    setGeneratedSchedules([]);
+    setSchedules([]);
     setSelectedSchedule(null);
     setScheduleDiagnostics(null);
     setPrefilterSummary(null);
@@ -195,9 +178,11 @@ export function useScheduleGeneration({
     const effectivePrefs = getEffectivePreferences();
 
     try {
-      let schedules: GeneratedSchedule[] = [];
-      let summary: PrefilterSummary | null = null;
-      let diagnostics: ScheduleDiagnostics | null = null;
+      let result: {
+        schedules: Schedule[];
+        summary: PrefilterSummary | null;
+        diagnostics: ScheduleDiagnostics | null;
+      };
 
       try {
         const { generateSchedulesApi } = await import('../services/schedulesApi');
@@ -209,40 +194,26 @@ export function useScheduleGeneration({
           preferences: effectivePrefs,
           options: { maxSchedules: DEFAULT_MAX_SCHEDULES },
         });
-        schedules = res.schedules;
-        summary = res.summary;
-        diagnostics = res.diagnostics;
+        result = { schedules: res.schedules, summary: res.summary, diagnostics: res.diagnostics };
       } catch {
-        const { generateSchedules } = await import('../utils/schedule-generator');
-        const prefs = effectivePrefs;
-        const sectionsByCourse = sectionsByCourseForSchedule();
-
-        if (sectionsByCourse.size > 0) {
-          const courseCodeMap = new Map(allCourses.map((c) => [c.id, c.code]));
-          const prefilterRes = prefilterSections(sectionsByCourse, prefs, courseCodeMap);
-          summary = prefilterRes.summary;
-
-          schedules = generateSchedules(allCourses, prefilterRes.sectionsByCourse, prefs, {
-            maxSchedules: DEFAULT_MAX_SCHEDULES,
-            onProgress: setGenerationProgress,
-          });
-
-          if (schedules.length === 0) {
-            diagnostics = diagnoseEmptyGeneration(
-              allCourses,
-              sectionsByCourse,
-              prefs,
-              new Map(Object.entries(profile?.pinnedSelections ?? {})),
-            );
-          }
-        }
+        result = generateScheduleCandidates({
+          courses: allCourses,
+          sections: allSections,
+          scheduleSections: schedule.sections,
+          pinnedSelections: profile?.pinnedSelections ?? {},
+          preferences: effectivePrefs,
+          clampMinCredits: false,
+          clampMaxCredits: false,
+          maxSchedules: DEFAULT_MAX_SCHEDULES,
+          onProgress: setGenerationProgress,
+        });
       }
 
-      setPrefilterSummary(summary);
-      setScheduleDiagnostics(diagnostics);
-      setGeneratedSchedules(schedules);
-      if (schedules.length > 0) {
-        setSelectedSchedule(schedules[0]);
+      setPrefilterSummary(result.summary);
+      setScheduleDiagnostics(result.diagnostics);
+      setSchedules(result.schedules);
+      if (result.schedules.length > 0) {
+        setSelectedSchedule(result.schedules[0]);
       }
       setScheduleExplorerOpen(true);
     } catch (err) {
@@ -252,29 +223,12 @@ export function useScheduleGeneration({
     } finally {
       setGenerating(false);
     }
-  }, [
-    schedule,
-    allCourses,
-    allSections,
-    profile,
-    sectionsByCourseForSchedule,
-    toast,
-    getEffectivePreferences,
-  ]);
+  }, [schedule, allCourses, allSections, profile, toast, getEffectivePreferences]);
 
   const handleApplySchedule = useCallback(
-    async (genSchedule: GeneratedSchedule) => {
+    async (selected: Schedule) => {
       setScheduleExplorerOpen(false);
-
-      const newSchedule: Schedule = {
-        id: genSchedule.id,
-        sections: genSchedule.sections,
-        totalCredits: genSchedule.totalCredits,
-        score: genSchedule.score,
-        conflicts: genSchedule.conflicts,
-      };
-
-      await applySchedule(newSchedule);
+      await applySchedule(selected);
       toast?.success('Selected schedule applied successfully');
     },
     [applySchedule, toast],
@@ -287,15 +241,14 @@ export function useScheduleGeneration({
     }
 
     const timer = setTimeout(() => {
-      const results = searchSchedules(generatedSchedules, searchQuery);
+      const results = searchSchedules(generatedSchedules, allCourses, searchQuery);
       setSearchResults(results);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchQuery, generatedSchedules]);
+  }, [searchQuery, generatedSchedules, allCourses]);
 
   return {
-    // optimize/generate actions
     optimizing,
     error,
     clearError,

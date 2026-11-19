@@ -1,7 +1,6 @@
-import type { Course, Preferences, Section } from '../types';
+import type { Course, Preferences, Schedule, Section } from '../types';
 import type { ScheduleDiagnostics } from '../utils/schedule-diagnostics';
 import type { PrefilterSummary } from '../utils/schedule-prefilter';
-import type { GeneratedSchedule } from '../utils/schedule-types';
 import { api } from './apiClient';
 
 export interface GenerateSchedulesPayload {
@@ -16,7 +15,7 @@ export interface GenerateSchedulesPayload {
 }
 
 export interface GenerateSchedulesResponse {
-  schedules: GeneratedSchedule[];
+  schedules: Schedule[];
   summary: PrefilterSummary | null;
   diagnostics: ScheduleDiagnostics | null;
 }

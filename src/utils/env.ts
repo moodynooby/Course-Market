@@ -9,7 +9,5 @@ export const env = {
   AUTH0_CLIENT_ID: auth0ClientId,
   AUTH0_AUDIENCE: auth0Audience,
   AUTH0_CONFIGURED: Boolean(auth0Domain && auth0ClientId),
-  MODE: import.meta.env.MODE,
   IS_DEV: import.meta.env.DEV,
-  IS_PROD: import.meta.env.PROD,
 } as const;

@@ -54,10 +54,11 @@ describe('courses MCP tools', () => {
       courseCode: 'cs101',
     });
     expect(found).toMatchObject({ found: true, course: { code: 'CS 101' } });
-    if ('sections' in found && found.sections) {
-      expect(found.sections[0].seatsRemaining).toBe(5);
-      expect(found.sections[1].hasOpenSeats).toBe(false);
+    if (!('sections' in found) || !found.sections) {
+      throw new Error('Expected course details to include sections');
     }
+    expect(found.sections[0].seatsRemaining).toBe(5);
+    expect(found.sections[1].hasOpenSeats).toBe(false);
 
     const missing = await handleGetCourseDetails(ds, {
       semesterId: 'Winter2027',

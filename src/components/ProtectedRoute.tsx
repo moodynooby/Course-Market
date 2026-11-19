@@ -2,13 +2,6 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
 import { LoadingSpinner } from './LoadingSpinner';
 
-/**
- * Route guard requiring authentication and complete onboarding.
- *
- * - Unauthenticated visitors are redirected to /login with return state.
- * - Authenticated users without a completed profile (no `semesterId`)
- *   are redirected to /onboarding.
- */
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }

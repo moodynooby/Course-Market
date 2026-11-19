@@ -51,6 +51,18 @@ describe('Vercel adapter and routing', () => {
 
   it('routes known paths in catchAllHandler', async () => {
     const event = {
+      path: '/api/schedules',
+      httpMethod: 'GET',
+      headers: {},
+      body: null,
+    };
+
+    const result = await catchAllHandler(event);
+    expect(result.statusCode).toBe(405);
+  });
+
+  it('returns 404 for unknown paths', async () => {
+    const event = {
       path: '/api/unknown-endpoint',
       httpMethod: 'GET',
       headers: {},

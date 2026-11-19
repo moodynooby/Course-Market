@@ -1,22 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { professorsApi } from '../services/professorsApi';
-
-export interface ProfessorRatingInfo {
-  avgRating: number;
-  ratingCount: number;
-}
+import type { ProfessorRatingInfo } from '../types';
 
 let sharedPromise: Promise<Map<string, ProfessorRatingInfo>> | null = null;
 let cachedMap: Map<string, ProfessorRatingInfo> | null = null;
 
-/**
- * Hook to fetch and cache professor ratings.
- *
- * Optimization: Uses a module-level cache and shared promise to ensure that:
- * 1. Data is only fetched once.
- * 2. All components share the same Map reference.
- * 3. Subsequent mounts get the data instantly without re-fetching or extra renders.
- */
 export function useProfessorsMap() {
   const [map, setMap] = useState<Map<string, ProfessorRatingInfo>>(cachedMap || new Map());
 

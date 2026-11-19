@@ -26,12 +26,13 @@ import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import type { CalendarEvent, Course, Section } from '../types';
 import { buildGoogleCalendarUrlForSlot, openGoogleCalendarUrl } from '../utils/googleCalendar';
 import { hapticLight, hapticSuccess } from '../utils/haptics';
-import { icsToBlob, sectionsToIcs, timeToMinutes } from '../utils/icsExport';
+import { icsToBlob, sectionsToIcs } from '../utils/icsExport';
 import {
   hasSectionConflict,
   isSlotActiveDuring,
   sectionsToCalendarEvents,
 } from '../utils/schedule';
+import { DAY_TO_WEEKDAY, timeToMinutes } from '../utils/schedule-time';
 import { buildDeepLink, shareContent } from '../utils/share';
 import { COURSE_COLORS, EventComponent } from './CalendarEventComponent';
 import CalendarToolbar from './CalendarToolbar';
@@ -271,7 +272,6 @@ export default function CalendarView({
     }
   }, [sections, courses, date]);
 
-  /** Open Google Calendar for the whole schedule (recurring template URL). */
   const handleAddAllToGoogleCalendar = useCallback(() => {
     if (sections.length === 0) return;
     sections.forEach((section, sectionIdx) => {
@@ -279,7 +279,7 @@ export default function CalendarView({
         const course = courses.find((c) => c.id === section.courseId);
         const slotEvents = sectionsToCalendarEvents([section], courses).filter(
           (ev) =>
-            ev.start.getDay() === { M: 1, T: 2, W: 3, Th: 4, F: 5, Sa: 6, Su: 0 }[slot.day] &&
+            ev.start.getDay() === DAY_TO_WEEKDAY[slot.day] &&
             ev.start.getHours() * 60 + ev.start.getMinutes() === timeToMinutes(slot.startTime),
         );
         if (slotEvents.length === 0) return;

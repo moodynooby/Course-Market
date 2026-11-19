@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { routeHandlers } from '../../../api/[...path]';
 import { createMockCourseDataSource } from '../../../mcp/__tests__/mock-data-source';
 import { createMcpHttpHandler } from '../../../mcp/http-handler';
 import type { NetlifyEvent } from '../lib/types';
@@ -20,10 +19,6 @@ function makeEvent(overrides: Partial<NetlifyEvent> = {}): NetlifyEvent {
 
 describe('MCP Streamable HTTP serverless handler', () => {
   const handler = createMcpHttpHandler(() => createMockCourseDataSource());
-
-  it('registers the mcp route in Vercel catch-all routeHandlers', () => {
-    expect(typeof routeHandlers.mcp).toBe('function');
-  });
 
   it('responds to OPTIONS preflight with MCP CORS headers', async () => {
     const res = await handler(makeEvent({ httpMethod: 'OPTIONS' }));

@@ -1,17 +1,7 @@
 import type { Course, Section } from '../types';
-import { timeToMinutes } from './icsExport';
+import { DAY_TO_RRULE, timeToMinutes } from './schedule-time';
 
 const GOOGLE_CALENDAR_TEMPLATE = 'https://calendar.google.com/calendar/render';
-
-const DAY_TO_RRULE: Record<string, string> = {
-  M: 'MO',
-  T: 'TU',
-  W: 'WE',
-  Th: 'TH',
-  F: 'FR',
-  Sa: 'SA',
-  Su: 'SU',
-};
 
 function toDateStr(d: Date): string {
   const y = d.getUTCFullYear();
@@ -99,11 +89,6 @@ export function buildGoogleCalendarRecurringUrl(
   return `${GOOGLE_CALENDAR_TEMPLATE}?${params.toString()}`;
 }
 
-/**
- * Convenience helper: build a recurring Google Calendar URL directly from a
- * section and its weekly time slot, using the section's first active week as
- * the anchor date.
- */
 export function buildGoogleCalendarUrlForSlot(
   section: Section,
   slot: (typeof section.timeSlots)[number],
@@ -126,11 +111,6 @@ export function buildGoogleCalendarUrlForSlot(
   );
 }
 
-/**
- * Open the Google Calendar URL in a new tab (desktop) or same tab (mobile
- * app deep-link handling), returning the URL for callers that prefer to
- * handle navigation themselves.
- */
 export function openGoogleCalendarUrl(url: string): void {
   window.open(url, '_blank', 'noopener,noreferrer');
 }

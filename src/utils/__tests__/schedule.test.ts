@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Course, Preferences, Schedule, Section, TimeSlot } from '../../types';
 import {
-  calculateAbsoluteScheduleScore,
   checkConflicts,
-  computeScheduleFeatures,
+  computeScheduleFeaturesWithContext,
+  createScoringContext,
   formatTime,
   formatTimeSlots,
   hasSectionConflict,
@@ -11,8 +11,8 @@ import {
   isSlotActiveDuring,
   scoreSchedulesRelative,
   sectionsToCalendarEvents,
-  timeToMinutesCached,
 } from '../schedule';
+import { timeToMinutesCached } from '../schedule-time';
 
 function makeTimeSlot(
   day: import('../../types').DayOfWeek,
@@ -21,16 +21,6 @@ function makeTimeSlot(
   dateRange?: Pick<TimeSlot, 'startDate' | 'endDate'>,
 ): TimeSlot {
   return { day, startTime, endTime, ...dateRange };
-}
-
-function makeSchedule(sections: Section[], totalCredits: number): Schedule {
-  return {
-    id: 'sched',
-    sections,
-    totalCredits,
-    score: 0,
-    conflicts: [],
-  };
 }
 
 function makeSection(overrides: Partial<Section>): Section {
@@ -160,102 +150,20 @@ describe('scoreSchedulesRelative', () => {
   });
 
   it('scores single schedule as 100', () => {
-    const f = computeScheduleFeatures(scheduleWithCredits('a', 15), defaultPrefs);
+    const f = computeScheduleFeaturesWithContext(
+      scheduleWithCredits('a', 15),
+      createScoringContext(defaultPrefs),
+    );
     expect(scoreSchedulesRelative([f], defaultPrefs)).toEqual([100]);
   });
 
   it('normalizes scores from 0 to 100 relative to all candidates', () => {
-    const fa = computeScheduleFeatures(scheduleWithCredits('a', 15), defaultPrefs);
-    const fb = computeScheduleFeatures(scheduleWithCredits('b', 18), defaultPrefs);
+    const context = createScoringContext(defaultPrefs);
+    const fa = computeScheduleFeaturesWithContext(scheduleWithCredits('a', 15), context);
+    const fb = computeScheduleFeaturesWithContext(scheduleWithCredits('b', 18), context);
     const [sa, sb] = scoreSchedulesRelative([fa, fb], defaultPrefs);
     expect(Math.max(sa, sb)).toBe(100);
     expect(Math.min(sa, sb)).toBe(0);
-  });
-});
-
-describe('calculateAbsoluteScheduleScore', () => {
-  it('returns valid scores within [0, 100] range', () => {
-    const sections = [
-      makeSection({
-        timeSlots: [makeTimeSlot('M', '09:00', '10:00')],
-        instructor: 'Dr. Smith',
-      }),
-      makeSection({
-        timeSlots: [makeTimeSlot('W', '09:00', '10:00')],
-        instructor: 'Dr. Jones',
-      }),
-      makeSection({
-        timeSlots: [makeTimeSlot('F', '09:00', '10:00')],
-        instructor: 'Dr. Brown',
-      }),
-    ];
-    const schedule = makeSchedule(sections, 9);
-    const score = calculateAbsoluteScheduleScore(schedule, defaultPrefs);
-
-    expect(score).toBeGreaterThan(0);
-    expect(score).toBeLessThanOrEqual(100);
-  });
-
-  it('penalizes schedules exceeding credit limits', () => {
-    const sections = [
-      makeSection({ timeSlots: [makeTimeSlot('M', '09:00', '10:00')] }),
-      makeSection({ timeSlots: [makeTimeSlot('W', '09:00', '10:00')] }),
-    ];
-    const schedule = makeSchedule(sections, 20);
-    const score = calculateAbsoluteScheduleScore(schedule, defaultPrefs);
-
-    expect(score).toBeLessThan(80);
-  });
-
-  it('penalizes schedules on avoided days', () => {
-    const sections = [
-      makeSection({ timeSlots: [makeTimeSlot('M', '09:00', '10:00')] }),
-      makeSection({ timeSlots: [makeTimeSlot('F', '09:00', '10:00')] }),
-    ];
-    const schedule = makeSchedule(sections, 6);
-    const prefsWithAvoidedDays: Preferences = {
-      ...defaultPrefs,
-      avoidDays: ['M', 'F'],
-    };
-    const score = calculateAbsoluteScheduleScore(schedule, prefsWithAvoidedDays);
-
-    expect(score).toBeLessThan(100);
-  });
-
-  it('does not penalize Friday-to-Monday gaps across weekends', () => {
-    const sections = [
-      makeSection({ timeSlots: [makeTimeSlot('F', '09:00', '10:00')] }),
-      makeSection({ timeSlots: [makeTimeSlot('M', '09:00', '10:00')] }),
-      makeSection({ timeSlots: [makeTimeSlot('T', '09:00', '10:00')] }),
-      makeSection({ timeSlots: [makeTimeSlot('W', '09:00', '10:00')] }),
-    ];
-    const schedule = makeSchedule(sections, 12);
-    const prefs: Preferences = { ...defaultPrefs, preferConsecutiveDays: true };
-    const score = calculateAbsoluteScheduleScore(schedule, prefs);
-
-    expect(score).toBeGreaterThan(50);
-  });
-
-  it('gives higher scores for compact schedules', () => {
-    const sections = [
-      makeSection({ timeSlots: [makeTimeSlot('M', '09:00', '10:00')] }),
-      makeSection({ timeSlots: [makeTimeSlot('M', '10:00', '11:00')] }),
-      makeSection({ timeSlots: [makeTimeSlot('W', '09:00', '10:00')] }),
-      makeSection({ timeSlots: [makeTimeSlot('W', '10:00', '11:00')] }),
-    ];
-    const schedule = makeSchedule(sections, 12);
-    const score = calculateAbsoluteScheduleScore(schedule, defaultPrefs);
-
-    expect(score).toBeGreaterThan(60);
-  });
-
-  it('penalizes missing evening classes when preferEvening is true', () => {
-    const sections = [makeSection({ timeSlots: [makeTimeSlot('M', '10:00', '11:30')] })];
-    const schedule = makeSchedule(sections, 3);
-    const prefs: Preferences = { ...defaultPrefs, preferEvening: true };
-    const score = calculateAbsoluteScheduleScore(schedule, prefs);
-
-    expect(score).toBeLessThan(60);
   });
 });
 

@@ -58,7 +58,6 @@ export const EventComponent = memo(function EventComponent({
     </Box>
   );
 
-  // sheet instead. On desktop the tooltip remains for instant previews.
   if (touchFriendly && onSelect) {
     return (
       <Box

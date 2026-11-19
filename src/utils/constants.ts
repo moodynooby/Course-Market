@@ -9,6 +9,7 @@ export const AFTERNOON_END_MINUTES = 1020;
 export const LUNCH_AFTER_MINUTES = 780;
 export const SCORE_EXCELLENT = 80;
 export const SCORE_GOOD = 60;
+export const DEFAULT_MAX_SCHEDULES = 1000;
 
 import type { Preferences } from '../types';
 

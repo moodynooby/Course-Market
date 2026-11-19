@@ -1,11 +1,10 @@
 import { alpha, Box, Button, Chip, Stack, Typography, useTheme } from '@mui/material';
-import type { Course } from '../../types';
+import type { Course, Schedule } from '../../types';
 import { SCORE_EXCELLENT } from '../../utils/constants';
-import type { GeneratedSchedule } from '../../utils/schedule-types';
 import CalendarView from '../CalendarView';
 
 interface ScheduleDetailsProps {
-  selectedSchedule: GeneratedSchedule;
+  selectedSchedule: Schedule;
   courses: Course[];
   onApply: () => void;
   similarSectionCounts?: Map<string, number>;

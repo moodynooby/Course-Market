@@ -104,6 +104,11 @@ export interface Professor {
   ratingCount?: number;
 }
 
+export interface ProfessorRatingInfo {
+  avgRating: number;
+  ratingCount: number;
+}
+
 export interface ProfessorRating {
   id: number;
   professorId: number;

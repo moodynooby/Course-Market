@@ -1,9 +1,9 @@
 import { desc, eq } from 'drizzle-orm';
-import { ZodError, type z } from 'zod';
 import { db } from '../../db';
 import * as schema from '../../db/schema';
-import { formatZodError, tradeSchema, tradeUpdateSchema } from '../../db/validation';
+import { tradeSchema, tradeUpdateSchema } from '../../db/validation';
 import { sendPushNotification } from './lib/push';
+import { parseJsonBody } from './lib/request';
 import { jsonResponse } from './lib/response';
 import { withAuth } from './lib/wrap';
 
@@ -44,18 +44,12 @@ export const handler = withAuth(async (event, user) => {
   }
 
   if (httpMethod === 'POST' && path.endsWith('/trades')) {
-    let requestBody: z.infer<typeof tradeSchema>;
-    try {
-      requestBody = tradeSchema.parse(body ? JSON.parse(body) : {});
-    } catch (e) {
-      if (e instanceof ZodError) {
-        return jsonResponse(400, formatZodError(e));
-      }
-      return jsonResponse(400, { error: 'Invalid JSON' });
-    }
+    const parsed = parseJsonBody(body, tradeSchema);
+    if ('error' in parsed) return parsed.error;
+    const requestBody = parsed.data;
 
     const [userProfile] = await db
-      .select()
+      .select({ phone: schema.userProfiles.phone })
       .from(schema.userProfiles)
       .where(eq(schema.userProfiles.auth0UserId, user.sub));
 
@@ -92,18 +86,12 @@ export const handler = withAuth(async (event, user) => {
       return jsonResponse(400, { error: 'Invalid trade ID' });
     }
 
-    let requestBody: z.infer<typeof tradeUpdateSchema>;
-    try {
-      requestBody = tradeUpdateSchema.parse(body ? JSON.parse(body) : {});
-    } catch (e) {
-      if (e instanceof ZodError) {
-        return jsonResponse(400, formatZodError(e));
-      }
-      return jsonResponse(400, { error: 'Invalid JSON' });
-    }
+    const parsed = parseJsonBody(body, tradeUpdateSchema);
+    if ('error' in parsed) return parsed.error;
+    const requestBody = parsed.data;
 
     const [existingTrade] = await db
-      .select()
+      .select(tradeColumns)
       .from(schema.trades)
       .where(eq(schema.trades.id, idNum));
 
@@ -129,7 +117,7 @@ export const handler = withAuth(async (event, user) => {
     }
 
     const [userProfile] = await db
-      .select()
+      .select({ phone: schema.userProfiles.phone })
       .from(schema.userProfiles)
       .where(eq(schema.userProfiles.auth0UserId, user.sub));
 
@@ -162,7 +150,7 @@ export const handler = withAuth(async (event, user) => {
     }
 
     const [existingTrade] = await db
-      .select()
+      .select(tradeColumns)
       .from(schema.trades)
       .where(eq(schema.trades.id, idNum));
 

@@ -56,9 +56,6 @@ export function PreferencesDialog({
         <SchedulePreferences
           initialPreferences={initialPreferences}
           onSave={onSave}
-          autoSave={true}
-          collapsible={false}
-          defaultExpanded={true}
           description="Choose the timetable criteria used to rank your alternatives."
         />
       </DialogContent>

@@ -1,22 +1,18 @@
-import { CalendarToday, ExpandMore, Save, Timer, Tune, Warning } from '@mui/icons-material';
+import { CalendarToday, ExpandMore, Timer, Tune, Warning } from '@mui/icons-material';
 import {
-  alpha,
   Box,
   Button,
   Card,
-  CardActions,
   Chip,
   Collapse,
   Divider,
   FormControlLabel,
   Grid,
-  IconButton,
   Slider,
   Stack,
   Switch,
   TextField,
   Typography,
-  useTheme,
 } from '@mui/material';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useToast } from '../context/ToastContext';
@@ -26,12 +22,9 @@ import { DEFAULT_PREFERENCES, SCHEDULE_PRESETS } from '../utils/constants';
 
 interface SchedulePreferencesProps {
   initialPreferences?: Preferences;
-  onSave?: (preferences: Preferences) => void | Promise<void>;
+  onSave: (preferences: Preferences) => void | Promise<void>;
   title?: string;
   description?: string;
-  autoSave?: boolean;
-  collapsible?: boolean;
-  defaultExpanded?: boolean;
 }
 
 const DAYS: { value: DayOfWeek; label: string }[] = [
@@ -79,11 +72,7 @@ export function SchedulePreferences({
   onSave,
   title = 'Schedule Preferences',
   description = 'Customize your ideal schedule settings',
-  autoSave = false,
-  collapsible = false,
-  defaultExpanded = true,
 }: SchedulePreferencesProps) {
-  const theme = useTheme();
   const { toast } = useToast();
 
   const matchingPreset = SCHEDULE_PRESETS.find(
@@ -98,20 +87,16 @@ export function SchedulePreferences({
   const [pendingSave, setPendingSave] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isValid, setIsValid] = useState(true);
-  const [expanded, setExpanded] = useState(defaultExpanded);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [activePreset, setActivePreset] = useState<string>(matchingPreset?.id || 'custom');
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onSaveRef = useRef(onSave);
   const preferencesRef = useRef(preferences);
-  const autoSaveRef = useRef(autoSave);
   const isValidRef = useRef(isValid);
 
   onSaveRef.current = onSave;
   preferencesRef.current = preferences;
-  autoSaveRef.current = autoSave;
   isValidRef.current = isValid;
 
   useEffect(() => {
@@ -123,7 +108,6 @@ export function SchedulePreferences({
   const performSave = useCallback(async () => {
     const currentOnSave = onSaveRef.current;
     const currentPreferences = preferencesRef.current;
-    if (!currentOnSave) return;
 
     const validation = validatePreferences(currentPreferences);
     if (!validation.valid) {
@@ -136,10 +120,6 @@ export function SchedulePreferences({
     try {
       await currentOnSave(currentPreferences);
       setSaved(true);
-      if (!autoSaveRef.current) {
-        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
-        savedTimerRef.current = setTimeout(() => setSaved(false), 3000);
-      }
     } catch (error) {
       console.error('Error saving preferences:', error);
       toast.error('Failed to save preferences. Please try again.');
@@ -152,12 +132,11 @@ export function SchedulePreferences({
     return () => {
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
-        if (autoSaveRef.current && onSaveRef.current && isValidRef.current) {
+        if (isValidRef.current) {
           const currentPrefs = preferencesRef.current;
           void onSaveRef.current(currentPrefs);
         }
       }
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
     };
   }, []);
 
@@ -167,13 +146,11 @@ export function SchedulePreferences({
     setActivePreset('custom');
     markPreferencesDirty();
 
-    if (autoSave && onSave) {
-      setPendingSave(true);
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = setTimeout(() => {
-        if (isValidRef.current) performSave();
-      }, 300);
-    }
+    setPendingSave(true);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => {
+      if (isValidRef.current) performSave();
+    }, 300);
   };
 
   const handleDayToggle = (day: DayOfWeek) => {
@@ -191,305 +168,270 @@ export function SchedulePreferences({
     }
   };
 
-  const handleReset = () => {
-    setPreferences(initialPreferences || DEFAULT_PREFERENCES);
-    setSaved(false);
-    setValidationErrors([]);
-  };
-
   return (
     <Card variant="outlined" sx={{ borderRadius: 4, bgcolor: 'background.paper', p: 3 }}>
-      <Stack
-        direction="row"
-        spacing={1}
-        sx={{ alignItems: 'center', cursor: collapsible ? 'pointer' : 'default' }}
-        onClick={collapsible ? () => setExpanded(!expanded) : undefined}
-        role={collapsible ? 'button' : undefined}
-        aria-expanded={collapsible ? expanded : undefined}
-        tabIndex={collapsible ? 0 : undefined}
-      >
+      <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <Box sx={{ flexGrow: 1 }}>
           <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
             {title}
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            {description}
-            {autoSave && ' • Auto-saves as you edit'}
+            {description} • Auto-saves as you edit
           </Typography>
         </Box>
-        {collapsible && (
-          <IconButton
-            size="small"
-            aria-label={expanded ? 'Collapse preferences' : 'Expand preferences'}
-          >
-            <ExpandMore
-              sx={{
-                transform: expanded ? 'rotate(180deg)' : 'none',
-                transition: 'transform 0.2s',
-              }}
-            />
-          </IconButton>
-        )}
       </Stack>
-      <Collapse in={expanded}>
-        <Stack spacing={3} sx={{ mt: 3 }}>
-          <Box>
-            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 1.5 }}>
-              <Tune fontSize="small" sx={{ color: 'text.secondary' }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                PRESETS
-              </Typography>
-            </Stack>
-            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mb: 2 }}>
-              {SCHEDULE_PRESETS.map((preset) => {
-                const isActive = activePreset === preset.id;
+      <Stack spacing={3} sx={{ mt: 3 }}>
+        <Box>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 1.5 }}>
+            <Tune fontSize="small" sx={{ color: 'text.secondary' }} />
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+              PRESETS
+            </Typography>
+          </Stack>
+          <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', mb: 2 }}>
+            {SCHEDULE_PRESETS.map((preset) => {
+              const isActive = activePreset === preset.id;
+              return (
+                <Chip
+                  key={preset.id}
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <span>{preset.icon}</span>
+                      <span>{preset.label}</span>
+                    </Box>
+                  }
+                  onClick={() => {
+                    setActivePreset(preset.id);
+                    if (preset.id !== 'custom') {
+                      const merged = { ...preferences, ...preset.preferences };
+                      setPreferences(merged);
+                      setSaved(false);
+                      markPreferencesDirty();
+                      setPendingSave(true);
+                      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+                      debounceTimerRef.current = setTimeout(() => {
+                        if (isValidRef.current) performSave();
+                      }, 300);
+                    }
+                  }}
+                  color={isActive ? 'secondary' : 'default'}
+                  variant={isActive ? 'filled' : 'outlined'}
+                  size="small"
+                  sx={{
+                    fontWeight: isActive ? 600 : 500,
+                    transition: 'all 0.2s ease',
+                    cursor: 'pointer',
+                    '&:hover': { transform: 'translateY(-1px)' },
+                  }}
+                />
+              );
+            })}
+          </Stack>
+        </Box>
+        <Box>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 1.5 }}>
+            <Timer fontSize="small" sx={{ color: 'text.secondary' }} />
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+              TIME PREFERENCES
+            </Typography>
+          </Stack>
+
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 6 }}>
+              <TextField
+                fullWidth
+                size="small"
+                type="time"
+                label="Start Time"
+                value={preferences.preferredStartTime}
+                onChange={(e) => handleUpdate('preferredStartTime', e.target.value)}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField
+                fullWidth
+                size="small"
+                type="time"
+                label="End Time"
+                value={preferences.preferredEndTime}
+                onChange={(e) => handleUpdate('preferredEndTime', e.target.value)}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            </Grid>
+          </Grid>
+
+          <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: 'wrap' }}>
+            <Chip
+              label="Morning"
+              icon={<span style={{ fontSize: 14 }}>🌅</span>}
+              onClick={() => handleUpdate('preferMorning', !preferences.preferMorning)}
+              color={preferences.preferMorning ? 'primary' : 'default'}
+              variant={preferences.preferMorning ? 'filled' : 'outlined'}
+              sx={{ fontSize: '0.75rem' }}
+            />
+            <Chip
+              label="Afternoon"
+              icon={<span style={{ fontSize: 14 }}>🌇</span>}
+              onClick={() => handleUpdate('preferAfternoon', !preferences.preferAfternoon)}
+              color={preferences.preferAfternoon ? 'primary' : 'default'}
+              variant={preferences.preferAfternoon ? 'filled' : 'outlined'}
+              sx={{ fontSize: '0.75rem' }}
+            />
+            <Chip
+              label="Evening"
+              icon={<span style={{ fontSize: 14 }}>🌙</span>}
+              onClick={() => handleUpdate('preferEvening', !preferences.preferEvening)}
+              color={preferences.preferEvening ? 'primary' : 'default'}
+              variant={preferences.preferEvening ? 'filled' : 'outlined'}
+              sx={{ fontSize: '0.75rem' }}
+            />
+          </Stack>
+        </Box>
+
+        <Divider />
+
+        <Box>
+          <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 1.5 }}>
+            <CalendarToday fontSize="small" sx={{ color: 'text.secondary' }} />
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+              CREDITS &amp; DAYS
+            </Typography>
+          </Stack>
+
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 6 }}>
+              <TextField
+                fullWidth
+                size="small"
+                type="number"
+                label="Min Credits"
+                value={preferences.minCredits}
+                onChange={(e) => handleCreditsChange('min', parseInt(e.target.value, 10) || 0)}
+                slotProps={{ htmlInput: { min: 0, max: 24 } }}
+              />
+            </Grid>
+            <Grid size={{ xs: 6 }}>
+              <TextField
+                fullWidth
+                size="small"
+                type="number"
+                label="Max Credits"
+                value={preferences.maxCredits}
+                onChange={(e) => handleCreditsChange('max', parseInt(e.target.value, 10) || 0)}
+                slotProps={{ htmlInput: { min: 0, max: 24 } }}
+              />
+            </Grid>
+          </Grid>
+
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="caption" sx={{ color: 'text.secondary', mb: 1, display: 'block' }}>
+              Days to Avoid
+            </Typography>
+            <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
+              {DAYS.map((day) => {
+                const isActive = preferences.avoidDays.includes(day.value);
                 return (
                   <Chip
-                    key={preset.id}
-                    label={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <span>{preset.icon}</span>
-                        <span>{preset.label}</span>
-                      </Box>
-                    }
-                    onClick={() => {
-                      setActivePreset(preset.id);
-                      if (preset.id !== 'custom') {
-                        const merged = { ...preferences, ...preset.preferences };
-                        setPreferences(merged);
-                        setSaved(false);
-                        markPreferencesDirty();
-                        if (autoSave && onSave) {
-                          setPendingSave(true);
-                          if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-                          debounceTimerRef.current = setTimeout(() => {
-                            if (isValidRef.current) performSave();
-                          }, 300);
-                        }
-                      }
-                    }}
-                    color={isActive ? 'secondary' : 'default'}
+                    key={day.value}
+                    label={day.label}
+                    onClick={() => handleDayToggle(day.value)}
+                    color={isActive ? 'error' : 'default'}
                     variant={isActive ? 'filled' : 'outlined'}
                     size="small"
                     sx={{
                       fontWeight: isActive ? 600 : 500,
                       transition: 'all 0.2s ease',
                       cursor: 'pointer',
-                      '&:hover': { transform: 'translateY(-1px)' },
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        bgcolor: isActive ? 'error.dark' : 'action.hover',
+                      },
                     }}
                   />
                 );
               })}
             </Stack>
           </Box>
-          <Box>
-            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 1.5 }}>
-              <Timer fontSize="small" sx={{ color: 'text.secondary' }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                TIME PREFERENCES
-              </Typography>
-            </Stack>
 
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 6 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  type="time"
-                  label="Start Time"
-                  value={preferences.preferredStartTime}
-                  onChange={(e) => handleUpdate('preferredStartTime', e.target.value)}
-                  slotProps={{ inputLabel: { shrink: true } }}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+            <Button
+              size="small"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              endIcon={
+                <ExpandMore
+                  sx={{
+                    transform: showAdvanced ? 'rotate(180deg)' : 'none',
+                    transition: 'transform 0.2s',
+                  }}
                 />
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  type="time"
-                  label="End Time"
-                  value={preferences.preferredEndTime}
-                  onChange={(e) => handleUpdate('preferredEndTime', e.target.value)}
-                  slotProps={{ inputLabel: { shrink: true } }}
-                />
-              </Grid>
-            </Grid>
-
-            <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: 'wrap' }}>
-              <Chip
-                label="Morning"
-                icon={<span style={{ fontSize: 14 }}>🌅</span>}
-                onClick={() => handleUpdate('preferMorning', !preferences.preferMorning)}
-                color={preferences.preferMorning ? 'primary' : 'default'}
-                variant={preferences.preferMorning ? 'filled' : 'outlined'}
-                sx={{ fontSize: '0.75rem' }}
-              />
-              <Chip
-                label="Afternoon"
-                icon={<span style={{ fontSize: 14 }}>🌇</span>}
-                onClick={() => handleUpdate('preferAfternoon', !preferences.preferAfternoon)}
-                color={preferences.preferAfternoon ? 'primary' : 'default'}
-                variant={preferences.preferAfternoon ? 'filled' : 'outlined'}
-                sx={{ fontSize: '0.75rem' }}
-              />
-              <Chip
-                label="Evening"
-                icon={<span style={{ fontSize: 14 }}>🌙</span>}
-                onClick={() => handleUpdate('preferEvening', !preferences.preferEvening)}
-                color={preferences.preferEvening ? 'primary' : 'default'}
-                variant={preferences.preferEvening ? 'filled' : 'outlined'}
-                sx={{ fontSize: '0.75rem' }}
-              />
-            </Stack>
+              }
+              sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
+            >
+              {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
+            </Button>
           </Box>
 
-          <Divider />
-
-          <Box>
-            <Stack direction="row" spacing={0.5} sx={{ alignItems: 'center', mb: 1.5 }}>
-              <CalendarToday fontSize="small" sx={{ color: 'text.secondary' }} />
-              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                CREDITS &amp; DAYS
-              </Typography>
-            </Stack>
-
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 6 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  type="number"
-                  label="Min Credits"
-                  value={preferences.minCredits}
-                  onChange={(e) => handleCreditsChange('min', parseInt(e.target.value, 10) || 0)}
-                  slotProps={{ htmlInput: { min: 0, max: 24 } }}
+          <Collapse in={showAdvanced}>
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <Box>
+                <Stack
+                  direction="row"
+                  sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1 }}
+                >
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    Max Gap Between Classes
+                  </Typography>
+                  <Chip
+                    label={`${preferences.maxGapMinutes} min`}
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                    sx={{ fontWeight: 600 }}
+                  />
+                </Stack>
+                <Slider
+                  value={preferences.maxGapMinutes}
+                  onChange={(_, value) => handleUpdate('maxGapMinutes', value as number)}
+                  min={0}
+                  max={180}
+                  step={15}
+                  valueLabelDisplay="auto"
+                  valueLabelFormat={(value) => `${value} min`}
+                  sx={{
+                    '& .MuiSlider-thumb': { width: 18, height: 18 },
+                    '& .MuiSlider-track': { bgcolor: 'primary.main' },
+                    '& .MuiSlider-rail': { opacity: 0.3 },
+                    '& .MuiSlider-valueLabel': {
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                      fontWeight: 600,
+                      px: 1,
+                      py: 0.5,
+                      borderRadius: 1,
+                    },
+                  }}
                 />
-              </Grid>
-              <Grid size={{ xs: 6 }}>
-                <TextField
-                  fullWidth
-                  size="small"
-                  type="number"
-                  label="Max Credits"
-                  value={preferences.maxCredits}
-                  onChange={(e) => handleCreditsChange('max', parseInt(e.target.value, 10) || 0)}
-                  slotProps={{ htmlInput: { min: 0, max: 24 } }}
-                />
-              </Grid>
-            </Grid>
+              </Box>
 
-            <Box sx={{ mt: 2 }}>
-              <Typography
-                variant="caption"
-                sx={{ color: 'text.secondary', mb: 1, display: 'block' }}
-              >
-                Days to Avoid
-              </Typography>
-              <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-                {DAYS.map((day) => {
-                  const isActive = preferences.avoidDays.includes(day.value);
-                  return (
-                    <Chip
-                      key={day.value}
-                      label={day.label}
-                      onClick={() => handleDayToggle(day.value)}
-                      color={isActive ? 'error' : 'default'}
-                      variant={isActive ? 'filled' : 'outlined'}
-                      size="small"
-                      sx={{
-                        fontWeight: isActive ? 600 : 500,
-                        transition: 'all 0.2s ease',
-                        cursor: 'pointer',
-                        '&:hover': {
-                          transform: 'translateY(-2px)',
-                          bgcolor: isActive ? 'error.dark' : 'action.hover',
-                        },
-                      }}
-                    />
-                  );
-                })}
-              </Stack>
-            </Box>
-
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
-              <Button
-                size="small"
-                onClick={() => setShowAdvanced(!showAdvanced)}
-                endIcon={
-                  <ExpandMore
-                    sx={{
-                      transform: showAdvanced ? 'rotate(180deg)' : 'none',
-                      transition: 'transform 0.2s',
-                    }}
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={preferences.preferConsecutiveDays}
+                    onChange={(e) => handleUpdate('preferConsecutiveDays', e.target.checked)}
+                    size="small"
                   />
                 }
-                sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}
-              >
-                {showAdvanced ? 'Hide Advanced' : 'Show Advanced'}
-              </Button>
-            </Box>
-
-            <Collapse in={showAdvanced}>
-              <Stack spacing={2} sx={{ mt: 1 }}>
-                <Box>
-                  <Stack
-                    direction="row"
-                    sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 1 }}
-                  >
-                    <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                      Max Gap Between Classes
-                    </Typography>
-                    <Chip
-                      label={`${preferences.maxGapMinutes} min`}
-                      size="small"
-                      color="primary"
-                      variant="outlined"
-                      sx={{ fontWeight: 600 }}
-                    />
-                  </Stack>
-                  <Slider
-                    value={preferences.maxGapMinutes}
-                    onChange={(_, value) => handleUpdate('maxGapMinutes', value as number)}
-                    min={0}
-                    max={180}
-                    step={15}
-                    valueLabelDisplay="auto"
-                    valueLabelFormat={(value) => `${value} min`}
-                    sx={{
-                      '& .MuiSlider-thumb': { width: 18, height: 18 },
-                      '& .MuiSlider-track': { bgcolor: 'primary.main' },
-                      '& .MuiSlider-rail': { opacity: 0.3 },
-                      '& .MuiSlider-valueLabel': {
-                        bgcolor: 'primary.main',
-                        color: 'primary.contrastText',
-                        fontWeight: 600,
-                        px: 1,
-                        py: 0.5,
-                        borderRadius: 1,
-                      },
-                    }}
-                  />
-                </Box>
-
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={preferences.preferConsecutiveDays}
-                      onChange={(e) => handleUpdate('preferConsecutiveDays', e.target.checked)}
-                      size="small"
-                    />
-                  }
-                  label={
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                      Prefer consecutive days (MWF or TTh)
-                    </Typography>
-                  }
-                  sx={{ ml: 0 }}
-                />
-              </Stack>
-            </Collapse>
-          </Box>
-        </Stack>
+                label={
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    Prefer consecutive days (MWF or TTh)
+                  </Typography>
+                }
+                sx={{ ml: 0 }}
+              />
+            </Stack>
+          </Collapse>
+        </Box>
 
         {!isValid && validationErrors.length > 0 && (
           <Box sx={{ mt: 2 }}>
@@ -506,47 +448,7 @@ export function SchedulePreferences({
           </Box>
         )}
 
-        {!autoSave && (
-          <CardActions
-            sx={{
-              pt: 3,
-              mt: 2,
-              borderTop: `1px solid ${alpha(theme.palette.divider, 0.5)}`,
-              justifyContent: 'space-between',
-            }}
-          >
-            <Button onClick={handleReset} variant="outlined" disabled={saving || saved}>
-              Reset
-            </Button>
-            <Stack direction="row" spacing={2}>
-              {saved && (
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: 'success.main',
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontWeight: 600,
-                  }}
-                >
-                  ✓ Saved!
-                </Typography>
-              )}
-              <Button
-                onClick={performSave}
-                variant="contained"
-                color="secondary"
-                disabled={saving || saved || !isValid}
-                startIcon={saving ? undefined : <Save />}
-                sx={{ borderRadius: 3, px: 3, py: 1.5, fontWeight: 600 }}
-              >
-                {saving ? 'Saving...' : saved ? 'Saved' : 'Save'}
-              </Button>
-            </Stack>
-          </CardActions>
-        )}
-
-        {autoSave && (pendingSave || saved) && (
+        {(pendingSave || saved) && (
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
             {pendingSave && !saving ? (
               <Typography
@@ -576,7 +478,7 @@ export function SchedulePreferences({
             ) : null}
           </Box>
         )}
-      </Collapse>
+      </Stack>
     </Card>
   );
 }

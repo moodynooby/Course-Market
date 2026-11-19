@@ -60,7 +60,10 @@ const mockSection1: Section = {
   instructor: 'Turing',
   capacity: 30,
   enrolled: 20,
-  timeSlots: [{ day: 'M', startTime: '09:00', endTime: '10:15' }],
+  timeSlots: [
+    { day: 'M', startTime: '09:00', endTime: '10:15' },
+    { day: 'M', startTime: '12:00', endTime: '13:15' },
+  ],
 };
 
 const mockSection2: Section = {
@@ -140,23 +143,19 @@ describe('useScheduleGeneration', () => {
       }),
     );
 
-    // Optimize first to find a better schedule
     await act(async () => {
       await result.current.handleOptimize();
     });
 
-    // If a different schedule was applied, previousSchedule is set
-    if (result.current.previousSchedule) {
-      expect(result.current.previousSchedule).toEqual(mockInitialSchedule);
+    expect(result.current.previousSchedule).toEqual(mockInitialSchedule);
 
-      await act(async () => {
-        await result.current.handleUndoOptimize();
-      });
+    await act(async () => {
+      await result.current.handleUndoOptimize();
+    });
 
-      expect(applySchedule).toHaveBeenCalledWith(mockInitialSchedule);
-      expect(mockToast.success).toHaveBeenCalledWith('Reverted to previous schedule');
-      expect(result.current.previousSchedule).toBeNull();
-    }
+    expect(applySchedule).toHaveBeenCalledWith(mockInitialSchedule);
+    expect(mockToast.success).toHaveBeenCalledWith('Reverted to previous schedule');
+    expect(result.current.previousSchedule).toBeNull();
   });
 
   it('applies selected schedule from explorer and shows success toast', async () => {
@@ -170,24 +169,16 @@ describe('useScheduleGeneration', () => {
       }),
     );
 
-    const generatedSchedule = {
+    const generatedSchedule: Schedule = {
       ...mockInitialSchedule,
       score: 95,
-      sections: [mockSection1],
-      isLowQuality: false,
     };
 
     await act(async () => {
       await result.current.handleApplySchedule(generatedSchedule);
     });
 
-    expect(applySchedule).toHaveBeenCalledWith({
-      id: generatedSchedule.id,
-      sections: generatedSchedule.sections,
-      totalCredits: generatedSchedule.totalCredits,
-      score: generatedSchedule.score,
-      conflicts: generatedSchedule.conflicts,
-    });
+    expect(applySchedule).toHaveBeenCalledWith(generatedSchedule);
     expect(mockToast.success).toHaveBeenCalledWith('Selected schedule applied successfully');
   });
 

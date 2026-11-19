@@ -9,7 +9,6 @@ import {
 } from 'react';
 import { useAutoPersistence } from '../hooks/useAutoPersistence';
 import { getSemesterData, getSemesters } from '../services/coursesApi';
-import { buildCourseIndex } from '../services/search';
 import type { Course, Schedule, Section } from '../types';
 import { checkConflicts, sectionsToCourseSelections } from '../utils/schedule';
 import { useAuthContext } from './AuthContext';
@@ -94,7 +93,6 @@ export function CourseSelectionProvider({ children }: { children: React.ReactNod
   const loadedSemesterRef = useRef<string | null>(null);
   const isInternalUpdateRef = useRef(false);
 
-  // Persistence Engine for saving course & pinned selections to profile
   const persistence = useAutoPersistence<{
     courseSelections: Record<string, string>;
     pinnedSelections: Record<string, string>;
@@ -120,7 +118,6 @@ export function CourseSelectionProvider({ children }: { children: React.ReactNod
     setError(null);
     try {
       const data = await getSemesterData(semId);
-      buildCourseIndex(data.courses, data.sections);
       setCourses(data.courses);
       setSections(data.sections);
       loadedSemesterRef.current = semId;
@@ -136,7 +133,6 @@ export function CourseSelectionProvider({ children }: { children: React.ReactNod
     }
   }, []);
 
-  // Initialize available semesters and active semester on mount
   useEffect(() => {
     let mounted = true;
     async function initSemesters() {
@@ -172,7 +168,6 @@ export function CourseSelectionProvider({ children }: { children: React.ReactNod
     };
   }, [loadSemesterCatalog, profile?.semesterId]);
 
-  // Sync profile selections when profile loads from server
   useEffect(() => {
     if (!profile || isInternalUpdateRef.current) return;
 
@@ -185,7 +180,6 @@ export function CourseSelectionProvider({ children }: { children: React.ReactNod
     }
   }, [profile]);
 
-  // Whenever selectedSections or catalog changes, re-derive schedule
   useEffect(() => {
     const derived = deriveScheduleFromSelections(selectedSections, courses, sections);
     setSchedule(derived);
@@ -258,7 +252,6 @@ export function CourseSelectionProvider({ children }: { children: React.ReactNod
       const newSelections = sectionsToCourseSelections(newSchedule.sections);
       const nextSelections = new Map(Object.entries(newSelections));
 
-      // Keep only pins that exist in the newly applied schedule
       const nextPins = new Map<string, string>();
       for (const [cId, secId] of pinnedSections) {
         if (nextSelections.get(cId) === secId) {
@@ -283,7 +276,6 @@ export function CourseSelectionProvider({ children }: { children: React.ReactNod
     async (newSemesterId: string, newSemesterName?: string) => {
       if (newSemesterId === semesterId) return;
 
-      // 1. Reset selections
       setSelectedSections(new Map());
       setPinnedSections(new Map());
       setSchedule(null);
@@ -295,10 +287,8 @@ export function CourseSelectionProvider({ children }: { children: React.ReactNod
         if (found) setSemesterName(found.name);
       }
 
-      // 2. Load new catalog
       await loadSemesterCatalog(newSemesterId);
 
-      // 3. Immediately persist semester and wiped selections to database
       if (isAuthenticated) {
         try {
           await updateProfile({

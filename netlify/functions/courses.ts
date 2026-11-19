@@ -2,7 +2,7 @@ import { and, asc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { db } from '../../db';
 import * as schema from '../../db/schema';
 import { courseSearchQuerySchema, formatZodError } from '../../db/validation';
-import type { Course, Section, TimeSlot } from '../../src/types';
+import { courseColumns, sectionColumns, toCourse, toSection } from './lib/catalog';
 import { jsonResponse } from './lib/response';
 import { withCors } from './lib/wrap';
 
@@ -79,7 +79,7 @@ export const handler = withCors(async (event) => {
   }
 
   const matchedCourses = await db
-    .select()
+    .select(courseColumns)
     .from(schema.semesterCourses)
     .where(and(...conditions))
     .orderBy(asc(schema.semesterCourses.courseCode))
@@ -97,7 +97,7 @@ export const handler = withCors(async (event) => {
   const matchedSections =
     matchedCourseIds.length > 0
       ? await db
-          .select()
+          .select(sectionColumns)
           .from(schema.semesterSections)
           .where(
             and(
@@ -107,24 +107,8 @@ export const handler = withCors(async (event) => {
           )
       : [];
 
-  const courses: Course[] = matchedCourses.map((c) => ({
-    id: c.id,
-    code: c.courseCode,
-    name: c.name,
-    subject: c.subject,
-    credits: c.credits,
-    description: c.description ?? undefined,
-  }));
-
-  const sections: Section[] = matchedSections.map((s) => ({
-    id: s.id,
-    courseId: s.courseId,
-    sectionNumber: s.sectionNumber,
-    instructor: s.instructor,
-    capacity: s.capacity,
-    enrolled: s.enrolled,
-    timeSlots: (s.timeSlots ?? []) as TimeSlot[],
-  }));
+  const courses = matchedCourses.map(toCourse);
+  const sections = matchedSections.map(toSection);
 
   return jsonResponse(200, {
     courses,

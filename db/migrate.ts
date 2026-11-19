@@ -1,9 +1,3 @@
-/**
- * Database Migration Runner
- *
- * Runs pending Drizzle migrations using the Neon HTTP driver.
- * Uses DATABASE_URL or NETLIFY_DATABASE_URL from the environment.
- */
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { neon } from '@neondatabase/serverless';
@@ -17,7 +11,6 @@ if (!databaseUrl) {
     '[db:migrate] Error: DATABASE_URL or NETLIFY_DATABASE_URL is required to run migrations.',
   );
   process.exit(1);
-  throw new Error('Database URL is required');
 }
 
 const migrationsFolder = resolve(process.cwd(), 'migrations');

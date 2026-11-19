@@ -20,10 +20,6 @@ describe('phoneSchema', () => {
     expect(phoneSchema.parse('(123) 456-7890')).toBe('1234567890');
   });
 
-  it('strips non-digits preserving valid digits', () => {
-    expect(phoneSchema.parse('(123) 456-7890')).toBe('1234567890');
-  });
-
   it('rejects phone with fewer than 10 digits', () => {
     expect(() => phoneSchema.parse('123456789')).toThrow();
   });
@@ -253,30 +249,20 @@ describe('professorRatingSchema', () => {
 
 describe('formatZodError', () => {
   it('formats a ZodError into structured response', () => {
-    const schema = z.object({ name: z.string().min(1) });
-    try {
-      schema.parse({ name: '' });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const result = formatZodError(error);
-        expect(result).toEqual({
-          error: 'Validation failed',
-          details: [{ field: 'name', message: expect.any(String) }],
-        });
-      }
-    }
+    const result = z.object({ name: z.string().min(1) }).safeParse({ name: '' });
+    if (result.success) throw new Error('Expected validation to fail');
+    expect(formatZodError(result.error)).toEqual({
+      error: 'Validation failed',
+      details: [{ field: 'name', message: expect.any(String) }],
+    });
   });
 
   it('handles nested field paths', () => {
-    const schema = z.object({ nested: z.object({ value: z.number() }) });
-    try {
-      schema.parse({ nested: { value: 'not-a-number' } });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const result = formatZodError(error);
-        expect(result.details[0].field).toBe('nested.value');
-      }
-    }
+    const result = z
+      .object({ nested: z.object({ value: z.number() }) })
+      .safeParse({ nested: { value: 'not-a-number' } });
+    if (result.success) throw new Error('Expected validation to fail');
+    expect(formatZodError(result.error).details[0].field).toBe('nested.value');
   });
 });
 

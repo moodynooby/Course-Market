@@ -1,24 +1,9 @@
-import { ZodError } from 'zod';
-import { formatZodError, scheduleGenerateSchema } from '../../db/validation';
+import { scheduleGenerateSchema } from '../../db/validation';
 import type { Course, Preferences, Section } from '../../src/types';
-import { diagnoseEmptyGeneration } from '../../src/utils/schedule-diagnostics';
-import { generateSchedules } from '../../src/utils/schedule-generator';
-import { buildSectionsByCourse, prefilterSections } from '../../src/utils/schedule-prefilter';
-import { DEFAULT_MAX_SCHEDULES } from '../../src/utils/schedule-types';
+import { generateScheduleCandidates } from '../../src/utils/generation';
+import { parseJsonBody } from './lib/request';
 import { jsonResponse } from './lib/response';
 import { withCors } from './lib/wrap';
-
-const DEFAULT_PREFS: Preferences = {
-  preferredStartTime: '08:00',
-  preferredEndTime: '18:00',
-  maxGapMinutes: 60,
-  preferConsecutiveDays: false,
-  preferMorning: false,
-  preferAfternoon: false,
-  minCredits: 12,
-  maxCredits: 18,
-  avoidDays: [],
-};
 
 export const handler = withCors(async (event) => {
   const { httpMethod, path, body } = event;
@@ -35,15 +20,8 @@ export const handler = withCors(async (event) => {
     return jsonResponse(404, { error: 'Not Found' });
   }
 
-  let parsed: ReturnType<typeof scheduleGenerateSchema.parse>;
-  try {
-    parsed = scheduleGenerateSchema.parse(body ? JSON.parse(body) : {});
-  } catch (e) {
-    if (e instanceof ZodError) {
-      return jsonResponse(400, formatZodError(e));
-    }
-    return jsonResponse(400, { error: 'Invalid JSON' });
-  }
+  const parsed = parseJsonBody(body, scheduleGenerateSchema);
+  if ('error' in parsed) return parsed.error;
 
   const {
     courses,
@@ -52,88 +30,24 @@ export const handler = withCors(async (event) => {
     pinnedSelections = {},
     preferences,
     options,
-  } = parsed;
+  } = parsed.data;
 
-  const typedCourses = courses as Course[];
-  const typedSections = sections as Section[];
-  const rawPrefs = (preferences ?? {}) as Partial<Preferences>;
-
-  const typedPrefs: Preferences = {
-    ...DEFAULT_PREFS,
-    ...rawPrefs,
-    avoidDays: Array.isArray(rawPrefs.avoidDays) ? rawPrefs.avoidDays : [],
-    preferredStartTime: rawPrefs.preferredStartTime || DEFAULT_PREFS.preferredStartTime,
-    preferredEndTime: rawPrefs.preferredEndTime || DEFAULT_PREFS.preferredEndTime,
-    minCredits:
-      typeof rawPrefs.minCredits === 'number' ? rawPrefs.minCredits : DEFAULT_PREFS.minCredits,
-    maxCredits:
-      typeof rawPrefs.maxCredits === 'number' ? rawPrefs.maxCredits : DEFAULT_PREFS.maxCredits,
-  };
-
-  let sectionsByCourse: Map<string, Section[]>;
-  if (scheduleSections && scheduleSections.length > 0) {
-    sectionsByCourse = buildSectionsByCourse(
-      scheduleSections as Section[],
-      typedSections,
-      pinnedSelections,
-    );
-    // When generating for specific schedule sections, clamp minCredits so schedules are not pruned
-    const targetCourseIds = new Set((scheduleSections as Section[]).map((s) => s.courseId));
-    const targetCredits = typedCourses
-      .filter((c) => targetCourseIds.has(c.id))
-      .reduce((sum, c) => sum + (c.credits || 3), 0);
-
-    if (targetCredits > 0 && typedPrefs.minCredits > targetCredits) {
-      typedPrefs.minCredits = Math.min(typedPrefs.minCredits, targetCredits);
-    }
-  } else {
-    sectionsByCourse = new Map<string, Section[]>();
-    for (const section of typedSections) {
-      const list = sectionsByCourse.get(section.courseId) ?? [];
-      list.push(section);
-      sectionsByCourse.set(section.courseId, list);
-    }
-    for (const [courseId, sectionId] of Object.entries(pinnedSelections)) {
-      if (sectionsByCourse.has(courseId)) {
-        const pinned = typedSections.find((s) => s.id === sectionId);
-        if (pinned) sectionsByCourse.set(courseId, [pinned]);
-      }
-    }
-  }
-
-  if (sectionsByCourse.size === 0) {
-    return jsonResponse(200, {
-      schedules: [],
-      summary: null,
-      diagnostics: null,
-    });
-  }
-
-  const courseCodeMap = new Map(typedCourses.map((c) => [c.id, c.code]));
-  const { sectionsByCourse: filteredByCourse, summary } = prefilterSections(
-    sectionsByCourse,
-    typedPrefs,
-    courseCodeMap,
-  );
-
-  const maxSchedules = options?.maxSchedules ?? DEFAULT_MAX_SCHEDULES;
-  const schedules = generateSchedules(typedCourses, filteredByCourse, typedPrefs, {
-    maxSchedules,
+  const result = generateScheduleCandidates({
+    courses: courses as Course[],
+    sections: sections as Section[],
+    scheduleSections: scheduleSections as Section[] | undefined,
+    pinnedSelections,
+    preferences: (preferences ?? {}) as Partial<Preferences>,
+    // The legacy endpoint only clamped minCredits, and only when generating
+    // for a specific set of schedule sections.
+    clampMinCredits: Boolean(scheduleSections && scheduleSections.length > 0),
+    clampMaxCredits: false,
+    maxSchedules: options?.maxSchedules,
   });
 
-  let diagnostics = null;
-  if (schedules.length === 0) {
-    diagnostics = diagnoseEmptyGeneration(
-      typedCourses,
-      sectionsByCourse,
-      typedPrefs,
-      new Map(Object.entries(pinnedSelections)),
-    );
-  }
-
   return jsonResponse(200, {
-    schedules,
-    summary,
-    diagnostics,
+    schedules: result.schedules,
+    summary: result.summary,
+    diagnostics: result.diagnostics,
   });
 });

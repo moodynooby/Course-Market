@@ -1,10 +1,10 @@
 import { desc, eq, sql } from 'drizzle-orm';
-import { ZodError, type z } from 'zod';
 import { db } from '../../db';
 import * as schema from '../../db/schema';
-import { formatZodError, professorRatingSchema } from '../../db/validation';
+import { professorRatingSchema } from '../../db/validation';
 import { splitInstructorNames } from '../../src/utils/instructor-name';
 import { validateToken } from './lib/auth';
+import { parseJsonBody } from './lib/request';
 import { jsonResponse } from './lib/response';
 import { withCors } from './lib/wrap';
 
@@ -54,7 +54,7 @@ export const handler = withCors(async (event) => {
       }
 
       const [professor] = await db
-        .select()
+        .select({ id: schema.professors.id, name: schema.professors.name })
         .from(schema.professors)
         .where(eq(schema.professors.id, professorId));
 
@@ -122,15 +122,9 @@ export const handler = withCors(async (event) => {
 
   if (httpMethod === 'POST') {
     if (path.endsWith('/rate')) {
-      let requestBody: z.infer<typeof professorRatingSchema>;
-      try {
-        requestBody = professorRatingSchema.parse(body ? JSON.parse(body) : {});
-      } catch (e) {
-        if (e instanceof ZodError) {
-          return jsonResponse(400, formatZodError(e));
-        }
-        return jsonResponse(400, { error: 'Invalid JSON' });
-      }
+      const parsed = parseJsonBody(body, professorRatingSchema);
+      if ('error' in parsed) return parsed.error;
+      const requestBody = parsed.data;
 
       const [newRating] = await db
         .insert(schema.professorRatings)

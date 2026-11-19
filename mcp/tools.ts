@@ -1,11 +1,10 @@
 import { z } from 'zod';
 import type { Course, DayOfWeek, Preferences, Section } from '../src/types';
+import { DEFAULT_MAX_SCHEDULES } from '../src/utils/constants';
+import { generateScheduleCandidates } from '../src/utils/generation';
 import { sectionsToIcs } from '../src/utils/icsExport';
-import { DAY_ORDER, hasSectionConflict } from '../src/utils/schedule';
-import { diagnoseEmptyGeneration } from '../src/utils/schedule-diagnostics';
-import { generateSchedules } from '../src/utils/schedule-generator';
-import { prefilterSections } from '../src/utils/schedule-prefilter';
-import { DEFAULT_MAX_SCHEDULES } from '../src/utils/schedule-types';
+import { hasSectionConflict } from '../src/utils/schedule';
+import { DAY_ORDER } from '../src/utils/schedule-time';
 import type { CourseDataSource, SectionPairSelection } from './types';
 
 export const dayOfWeekSchema = z.enum(['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su']);
@@ -162,19 +161,6 @@ export const exportScheduleIcsInputShape = {
     .max(30)
     .optional()
     .describe('Alternative to sectionIds: list of { courseCode, sectionNumber } pairs'),
-};
-
-const DEFAULT_PREFERENCES: Preferences = {
-  preferredStartTime: '08:00',
-  preferredEndTime: '18:00',
-  maxGapMinutes: 60,
-  preferConsecutiveDays: false,
-  preferMorning: false,
-  preferAfternoon: false,
-  preferEvening: false,
-  minCredits: 12,
-  maxCredits: 18,
-  avoidDays: [],
 };
 
 function normalizeKey(value: string): string {
@@ -590,37 +576,18 @@ export async function handleGenerateSchedules(
   }
 
   const targetCredits = resolved.courses.reduce((sum, c) => sum + (c.credits || 3), 0);
-  const rawPrefs = args.preferences ?? {};
-
-  const preferences: Preferences = {
-    ...DEFAULT_PREFERENCES,
-    ...rawPrefs,
-    avoidDays: Array.isArray(rawPrefs.avoidDays) ? rawPrefs.avoidDays : [],
-    preferredStartTime: rawPrefs.preferredStartTime || DEFAULT_PREFERENCES.preferredStartTime,
-    preferredEndTime: rawPrefs.preferredEndTime || DEFAULT_PREFERENCES.preferredEndTime,
-    minCredits:
-      typeof rawPrefs.minCredits === 'number'
-        ? rawPrefs.minCredits
-        : Math.min(DEFAULT_PREFERENCES.minCredits, targetCredits),
-    maxCredits:
-      typeof rawPrefs.maxCredits === 'number'
-        ? rawPrefs.maxCredits
-        : Math.max(DEFAULT_PREFERENCES.maxCredits, targetCredits),
-  };
-
-  const courseCodeMap = new Map(resolved.courses.map((c) => [c.id, c.code]));
-  const { sectionsByCourse: prefilteredByCourse, summary } = prefilterSections(
+  const result = generateScheduleCandidates({
+    courses: resolved.courses,
     sectionsByCourse,
-    preferences,
-    courseCodeMap,
-  );
-
-  const generated = generateSchedules(resolved.courses, prefilteredByCourse, preferences, {
+    targetCredits,
+    preferences: args.preferences,
+    pinnedSelections: Object.fromEntries(resolvedPinned),
+    clampOnlyDefaults: true,
     maxSchedules: DEFAULT_MAX_SCHEDULES,
   });
 
   const maxResults = args.maxResults ?? 5;
-  const topSchedules = generated.slice(0, maxResults).map((schedule, index) => ({
+  const topSchedules = result.schedules.slice(0, maxResults).map((schedule, index) => ({
     rank: index + 1,
     id: schedule.id,
     score: schedule.score,
@@ -628,21 +595,16 @@ export async function handleGenerateSchedules(
     sections: schedule.sections.map((s) => formatSectionPayload(s, courseMap.get(s.courseId))),
   }));
 
-  const diagnostics =
-    generated.length === 0
-      ? diagnoseEmptyGeneration(resolved.courses, sectionsByCourse, preferences, resolvedPinned)
-      : null;
-
   return {
     semesterId: args.semesterId,
-    totalGenerated: generated.length,
+    totalGenerated: result.schedules.length,
     returnedCount: topSchedules.length,
     schedules: topSchedules,
     missingCourses: resolved.missing,
     unresolvedPins,
-    appliedPreferences: preferences,
-    summary,
-    diagnostics,
+    appliedPreferences: result.preferences,
+    summary: result.summary,
+    diagnostics: result.diagnostics,
   };
 }
 

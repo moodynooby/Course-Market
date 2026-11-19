@@ -7,19 +7,8 @@ import type {
   Section,
   TimeSlot,
 } from '../types';
-import { AFTERNOON_END_MINUTES, LUNCH_AFTER_MINUTES, MORNING_END_MINUTES } from './constants';
-
-const DAY_TO_NUMBER: Record<DayOfWeek, number> = {
-  M: 0,
-  T: 1,
-  W: 2,
-  Th: 3,
-  F: 4,
-  Sa: 5,
-  Su: 6,
-};
-
-export const DAY_ORDER: DayOfWeek[] = ['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su'];
+import { LUNCH_AFTER_MINUTES, MORNING_END_MINUTES } from './constants';
+import { DAY_INDEX as DAY_TO_NUMBER, getTimeBand, timeToMinutesCached } from './schedule-time';
 
 function getWeekStartDate(date: Date = new Date()): Date {
   const day = date.getDay();
@@ -132,25 +121,6 @@ export function checkConflicts(sections: Section[], courses?: Course[]): string[
   return conflicts;
 }
 
-const timeCache = new Map<string, number>();
-const MAX_CACHE_SIZE = 100;
-const cacheKeys: string[] = [];
-
-export function timeToMinutesCached(time: string): number {
-  let minutes = timeCache.get(time);
-  if (minutes === undefined) {
-    const [hours, mins] = time.split(':').map(Number);
-    minutes = hours * 60 + mins;
-    if (timeCache.size >= MAX_CACHE_SIZE) {
-      const oldest = cacheKeys.shift();
-      if (oldest) timeCache.delete(oldest);
-    }
-    timeCache.set(time, minutes);
-    cacheKeys.push(time);
-  }
-  return minutes;
-}
-
 function dateRangesOverlap(slot1: TimeSlot, slot2: TimeSlot): boolean {
   if (!slot1.startDate || !slot1.endDate || !slot2.startDate || !slot2.endDate) {
     return true;
@@ -195,8 +165,6 @@ export function formatSlotDates(slot: TimeSlot): string {
   return `${formatDate(slot.startDate)} - ${formatDate(slot.endDate)}`;
 }
 
-export const COMPACT_DAY_THRESHOLD = 3;
-
 export interface ScheduleFeatures {
   creditDelta: number;
   outsideWindowMinutes: number;
@@ -227,13 +195,6 @@ export function createScoringContext(preferences: Preferences): ScoringContext {
   };
 }
 
-export function computeScheduleFeatures(
-  schedule: Schedule,
-  preferences: Preferences,
-): ScheduleFeatures {
-  return computeScheduleFeaturesWithContext(schedule, createScoringContext(preferences));
-}
-
 export function computeScheduleFeaturesWithContext(
   schedule: Schedule,
   context: ScoringContext,
@@ -259,9 +220,10 @@ export function computeScheduleFeaturesWithContext(
       const end = timeToMinutesCached(slot.endTime);
       allSlots.push({ day: slot.day, start, end });
 
-      if (start < MORNING_END_MINUTES) hasMorning = true;
-      if (start >= MORNING_END_MINUTES && start < AFTERNOON_END_MINUTES) hasAfternoon = true;
-      if (start >= AFTERNOON_END_MINUTES) hasEvening = true;
+      const band = getTimeBand(start);
+      if (band === 'morning') hasMorning = true;
+      if (band === 'afternoon') hasAfternoon = true;
+      if (band === 'evening') hasEvening = true;
 
       if (start < preferredStart) outsideWindowMinutes += preferredStart - start;
       if (end > preferredEnd) outsideWindowMinutes += end - preferredEnd;
@@ -430,31 +392,4 @@ export function scoreSchedulesRelative(
   if (cMax === cMin) return combined.map(() => 100);
 
   return combined.map((v) => Math.round(((v - cMin) / (cMax - cMin)) * 100));
-}
-
-/**
- * Back-compat absolute scorer (0-100). Used by embeddings.ts for a
- * schedule-intrinsic quality signal that stays stable across generation runs.
- * NOT used for ranking — use scoreSchedulesRelative for that.
- */
-export function calculateAbsoluteScheduleScore(
-  schedule: Schedule,
-  preferences: Preferences,
-): number {
-  const f = computeScheduleFeatures(schedule, preferences);
-  let s = 50;
-  if (schedule.totalCredits > preferences.maxCredits) {
-    s -= Math.min((schedule.totalCredits - preferences.maxCredits) * 5, 20);
-  } else if (schedule.totalCredits < preferences.minCredits) {
-    s -= Math.min((preferences.minCredits - schedule.totalCredits) * 5, 20);
-  }
-  s -= Math.min(f.outsideWindowMinutes / 30, 20);
-  s -= Math.min(f.avoidDayHits * 5, 20);
-  s -= f.prefMismatch * 10;
-  s -= Math.min(f.gapMinutesTotal / 60, 10);
-  s -= f.dayGapCount * 5;
-  if (f.daysUsed <= COMPACT_DAY_THRESHOLD) s += 10;
-  if (f.hasLunchBreak) s += 5;
-  if (f.fullyInsideWindow) s += 10;
-  return Math.max(0, Math.min(100, Math.round(s)));
 }

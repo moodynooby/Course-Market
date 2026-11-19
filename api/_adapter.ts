@@ -1,11 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import type { NetlifyEvent } from '../netlify/functions/lib/types';
-
-export interface HandlerResult {
-  statusCode: number;
-  headers?: Record<string, string>;
-  body: string;
-}
+import type { HandlerResult, NetlifyEvent } from '../netlify/functions/lib/types';
 
 export type ServerlessHandler = (event: NetlifyEvent) => Promise<HandlerResult>;
 

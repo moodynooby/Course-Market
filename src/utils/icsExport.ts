@@ -2,26 +2,7 @@ import { format } from 'date-fns';
 
 import type { Course, Section } from '../types';
 import { sectionsToCalendarEvents } from './schedule';
-
-const DAY_TO_RRULE: Record<string, string> = {
-  M: 'MO',
-  T: 'TU',
-  W: 'WE',
-  Th: 'TH',
-  F: 'FR',
-  Sa: 'SA',
-  Su: 'SU',
-};
-
-const DAY_TO_WEEKDAY: Record<string, number> = {
-  M: 1,
-  T: 2,
-  W: 3,
-  Th: 4,
-  F: 5,
-  Sa: 6,
-  Su: 0,
-};
+import { DAY_TO_RRULE, DAY_TO_WEEKDAY, timeToMinutes } from './schedule-time';
 
 /** Escape text for iCalendar property values (RFC 5545 section 3.3.11). */
 export function escapeIcsText(text: string): string {
@@ -35,12 +16,6 @@ export function escapeIcsText(text: string): string {
 /** Format a Date as an iCalendar UTC date-time value (yyyyMMddTHHmmssZ). */
 export function toIcsUtc(d: Date): string {
   return format(d, "yyyyMMdd'T'HHmmss'Z'");
-}
-
-/** Parse a "HH:mm" time into total minutes since midnight. */
-export function timeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(':').map(Number);
-  return (hours || 0) * 60 + (minutes || 0);
 }
 
 /**
@@ -118,10 +93,6 @@ export function buildVEvent(
   return lines.join('\r\n');
 }
 
-/**
- * Convert the currently selected schedule into a full iCalendar (RFC 5545)
- * document with one recurring VEVENT per weekly time slot.
- */
 export function sectionsToIcs(
   sections: Section[],
   courses: Course[],
@@ -165,9 +136,6 @@ export function sectionsToIcs(
   return `${[header, ...bodies, 'END:VCALENDAR'].join('\r\n')}\r\n`;
 }
 
-/**
- * Create a Blob from the generated ICS string for download or sharing.
- */
 export function icsToBlob(ics: string): Blob {
   return new Blob([ics], { type: 'text/calendar;charset=utf-8' });
 }

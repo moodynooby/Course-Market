@@ -1,15 +1,19 @@
 import type { Course, DayOfWeek, Preferences, Schedule, Section } from '../types';
+import { DEFAULT_MAX_SCHEDULES } from './constants';
 import { cosineSimilarity, getScheduleFeatureVector } from './embeddings';
 import {
   computeScheduleFeaturesWithContext,
   createScoringContext,
-  DAY_ORDER,
   hasSectionConflict,
   type ScheduleFeatures,
   scoreSchedulesRelative,
-  timeToMinutesCached,
 } from './schedule';
-import type { GeneratedSchedule, GeneratorOptions } from './schedule-types';
+import { DAY_ORDER, getTimeBand, timeToMinutesCached } from './schedule-time';
+
+export interface GeneratorOptions {
+  maxSchedules?: number;
+  onProgress?: (count: number) => void;
+}
 
 interface GenerationContext {
   courseCreditsMap: Map<string, number>;
@@ -17,7 +21,6 @@ interface GenerationContext {
   maxCredits: number;
   maxSchedules: number;
   onProgress?: (progress: number) => void;
-  signal?: AbortSignal;
   suffixMax: number[];
   scoringContext: ReturnType<typeof createScoringContext>;
 }
@@ -30,7 +33,7 @@ function backtrackSchedules(
   genContext: GenerationContext,
   results: PendingSchedule[],
 ) {
-  if (results.length >= genContext.maxSchedules || genContext.signal?.aborted) {
+  if (results.length >= genContext.maxSchedules) {
     return;
   }
 
@@ -84,7 +87,7 @@ function backtrackSchedules(
       current.push(sec);
       backtrackSchedules(arrays, depth + 1, current, newCredits, genContext, results);
       current.pop();
-      if (results.length >= genContext.maxSchedules || genContext.signal?.aborted) return;
+      if (results.length >= genContext.maxSchedules) return;
     }
   }
 }
@@ -113,7 +116,7 @@ export interface ScheduleGroup {
   id: string;
   label: string;
   description: string;
-  schedules: GeneratedSchedule[];
+  schedules: Schedule[];
   topScore: number;
 }
 
@@ -129,7 +132,7 @@ interface SeedSummary {
   gapTier: 'tight' | 'moderate' | 'loose';
 }
 
-function totalGapMinutes(schedule: GeneratedSchedule): number {
+function totalGapMinutes(schedule: Schedule): number {
   const byDay = new Map<DayOfWeek, { start: number; end: number }[]>();
   for (const section of schedule.sections) {
     for (const slot of section.timeSlots) {
@@ -153,7 +156,7 @@ function totalGapMinutes(schedule: GeneratedSchedule): number {
   return total;
 }
 
-function summarizeSeed(schedule: GeneratedSchedule): SeedSummary {
+function summarizeSeed(schedule: Schedule): SeedSummary {
   const daySet = new Set<DayOfWeek>();
   let earliest = 24;
   let latest = 0;
@@ -168,9 +171,10 @@ function summarizeSeed(schedule: GeneratedSchedule): SeedSummary {
       const endHour = Number.parseInt(slot.endTime.split(':')[0], 10);
       if (startHour < earliest) earliest = startHour;
       if (endHour > latest) latest = endHour;
-      if (startHour < 12) hasMorning = true;
-      else if (startHour < 17) hasAfternoon = true;
-      else hasEvening = true;
+      const band = getTimeBand(timeToMinutesCached(slot.startTime));
+      if (band === 'morning') hasMorning = true;
+      if (band === 'afternoon') hasAfternoon = true;
+      if (band === 'evening') hasEvening = true;
     }
   }
 
@@ -238,15 +242,15 @@ function describeSeed(seed: SeedSummary): string {
  *
  * Cluster labels are derived from the seed's day pattern and time band.
  */
-export function clusterSchedulesBySimilarity(schedules: GeneratedSchedule[]): ScheduleGroup[] {
+export function clusterSchedulesBySimilarity(schedules: Schedule[]): ScheduleGroup[] {
   if (schedules.length === 0) return [];
 
   const sorted = [...schedules].sort((a, b) => b.score - a.score);
 
   const clusters: {
-    seed: GeneratedSchedule;
+    seed: Schedule;
     seedVec: number[];
-    items: GeneratedSchedule[];
+    items: Schedule[];
   }[] = [];
 
   for (const s of sorted) {
@@ -278,17 +282,13 @@ export function clusterSchedulesBySimilarity(schedules: GeneratedSchedule[]): Sc
     .sort((a, b) => b.topScore - a.topScore);
 }
 
-/**
- * Generates all valid schedule combinations from provided courses and sections,
- * then ranks them relative to each other (best = 100, worst = 0).
- */
 export function generateSchedules(
   courses: Course[],
   sectionsByCourse: Map<string, Section[]>,
   preferences: Preferences,
   options: GeneratorOptions = {},
-): GeneratedSchedule[] {
-  const { maxSchedules = 1000, onProgress, signal } = options;
+): Schedule[] {
+  const { maxSchedules = DEFAULT_MAX_SCHEDULES, onProgress } = options;
 
   const courseCreditsMap = new Map(courses.map((c) => [c.id, c.credits]));
   const minCredits = preferences.minCredits ?? 12;
@@ -312,7 +312,6 @@ export function generateSchedules(
     maxCredits,
     maxSchedules,
     onProgress,
-    signal,
     suffixMax,
     scoringContext: createScoringContext(preferences),
   };
@@ -325,7 +324,7 @@ export function generateSchedules(
     preferences,
   );
 
-  const generated: GeneratedSchedule[] = pending.map((p, i) => ({
+  const generated: Schedule[] = pending.map((p, i) => ({
     id: p.id,
     sections: p.sections,
     totalCredits: p.totalCredits,

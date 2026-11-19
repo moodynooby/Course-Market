@@ -1,16 +1,12 @@
 import { Person, Star } from '@mui/icons-material';
 import { Stack, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
+import type { ProfessorRatingInfo } from '../types';
 import { splitInstructorNames } from '../utils/instructor-name';
-
-interface InstructorRating {
-  avgRating: number;
-  ratingCount: number;
-}
 
 interface InstructorChipProps {
   instructor: string;
-  professorRatings?: Map<string, InstructorRating>;
+  professorRatings?: Map<string, ProfessorRatingInfo>;
 }
 
 export function InstructorChip({ instructor, professorRatings }: InstructorChipProps) {

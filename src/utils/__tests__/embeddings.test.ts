@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import type { Schedule } from '../../types';
 import {
   CONFLICTS_NORMALIZATION_MAX,
   CREDITS_NORMALIZATION_MAX,
   cosineSimilarity,
   getScheduleFeatureVector,
-  getScheduleIntrinsicQuality,
 } from '../embeddings';
-import type { GeneratedSchedule } from '../schedule-types';
 
-function makeSchedule(overrides: Partial<GeneratedSchedule>): GeneratedSchedule {
+function makeSchedule(overrides: Partial<Schedule>): Schedule {
   return {
     id: 's1',
     sections: [],
@@ -58,44 +57,6 @@ describe('getScheduleFeatureVector', () => {
     expect(vec[9]).toBe(1);
     expect(vec[10]).toBe(0);
     expect(vec[11]).toBe(0);
-  });
-});
-
-describe('getScheduleIntrinsicQuality', () => {
-  it('is independent of schedule.score', () => {
-    const a = makeSchedule({ score: 5 });
-    const b = makeSchedule({ score: 95 });
-    expect(getScheduleIntrinsicQuality(a)).toBe(getScheduleIntrinsicQuality(b));
-  });
-
-  it('penalizes slots outside the daytime window', () => {
-    const inside = makeSchedule({
-      sections: [
-        {
-          id: 's1',
-          courseId: 'c1',
-          sectionNumber: '001',
-          instructor: '',
-          capacity: 30,
-          enrolled: 0,
-          timeSlots: [{ day: 'M' as const, startTime: '10:00', endTime: '11:00' }],
-        },
-      ],
-    });
-    const early = makeSchedule({
-      sections: [
-        {
-          id: 's2',
-          courseId: 'c1',
-          sectionNumber: '002',
-          instructor: '',
-          capacity: 30,
-          enrolled: 0,
-          timeSlots: [{ day: 'M' as const, startTime: '06:00', endTime: '07:00' }],
-        },
-      ],
-    });
-    expect(getScheduleIntrinsicQuality(inside)).toBeGreaterThan(getScheduleIntrinsicQuality(early));
   });
 });
 

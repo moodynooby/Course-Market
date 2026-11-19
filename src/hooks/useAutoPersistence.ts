@@ -2,25 +2,15 @@ import { useCallback, useEffect, useRef } from 'react';
 import { type StorageKey, storage } from '../utils/storage';
 
 export interface AutoPersistenceOptions<T> {
-  /** Optional localStorage key to mirror data synchronously. */
   storageKey?: StorageKey;
-  /** Async save function (e.g., API call). */
   onSave: (data: T) => Promise<void>;
-  /** Debounce delay in milliseconds before dispatching cloud save. Defaults to 300ms. */
   debounceMs?: number;
-  /** Optional error callback for rollback or user notifications. */
   onError?: (error: unknown, pendingData: T) => void;
 }
 
 export interface AutoPersistenceController<T> {
-  /** Schedules a debounced save, immediately updating localStorage if storageKey is configured. */
   queueSave: (data: T) => void;
-  /** Immediately dispatches any pending save, bypassing debounce delay. */
   flush: () => Promise<void>;
-  /** Cancels any pending scheduled save without dispatching. */
-  cancel: () => void;
-  /** Returns whether a save is currently pending or in flight. */
-  isPending: () => boolean;
 }
 
 const DEFAULT_DEBOUNCE_MS = 300;
@@ -71,7 +61,6 @@ export function useAutoPersistence<T>({
       }
     } finally {
       inFlightRef.current = false;
-      // If new data arrived while the previous save was in flight, save it immediately
       if (hasPendingRef.current) {
         void executeSave();
       }
@@ -109,19 +98,6 @@ export function useAutoPersistence<T>({
     }
   }, [executeSave]);
 
-  const cancel = useCallback(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-    hasPendingRef.current = false;
-    pendingDataRef.current = null;
-  }, []);
-
-  const isPending = useCallback(() => {
-    return hasPendingRef.current || inFlightRef.current;
-  }, []);
-
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
@@ -143,5 +119,5 @@ export function useAutoPersistence<T>({
     };
   }, [flush]);
 
-  return { queueSave, flush, cancel, isPending };
+  return { queueSave, flush };
 }

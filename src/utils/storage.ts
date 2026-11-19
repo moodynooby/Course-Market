@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from './constants';
+import type { STORAGE_KEYS } from './constants';
 import { env } from './env';
 
 function safeGetItem<T>(key: string, defaultValue: T): T {
@@ -47,8 +47,6 @@ function safeRemoveItem(key: string): void {
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
 
 export const storage = {
-  keys: STORAGE_KEYS,
-
   get<T>(key: StorageKey, defaultValue: T): T {
     return safeGetItem(key, defaultValue);
   },

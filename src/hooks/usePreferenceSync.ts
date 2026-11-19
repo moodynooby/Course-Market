@@ -4,14 +4,6 @@ import type { Preferences } from '../types';
 import { DEFAULT_PREFERENCES, STORAGE_KEYS } from '../utils/constants';
 import { storage } from '../utils/storage';
 
-/**
- * Pure, side-effect-free merge rules for local-to-cloud preferences.
- *
- * Merge rules:
- *  1. Cloud profile empty      → push local preferences to cloud (one-time).
- *  2. Local marked dirty       → merge cloud + local (local wins) and push.
- *  3. Local untouched defaults → pull cloud preferences into local storage.
- */
 export function decidePreferenceSync(payload: {
   profilePreferences: Preferences | null | undefined;
   localPreferences: Preferences;
@@ -83,7 +75,6 @@ export function usePreferenceSync(
   }, [isAuthenticated, profile, updateProfile, updatePreferences]);
 }
 
-/** Marks locally tuned preferences as dirty so the next sync pushes them. */
 export function markPreferencesDirty(): void {
   storage.set(STORAGE_KEYS.PREFS_DIRTY, true);
 }

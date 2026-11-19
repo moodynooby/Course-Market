@@ -152,7 +152,7 @@ export default function CoursesPage() {
     let result = courses;
 
     if (debouncedSearch.trim()) {
-      result = searchCourses(debouncedSearch);
+      result = searchCourses(courses, sections, debouncedSearch);
     }
 
     if (subject !== 'all') {
@@ -194,6 +194,7 @@ export default function CoursesPage() {
     return result;
   }, [
     courses,
+    sections,
     debouncedSearch,
     subject,
     selectedSections,

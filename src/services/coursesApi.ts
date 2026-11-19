@@ -8,10 +8,8 @@ type SemestersResponse = {
 let semestersPromise: Promise<SemestersResponse> | null = null;
 
 /**
- * Fetch available semesters. Uses a shared promise so all callers
- * across the app share one in-flight request (and one cached result
- * for the lifetime of the module). Failed requests are evicted so callers
- * can retry after transient network errors.
+ * Failed requests are evicted from the shared promise so callers can retry
+ * after transient network errors.
  */
 export async function getSemesters(): Promise<SemestersResponse> {
   if (semestersPromise) return semestersPromise;
@@ -24,9 +22,6 @@ export async function getSemesters(): Promise<SemestersResponse> {
   return request;
 }
 
-/**
- * Fetch course and section data for a semester from the server-side DB.
- */
 export async function getSemesterData(
   semesterId: string,
 ): Promise<{ courses: Course[]; sections: Section[] }> {
@@ -48,9 +43,6 @@ export interface CourseSearchResponse {
   total: number;
 }
 
-/**
- * Perform server-side course search, filtering, and pagination.
- */
 export async function searchCoursesApi(params: CourseSearchParams): Promise<CourseSearchResponse> {
   const query = new URLSearchParams();
   query.set('semesterId', params.semesterId);

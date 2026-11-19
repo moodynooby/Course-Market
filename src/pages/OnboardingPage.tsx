@@ -19,22 +19,11 @@ import { formatApiErrorDetails } from '../services/apiClient';
 import { getSemesters } from '../services/coursesApi';
 import type { Semester } from '../types';
 
-/**
- * Progressive, skippable onboarding.
- *
- * The semester is the only required step (everything else needs it to load
- * courses), and it defaults to the most recent active semester. The phone
- * number is optional and asked inline here only for convenience - it can also
- * be supplied later directly inside the trade form. Skipping always lands the
- * user on the page they were trying to reach, so the first meaningful action
- * (building a schedule) is never blocked.
- */
 export default function OnboardingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { profile, updateProfile, loading, isAuthenticated, signOut } = useAuthContext();
 
-  const [phone, setPhone] = useState(profile?.phone || '');
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [loadingSemesters, setLoadingSemesters] = useState(true);
   const [selectedSemester, setSelectedSemester] = useState<string>(profile?.semesterId || '');
@@ -84,9 +73,8 @@ export default function OnboardingPage() {
   }, [profile, loading, isAuthenticated, navigate, resolveReturnUrl]);
 
   useEffect(() => {
-    if (profile?.phone) setPhone(profile.phone);
     if (profile?.semesterId) setSelectedSemester(profile.semesterId);
-  }, [profile?.phone, profile?.semesterId]);
+  }, [profile?.semesterId]);
 
   const handleSelectSemester = (semesterId: string) => {
     setSelectedSemester(semesterId);
@@ -101,7 +89,10 @@ export default function OnboardingPage() {
     setSaving(true);
     setError(null);
     try {
-      await updateProfile({ semesterId: selectedSemester, phone: phone.trim() });
+      await updateProfile({
+        semesterId: selectedSemester,
+        phone: (profile?.phone || '').trim(),
+      });
       navigate(resolveReturnUrl(), { replace: true });
     } catch (err) {
       const detailedError = formatApiErrorDetails(err);

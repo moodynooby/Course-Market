@@ -10,7 +10,7 @@ describe('splitInstructorNames', () => {
     expect(splitInstructorNames('Smith, Doe, Roe')).toEqual(['Smith', 'Doe', 'Roe']);
   });
 
-  it('preserves Mc/Mac/De prefixes (camelCase splitter was dropped)', () => {
+  it('preserves single-token names with Mc/Mac/De prefixes', () => {
     expect(splitInstructorNames('McDonald')).toEqual(['McDonald']);
     expect(splitInstructorNames('MacGregor')).toEqual(['MacGregor']);
     expect(splitInstructorNames('DeMarco')).toEqual(['DeMarco']);

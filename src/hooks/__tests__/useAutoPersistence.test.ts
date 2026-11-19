@@ -19,8 +19,7 @@ describe('useAutoPersistence', () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
     const { result } = renderHook(() =>
       useAutoPersistence<{ theme: string }>({
-        storageKey:
-          STORAGE_KEYS.THEME_MODE as unknown as (typeof storage.keys)[keyof typeof storage.keys],
+        storageKey: STORAGE_KEYS.PREFERENCES,
         onSave,
         debounceMs: 300,
       }),
@@ -28,15 +27,12 @@ describe('useAutoPersistence', () => {
 
     result.current.queueSave({ theme: 'dark' });
 
-    // Local storage updated immediately
-    expect(storage.get(STORAGE_KEYS.THEME_MODE, null)).toEqual({ theme: 'dark' });
+    expect(storage.get(STORAGE_KEYS.PREFERENCES, null)).toEqual({ theme: 'dark' });
     expect(onSave).not.toHaveBeenCalled();
 
-    // Fast-forward partially
     vi.advanceTimersByTime(200);
     expect(onSave).not.toHaveBeenCalled();
 
-    // Fast-forward past debounce window
     vi.advanceTimersByTime(150);
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(onSave).toHaveBeenCalledWith({ theme: 'dark' });

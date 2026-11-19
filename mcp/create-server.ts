@@ -17,24 +17,10 @@ import {
 } from './tools';
 import type { CourseDataSource } from './types';
 
-export const COURSES_MCP_SERVER_INFO = {
+const SERVER_INFO = {
   name: 'aurais-courses',
   version: '1.0.0',
 } as const;
-
-export const COURSES_MCP_TOOLS = [
-  'list_semesters',
-  'list_subjects',
-  'search_courses',
-  'get_course_details',
-  'check_section_conflicts',
-  'generate_schedules',
-  'export_schedule_ics',
-] as const;
-
-export const COURSES_MCP_RESOURCES = ['semesters', 'semester-subjects', 'course-details'] as const;
-
-export const COURSES_MCP_PROMPTS = ['plan-semester-schedule', 'find-electives'] as const;
 
 const READ_ONLY_TOOL_ANNOTATIONS = {
   readOnlyHint: true,
@@ -59,17 +45,11 @@ function readSingleVariable(value: string | string[] | undefined): string {
   return value ?? '';
 }
 
-/**
- * Constructs a courses-only MCP server instance backed by CourseDataSource.
- * Deliberately excludes trading, Rate My Professor, and user-profile domains.
- */
 export function createCoursesMcpServer(dataSource: CourseDataSource): McpServer {
-  const server = new McpServer(COURSES_MCP_SERVER_INFO, {
+  const server = new McpServer(SERVER_INFO, {
     instructions:
       'AuraIsHub Courses MCP Server. Read-only access to university semesters, course catalog, section schedules, conflict checking, combinatorial timetable generation, and iCalendar (.ics) export. Does not expose trading board or Rate My Professor data.',
   });
-
-  // ── Tools ───────────────────────────────────────────────────────────
 
   server.registerTool(
     'list_semesters',
@@ -154,8 +134,6 @@ export function createCoursesMcpServer(dataSource: CourseDataSource): McpServer 
     async (args) => jsonToolResult(await handleExportScheduleIcs(dataSource, args)),
   );
 
-  // ── Resources ───────────────────────────────────────────────────────
-
   server.registerResource(
     'semesters',
     'courses://semesters',
@@ -224,8 +202,6 @@ export function createCoursesMcpServer(dataSource: CourseDataSource): McpServer 
       };
     },
   );
-
-  // ── Prompts ─────────────────────────────────────────────────────────
 
   server.registerPrompt(
     'plan-semester-schedule',

@@ -50,10 +50,6 @@ export interface SectionPairSelection {
   sectionNumber: string;
 }
 
-/**
- * Read-only data access boundary for the courses-only MCP server.
- * Deliberately excludes trading, Rate My Professor, and user-profile data.
- */
 export interface CourseDataSource {
   listSemesters(): Promise<SemesterSummary[]>;
   listSubjects(semesterId: string): Promise<SubjectSummary[]>;

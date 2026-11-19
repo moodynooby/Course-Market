@@ -55,10 +55,6 @@ function buildWebRequest(event: NetlifyEvent): Request {
   });
 }
 
-/**
- * Stateless Streamable HTTP handler compatible with both Netlify Functions
- * and Vercel Serverless Functions via api/_adapter.ts.
- */
 export function createMcpHttpHandler(dataSourceFactory: () => CourseDataSource) {
   return async (event: NetlifyEvent): Promise<McpHttpHandlerResult> => {
     if (event.httpMethod === 'OPTIONS') {

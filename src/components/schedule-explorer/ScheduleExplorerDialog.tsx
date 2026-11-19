@@ -30,13 +30,13 @@ import {
   useTheme,
 } from '@mui/material';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Course, DayOfWeek, Section } from '../../types';
+import type { SearchResult } from '../../services/search';
+import type { Course, DayOfWeek, Schedule, Section } from '../../types';
 import { SCORE_EXCELLENT, SCORE_GOOD } from '../../utils/constants';
-import { DAY_ORDER } from '../../utils/schedule';
 import type { ScheduleDiagnostics } from '../../utils/schedule-diagnostics';
 import { clusterSchedulesBySimilarity } from '../../utils/schedule-generator';
 import type { PrefilterSummary } from '../../utils/schedule-prefilter';
-import type { GeneratedSchedule, SearchResult } from '../../utils/schedule-types';
+import { DAY_ORDER } from '../../utils/schedule-time';
 import { EmptyState } from '../EmptyState';
 import { ScheduleDetails } from './ScheduleDetails';
 import { ScheduleDiagnosticsPanel } from './ScheduleDiagnosticsPanel';
@@ -58,7 +58,7 @@ function formatHour(hour: number): string {
   return `${hour - 12}pm`;
 }
 
-function getScheduleSignature(schedule: GeneratedSchedule): ScheduleSignature {
+function getScheduleSignature(schedule: Schedule): ScheduleSignature {
   const daySet = new Set<DayOfWeek>();
   let earliest = 24;
   let latest = 0;
@@ -95,10 +95,10 @@ function getScheduleSignature(schedule: GeneratedSchedule): ScheduleSignature {
 interface ScheduleExplorerDialogProps {
   open: boolean;
   onClose: () => void;
-  generatedSchedules: GeneratedSchedule[];
-  selectedSchedule: GeneratedSchedule | null;
-  onSelectSchedule: (schedule: GeneratedSchedule) => void;
-  onApplySchedule: (schedule: GeneratedSchedule) => void;
+  generatedSchedules: Schedule[];
+  selectedSchedule: Schedule | null;
+  onSelectSchedule: (schedule: Schedule) => void;
+  onApplySchedule: (schedule: Schedule) => void;
   courses: Course[];
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -492,10 +492,10 @@ export const ScheduleExplorerDialog = memo(function ScheduleExplorerDialog({
 interface ScheduleListProps {
   explorerTab: number;
   searchResults: SearchResult[];
-  activeSchedules: GeneratedSchedule[];
+  activeSchedules: Schedule[];
   groupedSchedules: ReturnType<typeof clusterSchedulesBySimilarity>;
-  selectedSchedule: GeneratedSchedule | null;
-  onSelectSchedule: (schedule: GeneratedSchedule) => void;
+  selectedSchedule: Schedule | null;
+  onSelectSchedule: (schedule: Schedule) => void;
   showCredits: boolean;
 }
 
@@ -522,9 +522,7 @@ const ScheduleList = memo(function ScheduleList({
       <Stack spacing={1} sx={{ p: 2 }}>
         {displayList.slice(0, MAX_DISPLAY_SCHEDULES).map((item, idx) => {
           const isSearchResult = searchResults.length > 0;
-          const genSched = isSearchResult
-            ? (item as SearchResult).schedule
-            : (item as GeneratedSchedule);
+          const genSched = isSearchResult ? (item as SearchResult).schedule : (item as Schedule);
           const relevanceScore = isSearchResult ? (item as SearchResult).relevanceScore : undefined;
           const explanation = isSearchResult ? (item as SearchResult).explanation : undefined;
 
@@ -602,7 +600,7 @@ const ScheduleList = memo(function ScheduleList({
 });
 
 interface ScheduleListItemProps {
-  schedule: GeneratedSchedule;
+  schedule: Schedule;
   idx: number;
   isSelected: boolean;
   isSearchResult: boolean;
@@ -726,12 +724,12 @@ interface GroupSectionProps {
     id: string;
     label: string;
     description: string;
-    schedules: GeneratedSchedule[];
+    schedules: Schedule[];
     topScore: number;
   };
   defaultExpanded: boolean;
-  selectedSchedule: GeneratedSchedule | null;
-  onSelectSchedule: (schedule: GeneratedSchedule) => void;
+  selectedSchedule: Schedule | null;
+  onSelectSchedule: (schedule: Schedule) => void;
   showCredits: boolean;
   registerRef: (el: HTMLDivElement | null) => void;
 }
@@ -808,7 +806,7 @@ const GroupSection = memo(function GroupSection({
 });
 
 interface GroupedScheduleCardProps {
-  schedule: GeneratedSchedule;
+  schedule: Schedule;
   isSelected: boolean;
   onSelect: () => void;
   showCredits: boolean;

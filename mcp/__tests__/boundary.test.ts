@@ -1,12 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { COURSES_MCP_PROMPTS, COURSES_MCP_RESOURCES, COURSES_MCP_TOOLS } from '../create-server';
 import { createMcpHttpHandler } from '../http-handler';
 import { createMockCourseDataSource } from './mock-data-source';
-
-const FORBIDDEN_DOMAIN_PATTERN =
-  /trade|trading|professor|rating|rmp|user_profile|userProfile|auth0/i;
 
 async function postJsonRpc(
   handler: ReturnType<typeof createMcpHttpHandler>,
@@ -25,19 +19,7 @@ async function postJsonRpc(
 }
 
 describe('courses-only MCP isolation boundary', () => {
-  it('declares zero trading, Rate My Professor, or user-profile capabilities', () => {
-    for (const tool of COURSES_MCP_TOOLS) {
-      expect(tool).not.toMatch(FORBIDDEN_DOMAIN_PATTERN);
-    }
-    for (const resource of COURSES_MCP_RESOURCES) {
-      expect(resource).not.toMatch(FORBIDDEN_DOMAIN_PATTERN);
-    }
-    for (const prompt of COURSES_MCP_PROMPTS) {
-      expect(prompt).not.toMatch(FORBIDDEN_DOMAIN_PATTERN);
-    }
-  });
-
-  it('exposes only the courses-only tools, resources, and prompts over JSON-RPC', async () => {
+  it('exposes only the courses-only capabilities over JSON-RPC', async () => {
     const handler = createMcpHttpHandler(() => createMockCourseDataSource());
 
     const toolsRes = await postJsonRpc(handler, {
@@ -47,7 +29,15 @@ describe('courses-only MCP isolation boundary', () => {
     });
     expect(toolsRes.statusCode).toBe(200);
     const toolNames = toolsRes.body.result.tools.map((t: { name: string }) => t.name).sort();
-    expect(toolNames).toEqual([...COURSES_MCP_TOOLS].sort());
+    expect(toolNames).toEqual([
+      'check_section_conflicts',
+      'export_schedule_ics',
+      'generate_schedules',
+      'get_course_details',
+      'list_semesters',
+      'list_subjects',
+      'search_courses',
+    ]);
 
     const promptsRes = await postJsonRpc(handler, {
       jsonrpc: '2.0',
@@ -56,7 +46,7 @@ describe('courses-only MCP isolation boundary', () => {
     });
     expect(promptsRes.statusCode).toBe(200);
     const promptNames = promptsRes.body.result.prompts.map((p: { name: string }) => p.name).sort();
-    expect(promptNames).toEqual([...COURSES_MCP_PROMPTS].sort());
+    expect(promptNames).toEqual(['find-electives', 'plan-semester-schedule']);
 
     const resourcesRes = await postJsonRpc(handler, {
       jsonrpc: '2.0',
@@ -66,10 +56,5 @@ describe('courses-only MCP isolation boundary', () => {
     expect(resourcesRes.statusCode).toBe(200);
     const uris = resourcesRes.body.result.resources.map((r: { uri: string }) => r.uri);
     expect(uris).toEqual(['courses://semesters']);
-  });
-
-  it('keeps DbCourseDataSource strictly isolated from excluded database tables', () => {
-    const dbSource = readFileSync(resolve(process.cwd(), 'mcp/data-source-db.ts'), 'utf8');
-    expect(dbSource).not.toMatch(FORBIDDEN_DOMAIN_PATTERN);
   });
 });

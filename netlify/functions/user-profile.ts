@@ -1,9 +1,9 @@
 import { eq } from 'drizzle-orm';
-import { ZodError } from 'zod';
 import { db } from '../../db';
 import * as schema from '../../db/schema';
 import type { UserProfileInput, UserProfileUpdateInput } from '../../db/validation';
-import { formatZodError, userProfileSchema, userProfileUpdateSchema } from '../../db/validation';
+import { userProfileSchema, userProfileUpdateSchema } from '../../db/validation';
+import { parseJsonBody } from './lib/request';
 import { jsonResponse } from './lib/response';
 import { withAuth } from './lib/wrap';
 
@@ -41,16 +41,10 @@ export const handler = withAuth(async (event, user) => {
       .from(schema.userProfiles)
       .where(eq(schema.userProfiles.auth0UserId, user.sub));
 
-    let requestBody: UserProfileInput | UserProfileUpdateInput;
-    try {
-      const schemaToUse = existingProfile ? userProfileUpdateSchema : userProfileSchema;
-      requestBody = schemaToUse.parse(body ? JSON.parse(body) : {});
-    } catch (e) {
-      if (e instanceof ZodError) {
-        return jsonResponse(400, formatZodError(e));
-      }
-      return jsonResponse(400, { error: 'Invalid JSON' });
-    }
+    const schemaToUse = existingProfile ? userProfileUpdateSchema : userProfileSchema;
+    const parsed = parseJsonBody(body, schemaToUse);
+    if ('error' in parsed) return parsed.error;
+    const requestBody: UserProfileInput | UserProfileUpdateInput = parsed.data;
 
     let profile: typeof existingProfile;
 

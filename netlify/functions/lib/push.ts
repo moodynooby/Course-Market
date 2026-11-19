@@ -1,6 +1,4 @@
 /**
- * Server-side push notification helper.
- *
  * Sends a notification to a user's registered device token:
  * - FCM (Android) when the token looks like an FCM registration token
  * - APNs (iOS) via the FCM bridge otherwise (tokens registered from iOS
@@ -46,7 +44,6 @@ function readOptions(): PushOptions {
   };
 }
 
-/** Best-effort token format heuristic. */
 function looksLikeFcmToken(token: string): boolean {
   return token.length > 100;
 }

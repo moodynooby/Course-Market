@@ -1,14 +1,7 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { searchProfessors } from '../services/search';
 import type { Professor } from '../types';
 
-/**
- * Hook for professor searching.
- *
- * Optimization: Uses centralized `searchProfessors` service which implements
- * WeakMap-based indexing and O(K) result mapping, providing a ~5.4x speedup
- * for repeated searches on the same dataset.
- */
 export function useProfessorSearch(professors: Professor[]) {
   const [query, setQuery] = useState('');
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -21,6 +14,13 @@ export function useProfessorSearch(professors: Professor[]) {
   const results = useMemo(() => {
     return searchProfessors(professors, query);
   }, [professors, query]);
+
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    },
+    [],
+  );
 
   return { results, query, setQuery: setQueryDebounced };
 }

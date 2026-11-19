@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { Course, Section } from '../../types';
 import { buildGoogleCalendarUrl, buildGoogleCalendarUrlForSlot } from '../googleCalendar';
-import { escapeIcsText, sectionsToIcs, timeToMinutes } from '../icsExport';
+import { escapeIcsText, sectionsToIcs } from '../icsExport';
 
 const courses: Course[] = [
   {
@@ -29,14 +29,6 @@ const sections: Section[] = [
     enrolled: 32,
   },
 ];
-
-describe('timeToMinutes', () => {
-  it('parses HH:mm strings correctly', () => {
-    expect(timeToMinutes('09:00')).toBe(540);
-    expect(timeToMinutes('14:30')).toBe(870);
-    expect(timeToMinutes('00:00')).toBe(0);
-  });
-});
 
 describe('escapeIcsText', () => {
   it('escapes backslash, comma, semicolon and newline', () => {

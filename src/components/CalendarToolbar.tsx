@@ -51,7 +51,6 @@ interface CalendarToolbarProps {
   onClose?: () => void;
 }
 
-/** Spinner shown in place of the share icon while the schedule image is captured. */
 function CapturingSpinner() {
   return (
     <Box

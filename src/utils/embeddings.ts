@@ -1,7 +1,5 @@
-import type { Section } from '../types';
-import { AFTERNOON_END_MINUTES, MORNING_END_MINUTES } from './constants';
-import { timeToMinutesCached } from './schedule';
-import type { GeneratedSchedule } from './schedule-types';
+import type { Schedule, Section } from '../types';
+import { DAY_INDEX, getTimeBand, timeToMinutesCached } from './schedule-time';
 
 export const CREDITS_NORMALIZATION_MAX = 21;
 export const SECTIONS_NORMALIZATION_MAX = 7;
@@ -16,7 +14,6 @@ const INTRINSIC_GAP_THRESHOLD_MIN = 60;
 const INTRINSIC_AVOID_DAY_PENALTY = 60;
 
 const FEATURE_VECTOR_DIMS = 12;
-const DAY_INDEX: Record<string, number> = { M: 0, T: 1, W: 2, Th: 3, F: 4 };
 
 type SlotPos = { start: number; end: number };
 
@@ -31,11 +28,6 @@ interface IntrinsicAccumulator {
   dayCounts: number[];
 }
 
-/**
- * Single-pass walk over all sections/slots. Computes the cost components used
- * by the intrinsic quality proxy AND the count/band features used by the
- * feature vector. Callers that only need a subset discard the rest.
- */
 function accumulateIntrinsic(sections: Section[]): IntrinsicAccumulator {
   const slotsByDay = new Map<string, SlotPos[]>();
   let outsideWindow = 0;
@@ -62,12 +54,12 @@ function accumulateIntrinsic(sections: Section[]): IntrinsicAccumulator {
         avoidDay += INTRINSIC_AVOID_DAY_PENALTY;
       }
 
-      if (startMin < MORNING_END_MINUTES) morning++;
-      else if (startMin < AFTERNOON_END_MINUTES) afternoon++;
+      const band = getTimeBand(startMin);
+      if (band === 'morning') morning++;
+      else if (band === 'afternoon') afternoon++;
       else evening++;
 
-      const dayIdx = DAY_INDEX[slot.day];
-      if (dayIdx !== undefined) dayCounts[dayIdx]++;
+      if (slot.day !== 'Sa' && slot.day !== 'Su') dayCounts[DAY_INDEX[slot.day]]++;
 
       const arr = slotsByDay.get(slot.day);
       if (arr) arr.push({ start: startMin, end: endMin });
@@ -94,15 +86,6 @@ function qualityFromCosts(acc: IntrinsicAccumulator): number {
 }
 
 /**
- * Schedule-intrinsic quality, stable across generation runs.
- * Lower cost (window misses, avoid-day hits, gap minutes) → higher quality.
- * Returns a number in [0, 1].
- */
-export function getScheduleIntrinsicQuality(schedule: GeneratedSchedule): number {
-  return qualityFromCosts(accumulateIntrinsic(schedule.sections));
-}
-
-/**
  * Fixed-length numeric vector representing intrinsic schedule features.
  * 12 dimensions:
  *  0: Normalized credits (capped at CREDITS_NORMALIZATION_MAX)
@@ -117,7 +100,7 @@ export function getScheduleIntrinsicQuality(schedule: GeneratedSchedule): number
  * Note: do NOT feed relative scores into this vector — embeddings must be
  * comparable across generation runs.
  */
-export function getScheduleFeatureVector(schedule: GeneratedSchedule): number[] {
+export function getScheduleFeatureVector(schedule: Schedule): number[] {
   const acc = accumulateIntrinsic(schedule.sections);
   const vector = new Array(FEATURE_VECTOR_DIMS).fill(0);
 
@@ -159,9 +142,6 @@ function cosineUnchecked(a: number[], b: number[]): number {
   return denom === 0 ? 0 : dot / denom;
 }
 
-/**
- * Compute cosine similarity between two vectors.
- */
 export function cosineSimilarity(vec1: number[], vec2: number[]): number {
   if (vec1.length !== vec2.length) {
     throw new Error('Vectors must have the same length');

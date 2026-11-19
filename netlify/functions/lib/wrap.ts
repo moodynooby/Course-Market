@@ -1,12 +1,6 @@
 import { AuthError, type AuthUser, validateToken } from './auth';
 import { corsResponse, jsonResponse, secureErrorResponse } from './response';
-import type { NetlifyEvent } from './types';
-
-interface HandlerResult {
-  statusCode: number;
-  headers: Record<string, string>;
-  body: string;
-}
+import type { HandlerResult, NetlifyEvent } from './types';
 
 export function withCors(handler: (event: NetlifyEvent) => Promise<HandlerResult>) {
   return async (event: NetlifyEvent): Promise<HandlerResult> => {
