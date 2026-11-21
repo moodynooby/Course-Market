@@ -1,7 +1,5 @@
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { STORAGE_KEYS } from '../../utils/constants';
-import { storage } from '../../utils/storage';
 import { useAutoPersistence } from '../useAutoPersistence';
 
 describe('useAutoPersistence', () => {
@@ -15,11 +13,12 @@ describe('useAutoPersistence', () => {
     vi.restoreAllMocks();
   });
 
-  it('debounces calls to onSave and updates localStorage immediately', async () => {
+  it('debounces calls to onSave and persists locally immediately', async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
+    const persistLocal = vi.fn();
     const { result } = renderHook(() =>
       useAutoPersistence<{ theme: string }>({
-        storageKey: STORAGE_KEYS.PREFERENCES,
+        persistLocal,
         onSave,
         debounceMs: 300,
       }),
@@ -27,7 +26,7 @@ describe('useAutoPersistence', () => {
 
     result.current.queueSave({ theme: 'dark' });
 
-    expect(storage.get(STORAGE_KEYS.PREFERENCES, null)).toEqual({ theme: 'dark' });
+    expect(persistLocal).toHaveBeenCalledWith({ theme: 'dark' });
     expect(onSave).not.toHaveBeenCalled();
 
     vi.advanceTimersByTime(200);

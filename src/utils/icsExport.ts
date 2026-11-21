@@ -1,6 +1,7 @@
 import { format } from 'date-fns';
 
 import type { Course, Section } from '../types';
+import { SITE_DOMAIN } from './constants';
 import { sectionsToCalendarEvents } from './schedule';
 import { DAY_TO_RRULE, DAY_TO_WEEKDAY, timeToMinutes } from './schedule-time';
 
@@ -71,13 +72,13 @@ export function buildVEvent(
   if (Number.isFinite(remaining)) {
     descriptionParts.push(`Seats remaining: ${remaining} of ${section.capacity}`);
   }
-  descriptionParts.push('Generated with AuraIsHub (aurais.netlify.app)');
+  descriptionParts.push(`Generated with AuraIsHub (${SITE_DOMAIN})`);
 
   const rrule = buildRrule([slot.day], slot.endDate);
 
   const lines = [
     'BEGIN:VEVENT',
-    `UID:${section.id}-${slot.day}-${slot.startTime}-${eventIndex}@aurais.netlify.app`,
+    `UID:${section.id}-${slot.day}-${slot.startTime}-${eventIndex}@${SITE_DOMAIN}`,
     `DTSTAMP:${toIcsUtc(new Date())}`,
     `DTSTART:${toIcsUtc(firstStart)}`,
     `DTEND:${toIcsUtc(end)}`,

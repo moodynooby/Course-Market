@@ -4,21 +4,36 @@ import {
   SchoolRounded,
   SwapHorizRounded,
 } from '@mui/icons-material';
-import { alpha, Box, useTheme } from '@mui/material';
+import { alpha, Box, type Theme, useTheme } from '@mui/material';
 import { Link } from 'react-router-dom';
+
+export type NavAccent = 'primary' | 'secondary' | 'warning' | 'courses';
+
+export function resolveNavAccent(theme: Theme, accent: NavAccent): string {
+  switch (accent) {
+    case 'primary':
+      return theme.palette.primary.main;
+    case 'secondary':
+      return theme.palette.secondary.main;
+    case 'warning':
+      return theme.palette.warning.main;
+    case 'courses':
+      return '#af70ff';
+  }
+}
 
 interface NavLinkProps {
   to: string;
   label: string;
   currentPath: string;
   icon: React.ReactNode;
-  accentColor: string;
+  accent: NavAccent;
 }
 
-function NavLink({ to, label, currentPath, icon, accentColor }: NavLinkProps) {
+function NavLink({ to, label, currentPath, icon, accent }: NavLinkProps) {
   const theme = useTheme();
   const isActive = currentPath === to || (to !== '/' && currentPath.startsWith(to));
-  const effectiveColor = to === '/' ? theme.palette.primary.main : accentColor;
+  const effectiveColor = resolveNavAccent(theme, accent);
 
   return (
     <Box
@@ -55,7 +70,7 @@ function NavLink({ to, label, currentPath, icon, accentColor }: NavLinkProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: isActive ? effectiveColor : accentColor,
+          color: effectiveColor,
           '& .MuiSvgIcon-root': {
             fontSize: 18,
           },
@@ -73,30 +88,20 @@ interface NavLinksProps {
 }
 
 export const NAV_ITEMS = [
-  {
-    to: '/',
-    label: 'Dashboard',
-    icon: <CalendarMonthRounded />,
-    accentColor: '#ea2b2b',
-  },
+  { to: '/', label: 'Dashboard', icon: <CalendarMonthRounded />, accent: 'primary' as NavAccent },
   {
     to: '/trading',
     label: 'Trading',
     icon: <SwapHorizRounded />,
-    accentColor: '#1cb0f6',
+    accent: 'secondary' as NavAccent,
   },
   {
     to: '/professors',
     label: 'Rate My Prof',
     icon: <SchoolRounded />,
-    accentColor: '#ff9600',
+    accent: 'warning' as NavAccent,
   },
-  {
-    to: '/courses',
-    label: 'Courses',
-    icon: <MenuBookRounded />,
-    accentColor: '#af70ff',
-  },
+  { to: '/courses', label: 'Courses', icon: <MenuBookRounded />, accent: 'courses' as NavAccent },
 ] as const;
 
 export function NavLinks({ currentPath }: NavLinksProps) {
@@ -119,7 +124,7 @@ export function NavLinks({ currentPath }: NavLinksProps) {
           label={item.label}
           currentPath={currentPath}
           icon={item.icon}
-          accentColor={item.accentColor}
+          accent={item.accent}
         />
       ))}
     </Box>

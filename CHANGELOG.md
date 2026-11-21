@@ -44,9 +44,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Premature profile loading state in auth context and onboarding skip bouncing.
 - Recovery after a failed cached semester request.
 - Deduplicated native Auth0 callback recognition across `auth.ts`, `nativeAuth.ts`, and `deepLinks.ts`.
+- Preference sync dirty flag is now cleared only after a successful cloud push, preventing lost local edits on failed sync.
 
 ### Changed
 
+- Consolidated the divergent default-preference sets, credit clamps, and the client/server schedule-generation pipelines into the single `generateScheduleCandidates` orchestrator in `src/utils/generation.ts`; the MCP tool and client fallback now use `DEFAULT_PREFERENCES` and the orchestrator clamps `minCredits` up to target credits (previously a real bug on the server path).
+- Extracted `src/utils/schedule-time.ts` (day maps, `timeToMinutes`, cached parser, `getTimeBand`), `src/utils/schedule.ts` (`hasOpenSeats`, `seatsRemaining`, `getConflictingSectionIds`), `netlify/functions/lib/push.ts` (`createJwt`), and `db/env.ts` (`readDatabaseUrl`) as single sources; MCP tools, `CoursesPage`, `CalendarView`, and `push.ts` now reuse them.
+- Replaced `GeneratedSchedule` with `Schedule`, deleted `src/utils/schedule-types.ts`, moved `GeneratorOptions`/`SearchResult`/`DEFAULT_MAX_SCHEDULES` into their natural homes, and removed the speculative `signal` option.
+- Replaced module-global search indexes in `services/search.ts` with input-keyed `WeakMap` caches.
+- Made `useAutoPersistence` decoupled from `StorageKey` (`persistLocal`), `useProfessorsMap` use a module-level loader, and `RateProfessorModal` extract `resetForm`; `LoginPage`/`CallbackPage`/`OnboardingPage` share `resolveStateFrom`/`toSafeRelativeUrl` from `src/utils/authReturn.ts`.
+- Added `SITE_URL`/`SITE_DOMAIN` to `src/utils/constants.ts` and replaced hardcoded site URLs in `CalendarView`/`icsExport`.
 - Streamlined `AGENTS.md` to eliminate persona roleplay ("lazy developer"), contradictory one-liner rules, and duplicated Git/CI instructions, reducing context token overhead by over 50% for smaller context models.
 - Established a structured 5-step agent execution lifecycle (`Inspect` -> `Trace` -> `Edit Surgically` -> `Verify` -> `Document`) and tiered verification ladder in `AGENTS.md`.
 - Purged stale Capacitor prerequisites, native mobile build scripts, and legacy Prettier mentions from `CONTRIBUTING.md` and `docs/documentation-standards.md`, standardizing on `pnpm`.
@@ -63,6 +70,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Removed
 
+- Dead production code: `calculateAbsoluteScheduleScore`, `computeScheduleFeatures`, `COMPACT_DAY_THRESHOLD`, `getScheduleIntrinsicQuality`, `OptimizationPanel` + its test, unused `cancel`/`isPending` on `AutoPersistenceController`, `storage.keys`, `env.MODE`/`env.IS_PROD`, the unreachable throw in `db/migrate.ts`, and dead onboarding phone state.
+- Redundant Vercel pass-through wrappers (`api/courses.ts`, `api/professors.ts`, `api/semesters.ts`, `api/schedules.ts`, `api/trades.ts`, `api/user-profile.ts`, `api/mcp.ts`); `api/[...path].ts` serves them with identical responses on Vercel.
 - Download App button from the top navigation header for now.
 - Unused `useAuthGuard` and action-time auth interception in favor of route-level authentication.
 - Unused path aliases, dead exports, Lefthook, and disconnected offline persistence code.

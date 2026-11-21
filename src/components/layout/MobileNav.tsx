@@ -1,6 +1,6 @@
 import { BottomNavigation, BottomNavigationAction, Box, useTheme } from '@mui/material';
 import { Link, useLocation } from 'react-router-dom';
-import { NAV_ITEMS } from './NavLinks';
+import { NAV_ITEMS, type NavAccent, resolveNavAccent } from './NavLinks';
 
 export function MobileNav() {
   const location = useLocation();
@@ -25,7 +25,7 @@ export function MobileNav() {
     >
       <BottomNavigation value={location.pathname} showLabels sx={{ bgcolor: 'background.paper' }}>
         {NAV_ITEMS.map((item) => {
-          const selectedColor = item.to === '/' ? theme.palette.primary.main : item.accentColor;
+          const selectedColor = resolveNavAccent(theme, item.accent as NavAccent);
           return (
             <BottomNavigationAction
               key={item.to}

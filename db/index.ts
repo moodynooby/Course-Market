@@ -1,8 +1,9 @@
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
+import { readDatabaseUrl } from './env';
 import * as schema from './schema';
 
-const databaseUrl = process.env.DATABASE_URL ?? process.env.NETLIFY_DATABASE_URL;
+const databaseUrl = readDatabaseUrl();
 
 if (!databaseUrl) {
   throw new Error(

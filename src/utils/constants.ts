@@ -4,12 +4,17 @@ export const STORAGE_KEYS = {
   THEME_MODE: 'theme-mode',
 } as const;
 
+export const SITE_URL = 'https://aurais.netlify.app';
+export const SITE_DOMAIN = 'aurais.netlify.app';
+
 export const MORNING_END_MINUTES = 720;
 export const AFTERNOON_END_MINUTES = 1020;
 export const LUNCH_AFTER_MINUTES = 780;
 export const SCORE_EXCELLENT = 80;
 export const SCORE_GOOD = 60;
 export const DEFAULT_MAX_SCHEDULES = 1000;
+export const SEARCH_DEBOUNCE_MS = 300;
+export const PROFESSOR_SEARCH_DEBOUNCE_MS = 200;
 
 import type { Preferences } from '../types';
 

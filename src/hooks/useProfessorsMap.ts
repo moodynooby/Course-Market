@@ -1,51 +1,49 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { professorsApi } from '../services/professorsApi';
 import type { ProfessorRatingInfo } from '../types';
 
 let sharedPromise: Promise<Map<string, ProfessorRatingInfo>> | null = null;
 let cachedMap: Map<string, ProfessorRatingInfo> | null = null;
 
-export function useProfessorsMap() {
-  const [map, setMap] = useState<Map<string, ProfessorRatingInfo>>(cachedMap || new Map());
+async function loadProfessorsMap(): Promise<Map<string, ProfessorRatingInfo>> {
+  if (cachedMap) return cachedMap;
 
-  const fetch = useCallback(async () => {
-    if (cachedMap && cachedMap.size > 0) {
-      if (map !== cachedMap) setMap(cachedMap);
-      return;
-    }
-
-    if (sharedPromise) {
-      const result = await sharedPromise;
-      if (result.size > 0) {
-        cachedMap = result;
-        setMap(result);
-      }
-      return;
-    }
-
-    sharedPromise = (async () => {
-      try {
-        const professors = await professorsApi.getProfessors();
-        const m = new Map<string, ProfessorRatingInfo>();
-        for (const p of professors) {
-          m.set(p.name, { avgRating: Number(p.avgRating) || 0, ratingCount: p.ratingCount || 0 });
+  if (!sharedPromise) {
+    sharedPromise = professorsApi
+      .getProfessors()
+      .then((professors) => {
+        const map = new Map<string, ProfessorRatingInfo>();
+        for (const professor of professors) {
+          map.set(professor.name, {
+            avgRating: Number(professor.avgRating) || 0,
+            ratingCount: professor.ratingCount || 0,
+          });
         }
-        cachedMap = m;
-        return m;
-      } catch (e) {
-        console.error('Failed to fetch professor ratings:', e);
+        cachedMap = map;
+        return map;
+      })
+      .catch((error) => {
+        console.error('Failed to fetch professor ratings:', error);
         sharedPromise = null;
         return new Map<string, ProfessorRatingInfo>();
-      }
-    })();
+      });
+  }
 
-    const result = await sharedPromise;
-    if (result.size > 0) setMap(result);
-  }, [map]);
+  return sharedPromise;
+}
+
+export function useProfessorsMap() {
+  const [map, setMap] = useState<Map<string, ProfessorRatingInfo>>(cachedMap ?? new Map());
 
   useEffect(() => {
-    fetch();
-  }, [fetch]);
+    let cancelled = false;
+    loadProfessorsMap().then((result) => {
+      if (!cancelled && result.size > 0) setMap(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return map;
 }

@@ -17,7 +17,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuthContext } from '../context/AuthContext';
 import { getSemesters } from '../services/coursesApi';
 import { professorsApi } from '../services/professorsApi';
@@ -65,20 +65,24 @@ export default function RateProfessorModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const resetForm = useCallback(() => {
+    setRating(5);
+    setDifficulty(3);
+    setComment('');
+    setCourseCode('');
+    setSemesterId('');
+    setTakeAgain(true);
+  }, []);
+
   useEffect(() => {
     if (open) {
-      setRating(5);
-      setDifficulty(3);
-      setComment('');
-      setCourseCode('');
-      setSemesterId('');
-      setTakeAgain(true);
+      resetForm();
       setError(null);
       getSemesters()
         .then((data) => setSemesters(data.semesters))
         .catch(console.error);
     }
-  }, [open]);
+  }, [open, resetForm]);
 
   const handleSubmit = async () => {
     if (!rating || !difficulty || !comment || !courseCode || !semesterId) {
@@ -113,12 +117,7 @@ export default function RateProfessorModal({
         token,
       );
       onSuccess();
-      setRating(5);
-      setDifficulty(3);
-      setComment('');
-      setCourseCode('');
-      setSemesterId('');
-      setTakeAgain(true);
+      resetForm();
       setError(null);
       onClose();
     } catch (error) {

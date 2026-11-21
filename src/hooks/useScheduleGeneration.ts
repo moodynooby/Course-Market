@@ -4,7 +4,7 @@ import { useConfigContext } from '../context/ConfigContext';
 import { useOptionalToast } from '../context/ToastContext';
 import { type SearchResult, searchSchedules } from '../services/search';
 import type { Course, Preferences, Schedule, Section } from '../types';
-import { DEFAULT_MAX_SCHEDULES } from '../utils/constants';
+import { DEFAULT_MAX_SCHEDULES, SEARCH_DEBOUNCE_MS } from '../utils/constants';
 import { generateScheduleCandidates } from '../utils/generation';
 import type { ScheduleDiagnostics } from '../utils/schedule-diagnostics';
 import type { PrefilterSummary } from '../utils/schedule-prefilter';
@@ -243,7 +243,7 @@ export function useScheduleGeneration({
     const timer = setTimeout(() => {
       const results = searchSchedules(generatedSchedules, allCourses, searchQuery);
       setSearchResults(results);
-    }, 300);
+    }, SEARCH_DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
   }, [searchQuery, generatedSchedules, allCourses]);

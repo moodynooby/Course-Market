@@ -14,7 +14,12 @@ import { useCallback, useMemo, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useAuthContext } from '../context/AuthContext';
-import { getAuthReturnContext } from '../utils/authReturn';
+import {
+  type AuthReturnState,
+  getAuthReturnContext,
+  resolveStateFrom,
+  toSafeRelativeUrl,
+} from '../utils/authReturn';
 
 export default function LoginPage() {
   const { signIn, isAuthenticated, loading } = useAuthContext();
@@ -25,23 +30,11 @@ export default function LoginPage() {
   const { returnUrl, errorMsg } = useMemo(() => {
     const searchParams = new URLSearchParams(location.search);
     const stored = getAuthReturnContext();
-    const state = location.state as
-      | {
-          from?: string | { pathname: string; search?: string };
-          error?: string;
-        }
-      | undefined;
+    const state = location.state as (AuthReturnState & { error?: string }) | undefined;
 
-    const fromState =
-      typeof state?.from === 'string'
-        ? state.from
-        : state?.from?.pathname
-          ? `${state.from.pathname}${state.from.search || ''}`
-          : null;
-
-    const targetUrl = searchParams.get('returnTo') || fromState || stored.returnUrl || '/';
-    const safeTargetUrl =
-      targetUrl.startsWith('/') && !targetUrl.startsWith('//') ? targetUrl : '/';
+    const targetUrl =
+      searchParams.get('returnTo') || resolveStateFrom(state) || stored.returnUrl || '/';
+    const safeTargetUrl = toSafeRelativeUrl(targetUrl);
 
     const err =
       searchParams.get('error_description') || searchParams.get('error') || state?.error || null;

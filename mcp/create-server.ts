@@ -40,6 +40,18 @@ function jsonToolResult(payload: unknown) {
   };
 }
 
+function jsonContents(uri: URL, payload: unknown) {
+  return {
+    contents: [
+      {
+        uri: uri.href,
+        mimeType: 'application/json',
+        text: JSON.stringify(payload, null, 2),
+      },
+    ],
+  };
+}
+
 function readSingleVariable(value: string | string[] | undefined): string {
   if (Array.isArray(value)) return value[0] ?? '';
   return value ?? '';
@@ -142,15 +154,7 @@ export function createCoursesMcpServer(dataSource: CourseDataSource): McpServer 
       description: 'JSON list of available academic semesters in AuraIsHub.',
       mimeType: 'application/json',
     },
-    async (uri) => ({
-      contents: [
-        {
-          uri: uri.href,
-          mimeType: 'application/json',
-          text: JSON.stringify(await handleListSemesters(dataSource), null, 2),
-        },
-      ],
-    }),
+    async (uri) => jsonContents(uri, await handleListSemesters(dataSource)),
   );
 
   server.registerResource(
@@ -161,19 +165,13 @@ export function createCoursesMcpServer(dataSource: CourseDataSource): McpServer 
       description: 'Distinct subject codes and course counts for a specific semester.',
       mimeType: 'application/json',
     },
-    async (uri, variables) => {
-      const semesterId = decodeURIComponent(readSingleVariable(variables.semesterId));
-      const payload = await handleListSubjects(dataSource, { semesterId });
-      return {
-        contents: [
-          {
-            uri: uri.href,
-            mimeType: 'application/json',
-            text: JSON.stringify(payload, null, 2),
-          },
-        ],
-      };
-    },
+    async (uri, variables) =>
+      jsonContents(
+        uri,
+        await handleListSubjects(dataSource, {
+          semesterId: decodeURIComponent(readSingleVariable(variables.semesterId)),
+        }),
+      ),
   );
 
   server.registerResource(
@@ -187,20 +185,14 @@ export function createCoursesMcpServer(dataSource: CourseDataSource): McpServer 
         'Canonical course metadata and section list for a given semester and course code.',
       mimeType: 'application/json',
     },
-    async (uri, variables) => {
-      const semesterId = decodeURIComponent(readSingleVariable(variables.semesterId));
-      const courseCode = decodeURIComponent(readSingleVariable(variables.courseCode));
-      const payload = await handleGetCourseDetails(dataSource, { semesterId, courseCode });
-      return {
-        contents: [
-          {
-            uri: uri.href,
-            mimeType: 'application/json',
-            text: JSON.stringify(payload, null, 2),
-          },
-        ],
-      };
-    },
+    async (uri, variables) =>
+      jsonContents(
+        uri,
+        await handleGetCourseDetails(dataSource, {
+          semesterId: decodeURIComponent(readSingleVariable(variables.semesterId)),
+          courseCode: decodeURIComponent(readSingleVariable(variables.courseCode)),
+        }),
+      ),
   );
 
   server.registerPrompt(

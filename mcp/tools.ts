@@ -3,7 +3,7 @@ import type { Course, DayOfWeek, Preferences, Section } from '../src/types';
 import { DEFAULT_MAX_SCHEDULES } from '../src/utils/constants';
 import { generateScheduleCandidates } from '../src/utils/generation';
 import { sectionsToIcs } from '../src/utils/icsExport';
-import { hasSectionConflict } from '../src/utils/schedule';
+import { hasOpenSeats, hasSectionConflict, seatsRemaining } from '../src/utils/schedule';
 import { DAY_ORDER } from '../src/utils/schedule-time';
 import type { CourseDataSource, SectionPairSelection } from './types';
 
@@ -165,15 +165,6 @@ export const exportScheduleIcsInputShape = {
 
 function normalizeKey(value: string): string {
   return value.trim().replace(/\s+/g, '').toUpperCase();
-}
-
-function hasOpenSeats(section: Section): boolean {
-  return section.capacity <= 0 || section.enrolled < section.capacity;
-}
-
-function seatsRemaining(section: Section): number | null {
-  if (section.capacity <= 0) return null;
-  return Math.max(0, section.capacity - section.enrolled);
 }
 
 function formatSectionPayload(section: Section, course?: Course) {

@@ -18,6 +18,7 @@ import { useAuthContext } from '../context/AuthContext';
 import { formatApiErrorDetails } from '../services/apiClient';
 import { getSemesters } from '../services/coursesApi';
 import type { Semester } from '../types';
+import { type AuthReturnState, resolveStateFrom } from '../utils/authReturn';
 
 export default function OnboardingPage() {
   const navigate = useNavigate();
@@ -31,12 +32,8 @@ export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
 
   const resolveReturnUrl = useCallback(() => {
-    const state = location.state as
-      | { from?: string | { pathname: string; search?: string } }
-      | undefined;
-    if (typeof state?.from === 'string') return state.from;
-    if (state?.from?.pathname) return `${state.from.pathname}${state.from.search || ''}`;
-    return '/';
+    const state = location.state as AuthReturnState | undefined;
+    return resolveStateFrom(state) ?? '/';
   }, [location.state]);
 
   const loadSemesters = useCallback(async () => {

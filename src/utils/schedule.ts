@@ -99,6 +99,19 @@ export function hasSectionConflict(section1: Section, section2: Section): boolea
   return false;
 }
 
+export function getConflictingSectionIds(sections: Section[]): Set<string> {
+  const ids = new Set<string>();
+  for (let i = 0; i < sections.length; i++) {
+    for (let j = i + 1; j < sections.length; j++) {
+      if (hasSectionConflict(sections[i], sections[j])) {
+        ids.add(sections[i].id);
+        ids.add(sections[j].id);
+      }
+    }
+  }
+  return ids;
+}
+
 export function checkConflicts(sections: Section[], courses?: Course[]): string[] {
   const conflicts: string[] = [];
   const courseMap = courses ? new Map(courses.map((c) => [c.id, c.code])) : undefined;
@@ -163,6 +176,15 @@ export function formatSlotDates(slot: TimeSlot): string {
     return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
   };
   return `${formatDate(slot.startDate)} - ${formatDate(slot.endDate)}`;
+}
+
+export function hasOpenSeats(section: Pick<Section, 'capacity' | 'enrolled'>): boolean {
+  return section.capacity <= 0 || section.enrolled < section.capacity;
+}
+
+export function seatsRemaining(section: Pick<Section, 'capacity' | 'enrolled'>): number | null {
+  if (section.capacity <= 0) return null;
+  return Math.max(0, section.capacity - section.enrolled);
 }
 
 export interface ScheduleFeatures {

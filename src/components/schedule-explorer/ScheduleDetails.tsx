@@ -1,6 +1,6 @@
 import { alpha, Box, Button, Chip, Stack, Typography, useTheme } from '@mui/material';
 import type { Course, Schedule } from '../../types';
-import { SCORE_EXCELLENT } from '../../utils/constants';
+import { SCORE_EXCELLENT, SCORE_GOOD } from '../../utils/constants';
 import CalendarView from '../CalendarView';
 
 interface ScheduleDetailsProps {
@@ -29,14 +29,14 @@ export function ScheduleDetails({
             label={`Score: ${selectedSchedule.score} / 100 • ${
               selectedSchedule.score >= SCORE_EXCELLENT
                 ? 'Optimal'
-                : selectedSchedule.score >= 60
+                : selectedSchedule.score >= SCORE_GOOD
                   ? 'Good'
                   : 'Conflicts'
             }`}
             color={
               selectedSchedule.score >= SCORE_EXCELLENT
                 ? 'success'
-                : selectedSchedule.score >= 60
+                : selectedSchedule.score >= SCORE_GOOD
                   ? 'primary'
                   : 'warning'
             }

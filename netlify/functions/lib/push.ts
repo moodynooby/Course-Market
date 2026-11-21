@@ -93,30 +93,19 @@ async function sendViaFcm(token: string, payload: PushPayload, opts: PushOptions
  */
 async function getFcmAccessToken(account: Record<string, string>): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  const header = btoaUrl(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
-  const claim = btoaUrl(
-    JSON.stringify({
+  const assertion = await createJwt(
+    { alg: 'RS256', typ: 'JWT' },
+    {
       iss: account.client_email,
       scope: 'https://www.googleapis.com/auth/firebase.messaging',
       aud: 'https://oauth2.googleapis.com/token',
       exp: now + 3600,
       iat: now,
-    }),
-  );
-
-  const key = await crypto.subtle.importKey(
-    'pkcs8',
-    pemToDer(account.private_key),
+    },
+    account.private_key,
     { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false,
-    ['sign'],
+    { name: 'RSASSA-PKCS1-v1_5' },
   );
-  const signature = await crypto.subtle.sign(
-    'RSASSA-PKCS1-v1_5',
-    key,
-    textEncoder.encode(`${header}.${claim}`),
-  );
-  const assertion = `${header}.${claim}.${btoaUrl(bufferToBase64(new Uint8Array(signature)))}`;
 
   const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -137,21 +126,13 @@ async function sendViaApns(token: string, payload: PushPayload, opts: PushOption
   if (!opts.apnsKey || !opts.apnsKeyId || !opts.apnsTeamId) return;
 
   const now = Math.floor(Date.now() / 1000);
-  const header = btoaUrl(JSON.stringify({ alg: 'ES256', kid: opts.apnsKeyId }));
-  const claim = btoaUrl(JSON.stringify({ iss: opts.apnsTeamId, iat: now }));
-  const key = await crypto.subtle.importKey(
-    'pkcs8',
-    pemToDer(opts.apnsKey),
+  const jwt = await createJwt(
+    { alg: 'ES256', kid: opts.apnsKeyId },
+    { iss: opts.apnsTeamId, iat: now },
+    opts.apnsKey,
     { name: 'ECDSA', namedCurve: 'P-256' },
-    false,
-    ['sign'],
-  );
-  const signature = await crypto.subtle.sign(
     { name: 'ECDSA', hash: 'SHA-256' },
-    key,
-    textEncoder.encode(`${header}.${claim}`),
   );
-  const jwt = `${header}.${claim}.${btoaUrl(bufferToBase64(new Uint8Array(signature)))}`;
 
   await fetch(`https://api.push.apple.com/3/device/${token}`, {
     method: 'POST',
@@ -189,6 +170,33 @@ export async function sendPushNotification(token: string, payload: PushPayload):
 }
 
 const textEncoder = new TextEncoder();
+
+type ImportAlgorithm = Parameters<typeof crypto.subtle.importKey>[2];
+type SignAlgorithm = Parameters<typeof crypto.subtle.sign>[0];
+
+async function createJwt(
+  header: Record<string, unknown>,
+  claims: Record<string, unknown>,
+  privateKeyPem: string,
+  importAlgorithm: ImportAlgorithm,
+  signAlgorithm: SignAlgorithm,
+): Promise<string> {
+  const encodedHeader = btoaUrl(JSON.stringify(header));
+  const encodedClaims = btoaUrl(JSON.stringify(claims));
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    pemToDer(privateKeyPem),
+    importAlgorithm,
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign(
+    signAlgorithm,
+    key,
+    textEncoder.encode(`${encodedHeader}.${encodedClaims}`),
+  );
+  return `${encodedHeader}.${encodedClaims}.${btoaUrl(bufferToBase64(new Uint8Array(signature)))}`;
+}
 
 function btoaUrl(value: string): string {
   return Buffer.from(value)

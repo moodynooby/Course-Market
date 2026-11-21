@@ -32,9 +32,7 @@ import { useState } from 'react';
 import type { View } from 'react-big-calendar';
 import { Views } from 'react-big-calendar';
 
-interface CalendarToolbarProps {
-  /** Inline renders below a border with the fullscreen toggle; fullscreen adds the title chip and close button. */
-  variant?: 'inline' | 'fullscreen';
+interface CalendarToolbarBaseProps {
   view: View;
   onViewChange: (view: View) => void;
   date: Date;
@@ -46,10 +44,21 @@ interface CalendarToolbarProps {
   onShare: () => void;
   capturing: boolean;
   isMobile: boolean;
-  fullscreen?: boolean;
-  onToggleFullscreen?: () => void;
-  onClose?: () => void;
 }
+
+type CalendarToolbarProps =
+  | (CalendarToolbarBaseProps & {
+      variant?: 'inline';
+      fullscreen: boolean;
+      onToggleFullscreen: () => void;
+      onClose?: never;
+    })
+  | (CalendarToolbarBaseProps & {
+      variant: 'fullscreen';
+      onClose: () => void;
+      fullscreen?: never;
+      onToggleFullscreen?: never;
+    });
 
 function CapturingSpinner() {
   return (
@@ -81,23 +90,24 @@ const VIEW_OPTIONS: { value: View; label: string; icon: ReactElement }[] = [
  * fullscreen AppBar. Wraps into two tidy rows on narrow screens instead of
  * overflowing; long export actions live in a kebab menu.
  */
-export default function CalendarToolbar({
-  variant = 'inline',
-  view,
-  onViewChange,
-  date,
-  onPrev,
-  onNext,
-  onToday,
-  onAddToGoogle,
-  onExportIcs,
-  onShare,
-  capturing,
-  isMobile,
-  fullscreen,
-  onToggleFullscreen,
-  onClose,
-}: CalendarToolbarProps) {
+export default function CalendarToolbar(props: CalendarToolbarProps) {
+  const {
+    view,
+    onViewChange,
+    date,
+    onPrev,
+    onNext,
+    onToday,
+    onAddToGoogle,
+    onExportIcs,
+    onShare,
+    capturing,
+    isMobile,
+  } = props;
+  const variant = props.variant ?? 'inline';
+  const fullscreen = variant === 'inline' ? props.fullscreen : false;
+  const onToggleFullscreen = variant === 'inline' ? props.onToggleFullscreen : undefined;
+  const onClose = variant === 'fullscreen' ? props.onClose : undefined;
   const theme = useTheme();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
 
@@ -122,7 +132,6 @@ export default function CalendarToolbar({
         }),
       }}
     >
-      {}
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center', minWidth: 0 }}>
         <ButtonGroup variant="outlined" size="small">
           <Button onClick={onPrev} aria-label="Previous" sx={{ minWidth: 32, px: 0 }}>
@@ -141,7 +150,6 @@ export default function CalendarToolbar({
         </Typography>
       </Stack>
 
-      {}
       <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
         <ButtonGroup variant="outlined" size="small">
           {VIEW_OPTIONS.map(({ value, label, icon }) =>

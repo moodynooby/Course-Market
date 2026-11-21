@@ -4,6 +4,22 @@
 
 const AUTH_RETURN_URL_KEY = 'authReturnUrl';
 
+export type AuthReturnState = {
+  from?: string | { pathname: string; search?: string };
+};
+
+/** Returns the normalized return target from a router `state.from` value. */
+export function resolveStateFrom(state: AuthReturnState | undefined): string | null {
+  if (typeof state?.from === 'string') return state.from;
+  if (state?.from?.pathname) return `${state.from.pathname}${state.from.search || ''}`;
+  return null;
+}
+
+/** Returns `/` for absolute or protocol-relative URLs so redirects stay on this origin. */
+export function toSafeRelativeUrl(candidate: string | null | undefined): string {
+  return candidate?.startsWith('/') && !candidate.startsWith('//') ? candidate : '/';
+}
+
 export function setAuthReturnContext(returnUrl: string): void {
   try {
     window.sessionStorage.setItem(AUTH_RETURN_URL_KEY, returnUrl);

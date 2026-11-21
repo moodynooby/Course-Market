@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { searchProfessors } from '../services/search';
 import type { Professor } from '../types';
+import { PROFESSOR_SEARCH_DEBOUNCE_MS } from '../utils/constants';
 
 export function useProfessorSearch(professors: Professor[]) {
   const [query, setQuery] = useState('');
@@ -8,7 +9,7 @@ export function useProfessorSearch(professors: Professor[]) {
 
   const setQueryDebounced = (q: string) => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => setQuery(q), 200);
+    timerRef.current = setTimeout(() => setQuery(q), PROFESSOR_SEARCH_DEBOUNCE_MS);
   };
 
   const results = useMemo(() => {

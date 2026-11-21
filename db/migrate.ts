@@ -3,8 +3,9 @@ import { resolve } from 'node:path';
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import { migrate } from 'drizzle-orm/neon-http/migrator';
+import { readDatabaseUrl } from './env';
 
-const databaseUrl = process.env.DATABASE_URL ?? process.env.NETLIFY_DATABASE_URL;
+const databaseUrl = readDatabaseUrl();
 
 if (!databaseUrl) {
   console.error(

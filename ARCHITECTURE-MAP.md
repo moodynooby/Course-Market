@@ -1,6 +1,6 @@
 # Architecture Map
 
-Last updated: 2026-11-18
+Last updated: 2026-11-20
 
 ## System Overview
 
@@ -20,20 +20,20 @@ PostgreSQL / Auth0
 
 ## Domain Ownership
 
-| Area                  | Primary location                     | Responsibility                                                           |
-| --------------------- | ------------------------------------ | ------------------------------------------------------------------------ |
-| Application shell     | `src/main.tsx`, `src/App.tsx`        | Providers, routing, application startup                                  |
-| Pages                 | `src/pages/`                         | Route-level composition and page workflows                               |
-| UI components         | `src/components/`                    | Reusable presentation and feature UI                                     |
-| Global state          | `src/context/`                       | Auth, course selections, preferences, theme, and notifications           |
-| Feature orchestration | `src/hooks/`                         | Course selection, semester loading, preferences, schedule generation     |
-| Client boundaries     | `src/services/`                      | HTTP requests, caching, and search indexes                               |
-| Pure domain logic     | `src/utils/`                         | Schedule generation, scoring, conflicts, calendar export, storage        |
-| Server functions      | `netlify/functions/`, `api/`         | Authenticated HTTP handlers, Vercel/Netlify adapters, response contracts |
-| Courses MCP server    | `mcp/`, `netlify/functions/mcp.ts`   | Read-only Streamable HTTP MCP server for semesters, courses, & schedules |
-| Agent skills          | `.agents/skills/`                    | Portable Agent Skills (`SKILL.md`) for course discovery & scheduling     |
-| Persistence           | `db/`                                | Drizzle schema, validation, seed data                                    |
-| Verification          | `src/`, `mcp/`, `db/` `__tests__/`   | Owner-boundary behavior tests                                            |
+| Area                  | Primary location                                         | Responsibility                                                           |
+|-----------------------|----------------------------------------------------------|--------------------------------------------------------------------------|
+| Application shell     | `src/main.tsx`, `src/App.tsx`                            | Providers, routing, application startup                                  |
+| Pages                 | `src/pages/`                                             | Route-level composition and page workflows                               |
+| UI components         | `src/components/`                                        | Reusable presentation and feature UI                                     |
+| Global state          | `src/context/`                                           | Auth, course selections, preferences, theme, and notifications           |
+| Feature orchestration | `src/hooks/`                                             | Course selection, semester loading, preferences, schedule generation     |
+| Client boundaries     | `src/services/`                                          | HTTP requests, caching, and search indexes                               |
+| Pure domain logic     | `src/utils/`                                             | Schedule generation, scoring, conflicts, calendar export, storage        |
+| Server functions      | netlify/functions/, api/[...path].ts                     | Authenticated HTTP handlers, Vercel/Netlify adapters, response contracts |
+| Courses MCP server    | `mcp/`, `netlify/functions/mcp.ts`                       | Read-only Streamable HTTP MCP server for semesters, courses, & schedules |
+| Agent skills          | `.agents/skills/`                                        | Portable Agent Skills (`SKILL.md`) for course discovery & scheduling     |
+| Persistence           | `db/`                                                    | Drizzle schema, validation, seed data                                    |
+| Verification          | `src/`, `mcp/`, `db/` `__tests__/`                       | Owner-boundary behavior tests                                            |
 
 ## Dependency Direction
 
@@ -47,10 +47,10 @@ PostgreSQL / Auth0
 
 ```text
 course selections
-  → buildSectionsByCourse
-  → prefilterSections
-  → generateSchedules
-  → score and conflict metadata
+  → prefilterSections (`src/utils/schedule-prefilter.ts`)
+  → generateScheduleCandidates (`src/utils/generation.ts`, shared by client, server, MCP)
+  → generateSchedules + dedup/clustering/labels (`src/utils/schedule-generator.ts`)
+  → score and conflict metadata (`src/utils/schedule.ts`)
   → optional clustering/search
   → dashboard explorer
 ```
@@ -66,9 +66,10 @@ The ordering, score, section membership, progress callbacks, and conflict metada
 - `src/utils/schedule.ts` — calendar projection, conflicts, features, and scoring.
 - `src/utils/schedule-generator.ts` — generation, deduplication, clustering, and labels.
 - `src/hooks/useScheduleGeneration.ts` — generation and explorer state/actions.
-- `netlify/functions/schedules.ts`, `api/schedules.ts` — server-side combinatorial schedule generation & optimization.
-- `netlify/functions/courses.ts`, `api/courses.ts` — server-side course search, filtering, and pagination.
+- `netlify/functions/schedules.ts` — server-side combinatorial schedule generation & optimization (thin; delegates to `src/utils/generation.ts`).
+- `netlify/functions/courses.ts` — server-side course search, filtering, and pagination.
 - `api/_adapter.ts`, `api/[...path].ts` — universal Node/Vercel serverless request adapter.
+- `api/index.ts` — health endpoint.
 
 Split these files only along independently testable responsibilities.
 

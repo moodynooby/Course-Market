@@ -35,7 +35,7 @@ import { useToast } from '../context/ToastContext';
 import { useProfessorsMap } from '../hooks/useProfessorsMap';
 import { searchCourses } from '../services/search';
 import type { Course, Section } from '../types';
-import { hasSectionConflict } from '../utils/schedule';
+import { hasOpenSeats, hasSectionConflict } from '../utils/schedule';
 
 const SEARCH_DEBOUNCE_MS = 150;
 
@@ -166,7 +166,7 @@ export default function CoursesPage() {
     if (openSeatsOnly) {
       result = result.filter((course) => {
         const courseSecs = courseSectionsMap.get(course.id) || [];
-        return courseSecs.some((s) => s.capacity === 0 || s.enrolled < s.capacity);
+        return courseSecs.some(hasOpenSeats);
       });
     }
 

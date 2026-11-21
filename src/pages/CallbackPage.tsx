@@ -2,7 +2,7 @@ import { Box, CircularProgress, Typography } from '@mui/material';
 import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../context/AuthContext';
-import { consumeAuthReturnContext } from '../utils/authReturn';
+import { consumeAuthReturnContext, toSafeRelativeUrl } from '../utils/authReturn';
 
 export default function CallbackPage() {
   const { isAuthenticated, loading, profile, error: authError } = useAuthContext();
@@ -33,10 +33,7 @@ export default function CallbackPage() {
     }
 
     const { returnUrl } = consumeAuthReturnContext();
-    const returnToParam = searchParams.get('returnTo');
-    const candidate = returnUrl || returnToParam;
-    const isSafeRelative = candidate?.startsWith('/') && !candidate.startsWith('//');
-    const targetUrl = isSafeRelative && candidate ? candidate : '/';
+    const targetUrl = toSafeRelativeUrl(returnUrl || searchParams.get('returnTo'));
 
     if (!profile?.semesterId) {
       navigate('/onboarding', { replace: true, state: { from: targetUrl } });

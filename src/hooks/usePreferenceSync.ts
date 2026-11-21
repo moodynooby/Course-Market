@@ -67,8 +67,9 @@ export function usePreferenceSync(
     });
 
     if (decision.action === 'push') {
-      void updateProfile({ preferences: decision.preferences });
-      storage.remove(STORAGE_KEYS.PREFS_DIRTY);
+      void updateProfile({ preferences: decision.preferences }).then(() => {
+        storage.remove(STORAGE_KEYS.PREFS_DIRTY);
+      });
     } else if (decision.action === 'pull') {
       updatePreferences(decision.preferences, { skipCloudSync: true });
     }

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { type StorageKey, storage } from '../utils/storage';
 
 export interface AutoPersistenceOptions<T> {
-  storageKey?: StorageKey;
+  /** Writes the latest data synchronously before the debounced save. */
+  persistLocal?: (data: T) => void;
   onSave: (data: T) => Promise<void>;
   debounceMs?: number;
   onError?: (error: unknown, pendingData: T) => void;
@@ -21,7 +21,7 @@ const DEFAULT_DEBOUNCE_MS = 300;
  * and beforeunload.
  */
 export function useAutoPersistence<T>({
-  storageKey,
+  persistLocal,
   onSave,
   debounceMs = DEFAULT_DEBOUNCE_MS,
   onError,
@@ -33,11 +33,11 @@ export function useAutoPersistence<T>({
 
   const onSaveRef = useRef(onSave);
   const onErrorRef = useRef(onError);
-  const storageKeyRef = useRef(storageKey);
+  const persistLocalRef = useRef(persistLocal);
 
   onSaveRef.current = onSave;
   onErrorRef.current = onError;
-  storageKeyRef.current = storageKey;
+  persistLocalRef.current = persistLocal;
 
   const executeSave = useCallback(async () => {
     if (!hasPendingRef.current || inFlightRef.current) return;
@@ -72,9 +72,7 @@ export function useAutoPersistence<T>({
       pendingDataRef.current = data;
       hasPendingRef.current = true;
 
-      if (storageKeyRef.current) {
-        storage.set(storageKeyRef.current, data);
-      }
+      persistLocalRef.current?.(data);
 
       if (timerRef.current) {
         clearTimeout(timerRef.current);

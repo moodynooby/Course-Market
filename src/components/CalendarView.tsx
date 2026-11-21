@@ -24,11 +24,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { View } from 'react-big-calendar';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import type { CalendarEvent, Course, Section } from '../types';
+import { SITE_URL } from '../utils/constants';
 import { buildGoogleCalendarUrlForSlot, openGoogleCalendarUrl } from '../utils/googleCalendar';
 import { hapticLight, hapticSuccess } from '../utils/haptics';
 import { icsToBlob, sectionsToIcs } from '../utils/icsExport';
 import {
-  hasSectionConflict,
+  getConflictingSectionIds,
   isSlotActiveDuring,
   sectionsToCalendarEvents,
 } from '../utils/schedule';
@@ -305,18 +306,7 @@ export default function CalendarView({
     setSelectedEvent(event);
   }, []);
 
-  const conflictingSectionIds = useMemo(() => {
-    const ids = new Set<string>();
-    for (let i = 0; i < sections.length; i++) {
-      for (let j = i + 1; j < sections.length; j++) {
-        if (hasSectionConflict(sections[i], sections[j])) {
-          ids.add(sections[i].id);
-          ids.add(sections[j].id);
-        }
-      }
-    }
-    return ids;
-  }, [sections]);
+  const conflictingSectionIds = useMemo(() => getConflictingSectionIds(sections), [sections]);
 
   const eventStyleGetter = useCallback(
     (_event: CalendarEvent) => {
@@ -491,7 +481,7 @@ export default function CalendarView({
     [theme.palette.background.default],
   );
 
-  const watermarkText = 'Make your own at https://aurais.netlify.app/';
+  const watermarkText = `Make your own at ${SITE_URL}/`;
 
   if (sections.length === 0) {
     return (
@@ -774,7 +764,6 @@ export default function CalendarView({
         </DialogContent>
       </Dialog>
 
-      {}
       <Dialog
         open={selectedEvent !== null}
         onClose={() => setSelectedEvent(null)}

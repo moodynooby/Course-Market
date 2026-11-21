@@ -21,7 +21,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
   );
 
   const persistence = useAutoPersistence<Preferences>({
-    storageKey: STORAGE_KEYS.PREFERENCES,
+    persistLocal: (prefs) => storage.set(STORAGE_KEYS.PREFERENCES, prefs),
     debounceMs: 300,
     onSave: async (prefs) => {
       if (!isAuthenticated) return;
